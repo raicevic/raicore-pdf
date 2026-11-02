@@ -15,9 +15,40 @@ internal static class ParagraphLayouter
     private const double Epsilon = 1e-6;
     private const char SoftHyphen = '\u00AD';
 
-    public static ParagraphLayout Layout(Paragraph paragraph, double width)
+    /// <summary>
+    /// The CSS intrinsic widths: min-content is the widest piece that cannot be broken (between two break opportunities),
+    /// max-content is the widest line when only hard breaks are used.
+    /// </summary>
+    public static (double Min, double Max) MeasureIntrinsic(Paragraph paragraph)
     {
-        var spans = paragraph.Spans;
+        var (text, spanStarts) = Concatenate(paragraph.Spans);
+        if (text.Length == 0)
+        {
+            return (0, 0);
+        }
+
+        var prefix = MeasurePrefix(text, paragraph.Spans, spanStarts);
+        var indent = paragraph.FirstLineIndent;
+        double min = 0, max = 0;
+        int segmentStart = 0, lineStart = 0;
+        foreach (var opportunity in LineBreaker.GetBreakOpportunities(text))
+        {
+            var segment = prefix[TrimEnd(text, segmentStart, opportunity.Position)] - prefix[segmentStart] + (segmentStart == 0 ? Math.Max(0, indent) : 0);
+            min = Math.Max(min, segment);
+            segmentStart = opportunity.Position;
+            if (opportunity.Required || opportunity.Position == text.Length)
+            {
+                var line = prefix[TrimEnd(text, lineStart, opportunity.Position)] - prefix[lineStart] + (lineStart == 0 ? indent : 0);
+                max = Math.Max(max, line);
+                lineStart = opportunity.Position;
+            }
+        }
+
+        return (min, Math.Max(min, max));
+    }
+
+    private static (string Text, int[] SpanStarts) Concatenate(IReadOnlyList<ParagraphSpan> spans)
+    {
         var builder = new StringBuilder();
         var spanStarts = new int[spans.Count + 1];
         for (var s = 0; s < spans.Count; s++)
@@ -27,7 +58,13 @@ internal static class ParagraphLayouter
         }
 
         spanStarts[spans.Count] = builder.Length;
-        var text = builder.ToString();
+        return (builder.ToString(), spanStarts);
+    }
+
+    public static ParagraphLayout Layout(Paragraph paragraph, double width)
+    {
+        var spans = paragraph.Spans;
+        var (text, spanStarts) = Concatenate(spans);
         if (text.Length == 0)
         {
             return new ParagraphLayout(width, []);

@@ -45,12 +45,15 @@ own engine. Supported today:
 - Fonts (`font-family` fallback lists, weight, style), color, `text-align`, `text-indent`, `line-height` and `text-transform`.
 - List markers: bullets, decimal, alpha and roman numerals, `start`, `reversed` and `value`.
 - Images from `data:` and `file:` URLs, linked stylesheets, `@page` size and margins, and page break properties.
+- Tables: automatic and fixed column widths, `colspan`/`rowspan`, `thead` rows repeated on every page,
+  `border-collapse`/`border-spacing`, `vertical-align`, `<col>` widths, captions, and the legacy
+  `border`/`cellpadding`/`cellspacing`/`width` attributes.
 
 Network access is off unless you pass a `ResourceLoader`. Use `HtmlToPdf.CreateFlowDocument` to add headers and
 footers with a page decorator.
 
-Not yet: tables (rendered as stacked blocks for now), floats and positioning, flexbox and grid layout (rendered as
-blocks), inline box backgrounds and borders, `text-decoration`, and `@page` margin boxes and counters.
+Not yet: floats and positioning, flexbox and grid layout (rendered as blocks), inline box backgrounds and borders,
+`text-decoration`, splitting a single table row across pages, and `@page` margin boxes and counters.
 
 ### Drawing directly
 
@@ -173,6 +176,8 @@ flow.Render().Save("report.pdf");
 - Page breaks: forced (`break-before`/`break-after: page`), avoided (`break-after: avoid` keeps headings with their text,
   `break-inside: avoid`).
 - Boxes split across pages are sliced: the top border on the first page, the bottom border on the last.
+- Tables (`TableBlock`) use the CSS automatic or fixed table layout. Header rows repeat on every page, rows that
+  rowspans join stay together, and borders can be separate or collapsed.
 
 ## Architecture
 
@@ -188,7 +193,7 @@ Every input format is mapped to one shared document model and laid out by one en
 
 1. **PDF writer:** objects, compression, standard fonts ✅, embedded TrueType/OpenType/WOFF fonts with subsetting ✅, JPEG/PNG/GIF images ✅, then links and bookmarks.
 2. **Layout engine:** HarfBuzz text shaping and font fallback ✅, line breaking (UAX #14) and paragraphs ✅, block layout and pagination ✅.
-3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine ✅; tables, paged media (margin boxes, counters) and text decoration next.
+3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine ✅, tables ✅; paged media (margin boxes, counters) and text decoration next.
 4. **0.1 release:** tables, `@page`, page breaks, page numbers and the Razor adapter.
 5. **0.2:** flexbox, inline SVG, margin boxes, running headers, tagged PDF and PDF/A.
 6. **Later:** DOCX, PDF editing, XSL-FO, XLSX and PPTX.

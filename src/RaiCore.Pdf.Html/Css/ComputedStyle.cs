@@ -91,6 +91,16 @@ internal sealed record ComputedStyle
 
     public bool Hidden { get; init; }
 
+    public bool BorderCollapse { get; init; }
+
+    public double BorderSpacingX { get; init; }
+
+    public double BorderSpacingY { get; init; }
+
+    public bool TableLayoutFixed { get; init; }
+
+    public string VerticalAlign { get; init; } = "baseline";
+
     /// <summary>Reads an element's computed style (AngleSharp has already applied the cascade, inheritance and em units).</summary>
     public static ComputedStyle From(ICssStyleDeclaration css, double rootFontSize)
     {
@@ -155,7 +165,20 @@ internal sealed record ComputedStyle
             ListStyleType = Get("list-style-type") is { Length: > 0 } list ? list : "disc",
             ListStyleInside = Get("list-style-position") == "inside",
             Hidden = Get("visibility") is "hidden" or "collapse",
+            BorderCollapse = Get("border-collapse") == "collapse",
+            BorderSpacingX = Spacing(0),
+            BorderSpacingY = Spacing(1),
+            TableLayoutFixed = Get("table-layout") == "fixed",
+            VerticalAlign = Get("vertical-align") is { Length: > 0 } valign ? valign : "baseline",
         };
+
+        // border-spacing: one length for both directions, or horizontal then vertical.
+        double Spacing(int index)
+        {
+            var parts = Get("border-spacing").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var part = parts.Length == 0 ? null : parts[Math.Min(index, parts.Length - 1)];
+            return Math.Max(0, CssValues.ParseLength(part, fontSize, rootFontSize).Resolve(0));
+        }
     }
 
     private static CssDisplay ParseDisplay(string value) => value switch
