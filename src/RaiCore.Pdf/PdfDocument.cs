@@ -69,21 +69,34 @@ public sealed class PdfDocument
         var pageTreeRef = writer.Add(pageTree);
         catalog["Pages"] = pageTreeRef;
 
-        // Font objects are shared across pages.
-        var fontRefs = new Dictionary<StandardFont, PdfReference>();
+        // Each font is written once per document and embeds the union of glyphs used on all pages.
+        var fontUsage = new Dictionary<PdfFont, FontUsage>(ReferenceEqualityComparer.Instance);
+        var fontOrder = new List<PdfFont>();
+        foreach (var (font, _, usage) in _pages.SelectMany(p => p.Fonts))
+        {
+            if (!fontUsage.TryGetValue(font, out var total))
+            {
+                total = new FontUsage();
+                fontUsage[font] = total;
+                fontOrder.Add(font);
+            }
+
+            total.MergeFrom(usage);
+        }
+
+        var fontRefs = new Dictionary<PdfFont, PdfReference>(ReferenceEqualityComparer.Instance);
+        foreach (var font in fontOrder)
+        {
+            fontRefs[font] = font.WriteTo(writer, fontUsage[font]);
+        }
+
         var kids = new PdfArray();
         foreach (var page in _pages)
         {
             var fontResources = new PdfDictionary();
-            foreach (var (font, name) in page.Fonts)
+            foreach (var (font, name, _) in page.Fonts)
             {
-                if (!fontRefs.TryGetValue(font, out var fontRef))
-                {
-                    fontRef = writer.Add(CreateFontDictionary(font));
-                    fontRefs[font] = fontRef;
-                }
-
-                fontResources[name] = fontRef;
+                fontResources[name] = fontRefs[font];
             }
 
             var resources = new PdfDictionary();
@@ -118,22 +131,6 @@ public sealed class PdfDocument
         using var buffer = new MemoryStream();
         Save(buffer);
         return buffer.ToArray();
-    }
-
-    private static PdfDictionary CreateFontDictionary(StandardFont font)
-    {
-        var dict = new PdfDictionary
-        {
-            ["Type"] = new PdfName("Font"),
-            ["Subtype"] = new PdfName("Type1"),
-            ["BaseFont"] = new PdfName(StandardFontInfo.PostScriptName(font)),
-        };
-        if (StandardFontInfo.UsesWinAnsi(font))
-        {
-            dict["Encoding"] = new PdfName("WinAnsiEncoding");
-        }
-
-        return dict;
     }
 }
 

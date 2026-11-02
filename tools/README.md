@@ -1,0 +1,44 @@
+# Maintainer tools
+
+These scripts are not part of the build. The Python scripts need [fontTools](https://github.com/fonttools/fonttools):
+
+```sh
+python3 -m venv .venv && .venv/bin/pip install fonttools brotli
+```
+
+## `generate_standard_font_metrics.py`
+
+Regenerates `src/RaiCore.Pdf/Fonts/StandardFontMetrics.g.cs`, the widths used to measure text in the 14 standard
+PDF fonts. They come from the metric-compatible Liberation fonts:
+
+```sh
+.venv/bin/python tools/generate_standard_font_metrics.py src/RaiCore.Pdf.Fonts/Liberation
+```
+
+## `generate_test_fonts.py`
+
+Regenerates the font fixtures in `tests/RaiCore.Pdf.Tests/Fixtures`: WOFF/WOFF2 versions of Liberation Sans, a tiny
+CFF-based OpenType font, and tiny TrueType fonts with a composite glyph (also as a `.ttc` collection).
+
+```sh
+.venv/bin/python tools/generate_test_fonts.py src/RaiCore.Pdf.Fonts/Liberation/LiberationSans-Regular.ttf
+```
+
+## `font-verification/`
+
+Cross-checks the font parser against fontTools on a large set of real fonts, which unit tests cannot cover:
+
+- every cmap entry (code point to glyph ID) and advance width,
+- the TrueType subsetter: fontTools must load each subset and find identical outlines and widths,
+- decoded WOFF/WOFF2 output (written as `decoded-woff*.ttf`; compare with the original in fontTools).
+
+```sh
+find /System/Library/Fonts /usr/share/fonts -type f \( -iname '*.ttf' -o -iname '*.otf' -o -iname '*.ttc' \) > /tmp/fonts.txt
+dotnet build tools/font-verification
+tr '\n' '\0' < /tmp/fonts.txt | xargs -0 dotnet tools/font-verification/bin/Debug/net10.0/FontVerification.dll /tmp/font-check
+.venv/bin/python tools/font-verification/compare.py /tmp/font-check
+```
+
+Last run (macOS 27, 2026-11-02): 800 faces matched fontTools exactly and 662 TrueType subsets validated. The
+only differences are symbol fonts (Wingdings, Webdings), where RaiCore.Pdf also maps the Windows symbol cmap
+(U+F020–U+F0FF), as Windows does. One font with no outlines at all (NISC18030.ttf) is rejected, as intended.

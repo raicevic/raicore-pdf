@@ -6,7 +6,7 @@ namespace RaiCore.Pdf;
 /// <summary>A page in a <see cref="PdfDocument"/>.</summary>
 public sealed class PdfPage
 {
-    private readonly Dictionary<StandardFont, string> _fonts = [];
+    private readonly List<(PdfFont Font, string Name, FontUsage Usage)> _fonts = [];
 
     internal PdfPage(PdfPageSize size)
     {
@@ -26,18 +26,23 @@ public sealed class PdfPage
     /// <summary>Draws on the page.</summary>
     public PdfCanvas Canvas { get; }
 
-    internal IReadOnlyDictionary<StandardFont, string> Fonts => _fonts;
+    internal IReadOnlyList<(PdfFont Font, string Name, FontUsage Usage)> Fonts => _fonts;
 
-    /// <summary>Returns the page-local resource name (e.g. <c>F1</c>) for a font, registering it on first use.</summary>
-    internal string UseFont(StandardFont font)
+    /// <summary>Returns the page-local resource name (e.g. <c>F1</c>) for a font and the record of glyphs used from it.</summary>
+    internal (string Name, FontUsage Usage) UseFont(PdfFont font)
     {
-        if (!_fonts.TryGetValue(font, out var name))
+        foreach (var entry in _fonts)
         {
-            name = string.Create(CultureInfo.InvariantCulture, $"F{_fonts.Count + 1}");
-            _fonts[font] = name;
+            if (ReferenceEquals(entry.Font, font))
+            {
+                return (entry.Name, entry.Usage);
+            }
         }
 
-        return name;
+        var name = string.Create(CultureInfo.InvariantCulture, $"F{_fonts.Count + 1}");
+        var usage = new FontUsage();
+        _fonts.Add((font, name, usage));
+        return (name, usage);
     }
 }
 

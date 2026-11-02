@@ -32,9 +32,9 @@ jobs:
         with:
           global-json-file: global.json
 
-      - name: Install qpdf (PDF structure validation)
+      - name: Install PDF validators (qpdf structure check, poppler text extraction)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y qpdf
+        run: sudo apt-get update && sudo apt-get install -y qpdf poppler-utils
 
       - name: Restore
         run: dotnet restore

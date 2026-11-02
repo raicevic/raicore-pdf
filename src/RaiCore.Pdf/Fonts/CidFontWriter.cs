@@ -1,0 +1,176 @@
+using System.Security.Cryptography;
+using System.Text;
+using RaiCore.Pdf.Fonts.OpenType;
+using RaiCore.Pdf.IO;
+using RaiCore.Pdf.Objects;
+
+namespace RaiCore.Pdf.Fonts;
+
+/// <summary>
+/// Writes an OpenType font as a Type 0 (composite) font: Identity-H encoding where character codes are
+/// glyph IDs, a CIDFont with widths, a font descriptor, the embedded font program and a ToUnicode map
+/// so text can be copied and searched.
+/// </summary>
+internal static class CidFontWriter
+{
+    public static PdfReference Write(PdfFileWriter writer, OpenTypeFont font, FontUsage usage)
+    {
+        var isTrueType = font.Outlines == OutlineFormat.TrueType;
+        var subset = isTrueType && !font.NoSubsetting;
+        var glyphIds = subset ? usage.Glyphs.Keys : Enumerable.Range(0, font.NumGlyphs);
+
+        PdfStreamObject fontFile;
+        if (isTrueType)
+        {
+            var program = TrueTypeSubsetter.Subset(font, glyphIds);
+            fontFile = PdfStreamObject.CreateCompressed(program);
+            fontFile.Dictionary["Length1"] = new PdfInteger(program.Length);
+        }
+        else
+        {
+            // CFF outlines: embed the whole OpenType font (CFF subsetting comes later).
+            fontFile = PdfStreamObject.CreateCompressed(ExtractFace(font));
+            fontFile.Dictionary["Subtype"] = new PdfName("OpenType");
+        }
+
+        var baseFont = subset ? $"{SubsetTag(font, usage)}+{font.PostScriptName}" : font.PostScriptName;
+        var scale = 1000.0 / font.UnitsPerEm;
+
+        var descriptor = new PdfDictionary
+        {
+            ["Type"] = new PdfName("FontDescriptor"),
+            ["FontName"] = new PdfName(baseFont),
+            ["FontFamily"] = PdfString.FromText(font.FamilyName),
+            ["Flags"] = new PdfInteger(Flags(font)),
+            ["FontBBox"] = PdfArray.OfNumbers(
+                Math.Round(font.XMin * scale), Math.Round(font.YMin * scale), Math.Round(font.XMax * scale), Math.Round(font.YMax * scale)),
+            ["ItalicAngle"] = new PdfReal(font.ItalicAngle),
+            ["Ascent"] = new PdfReal(Math.Round(font.Ascender * scale)),
+            ["Descent"] = new PdfReal(Math.Round(font.Descender * scale)),
+            ["CapHeight"] = new PdfReal(Math.Round(font.CapHeight * scale)),
+            ["XHeight"] = new PdfReal(Math.Round(font.XHeight * scale)),
+            ["StemV"] = new PdfReal(Math.Round(10 + (220 * Math.Pow((font.WeightClass - 50) / 900.0, 2)))),
+            [isTrueType ? "FontFile2" : "FontFile3"] = writer.Add(fontFile),
+        };
+
+        var cidFont = new PdfDictionary
+        {
+            ["Type"] = new PdfName("Font"),
+            ["Subtype"] = new PdfName(isTrueType ? "CIDFontType2" : "CIDFontType0"),
+            ["BaseFont"] = new PdfName(baseFont),
+            ["CIDSystemInfo"] = new PdfDictionary
+            {
+                ["Registry"] = PdfString.FromText("Adobe"),
+                ["Ordering"] = PdfString.FromText("Identity"),
+                ["Supplement"] = new PdfInteger(0),
+            },
+            ["FontDescriptor"] = writer.Add(descriptor),
+            ["DW"] = new PdfInteger((long)Math.Round(font.GetAdvanceWidth(0) * scale)),
+            ["W"] = Widths(font, usage, scale),
+        };
+        if (isTrueType)
+        {
+            cidFont["CIDToGIDMap"] = new PdfName("Identity");
+        }
+
+        return writer.Add(new PdfDictionary
+        {
+            ["Type"] = new PdfName("Font"),
+            ["Subtype"] = new PdfName("Type0"),
+            ["BaseFont"] = new PdfName(baseFont),
+            ["Encoding"] = new PdfName("Identity-H"),
+            ["DescendantFonts"] = new PdfArray(writer.Add(cidFont)),
+            ["ToUnicode"] = writer.Add(PdfStreamObject.CreateCompressed(ToUnicodeCMap(usage))),
+        });
+    }
+
+    /// <summary>Width array in the compact form <c>[first [w1 w2 ...] first [w ...] ...]</c>.</summary>
+    private static PdfArray Widths(OpenTypeFont font, FontUsage usage, double scale)
+    {
+        var result = new PdfArray();
+        PdfArray? run = null;
+        var previous = -2;
+        foreach (var gid in usage.Glyphs.Keys)
+        {
+            if (gid != previous + 1 || run is null)
+            {
+                run = new PdfArray();
+                result.Items.Add(new PdfInteger(gid));
+                result.Items.Add(run);
+            }
+
+            run.Items.Add(new PdfReal(Math.Round(font.GetAdvanceWidth(gid) * scale, 2)));
+            previous = gid;
+        }
+
+        return result;
+    }
+
+    private static int Flags(OpenTypeFont font)
+    {
+        var flags = 4; // Symbolic: glyphs are addressed by ID, not by a standard Latin encoding.
+        if (font.IsFixedPitch)
+        {
+            flags |= 1;
+        }
+
+        if (font.IsItalic || font.ItalicAngle != 0)
+        {
+            flags |= 64;
+        }
+
+        return flags;
+    }
+
+    /// <summary>Six uppercase letters identifying the subset, derived from its content so output is deterministic.</summary>
+    private static string SubsetTag(OpenTypeFont font, FontUsage usage)
+    {
+        var input = new StringBuilder(font.PostScriptName);
+        foreach (var gid in usage.Glyphs.Keys)
+        {
+            input.Append(',').Append(gid);
+        }
+
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(input.ToString()));
+        return string.Create(6, hash, static (span, h) =>
+        {
+            for (var i = 0; i < 6; i++)
+            {
+                span[i] = (char)('A' + (h[i] % 26));
+            }
+        });
+    }
+
+    private static byte[] ToUnicodeCMap(FontUsage usage)
+    {
+        var cmap = new StringBuilder();
+        cmap.Append("/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n");
+        cmap.Append("/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n");
+        cmap.Append("/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n");
+        cmap.Append("1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n");
+
+        var entries = usage.Glyphs.Where(g => g.Key != 0).ToList();
+        for (var start = 0; start < entries.Count; start += 100)
+        {
+            var chunk = entries.Skip(start).Take(100).ToList();
+            cmap.Append(chunk.Count).Append(" beginbfchar\n");
+            foreach (var (gid, text) in chunk)
+            {
+                cmap.Append('<').Append(gid.ToString("X4", System.Globalization.CultureInfo.InvariantCulture)).Append("> <")
+                    .Append(Convert.ToHexString(Encoding.BigEndianUnicode.GetBytes(text))).Append(">\n");
+            }
+
+            cmap.Append("endbfchar\n");
+        }
+
+        cmap.Append("endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n");
+        return Encoding.ASCII.GetBytes(cmap.ToString());
+    }
+
+    /// <summary>A standalone SFNT for one face (needed when the font came from a collection).</summary>
+    private static byte[] ExtractFace(OpenTypeFont font)
+    {
+        var tables = font.TableTags.ToDictionary(t => t, t => font.GetTable(t).ToArray(), StringComparer.Ordinal);
+        return SfntBuilder.Build(font.SfntVersion, tables);
+    }
+}

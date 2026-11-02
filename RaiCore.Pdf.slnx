@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/RaiCore.Pdf.Fonts/RaiCore.Pdf.Fonts.csproj" />
     <Project Path="src/RaiCore.Pdf.Html/RaiCore.Pdf.Html.csproj" />
     <Project Path="src/RaiCore.Pdf.Layout/RaiCore.Pdf.Layout.csproj" />
     <Project Path="src/RaiCore.Pdf.Razor/RaiCore.Pdf.Razor.csproj" />
