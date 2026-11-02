@@ -90,4 +90,11 @@ public readonly record struct PdfPageSize(double Width, double Height)
 
     /// <summary>Creates a size from millimeters.</summary>
     public static PdfPageSize FromMillimeters(double width, double height) => new(width * 72 / 25.4, height * 72 / 25.4);
+
+    // The generated record ToString would print Landscape, which is itself a PdfPageSize: infinite recursion.
+    private bool PrintMembers(System.Text.StringBuilder builder)
+    {
+        builder.Append(CultureInfo.InvariantCulture, $"Width = {Width}, Height = {Height}");
+        return true;
+    }
 }

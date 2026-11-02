@@ -1,12 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Convert HTML and CSS to PDF with RaiCore.Pdf.</Description>
+    <Description>Convert HTML and CSS to PDF with RaiCore.Pdf: its own layout engine, no browser and no JavaScript.</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AngleSharp" />
+    <PackageReference Include="AngleSharp.Css" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\RaiCore.Pdf.Layout\RaiCore.Pdf.Layout.csproj" />
     <ProjectReference Include="..\RaiCore.Pdf.Fonts\RaiCore.Pdf.Fonts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RaiCore.Pdf.Tests" />
   </ItemGroup>
 
 </Project>

@@ -68,6 +68,10 @@ public partial class PdfDocumentTests
     }
 
     [Fact]
+    public void Page_sizes_print_without_recursing() =>
+        Assert.Equal("PdfPageSize { Width = 792, Height = 612 }", PdfPageSize.Letter.Landscape.ToString());
+
+    [Fact]
     public void Saving_without_pages_throws() =>
         Assert.Throws<InvalidOperationException>(() => new PdfDocument().ToArray());
 
