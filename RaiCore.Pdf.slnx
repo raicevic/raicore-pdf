@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RaiCore.Pdf.Html/RaiCore.Pdf.Html.csproj" />
+    <Project Path="src/RaiCore.Pdf.Layout/RaiCore.Pdf.Layout.csproj" />
+    <Project Path="src/RaiCore.Pdf.Razor/RaiCore.Pdf.Razor.csproj" />
+    <Project Path="src/RaiCore.Pdf/RaiCore.Pdf.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RaiCore.Pdf.Tests/RaiCore.Pdf.Tests.csproj" />
+  </Folder>
+</Solution>
