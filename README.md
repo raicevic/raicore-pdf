@@ -61,6 +61,23 @@ PdfFont body = fonts.Find(["Inter", "Helvetica", "sans-serif"])!; // first avail
 Fonts with CFF outlines are embedded whole for now; CFF subsetting comes later. Fonts whose license forbids
 embedding are rejected.
 
+### Images
+
+JPEG, PNG and GIF images can be drawn directly or placed in the layout. JPEGs are embedded without re-encoding
+(EXIF orientation is applied); PNGs of every color type and bit depth, including interlaced and transparent ones,
+are decoded and verified against the full [PngSuite](http://www.schaik.com/pngsuite/). Each image is stored once per
+document however often it is drawn.
+
+```csharp
+var logo = PdfImage.Load("logo.png");
+page.Canvas.DrawImage(logo, x: 400, y: 760, width: 120, height: 40);
+
+flow.Add(new ImageBlock(logo, width: 150) { Alignment = TextAlignment.Right });          // a block image
+new Paragraph(body).Add("Status: ").AddImage(checkIcon, 10, 10).Add(" paid");            // an inline image
+```
+
+Embedded color profiles are ignored (images are treated as sRGB). WebP, SVG and BMP are not supported yet.
+
 ### Text shaping
 
 `RaiCore.Pdf.Layout` shapes text with [HarfBuzz](https://harfbuzz.github.io/): kerning, ligatures, Arabic joining,
@@ -132,7 +149,7 @@ Every input format is mapped to one shared document model and laid out by one en
 
 ## Roadmap
 
-1. **PDF writer:** objects, compression, standard fonts ✅, embedded TrueType/OpenType/WOFF fonts with subsetting ✅, then images, links and bookmarks.
+1. **PDF writer:** objects, compression, standard fonts ✅, embedded TrueType/OpenType/WOFF fonts with subsetting ✅, JPEG/PNG/GIF images ✅, then links and bookmarks.
 2. **Layout engine:** HarfBuzz text shaping and font fallback ✅, line breaking (UAX #14) and paragraphs ✅, block layout and pagination ✅.
 3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine.
 4. **0.1 release:** tables, `@page`, page breaks, page numbers and the Razor adapter.

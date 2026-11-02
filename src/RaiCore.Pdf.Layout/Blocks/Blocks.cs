@@ -69,3 +69,57 @@ public sealed class SpacerBlock : Block
     /// <summary>The height in points.</summary>
     public double Height { get; }
 }
+
+/// <summary>
+/// A block-level image, such as a logo or a figure. Sized like an HTML <c>img</c>: by default at its natural size
+/// (96 pixels per inch, as in CSS), scaled down to fit the available width and the page. It is never split across pages.
+/// </summary>
+public sealed class ImageBlock : Block
+{
+    /// <summary>
+    /// Creates an image block. Give a width or a height to scale the image (the other follows the aspect ratio),
+    /// both to stretch it, or neither for the natural size.
+    /// </summary>
+    public ImageBlock(PdfImage image, double? width = null, double? height = null, BoxStyle? style = null)
+        : base(style)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        if (width is <= 0 || height is <= 0)
+        {
+            throw new ArgumentOutOfRangeException(width is <= 0 ? nameof(width) : nameof(height), "Sizes must be positive.");
+        }
+
+        Image = image;
+        Width = width;
+        Height = height;
+    }
+
+    /// <summary>The image.</summary>
+    public PdfImage Image { get; }
+
+    /// <summary>Requested width in points, if any.</summary>
+    public double? Width { get; }
+
+    /// <summary>Requested height in points, if any.</summary>
+    public double? Height { get; }
+
+    /// <summary>Horizontal position within the available width.</summary>
+    public TextAlignment Alignment { get; init; } = TextAlignment.Left;
+
+    /// <summary>The drawn size: the requested or natural size, scaled down (keeping the aspect ratio) to fit.</summary>
+    internal (double Width, double Height) GetSize(double maxWidth, double maxHeight)
+    {
+        const double PointsPerCssPixel = 0.75;
+        var aspect = Image.PixelHeight / (double)Image.PixelWidth;
+        var (w, h) = (Width, Height) switch
+        {
+            ({ } fw, { } fh) => (fw, fh),
+            ({ } fw, null) => (fw, fw * aspect),
+            (null, { } fh) => (fh / aspect, fh),
+            _ => (Image.PixelWidth * PointsPerCssPixel, Image.PixelHeight * PointsPerCssPixel),
+        };
+
+        var scale = Math.Min(1, Math.Min(maxWidth / w, maxHeight / h));
+        return scale < 1 ? (w * scale, h * scale) : (w, h);
+    }
+}

@@ -75,6 +75,18 @@ public sealed class PdfCanvas
         DrawText(text, PdfFont.Standard(font), size, x, y);
 
     /// <summary>
+    /// Draws an image scaled to fill the rectangle with its bottom-left corner at (<paramref name="x"/>, <paramref name="y"/>).
+    /// The EXIF orientation of JPEG photos is applied, so the image appears upright.
+    /// </summary>
+    public PdfCanvas DrawImage(PdfImage image, double x, double y, double width, double height)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        var name = _page.UseImage(image);
+        var (a, b, c, d, e, f) = image.GetMatrix(x, y, width, height);
+        return Op($"q {N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} cm /{name} Do Q");
+    }
+
+    /// <summary>
     /// Draws shaped glyphs in visual (left-to-right) order, starting with the pen at
     /// (<paramref name="x"/>, <paramref name="y"/>) on the baseline. Requires a font loaded with <see cref="PdfFont.Load(string, int)"/>.
     /// </summary>

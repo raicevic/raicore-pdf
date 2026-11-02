@@ -7,6 +7,7 @@ namespace RaiCore.Pdf;
 public sealed class PdfPage
 {
     private readonly List<(PdfFont Font, string Name, FontUsage Usage)> _fonts = [];
+    private readonly List<(PdfImage Image, string Name)> _images = [];
 
     internal PdfPage(PdfPageSize size)
     {
@@ -27,6 +28,24 @@ public sealed class PdfPage
     public PdfCanvas Canvas { get; }
 
     internal IReadOnlyList<(PdfFont Font, string Name, FontUsage Usage)> Fonts => _fonts;
+
+    internal IReadOnlyList<(PdfImage Image, string Name)> Images => _images;
+
+    /// <summary>Returns the page-local resource name (e.g. <c>Im1</c>) for an image, registering it on first use.</summary>
+    internal string UseImage(PdfImage image)
+    {
+        foreach (var entry in _images)
+        {
+            if (ReferenceEquals(entry.Image, image))
+            {
+                return entry.Name;
+            }
+        }
+
+        var name = string.Create(CultureInfo.InvariantCulture, $"Im{_images.Count + 1}");
+        _images.Add((image, name));
+        return name;
+    }
 
     /// <summary>Returns the page-local resource name (e.g. <c>F1</c>) for a font and the record of glyphs used from it.</summary>
     internal (string Name, FontUsage Usage) UseFont(PdfFont font)
