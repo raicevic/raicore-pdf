@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Render Razor components to PDF with RaiCore.Pdf.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RaiCore.Pdf.Html\RaiCore.Pdf.Html.csproj" />
+  </ItemGroup>
+
+</Project>

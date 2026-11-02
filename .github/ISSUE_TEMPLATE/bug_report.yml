@@ -1,0 +1,29 @@
+name: Bug report
+description: Something renders wrong or the library fails.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you expected and what you got. Screenshots of the PDF help a lot.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal input
+      description: The smallest HTML, Razor component or code that reproduces the problem.
+      render: html
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: RaiCore.Pdf version
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: OS and .NET version

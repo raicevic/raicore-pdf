@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Create PDF documents from .NET: object model, writer, fonts and drawing API.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RaiCore.Pdf.Tests" />
+  </ItemGroup>
+
+</Project>

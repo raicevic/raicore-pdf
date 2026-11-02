@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Convert HTML and CSS to PDF with RaiCore.Pdf.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RaiCore.Pdf.Layout\RaiCore.Pdf.Layout.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Format-neutral layout engine for RaiCore.Pdf: text shaping, line breaking, pagination and tables.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RaiCore.Pdf\RaiCore.Pdf.csproj" />
+  </ItemGroup>
+
+</Project>
