@@ -14,11 +14,11 @@ internal static class UserAgentStyleSheet
         head, script, style, template, title, meta, link, base, noscript, datalist, param, area, map { display: none; }
         [hidden] { display: none; }
         li { display: list-item; }
-        table { display: table; }
+        table { display: table; border-collapse: separate; border-spacing: 2px; box-sizing: border-box; }
         caption { display: table-caption; text-align: center; }
-        thead, tbody, tfoot { display: table-row-group; }
-        tr { display: table-row; }
-        td, th { display: table-cell; padding: 1px; }
+        thead, tbody, tfoot { display: table-row-group; vertical-align: middle; }
+        tr { display: table-row; vertical-align: inherit; }
+        td, th { display: table-cell; padding: 1px; vertical-align: inherit; }
         th { font-weight: bold; text-align: center; }
 
         body { margin: 8px; }

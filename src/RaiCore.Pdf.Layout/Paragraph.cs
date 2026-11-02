@@ -86,6 +86,12 @@ public sealed class Paragraph
         return this;
     }
 
+    /// <summary>
+    /// The paragraph's intrinsic widths in points (CSS min-content and max-content): the narrowest width without
+    /// overflowing words, and the width it takes without wrapping. Used to size table columns.
+    /// </summary>
+    public (double Min, double Max) MeasureIntrinsicWidths() => ParagraphLayouter.MeasureIntrinsic(this);
+
     /// <summary>Breaks the paragraph into lines no wider than <paramref name="width"/> points.</summary>
     public ParagraphLayout Layout(double width)
     {

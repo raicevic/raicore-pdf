@@ -15,7 +15,7 @@ namespace RaiCore.Pdf.Html.Boxes;
 /// blocks; runs of inline content inside a block become anonymous paragraph blocks; percentages and auto margins are
 /// resolved against the containing block's width. Tables are stacked as blocks until table layout lands.
 /// </summary>
-internal sealed class BoxBuilder
+internal sealed partial class BoxBuilder
 {
     private readonly IWindow _window;
     private readonly FontCollection _fonts;
@@ -153,6 +153,12 @@ internal sealed class BoxBuilder
 
                     // A block-level child ends the current run of inline content.
                     Flush(collector, children);
+                    if (childStyle.Display == CssDisplay.Table)
+                    {
+                        children.AddRange(BuildTable(child, childStyle, contentWidth));
+                        break;
+                    }
+
                     string? marker = null;
                     if (childStyle.Display == CssDisplay.ListItem)
                     {

@@ -30,13 +30,18 @@ internal sealed class Paginator
     /// <summary>Content narrower than this is laid out at this width (it overflows, as in CSS) instead of failing.</summary>
     private const double MinimumContentWidth = 1;
 
+    /// <summary>Height of the virtual page used to lay out content without page breaks (e.g. inside table cells).</summary>
+    private const double StaticHeight = 1e7;
+
     private readonly PageSetup _setup;
+    private readonly bool _static;
     private readonly List<List<DrawOperation>> _pages = [];
     private readonly List<Placement> _placements = [];
 
-    private Paginator(PageSetup setup)
+    private Paginator(PageSetup setup, bool isStatic = false)
     {
         _setup = setup;
+        _static = isStatic;
         NewPage(forced: true); // The first page keeps top margins, like the start of a CSS document.
     }
 
@@ -64,6 +69,74 @@ internal sealed class Paginator
         return new PaginationResult(paginator._pages, paginator._placements);
     }
 
+    /// <summary>
+    /// Lays out blocks in one unbroken column (no pages), e.g. the content of a table cell. Returns the height and
+    /// drawing operations; they draw with y = 0 at the top when called with a page height of "distance from the top of
+    /// the column to the bottom of the page".
+    /// </summary>
+    public static (double Height, IReadOnlyList<DrawOperation> Content) LayoutStatic(IReadOnlyList<Block> blocks, double x, double width)
+    {
+        var setup = new PageSetup(new PdfPageSize(x + width + 1, StaticHeight), new Thickness(0, 1, 0, x));
+        var paginator = new Paginator(setup, isStatic: true);
+        var pending = default(CollapsedMargin);
+        paginator.LayoutChildren(blocks, x, width, ref pending, firstTopMarginApplied: false);
+        return (paginator.Y + pending.Value, paginator._pages[0]);
+    }
+
+    /// <summary>A block's min-content and max-content widths, including its margins (CSS intrinsic sizes).</summary>
+    public static (double Min, double Max) MeasureIntrinsic(Block block)
+    {
+        var style = block.Style;
+        var (min, max) = IntrinsicBorderBox(block);
+        return (min + style.Margin.Horizontal, max + style.Margin.Horizontal);
+    }
+
+    private static (double Min, double Max) IntrinsicBorderBox(Block block)
+    {
+        var style = block.Style;
+        if (style.Width is { } fixedWidth)
+        {
+            return (fixedWidth, fixedWidth);
+        }
+
+        var decoration = style.Border.Widths.Horizontal + style.Padding.Horizontal;
+        var (min, max) = block switch
+        {
+            ParagraphBlock paragraph => paragraph.Paragraph.MeasureIntrinsicWidths(),
+            ImageBlock image => (image.GetSize(double.MaxValue, double.MaxValue).Width, image.GetSize(double.MaxValue, double.MaxValue).Width),
+            ContainerBlock container => container.Children.Select(MeasureIntrinsic).Aggregate((Min: 0.0, Max: 0.0), (a, b) => (Math.Max(a.Min, b.Min), Math.Max(a.Max, b.Max))),
+            TableBlock table => TableLayouter.MeasureIntrinsic(table),
+            _ => (0, 0),
+        };
+        return (min + decoration, max + decoration);
+    }
+
+    /// <summary>
+    /// The border-box width a block gets: its fixed width, or the available width; images and tables without a
+    /// width shrink to fit their content (CSS shrink-to-fit).
+    /// </summary>
+    private double BoxWidth(Block block, double width)
+    {
+        var style = block.Style;
+        var available = Math.Max(0, width - style.Margin.Horizontal);
+        if (style.Width is { } fixedWidth)
+        {
+            return fixedWidth;
+        }
+
+        switch (block)
+        {
+            case ImageBlock image:
+                var decoration = style.Border.Widths.Horizontal + style.Padding.Horizontal;
+                return Math.Min(available, image.GetSize(Math.Max(1e-3, available - decoration), ImageMaxHeight(image)).Width + decoration);
+            case TableBlock:
+                var (min, max) = IntrinsicBorderBox(block);
+                return Math.Max(min, Math.Min(available, max));
+            default:
+                return available;
+        }
+    }
+
     private void NewPage(bool forced = false)
     {
         _pages.Add([]);
@@ -85,7 +158,7 @@ internal sealed class Paginator
 
             // Forced break before this block, or after the previous one.
             var forced = style.BreakBefore == PageBreak.Page || (i > 0 && blocks[i - 1].Style.BreakAfter == PageBreak.Page);
-            if (forced && !(AtPageTop && _pages[PageIndex].Count == 0))
+            if (forced && !_static && !(AtPageTop && _pages[PageIndex].Count == 0))
             {
                 NewPage(forced: true);
                 pending = default; // The previous block's bottom margin ends with its page; this block keeps its top margin.
@@ -123,19 +196,23 @@ internal sealed class Paginator
             pending = default;
 
             var boxX = x + style.Margin.Left;
-            var boxWidth = style.Width ?? Math.Max(0, width - style.Margin.Horizontal);
-            if (block is ImageBlock image && style.Width is null)
+            var boxWidth = BoxWidth(block, width);
+            var alignment = block switch
             {
-                // Like a CSS image, the box shrinks to the image; Alignment then positions the whole box.
-                var decoration = style.Border.Widths.Horizontal + style.Padding.Horizontal;
-                var shrunk = image.GetSize(Math.Max(1e-3, boxWidth - decoration), ImageMaxHeight(image)).Width + decoration;
-                boxX += image.Alignment switch
+                ImageBlock { Style.Width: null } image => image.Alignment,
+                TableBlock table => table.Alignment,
+                _ => TextAlignment.Left,
+            };
+            if (alignment != TextAlignment.Left)
+            {
+                // Images and tables shrink to their content; the alignment then positions the whole box.
+                var free = Math.Max(0, width - style.Margin.Horizontal - boxWidth);
+                boxX += alignment switch
                 {
-                    TextAlignment.Center => Math.Max(0, (boxWidth - shrunk) / 2),
-                    TextAlignment.Right => Math.Max(0, boxWidth - shrunk),
+                    TextAlignment.Center => free / 2,
+                    TextAlignment.Right => free,
                     _ => 0,
                 };
-                boxWidth = Math.Min(boxWidth, shrunk);
             }
 
             var trailing = LayoutBlock(block, boxX, boxWidth);
@@ -186,6 +263,11 @@ internal sealed class Paginator
             case ImageBlock image:
                 LayoutBox(block, x, width, (contentX, contentWidth) => LayoutImage(image, contentX, contentWidth));
                 break;
+            case TableBlock table:
+                // With collapsed borders, the table's border takes part in the grid lines instead of framing the table.
+                var tableStyle = table.BorderCollapse == BorderCollapse.Collapse ? table.Style with { Border = Borders.None } : table.Style;
+                LayoutBox(block, x, width, (contentX, contentWidth) => LayoutTable(table, contentX, contentWidth), tableStyle);
+                break;
             case ContainerBlock container:
                 LayoutBox(block, x, width, (contentX, contentWidth) =>
                 {
@@ -212,9 +294,9 @@ internal sealed class Paginator
     /// Lays out a box's content between its top and bottom border and padding, then draws the background and
     /// borders of each page fragment underneath the content.
     /// </summary>
-    private void LayoutBox(Block block, double x, double width, Action<double, double> layoutContent)
+    private void LayoutBox(Block block, double x, double width, Action<double, double> layoutContent, BoxStyle? styleOverride = null)
     {
-        var style = block.Style;
+        var style = styleOverride ?? block.Style;
         var border = style.Border.Widths;
         var decorated = style.Background is not null || border.Vertical > 0 || border.Horizontal > 0;
 
@@ -371,11 +453,165 @@ internal sealed class Paginator
         return count;
     }
 
+    /// <summary>
+    /// Places a table's rows: rows joined by row spans stay together, a group that does not fit moves to the next page,
+    /// and header rows are repeated at the top of every page the table continues on.
+    /// </summary>
+    private void LayoutTable(TableBlock table, double x, double width)
+    {
+        if (table.Rows.Count == 0)
+        {
+            return;
+        }
+
+        var layout = TableLayouter.Layout(table, x, width);
+        var headerEnd = layout.HeaderRows;
+
+        void Place(int start, int end)
+        {
+            var top = Y;
+            _pages[PageIndex].Add((canvas, pageHeight) => DrawRows(canvas, pageHeight, layout, x, top, start, end));
+            Y += layout.Height(start, end);
+            _placements.Add(new Placement(PageIndex, table, top, Y, start, end));
+            Y += layout.SpacingY;
+        }
+
+        Y += layout.SpacingY;
+        if (headerEnd > 0)
+        {
+            Place(0, headerEnd);
+        }
+
+        var bodyOnPage = 0;
+        foreach (var (start, end) in layout.Groups.Where(g => g.End > headerEnd))
+        {
+            var groupStart = Math.Max(start, headerEnd);
+            var height = layout.Height(groupStart, end);
+            if (Y + height > ContentBottom + Epsilon && bodyOnPage > 0)
+            {
+                NewPage();
+                Y += layout.SpacingY;
+                if (headerEnd > 0)
+                {
+                    Place(0, headerEnd);
+                }
+
+                bodyOnPage = 0;
+            }
+
+            Place(groupStart, end); // A group taller than a page overflows rather than looping.
+            bodyOnPage++;
+        }
+    }
+
+    private static void DrawRows(PdfCanvas canvas, double pageHeight, TableLayout layout, double x, double top, int start, int end)
+    {
+        var table = layout.Table;
+        var collapse = table.BorderCollapse == BorderCollapse.Collapse;
+        var rowTop = new double[end - start + 1];
+        rowTop[0] = top;
+        for (var r = start; r < end; r++)
+        {
+            rowTop[r - start + 1] = rowTop[r - start] + layout.RowHeights[r] + layout.SpacingY;
+        }
+
+        double TopOf(int row) => rowTop[row - start];
+        var left = x + layout.ColumnX[0];
+        var right = x + layout.ColumnX[^1] - layout.SpacingX;
+
+        for (var r = start; r < end; r++)
+        {
+            if (table.Rows[r].Background is { } rowBackground)
+            {
+                canvas.SetFillColor(rowBackground).Rectangle(left, pageHeight - TopOf(r) - layout.RowHeights[r], right - left, layout.RowHeights[r]).Fill();
+            }
+        }
+
+        foreach (var cell in layout.Cells.Where(c => c.Grid.Row >= start && c.Grid.Row < end))
+        {
+            var cellTop = TopOf(cell.Grid.Row);
+            var cellHeight = layout.Height(cell.Grid.Row, cell.Grid.Row + cell.Grid.RowSpan);
+            var style = cell.Grid.Cell.Style;
+            if (collapse)
+            {
+                if (style.Background is { } background)
+                {
+                    canvas.SetFillColor(background).Rectangle(x + cell.X, pageHeight - cellTop - cellHeight, cell.Width, cellHeight).Fill();
+                }
+            }
+            else
+            {
+                DrawBox(canvas, pageHeight, style, x + cell.X, cellTop, cell.Width, cellHeight, first: true, last: true);
+            }
+
+            var free = cellHeight - cell.InsetTop - cell.InsetBottom - cell.ContentHeight;
+            var offset = cell.Grid.Cell.VerticalAlignment switch
+            {
+                VerticalAlignment.Middle => Math.Max(0, free / 2),
+                VerticalAlignment.Bottom => Math.Max(0, free),
+                _ => 0,
+            };
+            var contentTop = cellTop + cell.InsetTop + offset;
+            foreach (var draw in cell.Content)
+            {
+                draw(canvas, pageHeight - contentTop);
+            }
+        }
+
+        if (collapse && layout.Horizontal is { } horizontal && layout.Vertical is { } vertical)
+        {
+            DrawCollapsedLines(canvas, pageHeight, layout, horizontal, vertical, x, start, end, TopOf);
+        }
+    }
+
+    /// <summary>Draws collapsed grid lines centered on the cell boundaries of rows [start, end).</summary>
+    private static void DrawCollapsedLines(
+        PdfCanvas canvas, double pageHeight, TableLayout layout, GridLine[,] horizontal, GridLine[,] vertical,
+        double x, int start, int end, Func<int, double> topOf)
+    {
+        var columns = layout.ColumnX.Length - 1;
+        var bottom = topOf(end - 1) + layout.RowHeights[end - 1];
+        double MaxVertical(int row, int column) => vertical[row, column].Width;
+
+        for (var r = start; r < end; r++)
+        {
+            for (var c = 0; c <= columns; c++)
+            {
+                var line = vertical[r, c];
+                if (line.Width > 0)
+                {
+                    var lineTop = topOf(r);
+                    canvas.SetFillColor(line.Color)
+                        .Rectangle(x + layout.ColumnX[c] - (line.Width / 2), pageHeight - lineTop - layout.RowHeights[r], line.Width, layout.RowHeights[r]).Fill();
+                }
+            }
+        }
+
+        for (var r = start; r <= end; r++)
+        {
+            var y = r == end ? bottom : topOf(r);
+            for (var c = 0; c < columns; c++)
+            {
+                var line = horizontal[r, c];
+                if (line.Width <= 0)
+                {
+                    continue;
+                }
+
+                // Extend over half of the vertical lines at both ends so corners are closed.
+                var row = Math.Min(r, end - 1);
+                var x0 = x + layout.ColumnX[c] - (MaxVertical(row, c) / 2);
+                var x1 = x + layout.ColumnX[c + 1] + (MaxVertical(row, c + 1) / 2);
+                canvas.SetFillColor(line.Color).Rectangle(x0, pageHeight - y - (line.Width / 2), x1 - x0, line.Width).Fill();
+            }
+        }
+    }
+
     /// <summary>Height of a block's border box if it were laid out without page breaks.</summary>
     private double MeasureHeight(Block block, double width)
     {
         var style = block.Style;
-        var boxWidth = style.Width ?? Math.Max(0, width - style.Margin.Horizontal);
+        var boxWidth = BoxWidth(block, width);
         var decoration = style.Border.Widths.Vertical + style.Padding.Vertical;
         var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
         switch (block)
@@ -386,6 +622,9 @@ internal sealed class Paginator
                 return decoration + paragraph.Paragraph.Layout(contentWidth).Height;
             case ImageBlock image:
                 return decoration + image.GetSize(contentWidth, ImageMaxHeight(image)).Height;
+            case TableBlock table:
+                var tableLayout = TableLayouter.Layout(table, 0, contentWidth);
+                return decoration + tableLayout.Height(0, table.Rows.Count) + (2 * tableLayout.SpacingY);
             case ContainerBlock container:
                 var height = 0.0;
                 var margin = new CollapsedMargin();
@@ -410,7 +649,7 @@ internal sealed class Paginator
     private double MinimumStartHeight(Block block, double width)
     {
         var style = block.Style;
-        var boxWidth = style.Width ?? Math.Max(0, width - style.Margin.Horizontal);
+        var boxWidth = BoxWidth(block, width);
         var top = style.Border.Top.Width + style.Padding.Top;
         var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
         switch (block)
@@ -422,6 +661,11 @@ internal sealed class Paginator
                 return top + (count == lines.Count ? linesHeight + style.Padding.Bottom + style.Border.Bottom.Width : linesHeight);
             case ImageBlock image:
                 return MeasureHeight(image, width); // Images are never split.
+            case TableBlock table when table.Rows.Count > 0:
+                // The header rows and the first group of rows that must stay together.
+                var tableLayout = TableLayouter.Layout(table, 0, contentWidth);
+                var firstEnd = tableLayout.Groups.FirstOrDefault(g => g.End > tableLayout.HeaderRows, tableLayout.Groups[^1]).End;
+                return top + tableLayout.SpacingY + tableLayout.Height(0, firstEnd) + (firstEnd == table.Rows.Count ? tableLayout.SpacingY + style.Padding.Bottom + style.Border.Bottom.Width : 0);
             case ContainerBlock container when container.Children.Count > 0:
                 var firstChild = container.Children[0];
                 return top + firstChild.Style.Margin.Top + MinimumStartHeight(firstChild, contentWidth);
