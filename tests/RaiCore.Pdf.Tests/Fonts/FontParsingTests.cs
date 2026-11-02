@@ -105,8 +105,8 @@ public class FontParsingTests
         Assert.Equal(-0.212, font.Descent, 3);
         Assert.Equal(0.688, font.CapHeight, 3);
         Assert.Equal(11.5, font.GetLineHeight(10), 1);
-        Assert.True(font.HasGlyphs("Zażółć gęślą jaźń Ωμέγα Привет"));
-        Assert.False(font.HasGlyphs("日本"));
+        Assert.True(font.HasGlyphs("Za\u017C\u00F3\u0142\u0107 g\u0119\u015Bl\u0105 ja\u017A\u0144 \u03A9\u03BC\u03AD\u03B3\u03B1 \u041F\u0440\u0438\u0432\u0435\u0442"));
+        Assert.False(font.HasGlyphs("\u65E5\u672C"));
     }
 
     [Fact]

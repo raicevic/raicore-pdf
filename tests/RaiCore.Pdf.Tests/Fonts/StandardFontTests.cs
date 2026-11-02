@@ -18,8 +18,8 @@ public class StandardFontTests
     {
         var helvetica = PdfFont.Standard(StandardFont.Helvetica);
 
-        Assert.True(helvetica.HasGlyphs("Blåbærgrød € ?"));
-        Assert.False(helvetica.HasGlyph('ł'));
+        Assert.True(helvetica.HasGlyphs("Bl\u00E5b\u00E6rgr\u00F8d \u20AC ?"));
+        Assert.False(helvetica.HasGlyph('\u0142'));
         Assert.False(helvetica.HasGlyph(0x1F600));
     }
 
