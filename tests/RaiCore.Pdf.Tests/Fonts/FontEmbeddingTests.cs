@@ -13,10 +13,10 @@ public partial class FontEmbeddingTests
 {
     private static readonly string[] Lines =
     [
-        "Blåbærgrød med fløde – 25 €",
-        "Zażółć gęślą jaźń",
-        "Καλημέρα κόσμε",
-        "Съешь же ещё этих мягких французских булок",
+        "Bl\u00E5b\u00E6rgr\u00F8d med fl\u00F8de \u2013 25 \u20AC",
+        "Za\u017C\u00F3\u0142\u0107 g\u0119\u015Bl\u0105 ja\u017A\u0144",
+        "\u039A\u03B1\u03BB\u03B7\u03BC\u03AD\u03C1\u03B1 \u03BA\u03CC\u03C3\u03BC\u03B5",
+        "\u0421\u044A\u0435\u0448\u044C \u0436\u0435 \u0435\u0449\u0451 \u044D\u0442\u0438\u0445 \u043C\u044F\u0433\u043A\u0438\u0445 \u0444\u0440\u0430\u043D\u0446\u0443\u0437\u0441\u043A\u0438\u0445 \u0431\u0443\u043B\u043E\u043A",
     ];
 
     private static readonly PdfFont Sans = PdfFont.Load(Fixtures.Path("LiberationSans-Regular.ttf"));
@@ -129,7 +129,7 @@ public partial class FontEmbeddingTests
         var doc = new PdfDocument();
         doc.AddPage().Canvas
             .DrawText("Standard", StandardFont.Helvetica, 12, 72, 700)
-            .DrawText("Embedded ż", Sans, 12, 72, 680);
+            .DrawText("Embedded \u017C", Sans, 12, 72, 680);
 
         ExternalTools.AssertQpdfClean(doc.ToArray());
     }

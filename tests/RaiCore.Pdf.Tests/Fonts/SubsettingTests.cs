@@ -31,7 +31,7 @@ public class SubsettingTests
     public void Subset_includes_the_components_of_composite_glyphs()
     {
         var font = OpenTypeFont.Load(Fixtures.Read("RaiCoreTestTT-Regular.ttf"));
-        int agrave = font.GetGlyphId('À');
+        int agrave = font.GetGlyphId('\u00C0');
         int a = font.GetGlyphId('A');
         int grave = font.GetGlyphId('`');
 

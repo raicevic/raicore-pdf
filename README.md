@@ -77,6 +77,26 @@ double width = shaped.GetWidth(14); // includes kerning
 Shaped runs are tagged so text extraction returns the logical text, even for Arabic. Mixed left-to-right and
 right-to-left text on one line needs the Unicode bidi algorithm, which is planned.
 
+### Paragraphs
+
+Paragraphs break into lines with the [Unicode Line Breaking Algorithm](https://www.unicode.org/reports/tr14/)
+(UAX #14, passing all 19,346 cases of the official conformance test) and lay out like CSS inline text:
+
+```csharp
+using RaiCore.Pdf.Layout;
+
+var body = new TextStyle(fonts.Find("serif")!, 11) { LineHeight = LineHeight.Multiple(1.4) };
+var layout = new Paragraph(body) { Alignment = TextAlignment.Justify, FirstLineIndent = 14 }
+    .Add("Mixed ")
+    .Add("styles", body with { Color = PdfColor.FromRgb(200, 0, 0) })
+    .Add(" in one paragraph, wrapped to the width.")
+    .Layout(width: 300);
+layout.Draw(page.Canvas, x: 72, top: 770);   // or draw a range of lines per page
+```
+
+Supported: left/right/center/justify, `normal`/multiple/absolute line heights with the CSS line-box model,
+first-line indent, hard line breaks, soft hyphens and optional breaking of over-long words.
+
 ## Architecture
 
 ```
@@ -90,7 +110,7 @@ Every input format is mapped to one shared document model and laid out by one en
 ## Roadmap
 
 1. **PDF writer:** objects, compression, standard fonts ✅, embedded TrueType/OpenType/WOFF fonts with subsetting ✅, then images, links and bookmarks.
-2. **Layout engine:** HarfBuzz text shaping and font fallback ✅, then line breaking (UAX #14) and paragraphs, block layout and pagination.
+2. **Layout engine:** HarfBuzz text shaping and font fallback ✅, line breaking (UAX #14) and paragraphs ✅, then block layout and pagination.
 3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine.
 4. **0.1 release:** tables, `@page`, page breaks, page numbers and the Razor adapter.
 5. **0.2:** flexbox, inline SVG, margin boxes, running headers, tagged PDF and PDF/A.

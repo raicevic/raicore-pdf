@@ -24,6 +24,21 @@ CFF-based OpenType font, and tiny TrueType fonts with a composite glyph (also as
 .venv/bin/python tools/generate_test_fonts.py src/RaiCore.Pdf.Fonts/Liberation/LiberationSans-Regular.ttf
 ```
 
+## `generate_line_break_data.py`
+
+Regenerates `src/RaiCore.Pdf.Layout/Text/LineBreakData.g.cs` (Line_Break classes plus the East Asian width,
+Extended_Pictographic and general category bits the UAX #14 rules need) from the Unicode Character Database.
+When updating the Unicode version, also replace `tests/RaiCore.Pdf.Tests/Fixtures/Unicode/LineBreakTest.txt.gz`
+with the matching `LineBreakTest.txt` (gzipped); the conformance test checks that the versions agree.
+
+```sh
+base=https://www.unicode.org/Public/UCD/latest/ucd
+mkdir -p /tmp/ucd && for f in LineBreak.txt EastAsianWidth.txt emoji/emoji-data.txt extracted/DerivedGeneralCategory.txt auxiliary/LineBreakTest.txt; do
+  curl -sSfL -o /tmp/ucd/$(basename $f) $base/$f; done
+python3 tools/generate_line_break_data.py /tmp/ucd
+gzip -9 -c /tmp/ucd/LineBreakTest.txt > tests/RaiCore.Pdf.Tests/Fixtures/Unicode/LineBreakTest.txt.gz
+```
+
 ## `font-verification/`
 
 Cross-checks the font parser against fontTools on a large set of real fonts, which unit tests cannot cover:

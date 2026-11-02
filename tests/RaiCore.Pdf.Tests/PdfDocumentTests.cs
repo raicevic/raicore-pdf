@@ -9,7 +9,7 @@ public partial class PdfDocumentTests
     internal static PdfDocument CreateSample(bool compress = true)
     {
         var doc = new PdfDocument { CompressContent = compress };
-        doc.Info.Title = "Prøve – sample";
+        doc.Info.Title = "Pr\u00F8ve \u2013 sample";
         doc.Info.CreationDate = new DateTimeOffset(2026, 11, 2, 12, 0, 0, TimeSpan.FromHours(1));
 
         var page = doc.AddPage(PdfPageSize.A4);
@@ -19,7 +19,7 @@ public partial class PdfDocumentTests
             .Fill()
             .SetFillColor(PdfColor.Black)
             .DrawText("Hello from RaiCore.Pdf", StandardFont.Helvetica, 24, 72, 760)
-            .DrawText("Blåbærgrød koster 25 €", StandardFont.TimesBold, 14, 72, 730);
+            .DrawText("Bl\u00E5b\u00E6rgr\u00F8d koster 25 \u20AC", StandardFont.TimesBold, 14, 72, 730);
 
         doc.AddPage(PdfPageSize.Letter.Landscape).Canvas
             .DrawText("Page 2", StandardFont.Courier, 12, 72, 500);

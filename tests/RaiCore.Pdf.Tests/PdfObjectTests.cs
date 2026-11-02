@@ -18,7 +18,7 @@ public class PdfObjectTests
     [InlineData("A B", "/A#20B")]
     [InlineData("A#B", "/A#23B")]
     [InlineData("A/B(C)", "/A#2FB#28C#29")]
-    [InlineData("Æ", "/#C3#86")]
+    [InlineData("\u00C6", "/#C3#86")]
     public void Names_escape_special_characters(string name, string expected) =>
         Assert.Equal(expected, new PdfName(name).ToString());
 
@@ -33,7 +33,7 @@ public class PdfObjectTests
     public void Text_strings_use_utf16_with_bom_for_non_ascii()
     {
         Assert.Equal("(Hello)", PdfString.FromText("Hello").ToString());
-        Assert.Equal(new byte[] { 0xFE, 0xFF, 0x00, 0xE6 }, PdfString.FromText("æ").Bytes.ToArray());
+        Assert.Equal(new byte[] { 0xFE, 0xFF, 0x00, 0xE6 }, PdfString.FromText("\u00E6").Bytes.ToArray());
     }
 
     [Fact]
