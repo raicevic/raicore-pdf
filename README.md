@@ -97,6 +97,29 @@ layout.Draw(page.Canvas, x: 72, top: 770);   // or draw a range of lines per pag
 Supported: left/right/center/justify, `normal`/multiple/absolute line heights with the CSS line-box model,
 first-line indent, hard line breaks, soft hyphens and optional breaking of over-long words.
 
+### Multi-page documents
+
+Blocks stack like CSS block boxes and flow across pages:
+
+```csharp
+using RaiCore.Pdf.Layout.Blocks;
+
+var flow = new FlowDocument(new PageSetup(PdfPageSize.A4, Thickness.All(56)));
+flow.Add(new ParagraphBlock(new Paragraph(h1).Add("Report"), new BoxStyle { BreakAfter = PageBreak.Avoid }));
+flow.Add(new ContainerBlock(
+    new BoxStyle { Background = lightBlue, Border = Borders.All(1, blue), Padding = Thickness.All(8) },
+    new ParagraphBlock(new Paragraph(body).Add("A note that may span pages."))));
+flow.PageDecorator = (canvas, page) => /* header/footer, e.g. $"Page {page.Number} of {page.Count}" */;
+flow.Render().Save("report.pdf");
+```
+
+- Box model: margin, border, padding, background and fixed widths.
+- Vertical margins collapse between siblings and through parents without border or padding.
+- Paragraphs split between lines with orphans and widows (default 2).
+- Page breaks: forced (`break-before`/`break-after: page`), avoided (`break-after: avoid` keeps headings with their text,
+  `break-inside: avoid`).
+- Boxes split across pages are sliced: the top border on the first page, the bottom border on the last.
+
 ## Architecture
 
 ```
@@ -110,7 +133,7 @@ Every input format is mapped to one shared document model and laid out by one en
 ## Roadmap
 
 1. **PDF writer:** objects, compression, standard fonts ✅, embedded TrueType/OpenType/WOFF fonts with subsetting ✅, then images, links and bookmarks.
-2. **Layout engine:** HarfBuzz text shaping and font fallback ✅, line breaking (UAX #14) and paragraphs ✅, then block layout and pagination.
+2. **Layout engine:** HarfBuzz text shaping and font fallback ✅, line breaking (UAX #14) and paragraphs ✅, block layout and pagination ✅.
 3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine.
 4. **0.1 release:** tables, `@page`, page breaks, page numbers and the Razor adapter.
 5. **0.2:** flexbox, inline SVG, margin boxes, running headers, tagged PDF and PDF/A.
