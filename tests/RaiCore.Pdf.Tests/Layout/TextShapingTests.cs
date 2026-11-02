@@ -39,8 +39,8 @@ public class TextShapingTests
     [Fact]
     public void Combining_marks_take_the_width_of_the_precomposed_letter()
     {
-        var decomposed = TextShaper.Shape("é", Sans);
-        var precomposed = TextShaper.Shape("é", Sans);
+        var decomposed = TextShaper.Shape("e\u0301", Sans);
+        var precomposed = TextShaper.Shape("\u00E9", Sans);
 
         Assert.Equal(precomposed.Advance, decomposed.Advance, 3);
         Assert.Single(decomposed.Runs);
@@ -49,9 +49,9 @@ public class TextShapingTests
     [Fact]
     public void Joins_arabic_letters()
     {
-        var shaped = TextShaper.Shape("ببب", Arabic);
+        var shaped = TextShaper.Shape("\u0628\u0628\u0628", Arabic);
         var run = Assert.Single(shaped.Runs);
-        var isolated = ((OpenTypePdfFont)Arabic).Font.GetGlyphId('ب');
+        var isolated = ((OpenTypePdfFont)Arabic).Font.GetGlyphId('\u0628');
 
         Assert.Equal("Arab", run.Script);
         Assert.Equal(TextDirection.RightToLeft, run.Direction);
@@ -68,7 +68,7 @@ public class TextShapingTests
     [Fact]
     public void Right_to_left_glyphs_come_in_visual_order()
     {
-        var run = Assert.Single(TextShaper.Shape("שלום", Sans).Runs); // Hebrew "shalom"
+        var run = Assert.Single(TextShaper.Shape("\u05E9\u05DC\u05D5\u05DD", Sans).Runs); // Hebrew "shalom"
 
         Assert.Equal("Hebr", run.Script);
         Assert.Equal(TextDirection.RightToLeft, run.Direction);
@@ -78,7 +78,7 @@ public class TextShapingTests
     [Fact]
     public void Falls_back_per_character_and_keeps_spaces_with_the_current_font()
     {
-        var shaped = TextShaper.Shape("Hello سلام 1", [Sans, Arabic]);
+        var shaped = TextShaper.Shape("Hello \u0633\u0644\u0627\u0645 1", [Sans, Arabic]);
 
         Assert.Collection(
             shaped.Runs,
@@ -90,7 +90,7 @@ public class TextShapingTests
             },
             r =>
             {
-                Assert.Equal("سلام 1", r.Text);
+                Assert.Equal("\u0633\u0644\u0627\u0645 1", r.Text);
                 Assert.Same(Arabic, r.Font);
                 Assert.Equal(TextDirection.RightToLeft, r.Direction);
             });
@@ -99,7 +99,7 @@ public class TextShapingTests
     [Fact]
     public void Characters_no_font_has_use_the_missing_glyph_of_the_first_font()
     {
-        var run = Assert.Single(TextShaper.Shape("日本", [Sans, Arabic]).Runs);
+        var run = Assert.Single(TextShaper.Shape("\u65E5\u672C", [Sans, Arabic]).Runs);
 
         Assert.Same(Sans, run.Font);
         Assert.All(run.Glyphs, g => Assert.Equal(0, g.GlyphId));
@@ -112,7 +112,7 @@ public class TextShapingTests
     [Fact]
     public void Shaping_is_thread_safe()
     {
-        const string text = "AVATAR Waterway ببب";
+        const string text = "AVATAR Waterway \u0628\u0628\u0628";
         var expected = Signature(TextShaper.Shape(text, [Sans, Arabic]));
 
         var results = Enumerable.Range(0, 64).AsParallel().Select(_ => Signature(TextShaper.Shape(text, [Sans, Arabic]))).ToList();
@@ -164,9 +164,9 @@ public class TextShapingTests
         var doc = new PdfDocument();
         var canvas = doc.AddPage(PdfPageSize.A4).Canvas;
         canvas.DrawText(TextShaper.Shape("AVATAR WAVE Tokyo", Sans), 24, 72, 760);
-        canvas.DrawText(TextShaper.Shape("سلام عليكم", Arabic), 24, 72, 700);
-        canvas.DrawText(TextShaper.Shape("שלום", Sans), 24, 72, 640);
-        canvas.DrawText(TextShaper.Shape("Café crème", Sans), 24, 72, 580);
+        canvas.DrawText(TextShaper.Shape("\u0633\u0644\u0627\u0645 \u0639\u0644\u064A\u0643\u0645", Arabic), 24, 72, 700);
+        canvas.DrawText(TextShaper.Shape("\u05E9\u05DC\u05D5\u05DD", Sans), 24, 72, 640);
+        canvas.DrawText(TextShaper.Shape("Cafe\u0301 cr\u00E8me", Sans), 24, 72, 580);
         var pdf = doc.ToArray();
 
         ExternalTools.AssertQpdfClean(pdf);
@@ -179,15 +179,29 @@ public class TextShapingTests
 
         var text = ExternalTools.ExtractText(pdf);
         Assert.Contains("AVATAR WAVE Tokyo", text, StringComparison.Ordinal);
-        Assert.Contains("سلام", text, StringComparison.Ordinal);
-        Assert.Contains("שלום", text, StringComparison.Ordinal);
-        Assert.Contains("Café", text.Normalize(NormalizationForm.FormD), StringComparison.Ordinal);
+        AssertContainsRightToLeft(text, "\u0633\u0644\u0627\u0645 \u0639\u0644\u064A\u0643\u0645");
+        AssertContainsRightToLeft(text, "\u05E9\u05DC\u05D5\u05DD");
+        Assert.Contains("Cafe\u0301", text.Normalize(NormalizationForm.FormD), StringComparison.Ordinal);
     }
 
     [Fact]
     public void Drawing_glyphs_requires_an_embedded_font() =>
         Assert.Throws<NotSupportedException>(() =>
             new PdfDocument().AddPage().Canvas.DrawGlyphs([new PositionedGlyph(1, 0.5)], PdfFont.Standard(StandardFont.Courier), 12, 0, 0));
+
+    /// <summary>
+    /// Checks right-to-left text was extracted as the right letters (base letters, not presentation forms).
+    /// Tools differ in order: Acrobat returns logical order, while poppler's layout mode writes the line in
+    /// visual order wrapped in direction marks (U+202B ... U+202C), so both orders are accepted.
+    /// </summary>
+    private static void AssertContainsRightToLeft(string extracted, string logical)
+    {
+        var withoutMarks = new string([.. extracted.Where(c => c is not ('\u202A' or '\u202B' or '\u202C' or '\u200E' or '\u200F'))]);
+        var visual = new string([.. logical.Reverse()]);
+        Assert.True(
+            withoutMarks.Contains(logical, StringComparison.Ordinal) || withoutMarks.Contains(visual, StringComparison.Ordinal),
+            $"Expected '{logical}' (or its visual order) in extracted text:\n{extracted}");
+    }
 
     private static string Signature(ShapedText shaped) =>
         string.Join("|", shaped.Runs.SelectMany(r => r.Glyphs).Select(g => $"{g.GlyphId}:{g.Advance:F5}:{g.OffsetX:F5}:{g.OffsetY:F5}"));
