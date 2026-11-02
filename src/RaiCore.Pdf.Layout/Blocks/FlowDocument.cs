@@ -19,7 +19,8 @@ public sealed record PageSetup(PdfPageSize Size, Thickness Margins)
 /// <param name="Number">1-based page number.</param>
 /// <param name="Count">Total number of pages.</param>
 /// <param name="Setup">The page setup.</param>
-public readonly record struct PageInfo(int Number, int Count, PageSetup Setup);
+/// <param name="Markers">Markers (<see cref="Block.Marker"/>) of the blocks that start on this page, in document order.</param>
+public readonly record struct PageInfo(int Number, int Count, PageSetup Setup, IReadOnlyList<object> Markers);
 
 /// <summary>
 /// A sequence of blocks that flows across as many pages as needed.
@@ -87,7 +88,8 @@ public sealed class FlowDocument
     public void RenderTo(PdfDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
-        var pages = Paginator.Paginate(this).Pages;
+        var result = Paginator.Paginate(this);
+        var pages = result.Pages;
         for (var i = 0; i < pages.Count; i++)
         {
             var page = document.AddPage(Setup.Size);
@@ -96,7 +98,33 @@ public sealed class FlowDocument
                 draw(page.Canvas, page.Height);
             }
 
-            PageDecorator?.Invoke(page.Canvas, new PageInfo(i + 1, pages.Count, Setup));
+            var markers = result.Markers.Where(m => m.Page == i).Select(m => m.Marker).ToList();
+            PageDecorator?.Invoke(page.Canvas, new PageInfo(i + 1, pages.Count, Setup, markers));
         }
+    }
+
+    /// <summary>The height of blocks laid out in one unbroken column of <paramref name="width"/> points.</summary>
+    public static double MeasureBlocks(IReadOnlyList<Block> blocks, double width)
+    {
+        ArgumentNullException.ThrowIfNull(blocks);
+        return Paginator.LayoutStatic(blocks, 0, Math.Max(1, width)).Height;
+    }
+
+    /// <summary>
+    /// Draws blocks in one unbroken column (no page breaks) with its top-left corner at (<paramref name="x"/>,
+    /// <paramref name="top"/>), where <paramref name="top"/> is measured from the top of the page. Useful in page
+    /// decorators, e.g. for headers and footers. Returns the height used.
+    /// </summary>
+    public static double DrawBlocks(PdfCanvas canvas, double pageHeight, IReadOnlyList<Block> blocks, double x, double top, double width)
+    {
+        ArgumentNullException.ThrowIfNull(canvas);
+        ArgumentNullException.ThrowIfNull(blocks);
+        var (height, content) = Paginator.LayoutStatic(blocks, x, Math.Max(1, width));
+        foreach (var draw in content)
+        {
+            draw(canvas, pageHeight - top);
+        }
+
+        return height;
     }
 }

@@ -22,6 +22,19 @@ internal static class ListMarkers
         _ => "\u2022",
     };
 
+    /// <summary>A number in a counter style, without the list marker suffix (for <c>counter(page, style)</c>).</summary>
+    public static string FormatNumber(string style, int value) => style switch
+    {
+        "decimal-leading-zero" => value.ToString("00", CultureInfo.InvariantCulture),
+        "lower-alpha" or "lower-latin" => Alphabetic(value, 'a'),
+        "upper-alpha" or "upper-latin" => Alphabetic(value, 'A'),
+        "lower-roman" => Roman(value).ToLowerInvariant(),
+        "upper-roman" => Roman(value),
+        "lower-greek" => Greek(value),
+        "none" => string.Empty,
+        _ => value.ToString(CultureInfo.InvariantCulture),
+    };
+
     /// <summary>a, b, ..., z, aa, ab, ... (bijective base 26). Non-positive values fall back to decimal.</summary>
     private static string Alphabetic(int index, char first)
     {

@@ -13,7 +13,8 @@ internal delegate void DrawOperation(PdfCanvas canvas, double pageHeight);
 internal sealed record Placement(int Page, Block Block, double Top, double Bottom, int FirstLine, int EndLine);
 
 /// <summary>The result of pagination: drawing operations per page, and where everything went.</summary>
-internal sealed record PaginationResult(IReadOnlyList<IReadOnlyList<DrawOperation>> Pages, IReadOnlyList<Placement> Placements);
+internal sealed record PaginationResult(
+    IReadOnlyList<IReadOnlyList<DrawOperation>> Pages, IReadOnlyList<Placement> Placements, IReadOnlyList<(int Page, object Marker)> Markers);
 
 /// <summary>
 /// Lays blocks out top to bottom and splits them across pages, following CSS block layout and fragmentation:
@@ -37,6 +38,7 @@ internal sealed class Paginator
     private readonly bool _static;
     private readonly List<List<DrawOperation>> _pages = [];
     private readonly List<Placement> _placements = [];
+    private readonly List<(int Page, object Marker)> _markers = [];
 
     private Paginator(PageSetup setup, bool isStatic = false)
     {
@@ -66,7 +68,7 @@ internal sealed class Paginator
         var paginator = new Paginator(document.Setup);
         var pendingMargin = new CollapsedMargin();
         paginator.LayoutChildren(document.Blocks, document.Setup.Margins.Left, document.Setup.ContentWidth, ref pendingMargin, firstTopMarginApplied: false);
-        return new PaginationResult(paginator._pages, paginator._placements);
+        return new PaginationResult(paginator._pages, paginator._placements, paginator._markers);
     }
 
     /// <summary>
@@ -156,6 +158,21 @@ internal sealed class Paginator
             var next = i + 1 < blocks.Count ? blocks[i + 1] : null;
             var style = block.Style;
 
+            // An empty block without border or padding takes no space: its margins collapse through it (CSS 2.1
+            // section 8.3.1), so it only records its marker where the next content will start.
+            if (block is ContainerBlock { Children.Count: 0 } && !HasTopEdge(style) && !HasBottomEdge(style) && style.Background is null
+                && style.BreakBefore != PageBreak.Page && style.BreakAfter != PageBreak.Page)
+            {
+                pending.Add(style.Margin.Top);
+                pending.Add(style.Margin.Bottom);
+                if (block.Marker is { } emptyMarker && !_static)
+                {
+                    _markers.Add((PageIndex, emptyMarker));
+                }
+
+                continue;
+            }
+
             // Forced break before this block, or after the previous one.
             var forced = style.BreakBefore == PageBreak.Page || (i > 0 && blocks[i - 1].Style.BreakAfter == PageBreak.Page);
             if (forced && !_static && !(AtPageTop && _pages[PageIndex].Count == 0))
@@ -213,6 +230,11 @@ internal sealed class Paginator
                     TextAlignment.Right => free,
                     _ => 0,
                 };
+            }
+
+            if (block.Marker is { } marker && !_static)
+            {
+                _markers.Add((PageIndex, marker));
             }
 
             var trailing = LayoutBlock(block, boxX, boxWidth);

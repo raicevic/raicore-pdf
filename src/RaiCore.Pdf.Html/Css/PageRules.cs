@@ -1,13 +1,13 @@
-using System.Text.RegularExpressions;
 using RaiCore.Pdf.Layout.Blocks;
 
 namespace RaiCore.Pdf.Html.Css;
 
 /// <summary>
 /// Reads <c>@page { size; margin }</c> from raw CSS text. AngleSharp drops the <c>size</c> descriptor, so the
-/// page rules are scanned directly. Only the plain <c>@page</c> selector is used (no <c>:first</c>/named pages yet).
+/// page rules are scanned directly. Size and margins come from the plain <c>@page</c> rule; <c>:first</c>,
+/// <c>:left</c> and <c>:right</c> only change margin boxes (see PagedMedia), not the page geometry.
 /// </summary>
-internal static partial class PageRules
+internal static class PageRules
 {
     public static PageSetup Apply(PageSetup setup, IEnumerable<string> styleSheets)
     {
@@ -15,36 +15,28 @@ internal static partial class PageRules
         var margins = setup.Margins;
         foreach (var css in styleSheets)
         {
-            foreach (Match rule in PageRuleRegex().Matches(StripComments(css)))
+            foreach (var rule in CssRuleScanner.Scan(css).PageRules.Where(r => r.Selector.Length == 0))
             {
-                foreach (var declaration in rule.Groups[1].Value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                foreach (var (name, value) in rule.Declarations)
                 {
-                    var colon = declaration.IndexOf(':', StringComparison.Ordinal);
-                    if (colon < 0)
-                    {
-                        continue;
-                    }
-
-                    var name = declaration[..colon].Trim().ToUpperInvariant();
-                    var value = declaration[(colon + 1)..].Replace("!important", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
                     switch (name)
                     {
-                        case "SIZE":
+                        case "size":
                             size = ParseSize(value, size);
                             break;
-                        case "MARGIN":
+                        case "margin":
                             margins = ParseMargin(value, margins);
                             break;
-                        case "MARGIN-TOP":
+                        case "margin-top":
                             margins = margins with { Top = Length(value, margins.Top) };
                             break;
-                        case "MARGIN-RIGHT":
+                        case "margin-right":
                             margins = margins with { Right = Length(value, margins.Right) };
                             break;
-                        case "MARGIN-BOTTOM":
+                        case "margin-bottom":
                             margins = margins with { Bottom = Length(value, margins.Bottom) };
                             break;
-                        case "MARGIN-LEFT":
+                        case "margin-left":
                             margins = margins with { Left = Length(value, margins.Left) };
                             break;
                     }
@@ -127,11 +119,4 @@ internal static partial class PageRules
         return length.Kind == CssLengthKind.Points ? length.Value : fallback;
     }
 
-    private static string StripComments(string css) => CommentRegex().Replace(css, " ");
-
-    [GeneratedRegex(@"@page\s*(?:[^{]*?)\{([^{}]*)\}", RegexOptions.IgnoreCase)]
-    private static partial Regex PageRuleRegex();
-
-    [GeneratedRegex(@"/\*.*?\*/", RegexOptions.Singleline)]
-    private static partial Regex CommentRegex();
 }
