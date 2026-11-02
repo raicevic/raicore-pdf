@@ -1,11 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Description>Format-neutral layout engine for RaiCore.Pdf: text shaping, line breaking, pagination and tables.</Description>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="HarfBuzzSharp" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\RaiCore.Pdf\RaiCore.Pdf.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RaiCore.Pdf.Tests" />
   </ItemGroup>
 
 </Project>

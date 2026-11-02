@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="RaiCore.Pdf.Tests" />
+    <!-- Sibling packages need the raw font data and glyph-level access. -->
+    <InternalsVisibleTo Include="RaiCore.Pdf.Layout" />
   </ItemGroup>
 
 </Project>

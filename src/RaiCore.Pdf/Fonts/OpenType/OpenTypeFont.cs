@@ -29,9 +29,10 @@ internal sealed class OpenTypeFont
     private readonly ushort[] _advanceWidths;
     private Dictionary<int, ushort>? _cmap;
 
-    private OpenTypeFont(byte[] data, int faceOffset)
+    private OpenTypeFont(byte[] data, int faceOffset, int faceIndex)
     {
         Data = data;
+        FaceIndex = faceIndex;
         var reader = new BigEndianReader(data, faceOffset);
         SfntVersion = reader.ReadUInt32();
         if (SfntVersion is not (SfntVersion1 or TagOtto or TagTrue))
@@ -72,6 +73,9 @@ internal sealed class OpenTypeFont
 
     /// <summary>The raw font data. For collections this is the whole collection file.</summary>
     public byte[] Data { get; }
+
+    /// <summary>Index of this face within <see cref="Data"/> (non-zero only for collections).</summary>
+    public int FaceIndex { get; }
 
     public uint SfntVersion { get; }
 
@@ -157,14 +161,14 @@ internal sealed class OpenTypeFont
                     throw new ArgumentOutOfRangeException(nameof(faceIndex), faceIndex, $"The collection has {offsets.Length} faces.");
                 }
 
-                return new OpenTypeFont(data, offsets[faceIndex]);
+                return new OpenTypeFont(data, offsets[faceIndex], faceIndex);
             default:
                 if (faceIndex != 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(faceIndex), faceIndex, "The font is not a collection; only face 0 exists.");
                 }
 
-                return new OpenTypeFont(data, 0);
+                return new OpenTypeFont(data, 0, 0);
         }
     }
 

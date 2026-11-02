@@ -74,6 +74,84 @@ public sealed class PdfCanvas
     public PdfCanvas DrawText(string text, StandardFont font, double size, double x, double y) =>
         DrawText(text, PdfFont.Standard(font), size, x, y);
 
+    /// <summary>
+    /// Draws shaped glyphs in visual (left-to-right) order, starting with the pen at
+    /// (<paramref name="x"/>, <paramref name="y"/>) on the baseline. Requires a font loaded with <see cref="PdfFont.Load(string, int)"/>.
+    /// </summary>
+    /// <param name="glyphs">The glyphs; positions are fractions of <paramref name="size"/>.</param>
+    /// <param name="font">An embedded (TrueType/OpenType) font.</param>
+    /// <param name="size">Font size in points.</param>
+    /// <param name="x">Pen start x.</param>
+    /// <param name="y">Baseline y.</param>
+    /// <param name="actualText">
+    /// The logical text of the whole run, for scripts where glyphs do not map one-to-one to characters in order
+    /// (Arabic, Indic). Text extraction then returns this instead of the per-glyph mapping.
+    /// </param>
+    public PdfCanvas DrawGlyphs(IReadOnlyList<PositionedGlyph> glyphs, PdfFont font, double size, double x, double y, string? actualText = null)
+    {
+        ArgumentNullException.ThrowIfNull(glyphs);
+        if (font is not Fonts.OpenTypePdfFont openType)
+        {
+            throw new NotSupportedException("Drawing glyphs by ID requires an embedded font loaded with PdfFont.Load; the standard fonts are addressed by character code.");
+        }
+
+        openType.EnsureEmbeddable();
+        var (resourceName, usage) = _page.UseFont(font);
+        var op = new StringBuilder();
+        if (actualText is not null)
+        {
+            op.Append("/Span <</ActualText ").Append(PdfString.FromText(actualText).ToString()).Append(">> BDC ");
+        }
+
+        op.Append("BT /").Append(resourceName).Append(' ').Append(N(size)).Append(" Tf");
+
+        // Glyphs are grouped into TJ arrays. Kerning becomes a TJ adjustment; a glyph with an offset (e.g. a mark)
+        // starts a new segment at its exact position, and the glyph after it starts another one.
+        var penX = x;
+        var segmentOpen = false;
+        var restart = true;
+        foreach (var glyph in glyphs)
+        {
+            var hasOffset = glyph.OffsetX != 0 || glyph.OffsetY != 0;
+            if (restart || hasOffset)
+            {
+                if (segmentOpen)
+                {
+                    op.Append("] TJ");
+                }
+
+                op.Append(" 1 0 0 1 ").Append(N(penX + (glyph.OffsetX * size))).Append(' ').Append(N(y + (glyph.OffsetY * size))).Append(" Tm [");
+                segmentOpen = true;
+            }
+
+            op.Append('<').Append(((ushort)glyph.GlyphId).ToString("X4", System.Globalization.CultureInfo.InvariantCulture)).Append('>');
+            usage.Add(glyph.GlyphId, glyph.Text);
+
+            restart = hasOffset;
+            var adjustment = glyph.Advance - openType.GetGlyphAdvance(glyph.GlyphId);
+            if (!restart && Math.Abs(adjustment) > 1e-6)
+            {
+                // TJ numbers are thousandths of the font size, subtracted from the pen position.
+                op.Append(' ').Append(N(-adjustment * 1000)).Append(' ');
+            }
+
+            penX += glyph.Advance * size;
+        }
+
+        if (segmentOpen)
+        {
+            op.Append("] TJ");
+        }
+
+        op.Append(" ET");
+        if (actualText is not null)
+        {
+            op.Append(" EMC");
+        }
+
+        return Op(op.ToString());
+    }
+
     internal byte[] ToBytes() => Encoding.Latin1.GetBytes(_ops.ToString());
 
     private PdfCanvas Op(string op)

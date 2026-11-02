@@ -123,9 +123,17 @@ public abstract class PdfFont
 /// <summary>Glyphs used from one font in one document, with the text each glyph represents.</summary>
 internal sealed class FontUsage
 {
-    public SortedDictionary<int, string> Glyphs { get; } = [];
+    /// <summary>Glyph ID → the text it represents, or <c>null</c> for glyphs with no own text (e.g. extra glyphs of a cluster).</summary>
+    public SortedDictionary<int, string?> Glyphs { get; } = [];
 
-    public void Add(int glyphId, string text) => Glyphs.TryAdd(glyphId, text);
+    /// <summary>Records a glyph. The first non-empty text wins, since ToUnicode maps each glyph to one string.</summary>
+    public void Add(int glyphId, string? text)
+    {
+        if (!Glyphs.TryGetValue(glyphId, out var existing) || (string.IsNullOrEmpty(existing) && !string.IsNullOrEmpty(text)))
+        {
+            Glyphs[glyphId] = text;
+        }
+    }
 
     public void MergeFrom(FontUsage other)
     {
@@ -239,6 +247,18 @@ internal sealed class OpenTypePdfFont(OpenTypeFont font) : PdfFont
 
     internal override double GetAdvance(int codePoint) =>
         Font.GetAdvanceWidth(Font.GetGlyphId(codePoint)) / (double)Font.UnitsPerEm;
+
+    /// <summary>Advance width of a glyph as a fraction of the font size.</summary>
+    internal double GetGlyphAdvance(int glyphId) => Font.GetAdvanceWidth(glyphId) / (double)Font.UnitsPerEm;
+
+    internal void EnsureEmbeddable()
+    {
+        if (Font.EmbeddingRestricted)
+        {
+            throw new InvalidOperationException(
+                $"The license of font '{Font.FullName}' does not permit embedding (OS/2 fsType = 0x{Font.FsType:X4}).");
+        }
+    }
 
     internal override PdfString EncodeText(string text, FontUsage usage)
     {
