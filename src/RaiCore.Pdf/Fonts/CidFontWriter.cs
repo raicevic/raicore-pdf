@@ -149,7 +149,7 @@ internal static class CidFontWriter
         cmap.Append("/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n");
         cmap.Append("1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n");
 
-        var entries = usage.Glyphs.Where(g => g.Key != 0).ToList();
+        var entries = usage.Glyphs.Where(g => g.Key != 0 && !string.IsNullOrEmpty(g.Value)).Select(g => (g.Key, Text: g.Value!)).ToList();
         for (var start = 0; start < entries.Count; start += 100)
         {
             var chunk = entries.Skip(start).Take(100).ToList();

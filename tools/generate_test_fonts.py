@@ -1,6 +1,11 @@
 """Generates the font fixtures in tests/RaiCore.Pdf.Tests/Fixtures (needs fontTools + brotli).
 
 Usage: python tools/generate_test_fonts.py <path to LiberationSans-Regular.ttf>
+
+NotoSansArabic-Subset.ttf (SIL OFL 1.1, licence in NotoSansArabic-OFL.txt) is made separately from
+https://github.com/notofonts/arabic with:
+  pyftsubset NotoSansArabic-Regular.ttf --unicodes="U+0020-007E,U+0600-06FF,U+FE70-FEFF,U+200C-200F" \
+    --layout-features='*' --output-file=tests/RaiCore.Pdf.Tests/Fixtures/NotoSansArabic-Subset.ttf
 """
 import sys
 from pathlib import Path

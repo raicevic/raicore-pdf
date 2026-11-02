@@ -10,7 +10,7 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 |---|---|---|
 | `RaiCore.Pdf` | PDF object model, writer, fonts and drawing API | 🟡 In progress |
 | `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | 🟢 Usable |
-| `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables | ⚪ Planned |
+| `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables | 🟡 In progress |
 | `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | ⚪ Planned |
 | `RaiCore.Pdf.Razor` | Razor components → PDF | ⚪ Planned |
 | `RaiCore.Pdf.Docx`, `.Xlsx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ Later |
@@ -59,8 +59,23 @@ PdfFont body = fonts.Find(["Inter", "Helvetica", "sans-serif"])!; // first avail
 ```
 
 Fonts with CFF outlines are embedded whole for now; CFF subsetting comes later. Fonts whose license forbids
-embedding are rejected. Kerning, ligatures and complex scripts (Arabic, Indic) need text shaping, which arrives
-with the layout engine.
+embedding are rejected.
+
+### Text shaping
+
+`RaiCore.Pdf.Layout` shapes text with [HarfBuzz](https://harfbuzz.github.io/): kerning, ligatures, Arabic joining,
+Indic reordering and accent positioning, with per-character font fallback:
+
+```csharp
+using RaiCore.Pdf.Layout.Text;
+
+var shaped = TextShaper.Shape("Total: سلام", [latinFont, arabicFont]);
+page.Canvas.DrawText(shaped, 14, 72, 700);
+double width = shaped.GetWidth(14); // includes kerning
+```
+
+Shaped runs are tagged so text extraction returns the logical text, even for Arabic. Mixed left-to-right and
+right-to-left text on one line needs the Unicode bidi algorithm, which is planned.
 
 ## Architecture
 
@@ -75,10 +90,11 @@ Every input format is mapped to one shared document model and laid out by one en
 ## Roadmap
 
 1. **PDF writer:** objects, compression, standard fonts ✅, embedded TrueType/OpenType/WOFF fonts with subsetting ✅, then images, links and bookmarks.
-2. **HTML/CSS core:** parsing (AngleSharp), the cascade, block/inline layout, HarfBuzz text shaping, line breaking and pagination.
-3. **0.1 release:** tables, `@page`, page breaks, page numbers and the Razor adapter.
-4. **0.2:** flexbox, inline SVG, margin boxes, running headers, tagged PDF and PDF/A.
-5. **Later:** DOCX, PDF editing, XSL-FO, XLSX and PPTX.
+2. **Layout engine:** HarfBuzz text shaping and font fallback ✅, then line breaking (UAX #14) and paragraphs, block layout and pagination.
+3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine.
+4. **0.1 release:** tables, `@page`, page breaks, page numbers and the Razor adapter.
+5. **0.2:** flexbox, inline SVG, margin boxes, running headers, tagged PDF and PDF/A.
+6. **Later:** DOCX, PDF editing, XSL-FO, XLSX and PPTX.
 
 JavaScript is not executed, by design: the target is print documents such as invoices and reports.
 
