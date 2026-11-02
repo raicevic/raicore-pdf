@@ -9,6 +9,7 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | Package | Purpose | Status |
 |---|---|---|
 | `RaiCore.Pdf` | PDF object model, writer, fonts and drawing API | 🟡 In progress |
+| `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | 🟢 Usable |
 | `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables | ⚪ Planned |
 | `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | ⚪ Planned |
 | `RaiCore.Pdf.Razor` | Razor components → PDF | ⚪ Planned |
@@ -36,6 +37,31 @@ doc.Save("hello.pdf");
 
 Coordinates are in PDF points (1/72 inch) with the origin at the bottom-left of the page.
 
+### Fonts
+
+Any TrueType or OpenType font (`.ttf`, `.otf`, `.ttc`, `.woff`, `.woff2`) can be embedded. Only the glyphs you use
+are included, and text stays searchable and copyable in every script:
+
+```csharp
+var font = PdfFont.Load("NotoSans-Regular.ttf");
+page.Canvas.DrawText("Zażółć gęślą jaźń · Καλημέρα · Привет", font, 14, 72, 700);
+double width = font.MeasureText("Hello", 14); // in points
+```
+
+Find fonts by family name, weight and style with CSS matching rules, falling back to metric-compatible substitutes:
+
+```csharp
+var fonts = BundledFonts.CreateCollection();   // identical output on every machine
+// var fonts = new FontCollection().AddSystemFonts().AddBundledFonts();  // or use installed fonts too
+
+PdfFont heading = fonts.Find("Arial", weight: 700)!;           // → Liberation Sans Bold
+PdfFont body = fonts.Find(["Inter", "Helvetica", "sans-serif"])!; // first available family
+```
+
+Fonts with CFF outlines are embedded whole for now; CFF subsetting comes later. Fonts whose license forbids
+embedding are rejected. Kerning, ligatures and complex scripts (Arabic, Indic) need text shaping, which arrives
+with the layout engine.
+
 ## Architecture
 
 ```
@@ -48,7 +74,7 @@ Every input format is mapped to one shared document model and laid out by one en
 
 ## Roadmap
 
-1. **PDF writer:** objects, compression, standard fonts ✅, then embedded TrueType/OpenType with subsetting, images, links and bookmarks.
+1. **PDF writer:** objects, compression, standard fonts ✅, embedded TrueType/OpenType/WOFF fonts with subsetting ✅, then images, links and bookmarks.
 2. **HTML/CSS core:** parsing (AngleSharp), the cascade, block/inline layout, HarfBuzz text shaping, line breaking and pagination.
 3. **0.1 release:** tables, `@page`, page breaks, page numbers and the Razor adapter.
 4. **0.2:** flexbox, inline SVG, margin boxes, running headers, tagged PDF and PDF/A.
@@ -65,8 +91,11 @@ dotnet build
 dotnet test
 ```
 
-Install [qpdf](https://github.com/qpdf/qpdf) to run the PDF structure validation tests locally; otherwise they are skipped.
+Install [qpdf](https://github.com/qpdf/qpdf) and poppler's `pdftotext` to run the PDF structure and text
+extraction tests locally; otherwise they are skipped (CI always runs them). See [tools/README.md](tools/README.md)
+for the font cross-checks against fontTools.
 
 ## License
 
 [Apache License 2.0](LICENSE). All shipped dependencies must use permissive licenses (MIT, BSD or Apache-2.0).
+The Liberation fonts in `RaiCore.Pdf.Fonts` are under the [SIL Open Font License 1.1](src/RaiCore.Pdf.Fonts/Liberation/OFL.txt).

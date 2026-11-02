@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RaiCore.Pdf.Layout\RaiCore.Pdf.Layout.csproj" />
+    <ProjectReference Include="..\RaiCore.Pdf.Fonts\RaiCore.Pdf.Fonts.csproj" />
   </ItemGroup>
 
 </Project>

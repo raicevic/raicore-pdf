@@ -13,10 +13,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\RaiCore.Pdf\RaiCore.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\RaiCore.Pdf.Fonts\RaiCore.Pdf.Fonts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\RaiCore.Pdf.Fonts\Liberation\*.ttf" Link="Fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

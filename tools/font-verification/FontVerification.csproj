@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Maintainer tool, not part of the solution: dumps what the font parser sees so tools/font-verification/compare.py can check it against fontTools. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\RaiCore.Pdf\RaiCore.Pdf.csproj" />
+  </ItemGroup>
+
+</Project>

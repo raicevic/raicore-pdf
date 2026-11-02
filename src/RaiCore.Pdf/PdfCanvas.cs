@@ -59,16 +59,20 @@ public sealed class PdfCanvas
 
     /// <summary>
     /// Draws a single line of text with its baseline starting at (<paramref name="x"/>, <paramref name="y"/>),
-    /// using the current fill color.
+    /// using the current fill color. Characters the font lacks are drawn as its "missing glyph" box.
     /// </summary>
-    public PdfCanvas DrawText(string text, StandardFont font, double size, double x, double y)
+    public PdfCanvas DrawText(string text, PdfFont font, double size, double x, double y)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var resourceName = _page.UseFont(font);
-        var bytes = StandardFontInfo.UsesWinAnsi(font) ? WinAnsiEncoding.Encode(text) : Encoding.Latin1.GetBytes(text);
-        var literal = new PdfString(bytes).ToString();
-        return Op($"BT /{resourceName} {N(size)} Tf {N(x)} {N(y)} Td {literal} Tj ET");
+        ArgumentNullException.ThrowIfNull(font);
+        var (resourceName, usage) = _page.UseFont(font);
+        var operand = font.EncodeText(text, usage).ToString();
+        return Op($"BT /{resourceName} {N(size)} Tf {N(x)} {N(y)} Td {operand} Tj ET");
     }
+
+    /// <summary>Draws text in one of the 14 standard fonts. See <see cref="DrawText(string, PdfFont, double, double, double)"/>.</summary>
+    public PdfCanvas DrawText(string text, StandardFont font, double size, double x, double y) =>
+        DrawText(text, PdfFont.Standard(font), size, x, y);
 
     internal byte[] ToBytes() => Encoding.Latin1.GetBytes(_ops.ToString());
 

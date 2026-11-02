@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Bundled open fonts for RaiCore.Pdf: Liberation Sans, Serif and Mono, metric-compatible with Arial, Times New Roman and Courier New.</Description>
+    <PackageLicenseExpression>Apache-2.0 AND OFL-1.1</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Liberation\*.ttf" LogicalName="RaiCore.Pdf.Fonts.Liberation.%(Filename)%(Extension)" />
+    <None Include="Liberation\OFL.txt" Pack="true" PackagePath="licenses/Liberation-OFL.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RaiCore.Pdf\RaiCore.Pdf.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 using RaiCore.Pdf.Fonts;
@@ -73,37 +72,7 @@ public partial class PdfDocumentTests
         Assert.Throws<InvalidOperationException>(() => new PdfDocument().ToArray());
 
     [Fact]
-    public void Passes_qpdf_structural_check()
-    {
-        var qpdf = FindOnPath("qpdf");
-        Assert.SkipWhen(qpdf is null, "qpdf is not installed (it runs in CI).");
-
-        var path = Path.Combine(Path.GetTempPath(), $"raicore-{Guid.NewGuid():N}.pdf");
-        try
-        {
-            CreateSample().Save(path);
-            using var process = Process.Start(new ProcessStartInfo(qpdf!, ["--check", path])
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            })!;
-            var output = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
-            process.WaitForExit();
-
-            Assert.True(process.ExitCode == 0, output);
-            Assert.Contains("No syntax or stream encoding errors found", output, StringComparison.Ordinal);
-        }
-        finally
-        {
-            File.Delete(path);
-        }
-    }
-
-    private static string? FindOnPath(string tool) =>
-        (Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
-            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
-            .Select(dir => Path.Combine(dir, OperatingSystem.IsWindows() ? tool + ".exe" : tool))
-            .FirstOrDefault(File.Exists);
+    public void Passes_qpdf_structural_check() => ExternalTools.AssertQpdfClean(CreateSample().ToArray());
 
     [GeneratedRegex(@"startxref\n(\d+)\n%%EOF")]
     private static partial Regex StartXrefRegex();
