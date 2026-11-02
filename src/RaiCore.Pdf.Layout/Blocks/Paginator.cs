@@ -27,6 +27,9 @@ internal sealed class Paginator
 {
     private const double Epsilon = 1e-6;
 
+    /// <summary>Content narrower than this is laid out at this width (it overflows, as in CSS) instead of failing.</summary>
+    private const double MinimumContentWidth = 1;
+
     private readonly PageSetup _setup;
     private readonly List<List<DrawOperation>> _pages = [];
     private readonly List<Placement> _placements = [];
@@ -220,7 +223,7 @@ internal sealed class Paginator
         var insertAt = _pages[startPage].Count;
 
         Y += border.Top + style.Padding.Top;
-        layoutContent(x + border.Left + style.Padding.Left, Math.Max(0, width - border.Horizontal - style.Padding.Horizontal));
+        layoutContent(x + border.Left + style.Padding.Left, Math.Max(MinimumContentWidth, width - border.Horizontal - style.Padding.Horizontal));
         Y += style.Padding.Bottom + border.Bottom;
 
         if (!decorated)
@@ -374,7 +377,7 @@ internal sealed class Paginator
         var style = block.Style;
         var boxWidth = style.Width ?? Math.Max(0, width - style.Margin.Horizontal);
         var decoration = style.Border.Widths.Vertical + style.Padding.Vertical;
-        var contentWidth = Math.Max(1e-3, boxWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
+        var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
         switch (block)
         {
             case SpacerBlock spacer:
@@ -409,7 +412,7 @@ internal sealed class Paginator
         var style = block.Style;
         var boxWidth = style.Width ?? Math.Max(0, width - style.Margin.Horizontal);
         var top = style.Border.Top.Width + style.Padding.Top;
-        var contentWidth = Math.Max(1e-3, boxWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
+        var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
         switch (block)
         {
             case ParagraphBlock paragraph:

@@ -11,11 +11,48 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf` | PDF object model, writer, fonts and drawing API | 🟡 In progress |
 | `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | 🟢 Usable |
 | `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables | 🟡 In progress |
-| `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | ⚪ Planned |
+| `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | 🟡 In progress |
 | `RaiCore.Pdf.Razor` | Razor components → PDF | ⚪ Planned |
 | `RaiCore.Pdf.Docx`, `.Xlsx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ Later |
 
 ## Quick start
+
+### HTML to PDF
+
+```csharp
+using RaiCore.Pdf.Html;
+
+var pdf = HtmlToPdf.Convert("""
+    <style>
+      @page { size: A4; margin: 20mm; }
+      body { font-family: Arial, sans-serif; }
+      .total { max-width: 200px; margin: 1em auto; border: 1px solid #333; text-align: center; }
+    </style>
+    <h1>Invoice 2026-0042</h1>
+    <p>Thank you for your <b>order</b>.</p>
+    <ul><li>Consulting</li><li>Support</li></ul>
+    <div class="total">Total: 1.234,50 kr.</div>
+    """);
+pdf.Save("invoice.pdf");
+```
+
+HTML is parsed and styled with [AngleSharp](https://anglesharp.github.io/) (print media) and laid out by RaiCore.Pdf's
+own engine. Supported today:
+- The cascade, inheritance, `!important`, CSS variables and print media queries.
+- Browser default styles for headings, paragraphs and lists.
+- Block and inline formatting with white-space handling.
+- The box model: margin, border, padding, background, width, max-width, auto margins, `box-sizing` and percentages.
+- Fonts (`font-family` fallback lists, weight, style), color, `text-align`, `text-indent`, `line-height` and `text-transform`.
+- List markers: bullets, decimal, alpha and roman numerals, `start`, `reversed` and `value`.
+- Images from `data:` and `file:` URLs, linked stylesheets, `@page` size and margins, and page break properties.
+
+Network access is off unless you pass a `ResourceLoader`. Use `HtmlToPdf.CreateFlowDocument` to add headers and
+footers with a page decorator.
+
+Not yet: tables (rendered as stacked blocks for now), floats and positioning, flexbox and grid layout (rendered as
+blocks), inline box backgrounds and borders, `text-decoration`, and `@page` margin boxes and counters.
+
+### Drawing directly
 
 ```csharp
 using RaiCore.Pdf;
@@ -151,7 +188,7 @@ Every input format is mapped to one shared document model and laid out by one en
 
 1. **PDF writer:** objects, compression, standard fonts ✅, embedded TrueType/OpenType/WOFF fonts with subsetting ✅, JPEG/PNG/GIF images ✅, then links and bookmarks.
 2. **Layout engine:** HarfBuzz text shaping and font fallback ✅, line breaking (UAX #14) and paragraphs ✅, block layout and pagination ✅.
-3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine.
+3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine ✅; tables, paged media (margin boxes, counters) and text decoration next.
 4. **0.1 release:** tables, `@page`, page breaks, page numbers and the Razor adapter.
 5. **0.2:** flexbox, inline SVG, margin boxes, running headers, tagged PDF and PDF/A.
 6. **Later:** DOCX, PDF editing, XSL-FO, XLSX and PPTX.
