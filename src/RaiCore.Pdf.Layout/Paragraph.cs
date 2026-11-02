@@ -1,5 +1,17 @@
 namespace RaiCore.Pdf.Layout;
 
+/// <summary>An image placed in a line of text, with its bottom on the baseline (like an HTML <c>img</c> in a <c>p</c>).</summary>
+/// <param name="Image">The image.</param>
+/// <param name="Width">Width in points.</param>
+/// <param name="Height">Height in points.</param>
+public sealed record InlineImage(PdfImage Image, double Width, double Height);
+
+/// <summary>A run of text in one style, or an inline image.</summary>
+/// <param name="Text">The text; U+FFFC for an image.</param>
+/// <param name="Style">The style (for an image, the paragraph style).</param>
+/// <param name="Image">The image, or <c>null</c> for text.</param>
+public sealed record ParagraphSpan(string Text, TextStyle Style, InlineImage? Image = null);
+
 /// <summary>
 /// A paragraph of styled text, laid out into lines with <see cref="Layout(double)"/>.
 /// The text is used as given: collapsing white space (as HTML does) is up to the caller.
@@ -18,7 +30,7 @@ namespace RaiCore.Pdf.Layout;
 /// </example>
 public sealed class Paragraph
 {
-    private readonly List<(string Text, TextStyle Style)> _spans = [];
+    private readonly List<ParagraphSpan> _spans = [];
 
     /// <summary>Creates a paragraph. <paramref name="style"/> is the default for spans and sets the minimum line height (the CSS "strut").</summary>
     public Paragraph(TextStyle style)
@@ -43,7 +55,7 @@ public sealed class Paragraph
     public bool BreakLongWords { get; set; }
 
     /// <summary>The spans, in order.</summary>
-    public IReadOnlyList<(string Text, TextStyle Style)> Spans => _spans;
+    public IReadOnlyList<ParagraphSpan> Spans => _spans;
 
     /// <summary>Appends text in the paragraph's style.</summary>
     public Paragraph Add(string text) => Add(text, Style);
@@ -55,9 +67,22 @@ public sealed class Paragraph
         ArgumentNullException.ThrowIfNull(style);
         if (text.Length > 0)
         {
-            _spans.Add((text, style));
+            _spans.Add(new ParagraphSpan(text, style));
         }
 
+        return this;
+    }
+
+    /// <summary>
+    /// Appends an image that flows with the text: it sits on the baseline, makes its line taller if needed,
+    /// and lines may break before and after it.
+    /// </summary>
+    public Paragraph AddImage(PdfImage image, double width, double height)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ArgumentOutOfRangeException.ThrowIfNegative(width);
+        ArgumentOutOfRangeException.ThrowIfNegative(height);
+        _spans.Add(new ParagraphSpan("\uFFFC", Style, new InlineImage(image, width, height)));
         return this;
     }
 

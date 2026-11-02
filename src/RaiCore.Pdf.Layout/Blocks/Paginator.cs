@@ -121,6 +121,20 @@ internal sealed class Paginator
 
             var boxX = x + style.Margin.Left;
             var boxWidth = style.Width ?? Math.Max(0, width - style.Margin.Horizontal);
+            if (block is ImageBlock image && style.Width is null)
+            {
+                // Like a CSS image, the box shrinks to the image; Alignment then positions the whole box.
+                var decoration = style.Border.Widths.Horizontal + style.Padding.Horizontal;
+                var shrunk = image.GetSize(Math.Max(1e-3, boxWidth - decoration), ImageMaxHeight(image)).Width + decoration;
+                boxX += image.Alignment switch
+                {
+                    TextAlignment.Center => Math.Max(0, (boxWidth - shrunk) / 2),
+                    TextAlignment.Right => Math.Max(0, boxWidth - shrunk),
+                    _ => 0,
+                };
+                boxWidth = Math.Min(boxWidth, shrunk);
+            }
+
             var trailing = LayoutBlock(block, boxX, boxWidth);
 
             pending = trailing;
@@ -165,6 +179,9 @@ internal sealed class Paginator
                 break;
             case ParagraphBlock paragraph:
                 LayoutBox(block, x, width, (contentX, contentWidth) => LayoutParagraph(paragraph, contentX, contentWidth));
+                break;
+            case ImageBlock image:
+                LayoutBox(block, x, width, (contentX, contentWidth) => LayoutImage(image, contentX, contentWidth));
                 break;
             case ContainerBlock container:
                 LayoutBox(block, x, width, (contentX, contentWidth) =>
@@ -255,6 +272,30 @@ internal sealed class Paginator
         Side(b.Right, x + width - b.Right.Width, y, b.Right.Width, height);
     }
 
+    private void LayoutImage(ImageBlock block, double x, double width)
+    {
+        var (w, h) = block.GetSize(width, ImageMaxHeight(block));
+        if (h > Remaining + Epsilon && !AtPageTop)
+        {
+            NewPage(); // Normally avoided by MinimumStartHeight; happens only inside a tall box.
+        }
+
+        var left = x + block.Alignment switch
+        {
+            TextAlignment.Center => Math.Max(0, (width - w) / 2),
+            TextAlignment.Right => Math.Max(0, width - w),
+            _ => 0,
+        };
+        var top = Y;
+        _pages[PageIndex].Add((canvas, pageHeight) => canvas.DrawImage(block.Image, left, pageHeight - top - h, w, h));
+        Y += h;
+        _placements.Add(new Placement(PageIndex, block, top, Y, -1, -1));
+    }
+
+    /// <summary>An image is scaled down to fit on one page together with its own border and padding.</summary>
+    private double ImageMaxHeight(Block block) =>
+        Math.Max(1, _setup.ContentHeight - block.Style.Border.Widths.Vertical - block.Style.Padding.Vertical);
+
     private void LayoutParagraph(ParagraphBlock block, double x, double width)
     {
         var layout = block.Paragraph.Layout(width);
@@ -328,7 +369,7 @@ internal sealed class Paginator
     }
 
     /// <summary>Height of a block's border box if it were laid out without page breaks.</summary>
-    private static double MeasureHeight(Block block, double width)
+    private double MeasureHeight(Block block, double width)
     {
         var style = block.Style;
         var boxWidth = style.Width ?? Math.Max(0, width - style.Margin.Horizontal);
@@ -340,6 +381,8 @@ internal sealed class Paginator
                 return spacer.Height;
             case ParagraphBlock paragraph:
                 return decoration + paragraph.Paragraph.Layout(contentWidth).Height;
+            case ImageBlock image:
+                return decoration + image.GetSize(contentWidth, ImageMaxHeight(image)).Height;
             case ContainerBlock container:
                 var height = 0.0;
                 var margin = new CollapsedMargin();
@@ -361,7 +404,7 @@ internal sealed class Paginator
     /// The smallest height a block needs at the bottom of a page before it is worth starting there:
     /// its top border and padding plus the first lines a paragraph may not be split from (orphans).
     /// </summary>
-    private static double MinimumStartHeight(Block block, double width)
+    private double MinimumStartHeight(Block block, double width)
     {
         var style = block.Style;
         var boxWidth = style.Width ?? Math.Max(0, width - style.Margin.Horizontal);
@@ -374,6 +417,8 @@ internal sealed class Paginator
                 var count = Math.Min(lines.Count, Math.Max(1, style.Orphans));
                 var linesHeight = lines.Take(count).Sum(l => l.Height);
                 return top + (count == lines.Count ? linesHeight + style.Padding.Bottom + style.Border.Bottom.Width : linesHeight);
+            case ImageBlock image:
+                return MeasureHeight(image, width); // Images are never split.
             case ContainerBlock container when container.Children.Count > 0:
                 var firstChild = container.Children[0];
                 return top + firstChild.Style.Margin.Top + MinimumStartHeight(firstChild, contentWidth);

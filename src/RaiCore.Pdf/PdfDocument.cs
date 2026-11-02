@@ -90,6 +90,16 @@ public sealed class PdfDocument
             fontRefs[font] = font.WriteTo(writer, fontUsage[font]);
         }
 
+        // Each image is written once, however many times and pages it is drawn on.
+        var imageRefs = new Dictionary<PdfImage, PdfReference>(ReferenceEqualityComparer.Instance);
+        foreach (var (image, _) in _pages.SelectMany(p => p.Images))
+        {
+            if (!imageRefs.ContainsKey(image))
+            {
+                imageRefs[image] = image.WriteTo(writer);
+            }
+        }
+
         var kids = new PdfArray();
         foreach (var page in _pages)
         {
@@ -103,6 +113,17 @@ public sealed class PdfDocument
             if (fontResources.Count > 0)
             {
                 resources["Font"] = fontResources;
+            }
+
+            if (page.Images.Count > 0)
+            {
+                var xobjects = new PdfDictionary();
+                foreach (var (image, name) in page.Images)
+                {
+                    xobjects[name] = imageRefs[image];
+                }
+
+                resources["XObject"] = xobjects;
             }
 
             var content = page.Canvas.ToBytes();

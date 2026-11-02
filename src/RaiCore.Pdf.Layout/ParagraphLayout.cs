@@ -60,6 +60,11 @@ public sealed class ParagraphLayout
                     fragment.Glyphs, fragment.Run.Font, fragment.Style.FontSize, x + line.X + fragment.X, baseline,
                     fragment.Run.NeedsActualText ? fragment.Run.Text : null);
             }
+
+            foreach (var image in line.Images)
+            {
+                canvas.DrawImage(image.Image.Image, x + line.X + image.X, baseline, image.Image.Width, image.Image.Height);
+            }
         }
     }
 }
@@ -67,8 +72,11 @@ public sealed class ParagraphLayout
 /// <summary>One line of a <see cref="ParagraphLayout"/>.</summary>
 public sealed class LineLayout
 {
-    internal LineLayout(int start, int end, double top, double height, double baseline, double x, double width, IReadOnlyList<LineFragment> fragments)
+    internal LineLayout(
+        int start, int end, double top, double height, double baseline, double x, double width,
+        IReadOnlyList<LineFragment> fragments, IReadOnlyList<InlineImageFragment> images)
     {
+        Images = images;
         Start = start;
         End = end;
         Top = top;
@@ -102,7 +110,15 @@ public sealed class LineLayout
 
     /// <summary>The pieces of text on this line, left to right.</summary>
     public IReadOnlyList<LineFragment> Fragments { get; }
+
+    /// <summary>Inline images on this line.</summary>
+    public IReadOnlyList<InlineImageFragment> Images { get; }
 }
+
+/// <summary>An inline image on a line.</summary>
+/// <param name="Image">The image and its size.</param>
+/// <param name="X">Offset from the start of the line's content.</param>
+public sealed record InlineImageFragment(InlineImage Image, double X);
 
 /// <summary>A run of glyphs on a line, in one style and font.</summary>
 public sealed class LineFragment

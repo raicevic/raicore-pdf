@@ -55,12 +55,18 @@ internal static class ParagraphLayouter
     }
 
     /// <summary>prefix[i] = width in points of text[0..i), measured by shaping each span.</summary>
-    private static double[] MeasurePrefix(string text, IReadOnlyList<(string Text, TextStyle Style)> spans, int[] spanStarts)
+    private static double[] MeasurePrefix(string text, IReadOnlyList<ParagraphSpan> spans, int[] spanStarts)
     {
         var advance = new double[text.Length];
         for (var s = 0; s < spans.Count; s++)
         {
-            var (spanText, style) = spans[s];
+            var (spanText, style, image) = spans[s];
+            if (image is not null)
+            {
+                advance[spanStarts[s]] = image.Width;
+                continue;
+            }
+
             foreach (var run in TextShaper.Shape(spanText, style.Fonts, style.Shaping).Runs)
             {
                 for (var g = 0; g < run.Glyphs.Count; g++)
@@ -81,7 +87,7 @@ internal static class ParagraphLayouter
 
     private static List<(int Start, int End, bool Hard, bool Hyphenate)> BreakIntoLines(
         Paragraph paragraph, string text, double width, Func<int, int, double> measure,
-        IReadOnlyList<(string Text, TextStyle Style)> spans, int[] spanStarts)
+        IReadOnlyList<ParagraphSpan> spans, int[] spanStarts)
     {
         var breaks = LineBreaker.GetBreakOpportunities(text);
         int[]? graphemes = null;
@@ -167,13 +173,14 @@ internal static class ParagraphLayouter
     }
 
     private static LineLayout BuildLine(
-        Paragraph paragraph, string text, IReadOnlyList<(string Text, TextStyle Style)> spans, int[] spanStarts,
+        Paragraph paragraph, string text, IReadOnlyList<ParagraphSpan> spans, int[] spanStarts,
         int start, int end, bool hyphenate, double available, double top, bool firstLine, bool justify)
     {
         var contentEnd = TrimEnd(text, start, end);
 
         // Shape each span's part of the line again, so kerning and contextual forms are exact at line edges.
-        var pieces = new List<(ShapedRun Run, TextStyle Style)>();
+        // Image spans become pieces without a run.
+        var pieces = new List<(ShapedRun? Run, TextStyle Style, InlineImage? Image)>();
         for (var s = 0; s < spans.Count; s++)
         {
             var from = Math.Max(start, spanStarts[s]);
@@ -187,6 +194,17 @@ internal static class ParagraphLayouter
             var isLastPiece = to == contentEnd;
 
             var style = spans[s].Style;
+            if (spans[s].Image is { } image)
+            {
+                pieces.Add((null, style, image));
+                if (isLastPiece)
+                {
+                    break;
+                }
+
+                continue;
+            }
+
             var piece = text[from..to];
             if (hyphenate && isLastPiece)
             {
@@ -200,7 +218,7 @@ internal static class ParagraphLayouter
 
             foreach (var run in TextShaper.Shape(piece, style.Fonts, style.Shaping).VisualRuns)
             {
-                pieces.Add((run, style));
+                pieces.Add((run, style, null));
             }
 
             if (isLastPiece)
@@ -210,27 +228,35 @@ internal static class ParagraphLayouter
         }
 
         // Justification: widen spaces so the line fills the available width.
-        var naturalWidth = pieces.Sum(p => p.Run.Advance * p.Style.FontSize);
-        var glyphLists = pieces.Select(p => (IReadOnlyList<PositionedGlyph>)p.Run.Glyphs).ToList();
+        var naturalWidth = pieces.Sum(p => p.Run is { } run ? run.Advance * p.Style.FontSize : p.Image!.Width);
+        var glyphLists = pieces.Select(p => p.Run?.Glyphs ?? []).ToList();
         if (justify && naturalWidth < available)
         {
-            var spaces = pieces.Sum(p => p.Run.Glyphs.Count(IsSpace));
+            var spaces = glyphLists.Sum(g => g.Count(IsSpace));
             if (spaces > 0)
             {
                 var extra = (available - naturalWidth) / spaces;
                 for (var p = 0; p < pieces.Count; p++)
                 {
                     var size = pieces[p].Style.FontSize;
-                    glyphLists[p] = [.. pieces[p].Run.Glyphs.Select(g => IsSpace(g) ? g with { Advance = g.Advance + (extra / size) } : g)];
+                    glyphLists[p] = [.. glyphLists[p].Select(g => IsSpace(g) ? g with { Advance = g.Advance + (extra / size) } : g)];
                 }
             }
         }
 
         var fragments = new List<LineFragment>(pieces.Count);
+        var images = new List<InlineImageFragment>();
         var x = 0.0;
         for (var p = 0; p < pieces.Count; p++)
         {
-            var fragment = new LineFragment(pieces[p].Run, pieces[p].Style, glyphLists[p], x);
+            if (pieces[p].Image is { } image)
+            {
+                images.Add(new InlineImageFragment(image, x));
+                x += image.Width;
+                continue;
+            }
+
+            var fragment = new LineFragment(pieces[p].Run!, pieces[p].Style, glyphLists[p], x);
             fragments.Add(fragment);
             x += fragment.Width;
         }
@@ -245,6 +271,12 @@ internal static class ParagraphLayouter
             below = Math.Max(below, d);
         }
 
+        // Images sit on the baseline (CSS vertical-align: baseline), so they only add height above it.
+        foreach (var image in images)
+        {
+            above = Math.Max(above, image.Image.Height);
+        }
+
         var indent = firstLine ? paragraph.FirstLineIndent : 0;
         var offset = paragraph.Alignment switch
         {
@@ -253,7 +285,7 @@ internal static class ParagraphLayouter
             _ => 0,
         };
 
-        return new LineLayout(start, end, top, above + below, above, indent + offset, x, fragments);
+        return new LineLayout(start, end, top, above + below, above, indent + offset, x, fragments, images);
     }
 
     private static (double Above, double Below) InlineBox(PdfFont font, TextStyle style)
@@ -277,7 +309,7 @@ internal static class ParagraphLayouter
 
     private static bool IsSpace(PositionedGlyph glyph) => glyph.Text is " " or "\u00A0";
 
-    private static TextStyle StyleAt(IReadOnlyList<(string Text, TextStyle Style)> spans, int[] spanStarts, int index)
+    private static TextStyle StyleAt(IReadOnlyList<ParagraphSpan> spans, int[] spanStarts, int index)
     {
         for (var s = 0; s < spans.Count; s++)
         {

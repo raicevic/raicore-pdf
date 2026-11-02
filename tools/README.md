@@ -39,6 +39,13 @@ python3 tools/generate_line_break_data.py /tmp/ucd
 gzip -9 -c /tmp/ucd/LineBreakTest.txt > tests/RaiCore.Pdf.Tests/Fixtures/Unicode/LineBreakTest.txt.gz
 ```
 
+## `generate_test_images.py`
+
+Regenerates the JPEG and GIF fixtures in `tests/RaiCore.Pdf.Tests/Fixtures/Images` (needs Pillow): images with four
+colored quadrants in RGB, progressive, gray and Adobe CMYK JPEG, all eight EXIF orientations (each stored so that it
+displays upright), and plain, interlaced, transparent and animated GIFs. PNG coverage comes from PngSuite, which is
+committed as-is in `Fixtures/PngSuite`.
+
 ## `font-verification/`
 
 Cross-checks the font parser against fontTools on a large set of real fonts, which unit tests cannot cover:
