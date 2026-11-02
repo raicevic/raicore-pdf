@@ -49,11 +49,32 @@ own engine. Supported today:
   `border-collapse`/`border-spacing`, `vertical-align`, `<col>` widths, captions, and the legacy
   `border`/`cellpadding`/`cellspacing`/`width` attributes.
 
-Network access is off unless you pass a `ResourceLoader`. Use `HtmlToPdf.CreateFlowDocument` to add headers and
-footers with a page decorator.
+Headers and footers come from CSS Paged Media:
+
+```css
+@page {
+  size: A4; margin: 25mm 20mm;
+  @top-left     { content: element(letterhead); }           /* any HTML, e.g. a logo */
+  @top-right    { content: string(chapter); font-style: italic; }
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; }
+}
+@page :first { @top-left { content: none; } }
+.letterhead { position: running(letterhead); }
+h1 { string-set: chapter content(); }
+```
+
+- Margin boxes: `top-`/`bottom-` `left`, `center`, `right` and corners, with font, color, alignment and
+  vertical-align.
+- Page selectors: `:first`, `:left` and `:right`.
+- Content values: `counter(page)` and `counter(pages)` in any counter style, `string()` with
+  `first`/`start`/`last`/`first-except`, `element()` for running elements, and strings with CSS escapes.
+
+Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowDocument` returns the laid-out document
+before rendering, e.g. to set your own page decorator.
 
 Not yet: floats and positioning, flexbox and grid layout (rendered as blocks), inline box backgrounds and borders,
-`text-decoration`, splitting a single table row across pages, and `@page` margin boxes and counters.
+`text-decoration`, splitting a single table row across pages, different page margins for `:first`/`:left`/`:right`,
+named pages, and counters other than `page`/`pages`.
 
 ### Drawing directly
 
@@ -193,9 +214,9 @@ Every input format is mapped to one shared document model and laid out by one en
 
 1. **PDF writer:** objects, compression, standard fonts ✅, embedded TrueType/OpenType/WOFF fonts with subsetting ✅, JPEG/PNG/GIF images ✅, then links and bookmarks.
 2. **Layout engine:** HarfBuzz text shaping and font fallback ✅, line breaking (UAX #14) and paragraphs ✅, block layout and pagination ✅.
-3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine ✅, tables ✅; paged media (margin boxes, counters) and text decoration next.
-4. **0.1 release:** tables, `@page`, page breaks, page numbers and the Razor adapter.
-5. **0.2:** flexbox, inline SVG, margin boxes, running headers, tagged PDF and PDF/A.
+3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine ✅, tables ✅, headers and footers (margin boxes, counters, running strings and elements) ✅.
+4. **0.1 release:** the Razor adapter, then packaging and documentation.
+5. **0.2:** flexbox, inline SVG, text decoration, tagged PDF and PDF/A.
 6. **Later:** DOCX, PDF editing, XSL-FO, XLSX and PPTX.
 
 JavaScript is not executed, by design: the target is print documents such as invoices and reports.

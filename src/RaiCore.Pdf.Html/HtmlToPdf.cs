@@ -74,12 +74,18 @@ public static class HtmlToPdf
 
         var styleSheets = PrepareStyles(document, options);
         var setup = PageRules.Apply(options.Page, styleSheets);
+        var paged = Paged.PagedMedia.Load(document, styleSheets);
 
-        var builder = new BoxBuilder(document, options, fonts, options.BaseUri);
+        var builder = new BoxBuilder(document, options, fonts, options.BaseUri, paged);
         var flow = new FlowDocument(setup);
         foreach (var block in builder.Build(setup.ContentWidth))
         {
             flow.Add(block);
+        }
+
+        if (paged.HasMarginBoxes && document.DocumentElement is { } root)
+        {
+            flow.PageDecorator = paged.CreateDecorator(builder, builder.Style(root));
         }
 
         var title = document.Title;

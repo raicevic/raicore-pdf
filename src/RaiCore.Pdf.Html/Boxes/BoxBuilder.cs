@@ -27,9 +27,12 @@ internal sealed partial class BoxBuilder
     private readonly Dictionary<string, PdfImage?> _images = new(StringComparer.Ordinal);
     private readonly HashSet<Block> _anonymous = new(ReferenceEqualityComparer.Instance);
     private readonly double _rootFontSize;
+    private readonly Paged.PagedMedia? _paged;
+    private double _pageContentWidth;
 
-    public BoxBuilder(IDocument document, HtmlConverterOptions options, FontCollection fonts, Uri? baseUri)
+    public BoxBuilder(IDocument document, HtmlConverterOptions options, FontCollection fonts, Uri? baseUri, Paged.PagedMedia? paged = null)
     {
+        _paged = paged;
         _window = document.DefaultView ?? throw new InvalidOperationException("The document has no window for style computation.");
         _options = options;
         _fonts = fonts;
@@ -46,6 +49,7 @@ internal sealed partial class BoxBuilder
 
     public List<Block> Build(double contentWidth)
     {
+        _pageContentWidth = contentWidth;
         var root = Document.DocumentElement;
         if (root is null || Style(root).Display == CssDisplay.None)
         {
@@ -107,12 +111,14 @@ internal sealed partial class BoxBuilder
         }
 
         // A block whose only content is one anonymous paragraph becomes a paragraph block with the element's box.
+        // Elements with string-set carry a marker, so running headers know which page they start on.
+        var pageMarker = _paged?.MarkerFor(element);
         if (children is [ParagraphBlock only] && _anonymous.Contains(only))
         {
-            return new ParagraphBlock(only.Paragraph, box);
+            return new ParagraphBlock(only.Paragraph, box) { Marker = pageMarker };
         }
 
-        return new ContainerBlock(box, children);
+        return new ContainerBlock(box, children) { Marker = pageMarker };
     }
 
     /// <summary>Adds the element's children: inline content goes to the collector, block-level children become blocks.</summary>
@@ -130,6 +136,15 @@ internal sealed partial class BoxBuilder
                     var childStyle = Style(child);
                     if (childStyle.Display == CssDisplay.None)
                     {
+                        break;
+                    }
+
+                    if (_paged?.RunningName(child) is { } runningName)
+                    {
+                        // A running element leaves the flow; an empty marker block keeps its place for element().
+                        Flush(collector, children);
+                        var content = BuildBlock(child, childStyle with { Display = CssDisplay.Block }, _pageContentWidth, marker: null);
+                        children.Add(new ContainerBlock { Marker = new Paged.RunningMarker(runningName, content is null ? [] : [content]) });
                         break;
                     }
 

@@ -7,6 +7,13 @@ public abstract class Block
 
     /// <summary>Margin, border, padding, background and page break behavior.</summary>
     public BoxStyle Style { get; }
+
+    /// <summary>
+    /// Any object to track: <see cref="PageInfo.Markers"/> lists the markers of the blocks that start on each page.
+    /// Used for running headers (e.g. the current chapter title). An empty <see cref="ContainerBlock"/> with a marker
+    /// takes no space and can mark a position.
+    /// </summary>
+    public object? Marker { get; init; }
 }
 
 /// <summary>A block containing one paragraph of text.</summary>
