@@ -16,6 +16,11 @@ internal static class ParagraphLayouter
     private const double Epsilon = 1e-6;
     private const char SoftHyphen = '\u00AD';
 
+    private static readonly string[] NoOptionalLigatures = ["-liga", "-clig", "-dlig", "-hlig"];
+
+    /// <summary>Scripts whose letters join, which letter spacing would break apart.</summary>
+    private static readonly HashSet<string> CursiveScripts = ["Arab", "Syrc", "Mong", "Nkoo", "Phag", "Mand", "Mani", "Adlm", "Rohg", "Sogd", "Ougr"];
+
     /// <summary>
     /// The CSS intrinsic widths: min-content is the widest piece that cannot be broken (between two break opportunities),
     /// max-content is the widest line when only hard breaks are used.
@@ -123,11 +128,12 @@ internal static class ParagraphLayouter
                 continue;
             }
 
-            foreach (var run in TextShaper.Shape(spanText, style.Fonts, style.Shaping).Runs)
+            foreach (var run in TextShaper.Shape(spanText, style.Fonts, ShapingFor(style)).Runs)
             {
-                for (var g = 0; g < run.Glyphs.Count; g++)
+                var glyphs = Spaced(run, style);
+                for (var g = 0; g < glyphs.Count; g++)
                 {
-                    advance[spanStarts[s] + run.Clusters[g]] += run.Glyphs[g].Advance * style.FontSize;
+                    advance[spanStarts[s] + run.Clusters[g]] += glyphs[g].Advance * style.FontSize;
                 }
             }
         }
@@ -252,7 +258,7 @@ internal static class ParagraphLayouter
         // Shape each span's part of the line again, so kerning and contextual forms are exact at line edges.
         // Image and box spans become pieces without a run.
         // From and To are the piece's text range where it starts or ends its span's part of the line, else -1.
-        var pieces = new List<(ShapedRun? Run, TextStyle Style, InlineImage? Image, InlineBoxFragment? Box, int From, int To)>();
+        var pieces = new List<(ShapedRun? Run, IReadOnlyList<PositionedGlyph> Glyphs, TextStyle Style, InlineImage? Image, InlineBoxFragment? Box, int From, int To)>();
         for (var s = 0; s < spans.Count; s++)
         {
             var from = Math.Max(start, spanStarts[s]);
@@ -268,7 +274,7 @@ internal static class ParagraphLayouter
             var style = spans[s].Style;
             if (spans[s].Image is not null || spans[s].Box is not null)
             {
-                pieces.Add((null, style, spans[s].Image, spans[s].Box is { } box ? boxes[box] : null, from, to));
+                pieces.Add((null, [], style, spans[s].Image, spans[s].Box is { } box ? boxes[box] : null, from, to));
                 if (isLastPiece)
                 {
                     break;
@@ -288,10 +294,10 @@ internal static class ParagraphLayouter
                 continue;
             }
 
-            var runs = TextShaper.Shape(piece, style.Fonts, style.Shaping).VisualRuns.ToList();
+            var runs = TextShaper.Shape(piece, style.Fonts, ShapingFor(style)).VisualRuns.ToList();
             for (var r = 0; r < runs.Count; r++)
             {
-                pieces.Add((runs[r], style, null, null, r == 0 ? from : -1, r == runs.Count - 1 ? to : -1));
+                pieces.Add((runs[r], Spaced(runs[r], style), style, null, null, r == 0 ? from : -1, r == runs.Count - 1 ? to : -1));
             }
 
             if (isLastPiece)
@@ -305,8 +311,8 @@ internal static class ParagraphLayouter
         var decorations = paragraph.Decorations.Where(d => d.Start < contentEnd && d.End > start).ToList();
         var edges = decorations.Sum(d =>
             (d.HasStartEdge && d.Start >= start ? StartEdge(d.Box) : 0) + (d.HasEndEdge && d.End <= contentEnd ? EndEdge(d.Box) : 0));
-        var naturalWidth = edges + pieces.Sum(p => p.Run is { } run ? run.Advance * p.Style.FontSize : p.Image?.Width ?? p.Box!.OuterWidth);
-        var glyphLists = pieces.Select(p => p.Run?.Glyphs ?? []).ToList();
+        var naturalWidth = edges + pieces.Sum(p => p.Run is not null ? p.Glyphs.Sum(g => g.Advance) * p.Style.FontSize : p.Image?.Width ?? p.Box!.OuterWidth);
+        var glyphLists = pieces.Select(p => p.Glyphs).ToList();
         if (justify && naturalWidth < available)
         {
             var spaces = glyphLists.Sum(g => g.Count(IsSpace));
@@ -333,7 +339,7 @@ internal static class ParagraphLayouter
         var x = 0.0;
         for (var p = 0; p < pieces.Count; p++)
         {
-            var (run, style, image, box, from, to) = pieces[p];
+            var (run, _, style, image, box, from, to) = pieces[p];
 
             // Elements starting here, outer ones (ending later) first: margin, then the border box starts.
             foreach (var decoration in decorations.Where(d => d.Start == from).OrderByDescending(d => d.End))
@@ -426,7 +432,7 @@ internal static class ParagraphLayouter
         var lineBoxes = new List<InlineBoxFragment>();
         for (var p = 0; p < pieces.Count; p++)
         {
-            var (run, style, image, box, _, _) = pieces[p];
+            var (run, _, style, image, box, _, _) = pieces[p];
             var itemX = items[p].X;
             if (image is not null)
             {
@@ -506,5 +512,47 @@ internal static class ParagraphLayouter
     }
 
     private static double HyphenWidth(TextStyle style) =>
-        TextShaper.Shape(style.Fonts[0].HasGlyph(0x2010) ? "\u2010" : "-", style.Fonts, style.Shaping).GetWidth(style.FontSize);
+        TextShaper.Shape(style.Fonts[0].HasGlyph(0x2010) ? "\u2010" : "-", style.Fonts, ShapingFor(style)).Runs
+            .Sum(run => Spaced(run, style).Sum(g => g.Advance)) * style.FontSize;
+
+    /// <summary>
+    /// The style's shaping options; with letter spacing, optional ligatures are off as in browsers (CSS Text 3
+    /// section 8.2.1), unless the style's own features turn them on again.
+    /// </summary>
+    internal static ShapingOptions ShapingFor(TextStyle style) => style.LetterSpacing == 0
+        ? style.Shaping
+        : new ShapingOptions { Features = [.. NoOptionalLigatures, .. style.Shaping.Features], Language = style.Shaping.Language };
+
+    /// <summary>
+    /// The run's glyphs with letter spacing after every cluster (a character with its marks, or a ligature) and word
+    /// spacing after every word separator, as advances in em (CSS Text 3 section 8). Like browsers, the space follows
+    /// the last character of a line too.
+    /// </summary>
+    private static IReadOnlyList<PositionedGlyph> Spaced(ShapedRun run, TextStyle style)
+    {
+        var letter = CursiveScripts.Contains(run.Script) ? 0 : style.LetterSpacing;
+        if ((letter == 0 && style.WordSpacing == 0) || style.FontSize <= 0)
+        {
+            return run.Glyphs;
+        }
+
+        var text = run.Text;
+        var glyphs = run.Glyphs.ToArray();
+        for (var i = 0; i < glyphs.Length; i++)
+        {
+            if (i + 1 < glyphs.Length && run.Clusters[i + 1] == run.Clusters[i])
+            {
+                continue; // Not the cluster's last glyph.
+            }
+
+            var extra = letter + (IsWordSeparator(text, run.Clusters[i] - run.Start) ? style.WordSpacing : 0);
+            glyphs[i] = glyphs[i] with { Advance = glyphs[i].Advance + (extra / style.FontSize) };
+        }
+
+        return glyphs;
+    }
+
+    /// <summary>The word-separator characters of CSS Text 3 section 8.1.</summary>
+    private static bool IsWordSeparator(string text, int index) =>
+        Rune.TryGetRuneAt(text, index, out var rune) && rune.Value is 0x20 or 0xA0 or 0x1361 or 0x10100 or 0x10101 or 0x1039F or 0x1091F;
 }
