@@ -47,7 +47,10 @@ public enum VerticalAlignment
 
 /// <summary>
 /// A table: rows of cells laid out on a grid, with column widths computed from the content (CSS automatic table
-/// layout) or fixed. Header rows repeat at the top of every page the table continues on; rows are not split across pages.
+/// layout) or fixed. Header rows repeat at the top of every page the table continues on. A row that does not fit on
+/// the page is split, as browsers do: each cell's content continues on the next page (paragraph orphans and widows
+/// still apply, so rows of a few lines move whole). Rows joined by row spans, and rows with
+/// <see cref="TableRow.BreakInside"/> set to <see cref="PageBreakInside.Avoid"/>, move to the next page whole instead.
 /// </summary>
 /// <remarks>
 /// With <see cref="BorderCollapse.Collapse"/>, the table's own <see cref="BoxStyle.Border"/> takes part in border
@@ -116,6 +119,12 @@ public sealed class TableRow
 
     /// <summary>Minimum row height in points.</summary>
     public double MinHeight { get; init; }
+
+    /// <summary>
+    /// <see cref="PageBreakInside.Avoid"/> keeps the row on one page when it fits on one (CSS <c>break-inside</c> on
+    /// <c>tr</c>); a row taller than a page is still split.
+    /// </summary>
+    public PageBreakInside BreakInside { get; init; }
 
     /// <summary>Appends a cell.</summary>
     public TableRow Add(TableCell cell)

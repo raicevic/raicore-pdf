@@ -137,6 +137,7 @@ internal sealed partial class BoxBuilder
                 IsHeader = isHeader,
                 Background = rowStyle.Background,
                 MinHeight = rowStyle.Height.Kind == CssLengthKind.Points ? rowStyle.Height.Value : 0,
+                BreakInside = rowStyle.BreakInside,
             };
         }
     }
