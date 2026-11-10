@@ -1,0 +1,9 @@
+<tr>
+    <td>@Line.Description</td>
+    <td class="amount">@Line.Quantity</td>
+    <td class="amount">@((Line.Quantity * Line.Price).ToString("N2", System.Globalization.CultureInfo.InvariantCulture))</td>
+</tr>
+
+@code {
+    [Parameter, EditorRequired] public InvoiceLine Line { get; set; } = default!;
+}

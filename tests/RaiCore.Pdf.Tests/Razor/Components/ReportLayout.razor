@@ -1,0 +1,12 @@
+<html>
+<head><title>@Title</title></head>
+<body>
+    <h1>@Title</h1>
+    <section class="content">@ChildContent</section>
+</body>
+</html>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

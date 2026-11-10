@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -16,6 +16,7 @@
     <ProjectReference Include="..\..\src\RaiCore.Pdf.Fonts\RaiCore.Pdf.Fonts.csproj" />
     <ProjectReference Include="..\..\src\RaiCore.Pdf.Layout\RaiCore.Pdf.Layout.csproj" />
     <ProjectReference Include="..\..\src\RaiCore.Pdf.Html\RaiCore.Pdf.Html.csproj" />
+    <ProjectReference Include="..\..\src\RaiCore.Pdf.Razor\RaiCore.Pdf.Razor.csproj" />
   </ItemGroup>
 
   <ItemGroup>

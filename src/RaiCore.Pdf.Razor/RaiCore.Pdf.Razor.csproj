@@ -1,8 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Render Razor components to PDF with RaiCore.Pdf.</Description>
+    <Description>Render Razor components to PDF with RaiCore.Pdf: no browser, no ASP.NET Core server required.</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\RaiCore.Pdf.Html\RaiCore.Pdf.Html.csproj" />

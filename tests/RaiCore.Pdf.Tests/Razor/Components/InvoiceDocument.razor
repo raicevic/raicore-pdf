@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Invoice @Invoice.Number</title>
+    <style>
+        @@page {
+            size: A4;
+            margin: 25mm 20mm;
+            @@bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; }
+        }
+        body { font-family: Arial, sans-serif; font-size: 10pt; }
+        h1 { color: #1a4f8b; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border-bottom: 1px solid #999; padding: 4px; }
+        th { text-align: left; background: #e8eef6; }
+        td.amount, th.amount { text-align: right; }
+        .total { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Invoice @Invoice.Number</h1>
+    <p>Customer: @Invoice.Customer</p>
+    <table>
+        <thead>
+            <tr><th>Item</th><th class="amount">Qty</th><th class="amount">Price</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var line in Invoice.Lines)
+            {
+                <InvoiceLineRow Line="line" />
+            }
+            <tr class="total">
+                <td colspan="2">Total</td>
+                <td class="amount">@Invoice.Lines.Sum(l => l.Quantity * l.Price).ToString("N2", System.Globalization.CultureInfo.InvariantCulture)</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
+
+@code {
+    [Parameter, EditorRequired] public Invoice Invoice { get; set; } = default!;
+}
