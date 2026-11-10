@@ -477,7 +477,7 @@ internal sealed partial class BoxBuilder
             Limit(style.MinWidth, isMax: false); // The minimum wins.
 
             AddAnchors(element, collector);
-            collector.AddImage(image, w, h, verticalAlign);
+            collector.AddImage(image, w, h, verticalAlign, style.Opacity);
             return;
         }
 
@@ -616,6 +616,7 @@ internal sealed partial class BoxBuilder
             BreakInside = style.BreakInside,
             Orphans = style.Orphans,
             Widows = style.Widows,
+            Opacity = style.Opacity,
         };
         var content = Clamp(borderBoxWidth ?? (containingWidth - box.Margin.Horizontal)) - decoration;
         return (box, Math.Max(1, content));

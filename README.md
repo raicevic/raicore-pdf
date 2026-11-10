@@ -83,6 +83,9 @@ own engine. Supported today:
   margins. Percentages inside them resolve like plain percentages (e.g. a sidebar layout with
   `width: calc(100% - 200px)`); `vw`, `vh`, `vmin` and `vmax` are the page content area.
 - Fonts (`font-family` fallback lists, weight, style), color, `text-align`, `text-indent`, `line-height` and `text-transform`.
+- Transparency: translucent colors (`rgba()`, `hsla()`, `#rrggbbaa`, `transparent`) for text, backgrounds and
+  borders, and `opacity`, which composites an element with everything inside it as one PDF transparency group (one
+  per page when the element is split across pages).
 - Web fonts: `@font-face` with `url()` (TTF, OTF, TTC, WOFF, WOFF2, also as `data:` URIs) and `local()` sources,
   `format()` hints, `font-weight` ranges for variable fonts, `font-style` and `unicode-range` (so per-script files as
   Google Fonts serves them work as one family). Fonts load through the `ResourceLoader` when text first needs them;
@@ -242,6 +245,18 @@ doc.Save("hello.pdf");
 
 Coordinates are in PDF points (1/72 inch) with the origin at the bottom-left of the page.
 
+Colors may be translucent: a color's alpha becomes the fill or stroke alpha. A group is composited as a whole with
+one opacity, so its overlapping shapes do not show through each other:
+
+```csharp
+page.Canvas
+    .SetFillColor(new PdfColor(1, 0, 0, alpha: 0.5)).Rectangle(72, 500, 100, 100).Fill()   // 50% red
+    .BeginGroup(0.5)                                                                     // like CSS opacity
+    .SetFillColor(PdfColor.FromRgb(0, 128, 0)).Rectangle(200, 500, 100, 100).Fill()
+    .SetFillColor(PdfColor.FromRgb(0, 0, 255)).Rectangle(250, 550, 100, 100).Fill()
+    .EndGroup();
+```
+
 Bookmarks (the document outline) jump to a page and position, nest, and take any Unicode title:
 
 ```csharp
@@ -311,8 +326,9 @@ another shape. The supported subset of SVG 1.1 covers what logos, icons and char
 including arcs), basic shapes, groups, transforms, nested `svg`, `use` and `symbol`, fills and strokes (dashes, caps,
 joins, fill rules), presentation attributes, `style` attributes and `<style>` sheets (type, class and id selectors),
 `currentColor`, linear and radial gradients, clip paths, basic text (`text`/`tspan` with `text-anchor`, drawn in the
-standard PDF fonts Helvetica, Times or Courier) and embedded `data:` images. Opacity is blended with white until PDF
-transparency is supported. Filters, masks, markers, patterns, gradient `spreadMethod` other than `pad`, text on a
+standard PDF fonts Helvetica, Times or Courier) and embedded `data:` images. `opacity`, `fill-opacity`,
+`stroke-opacity` and translucent colors use PDF transparency; group opacity is a transparency group, so overlapping
+shapes composite like in a browser (a gradient whose stops differ in opacity is approximated). Filters, masks, markers, patterns, gradient `spreadMethod` other than `pad`, text on a
 path, animation, scripts and `foreignObject` are skipped; nothing external is loaded.
 
 Embedded color profiles are ignored (images are treated as sRGB). BMPs with embedded JPEG or PNG data are not
@@ -372,6 +388,8 @@ flow.Render().Save("report.pdf");
 
 - Box model: margin, border (solid, dashed, dotted, double, groove, ridge, inset or outset, with corners joined like
   browsers join them), padding, background and fixed widths.
+- Transparency: colors with an alpha, and `BoxStyle.Opacity`, which draws a block with everything inside it as one
+  transparency group per page.
 - Vertical margins collapse between siblings and through parents without border or padding.
 - Paragraphs split between lines with orphans and widows (default 2).
 - Page breaks: forced (`break-before`/`break-after: page`), avoided (`break-after: avoid` keeps headings with their text,

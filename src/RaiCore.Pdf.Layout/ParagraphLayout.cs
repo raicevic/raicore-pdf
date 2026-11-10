@@ -76,7 +76,17 @@ public sealed partial class ParagraphLayout
 
             foreach (var image in line.Images)
             {
+                var translucent = image.Image.Opacity < 1;
+                if (translucent)
+                {
+                    canvas.BeginGroup(image.Image.Opacity);
+                }
+
                 canvas.DrawImage(image.Image.Image, x + line.X + image.X, baseline + image.BaselineShift, image.Image.Width, image.Image.Height);
+                if (translucent)
+                {
+                    canvas.EndGroup();
+                }
             }
 
             foreach (var box in line.Boxes)

@@ -21,7 +21,8 @@ var pdf = HtmlToPdf.Convert("""
 pdf.Save("invoice.pdf");
 ```
 
-Supported: the CSS cascade and print media queries, the box model, fonts and text styling, lists, images
+Supported: the CSS cascade and print media queries, the box model, fonts and text styling, translucent colors and
+`opacity` (as PDF transparency), lists, images
 (JPEG, PNG, GIF, BMP, WebP and SVG from `data:` and `file:` URLs), inline `<svg>` drawn as vectors, linked stylesheets, tables (repeated headers and footers, `colspan`/`rowspan`, collapsed
 borders), flexbox and CSS Paged Media: `@page` size and margins, headers and footers in margin boxes, page
 counters, `string-set` and running elements. `::before`/`::after` generated content (strings, `attr()`, quotes and

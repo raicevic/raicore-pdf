@@ -259,7 +259,7 @@ public partial class SvgRenderingTests
     }
 
     [Fact]
-    public void Opacity_is_blended_with_white()
+    public void Opacity_on_white()
     {
         using var bitmap = Render("""
             <rect width="50" height="50" fill="#f00" fill-opacity="0.5"/>
@@ -270,6 +270,80 @@ public partial class SvgRenderingTests
         AssertColor(bitmap, 25, 25, "#ff8080", tolerance: 4);
         AssertColor(bitmap, 75, 25, "#bfbfff", tolerance: 4);  // Group and element opacity multiply: 0.25.
         AssertColor(bitmap, 25, 75, "#bfbfff", tolerance: 4);
+    }
+
+    [Fact]
+    public void Translucent_paint_blends_with_what_is_underneath()
+    {
+        using var bitmap = Render("""
+            <rect width="100" height="100" fill="#00f"/>
+            <rect width="50" height="50" fill="#f00" fill-opacity="0.5"/>
+            <rect x="50" width="50" height="50" fill="rgba(255, 0, 0, 0.25)"/>
+            <line x1="0" y1="75" x2="50" y2="75" stroke="#f00" stroke-width="10" stroke-opacity="0.5"/>
+            <rect x="60" y="60" width="30" height="30" fill="#f00" opacity="0.5"/>
+            <text x="2" y="98" font-size="30" font-weight="bold" fill="#f00" fill-opacity="0.5">I</text>
+            """);
+
+        AssertColor(bitmap, 25, 25, "#800080", tolerance: 4);  // 50% red over blue.
+        AssertColor(bitmap, 75, 25, "#4000bf", tolerance: 4);  // 25% red.
+        AssertColor(bitmap, 25, 75, "#800080", tolerance: 4);  // Stroke opacity.
+        AssertColor(bitmap, 75, 75, "#800080", tolerance: 4);  // A shape's own opacity.
+        AssertColor(bitmap, 25, 60, "#0000ff", tolerance: 4);
+        AssertColor(bitmap, 6, 92, "#800080", tolerance: 4);   // Text.
+    }
+
+    [Fact]
+    public void Group_opacity_composites_overlapping_children_once()
+    {
+        using var bitmap = Render("""
+            <rect width="100" height="100" fill="#00f"/>
+            <g opacity="0.5"><rect width="60" height="50" fill="#f00"/><rect x="40" width="60" height="50" fill="#0f0"/></g>
+            <rect y="50" width="60" height="50" fill="#f00" fill-opacity="0.5"/><rect x="40" y="50" width="60" height="50" fill="#0f0" fill-opacity="0.5"/>
+            """);
+
+        AssertColor(bitmap, 20, 25, "#800080", tolerance: 4);
+        AssertColor(bitmap, 50, 25, "#008080", tolerance: 4);  // The overlap: the green on top, at 50%, without red.
+        AssertColor(bitmap, 80, 25, "#008080", tolerance: 4);
+        AssertColor(bitmap, 50, 75, "#408040", tolerance: 4);  // Separately translucent shapes mix where they overlap.
+    }
+
+    [Fact]
+    public void Opacity_of_a_filled_and_stroked_shape_does_not_show_the_fill_under_the_stroke()
+    {
+        using var bitmap = Render("""
+            <rect width="100" height="100" fill="#00f"/>
+            <rect x="20" y="20" width="60" height="60" fill="#0f0" stroke="#f00" stroke-width="20" opacity="0.5"/>
+            """);
+
+        AssertColor(bitmap, 50, 50, "#008080", tolerance: 4);  // Fill.
+        AssertColor(bitmap, 25, 50, "#800080", tolerance: 4);  // Inner half of the stroke, over the fill: still 50% red.
+        AssertColor(bitmap, 15, 50, "#800080", tolerance: 4);  // Outer half.
+    }
+
+    [Fact]
+    public void Gradients_with_equally_opaque_stops_use_alpha()
+    {
+        using var bitmap = Render("""
+            <defs><linearGradient id="g"><stop offset="0" stop-color="#f00" stop-opacity="0.5"/><stop offset="1" stop-color="#f00" stop-opacity="0.5"/></linearGradient></defs>
+            <rect width="100" height="100" fill="#00f"/>
+            <rect width="100" height="50" fill="url(#g)"/>
+            <rect y="50" width="100" height="50" fill="url(#g)" fill-opacity="0.5"/>
+            """);
+
+        AssertColor(bitmap, 50, 25, "#800080", tolerance: 6);
+        AssertColor(bitmap, 50, 75, "#4000bf", tolerance: 6);  // Fill opacity multiplies the stops' opacity.
+    }
+
+    [Fact]
+    public void Opacity_uses_extended_graphics_states_and_transparency_groups()
+    {
+        var text = Encoding.Latin1.GetString(Pdf("""
+            <rect width="10" height="10" fill="#f00" fill-opacity="0.5"/>
+            <g opacity="0.25"><rect width="10" height="10"/><rect x="5" width="10" height="10"/></g>
+            """));
+
+        Assert.Contains("/Group <</Type /Group/S /Transparency/CS /DeviceRGB/I true>>", text, StringComparison.Ordinal);
+        Assert.Contains("/Group <</Type /Group/S /Transparency/CS /DeviceRGB>>", text, StringComparison.Ordinal); // The page blends in RGB.
     }
 
     [Fact]

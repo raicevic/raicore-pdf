@@ -179,6 +179,13 @@ public sealed record BoxStyle
     /// <summary>Minimum number of a paragraph's lines carried to the top of the next page (CSS <c>widows</c>).</summary>
     public int Widows { get; init; } = 2;
 
+    /// <summary>
+    /// The opacity of the whole block, from 0 (invisible, but still taking space) to 1 (opaque, the default), as CSS
+    /// <c>opacity</c>: below 1, everything the block paints (background, borders, content and descendants) is drawn
+    /// as one transparency group, then composited with this opacity. A block split across pages gets a group per page.
+    /// </summary>
+    public double Opacity { get; init; } = 1;
+
     /// <summary>A border-box width limited by <see cref="MaxWidth"/> and then <see cref="MinWidth"/>.</summary>
     internal double ClampWidth(double width) =>
         Math.Max(Math.Min(width, MaxWidth ?? double.PositiveInfinity), MinWidth ?? 0);

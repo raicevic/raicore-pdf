@@ -50,14 +50,21 @@ internal readonly record struct SvgColor(double R, double G, double B, double Al
         ["white"] = 0xFFFFFF, ["whitesmoke"] = 0xF5F5F5, ["yellow"] = 0xFFFF00, ["yellowgreen"] = 0x9ACD32,
     };
 
-    /// <summary>
-    /// The opaque color seen on a white page when this color is painted with <paramref name="opacity"/>, or null when
-    /// it is invisible. PDF transparency is not used yet, so translucent paint is blended with white.
-    /// </summary>
-    public PdfColor? OnWhite(double opacity)
+    /// <summary>The color painted with <paramref name="opacity"/> (its alpha times the opacity), or null when it is invisible.</summary>
+    public PdfColor? ToPdf(double opacity)
     {
         var a = Math.Clamp(Alpha * opacity, 0, 1);
-        return a <= 0 ? null : new PdfColor((R * a) + (1 - a), (G * a) + (1 - a), (B * a) + (1 - a));
+        return a <= 0 ? null : new PdfColor(R, G, B, a);
+    }
+
+    /// <summary>
+    /// The opaque color seen on a white page when this color (ignoring its alpha) is painted with
+    /// <paramref name="fraction"/> opacity.
+    /// </summary>
+    public PdfColor OnWhite(double fraction)
+    {
+        var a = Math.Clamp(fraction, 0, 1);
+        return new PdfColor((R * a) + (1 - a), (G * a) + (1 - a), (B * a) + (1 - a));
     }
 
     /// <summary>

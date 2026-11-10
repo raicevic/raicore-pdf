@@ -39,6 +39,14 @@ change at any time, and this section lists what the packages can do so far.
   destinations, and links to names missing when the document is saved are left out. `PdfCanvas.AddLink` places links
   in the canvas's current coordinates (it follows `Transform`, `SaveState` and `RestoreState`), and `PdfPage.Links`
   lists them.
+- Transparency: `PdfColor` has an `Alpha` (`new PdfColor(r, g, b, alpha)`, `FromRgba`, `WithAlpha`; opaque by
+  default), which `SetFillColor` and `SetStrokeColor` apply as the fill or stroke alpha (extended graphics states with
+  `/ca` and `/CA`, written only when the alpha changes and stored once per document). `PdfCanvas.BeginGroup(opacity)`
+  and `EndGroup()` draw everything in between as an isolated transparency group (a form XObject) composited with one
+  opacity, so overlapping shapes do not show through each other; groups nest. Images are drawn opaque whatever the
+  fill alpha. Pages that use transparency blend in RGB (a page group). SVG `opacity`, `fill-opacity`,
+  `stroke-opacity`, `stop-opacity` and translucent colors use real alpha, and group opacity (`<g opacity>`, or a
+  shape with both fill and stroke) is a transparency group.
 
 ### RaiCore.Pdf.Fonts
 - Bundled Liberation Sans, Serif and Mono (SIL OFL 1.1), metric-compatible with Arial, Times New Roman and Courier New.
@@ -92,6 +100,11 @@ change at any time, and this section lists what the packages can do so far.
   and `Block.Link` for whole blocks (their border box on every page they continue on). `Block.Id` and
   `Paragraph.AddAnchor` (the top of the line it falls on) become the PDF's named destinations when rendered; the first
   one with an id wins. Links work in flex items, table cells, inline boxes and page decorators.
+- Opacity: translucent colors (text, backgrounds, borders, decorations) are painted with real alpha, and
+  `BoxStyle.Opacity` draws everything a block paints (background, borders, content and descendants) as one
+  transparency group per page it is on, also in flex items, table cells and inline boxes. `InlineImage.Opacity` (and
+  the `opacity` argument of `Paragraph.AddImage`) does the same for an image in a line. Translucent dashed and dotted
+  borders are painted once where adjacent sides' dashes meet in a corner.
 
 ### RaiCore.Pdf.Html
 - HTML and CSS to PDF via AngleSharp: the cascade, inheritance, `!important`, custom properties and print media
@@ -149,6 +162,9 @@ change at any time, and this section lists what the packages can do so far.
   are kept as written without one; `javascript:` and empty links are dropped) and `href="#id"` to the element with
   that `id` or an `<a name>` (block elements at the top of their box, inline ones at the line they start on). A link
   around blocks is clickable over their boxes; links to ids that do not exist are left out.
+- Translucent colors keep their alpha (`rgba()`, `hsla()`, `#rrggbbaa`, `#rgba`, `transparent`) instead of being
+  blended with white, and `opacity` makes an element a transparency group (including inline images); a translucent
+  CSS `color` reaches `currentColor` in inline SVG.
 - Network access is off unless you supply a `ResourceLoader`.
 
 ### RaiCore.Pdf.Razor
@@ -165,8 +181,10 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   boxes (`inline-block`) or in running elements; links inside them work. A link's clickable area is the line box
   (rectangles, not rotated with transforms), and in a line mixing right-to-left and left-to-right text it may cover
   the wrong part.
-- Floats, positioning and grid (rendered as blocks); `overflow: hidden`, transparency (blended with white), rounded
-  corners and background images.
+- Floats, positioning and grid (rendered as blocks); `overflow: hidden`, rounded corners and background images.
+- `opacity` on inline elements (other than images and inline boxes) and on table rows and cells is ignored; where
+  translucent collapsed table borders cross, they are painted twice. PDF/A-1 forbids transparency (PDF/A is not
+  written yet).
 - Mixed left-to-right and right-to-left text on one line (the Unicode bidi algorithm); no hyphenation.
 - No synthetic bold or italic: a family without a bold or italic face uses its closest face as is.
 - `:first`/`:left`/`:right` cannot change page margins; no named pages. Bookmark labels cannot use counters, and inline
@@ -174,6 +192,7 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
 - No tagged PDF, PDF/A or encryption.
 - SVG: no filters, masks, markers, patterns, `spreadMethod` `reflect`/`repeat` (drawn as `pad`), text on a path or
   per-character positions (only the first `x`/`y`/`dx`/`dy`), and no web fonts in SVG text (the standard fonts are
-  used). Opacity is blended with white, so group opacity of overlapping shapes is approximate. A clip path made of
+  used). PDF shadings have no alpha: a gradient whose stops differ in opacity takes its most opaque stop's alpha and
+  blends the others with white towards it (exact on white only). `opacity` on a `tspan` is ignored. A clip path made of
   several shapes uses the first one's clip rule; text in clip paths is ignored. HTML style sheets do not style
   the inside of inline `<svg>` (its own `<style>` and attributes do).

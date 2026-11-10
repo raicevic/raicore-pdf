@@ -62,10 +62,11 @@ internal sealed partial class BoxBuilder
         var written = new HashSet<string>(StringComparer.Ordinal);
         if (rootColor is { } color)
         {
-            // The root's color is the element's computed CSS color (also from style sheets the SVG does not see).
+            // The root's color is the element's computed CSS color (also from style sheets the SVG does not see), with
+            // its alpha when translucent.
             writer.WriteAttributeString("color", string.Create(
                 CultureInfo.InvariantCulture,
-                $"#{Channel(color.Red):x2}{Channel(color.Green):x2}{Channel(color.Blue):x2}"));
+                $"#{Channel(color.Red):x2}{Channel(color.Green):x2}{Channel(color.Blue):x2}{(color.IsOpaque ? string.Empty : Channel(color.Alpha).ToString("x2", CultureInfo.InvariantCulture))}"));
             written.Add("color");
         }
 

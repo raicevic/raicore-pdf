@@ -85,6 +85,9 @@ public sealed class PdfImage
     /// <summary>Whether the image has transparent or semi-transparent pixels. Always true for SVG, which has no background.</summary>
     public bool HasTransparency => _svg is not null || Image.Alpha is not null || Image.ColorKey is not null;
 
+    /// <summary>Whether drawing the image uses PDF transparency (alpha or groups): only SVG images with opacity do.</summary>
+    internal bool UsesTransparency => _svg?.UsesTransparency ?? false;
+
     /// <summary>The decoded raster image. Not available for SVG.</summary>
     internal DecodedImage Image => _raster ?? throw new InvalidOperationException("An SVG image has no pixels.");
 
@@ -148,8 +151,9 @@ public sealed class PdfImage
     /// Supported: shapes and paths, groups, transforms, nested <c>svg</c>, <c>use</c> with <c>symbol</c>, fills and
     /// strokes (dashes, caps, joins, fill rules), presentation attributes, the <c>style</c> attribute and
     /// <c>&lt;style&gt;</c> sheets with type, class and id selectors, linear and radial gradients, clip paths, basic
-    /// text in the standard PDF fonts and <c>data:</c> images. Opacity is blended with white, as PDF transparency is
-    /// not used yet. Filters, masks, markers, patterns, animation, scripts and <c>foreignObject</c> are skipped, and
+    /// text in the standard PDF fonts and <c>data:</c> images. Opacity (<c>opacity</c>, <c>fill-opacity</c>,
+    /// <c>stroke-opacity</c>, translucent colors) uses PDF transparency, with group opacity as transparency groups.
+    /// Filters, masks, markers, patterns, animation, scripts and <c>foreignObject</c> are skipped, and
     /// nothing external is loaded.
     /// </remarks>
     /// <exception cref="ImageFormatException">The markup is not well-formed XML or its root is not <c>svg</c>.</exception>
