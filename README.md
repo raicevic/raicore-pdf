@@ -88,7 +88,7 @@ own engine. Supported today:
   Google Fonts serves them work as one family). Fonts load through the `ResourceLoader` when text first needs them;
   URLs in linked stylesheets resolve against the stylesheet.
 - List markers: bullets, decimal, alpha and roman numerals, `start`, `reversed` and `value`.
-- Images from `data:` and `file:` URLs (JPEG, PNG, GIF and SVG), inline `<svg>` elements drawn as vectors (sized
+- Images from `data:` and `file:` URLs (JPEG, PNG, GIF, BMP, WebP and SVG), inline `<svg>` elements drawn as vectors (sized
   like images; `currentColor` follows the CSS `color`), linked stylesheets, `@page` size and margins, and page break
   properties.
 - Tables: automatic and fixed column widths, `colspan`/`rowspan`, `thead` and `tfoot` rows repeated on every page,
@@ -286,10 +286,12 @@ embedding are rejected.
 
 ### Images
 
-JPEG, PNG, GIF and SVG images can be drawn directly or placed in the layout. JPEGs are embedded without re-encoding
-(EXIF orientation is applied); PNGs of every color type and bit depth, including interlaced and transparent ones,
-are decoded and verified against the full [PngSuite](http://www.schaik.com/pngsuite/). SVG is drawn as PDF vector
-graphics, not rasterized, so logos and icons stay sharp at any zoom. Each image is stored once per document however
+JPEG, PNG, GIF, BMP, WebP and SVG images can be drawn directly or placed in the layout. JPEGs are embedded without
+re-encoding (EXIF orientation is applied); PNGs of every color type and bit depth, including interlaced and
+transparent ones, are decoded and verified against the full [PngSuite](http://www.schaik.com/pngsuite/). BMPs of
+every common kind (palettes, RLE, 16/24/32-bit, bit fields, alpha) and WebP, lossy and lossless with alpha, are
+decoded in managed code; lossy WebP matches libwebp bit for bit, and an animated WebP shows its first frame. SVG is
+drawn as PDF vector graphics, not rasterized, so logos and icons stay sharp at any zoom. Each image is stored once per document however
 often it is drawn.
 
 ```csharp
@@ -313,7 +315,8 @@ standard PDF fonts Helvetica, Times or Courier) and embedded `data:` images. Opa
 transparency is supported. Filters, masks, markers, patterns, gradient `spreadMethod` other than `pad`, text on a
 path, animation, scripts and `foreignObject` are skipped; nothing external is loaded.
 
-Embedded color profiles are ignored (images are treated as sRGB). WebP and BMP are not supported yet.
+Embedded color profiles are ignored (images are treated as sRGB). BMPs with embedded JPEG or PNG data are not
+supported.
 
 ### Text shaping
 

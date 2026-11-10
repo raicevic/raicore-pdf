@@ -15,6 +15,13 @@ change at any time, and this section lists what the packages can do so far.
   ToUnicode maps so text stays searchable and copyable. Fonts whose license forbids embedding are rejected.
 - JPEG (embedded without re-encoding, EXIF orientation applied), PNG (all color types and bit depths, interlacing,
   transparency; verified against PngSuite) and GIF images, each stored once per document.
+- BMP images: BITMAPCOREHEADER, BITMAPINFOHEADER and V2-V5 headers; 1, 2, 4 and 8-bit palettes (kept indexed),
+  16, 24 and 32-bit pixels, BI_RLE8/BI_RLE4 (skipped pixels are transparent), BI_BITFIELDS/BI_ALPHABITFIELDS,
+  bottom-up and top-down rows, and 32-bit alpha (ignored when every alpha byte is zero, as browsers do). BMPs with
+  embedded JPEG or PNG data are rejected.
+- WebP images, decoded in managed code with no dependencies: lossy (VP8) and lossless (VP8L), and the extended
+  format with alpha (ALPH chunks, raw or lossless-compressed, with every prediction filter). Lossy decoding matches
+  libwebp's output bit for bit, including its chroma upsampling. An animated WebP shows its first frame.
 - SVG images drawn as PDF vectors in a form XObject (`PdfImage.Load` detects them, `PdfImage.LoadSvg` takes markup;
   `PdfImage.NaturalWidth`/`NaturalHeight` give the natural size in points). A static SVG 1.1 subset: paths with arcs,
   basic shapes, groups, transforms, nested `svg`, `use`/`symbol`, fills and strokes with dashes, caps, joins and fill
@@ -164,7 +171,7 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
 - No synthetic bold or italic: a family without a bold or italic face uses its closest face as is.
 - `:first`/`:left`/`:right` cannot change page margins; no named pages. Bookmark labels cannot use counters, and inline
   elements cannot be bookmarks.
-- No tagged PDF, PDF/A or encryption. WebP and BMP images are not supported.
+- No tagged PDF, PDF/A or encryption.
 - SVG: no filters, masks, markers, patterns, `spreadMethod` `reflect`/`repeat` (drawn as `pad`), text on a path or
   per-character positions (only the first `x`/`y`/`dx`/`dy`), and no web fonts in SVG text (the standard fonts are
   used). Opacity is blended with white, so group opacity of overlapping shapes is approximate. A clip path made of

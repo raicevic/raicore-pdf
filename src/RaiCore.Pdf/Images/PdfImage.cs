@@ -19,11 +19,17 @@ public enum ImageFormat
 
     /// <summary>SVG, drawn as vector graphics (a static subset of SVG 1.1).</summary>
     Svg,
+
+    /// <summary>BMP (uncompressed, RLE or bit fields, with 32-bit alpha).</summary>
+    Bmp,
+
+    /// <summary>WebP (lossy or lossless, with alpha; the first frame of an animation).</summary>
+    WebP,
 }
 
 /// <summary>
 /// An image that can be drawn on pages with <see cref="PdfCanvas.DrawImage"/>. JPEGs are embedded as they are;
-/// PNG and GIF are decoded and recompressed, with transparency kept. SVG is drawn as vector graphics (a form
+/// PNG, GIF, BMP and WebP are decoded and recompressed, with transparency kept. SVG is drawn as vector graphics (a form
 /// XObject), not rasterized. An image drawn several times, on any number of pages, is stored in the PDF once.
 /// </summary>
 /// <remarks>
@@ -84,7 +90,7 @@ public sealed class PdfImage
 
     private bool SwapsAxes => Image.Orientation >= 5;
 
-    /// <summary>Loads an image file (JPEG, PNG, GIF or SVG; the format is detected from the content).</summary>
+    /// <summary>Loads an image file (JPEG, PNG, GIF, BMP, WebP or SVG; the format is detected from the content).</summary>
     public static PdfImage Load(string path) => Load(File.ReadAllBytes(path));
 
     /// <summary>Loads an image from a stream. The stream is read to the end and left open.</summary>
@@ -116,12 +122,22 @@ public sealed class PdfImage
             return new PdfImage(GifDecoder.Decode(data), ImageFormat.Gif);
         }
 
+        if (WebPDecoder.IsWebP(data))
+        {
+            return new PdfImage(WebPDecoder.Decode(data), ImageFormat.WebP);
+        }
+
+        if (BmpDecoder.IsBmp(data))
+        {
+            return new PdfImage(BmpDecoder.Decode(data), ImageFormat.Bmp);
+        }
+
         if (data.Length >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF)
         {
             return new PdfImage(JpegReader.Read(data), ImageFormat.Jpeg);
         }
 
-        throw new ImageFormatException("Unsupported image format; JPEG, PNG, GIF and SVG are supported.");
+        throw new ImageFormatException("Unsupported image format; JPEG, PNG, GIF, BMP, WebP and SVG are supported.");
     }
 
     /// <summary>

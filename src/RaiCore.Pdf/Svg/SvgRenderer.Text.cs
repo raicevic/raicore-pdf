@@ -264,8 +264,8 @@ internal sealed partial class SvgRenderer
     }
 
     /// <summary>
-    /// Draws an <c>image</c> element whose <c>href</c> is a <c>data:</c> URI (JPEG, PNG, GIF or SVG), fitted with
-    /// <c>preserveAspectRatio</c>. Other references are not loaded: an SVG cannot fetch resources.
+    /// Draws an <c>image</c> element whose <c>href</c> is a <c>data:</c> URI (JPEG, PNG, GIF, BMP, WebP or SVG),
+    /// fitted with <c>preserveAspectRatio</c>. Other references are not loaded: an SVG cannot fetch resources.
     /// </summary>
     private void RenderImage(SvgElement element, SvgStyle style, RenderState state)
     {
