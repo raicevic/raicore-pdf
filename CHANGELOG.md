@@ -13,10 +13,17 @@ and versions follow [Semantic Versioning](https://semver.org/). Before 1.0, mino
 - Flex rows taller than the space left on a page are split like browsers do: every item continues on the next
   page in its own column, and stretched items run down to the end of the row.
 - Running elements (`position: running()`) can be flex containers, e.g. a header with a logo and an address.
+- `height`, `min-height` and `max-height` on every block (`BoxStyle.Height`, `MinHeight`, `MaxHeight`). Content
+  taller than a fixed height overflows, as with `overflow: visible`; a fixed-height box that fits on a page is not
+  split. Percentage heights resolve against definite ancestor heights, starting with the page area, and `vh` units
+  are the page area (to within a pixel).
+- Flex containers with a definite or minimum height: columns grow, shrink and justify vertically (with vertical auto
+  margins), wrap into side-by-side columns, and support `column-reverse`; wrapped rows share extra height with
+  `align-content`, and a single line fills the container. A flex item's flexed or stretched size is definite for a
+  flex container inside it.
 
 ### Known limitations
-- A flex container is as tall as its content: `height` on the container, `align-content` and `justify-content` in
-  column containers have no effect. `inline-flex` is laid out like `flex`.
+- `inline-flex` is laid out like `flex`. `calc()` is not evaluated.
 
 ## [0.1.0] - Unreleased
 

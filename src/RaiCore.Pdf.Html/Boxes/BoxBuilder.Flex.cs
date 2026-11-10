@@ -9,7 +9,8 @@ internal sealed partial class BoxBuilder
 {
     private FlexBlock BuildFlex(IElement element, ComputedStyle style, double containingWidth, bool flexItem)
     {
-        var (box, contentWidth) = BoxStyleFor(style, containingWidth, flexItem);
+        var (box, contentWidth) = BoxStyleFor(style, containingWidth, flexItem, _containingHeight);
+        var outerHeight = EnterBox(box);
         var items = new List<FlexItem>();
         var collector = new InlineCollector(this, style, contentWidth);
         var listIndex = ListStart(element);
@@ -41,7 +42,7 @@ internal sealed partial class BoxBuilder
                     if (_paged?.RunningName(child) is { } runningName)
                     {
                         // A running element leaves the flow; an empty item keeps its place for element().
-                        var content = BuildBlock(child, RunningStyle(childStyle), _pageContentWidth, marker: null);
+                        var content = BuildRunning(child, childStyle);
                         items.Add(new FlexItem(new ContainerBlock { Marker = new Paged.RunningMarker(runningName, content is null ? [] : [content]) }));
                         break;
                     }
@@ -56,13 +57,16 @@ internal sealed partial class BoxBuilder
         }
 
         FlushText();
+        var innerHeight = _containingHeight;
+        _containingHeight = outerHeight;
         return new FlexBlock(box, items)
         {
             Direction = style.FlexDirection,
             Wrap = style.FlexWrap,
             JustifyContent = style.JustifyContent,
             AlignItems = style.AlignItems,
-            RowGap = style.RowGap.Kind == CssLengthKind.Points ? Math.Max(0, style.RowGap.Value) : 0, // % of an auto height: 0.
+            AlignContent = style.AlignContent,
+            RowGap = Math.Max(0, style.RowGap.Kind == CssLengthKind.Percent ? (innerHeight is { } h ? style.RowGap.Resolve(h) : 0) : style.RowGap.Resolve(0)),
             ColumnGap = Math.Max(0, style.ColumnGap.Resolve(contentWidth)),
             Marker = _paged?.MarkerFor(element),
         };
@@ -112,15 +116,13 @@ internal sealed partial class BoxBuilder
         // CSS sizes are content-box unless box-sizing: border-box; the layout engine works with border boxes.
         double? Width(CssLength length) => length.IsAuto ? null : Math.Max(0, length.Resolve(containerWidth) + (style.BorderBox ? 0 : horizontal));
 
-        // Percentage heights refer to the container's height, which is its content's (auto), so they are ignored.
-        double? Height(CssLength length) => length.Kind == CssLengthKind.Points ? Math.Max(0, length.Value + (style.BorderBox ? 0 : vertical)) : null;
-
-        // In a column the main size is a height: a length flex-basis wins over height, as in CSS.
+        // In a column the main size is a height: a percentage refers to the container's height (resolved in layout).
         var column = Style(container).FlexDirection is FlexDirection.Column or FlexDirection.ColumnReverse;
         var basis = style.FlexBasisContent ? FlexBasis.Content
-            : style.FlexBasis.IsAuto || column ? FlexBasis.Auto
+            : style.FlexBasis.IsAuto ? FlexBasis.Auto
+            : column && style.FlexBasis.Kind == CssLengthKind.Percent ? FlexBasis.Percent(style.FlexBasis.Value)
+            : column ? FlexBasis.Points(Math.Max(0, style.FlexBasis.Resolve(0) + (style.BorderBox ? 0 : vertical)))
             : FlexBasis.Points(Width(style.FlexBasis) ?? 0);
-        var height = column && Height(style.FlexBasis) is { } basisHeight ? basisHeight : Height(style.Height);
 
         var auto = AutoMargins.None;
         if (style.Margin[0].IsAuto)
@@ -152,9 +154,6 @@ internal sealed partial class BoxBuilder
             Order = style.Order,
             MinWidth = Width(style.MinWidth),
             MaxWidth = Width(style.MaxWidth),
-            Height = height,
-            MinHeight = Height(style.MinHeight),
-            MaxHeight = Height(style.MaxHeight),
             AutoMargins = auto,
         };
     }

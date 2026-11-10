@@ -78,7 +78,7 @@ public static class HtmlToPdf
 
         var builder = new BoxBuilder(document, options, fonts, options.BaseUri, paged);
         var flow = new FlowDocument(setup);
-        foreach (var block in builder.Build(setup.ContentWidth))
+        foreach (var block in builder.Build(setup.ContentWidth, setup.ContentHeight))
         {
             flow.Add(block);
         }

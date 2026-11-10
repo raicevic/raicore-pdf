@@ -87,6 +87,23 @@ public sealed record BoxStyle
     /// <summary>Width of the border box in points, or <c>null</c> to fill the available width.</summary>
     public double? Width { get; init; }
 
+    /// <summary>
+    /// Height of the border box in points, or <c>null</c> for the content's height. Content that does not fit
+    /// overflows (it is drawn, and what follows is placed after the box), as with CSS <c>overflow: visible</c>.
+    /// A box with a fixed height moves to the next page as a whole when it fits on one. For tables it is a minimum,
+    /// and images ignore it (they have their own size).
+    /// </summary>
+    public double? Height { get; init; }
+
+    /// <summary>
+    /// Minimum border-box height in points. <c>null</c> is CSS <c>min-height: auto</c>: no minimum, except for flex
+    /// items in a column, which do not shrink below their content.
+    /// </summary>
+    public double? MinHeight { get; init; }
+
+    /// <summary>Maximum border-box height in points (taller content overflows), or <c>null</c> for none.</summary>
+    public double? MaxHeight { get; init; }
+
     /// <summary>Page break before the block.</summary>
     public PageBreak BreakBefore { get; init; }
 

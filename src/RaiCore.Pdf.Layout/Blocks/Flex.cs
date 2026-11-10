@@ -12,20 +12,23 @@ public enum FlexDirection
     /// <summary>Items top to bottom.</summary>
     Column,
 
-    /// <summary>Items in reverse order, top to bottom (the container's height is its content's, so this reverses the order).</summary>
+    /// <summary>Items bottom to top.</summary>
     ColumnReverse,
 }
 
-/// <summary>Whether a row of flex items wraps onto more lines (CSS <c>flex-wrap</c>).</summary>
+/// <summary>Whether flex items wrap onto more lines (CSS <c>flex-wrap</c>).</summary>
 public enum FlexWrap
 {
     /// <summary>All items on one line; they shrink (down to their minimum size) to fit.</summary>
     NoWrap,
 
-    /// <summary>Items that do not fit move to the next line, below.</summary>
+    /// <summary>
+    /// Items that do not fit move to a new line: below in a row, to the right in a column (which wraps only when the
+    /// container has a <see cref="BoxStyle.Height"/> or <see cref="BoxStyle.MaxHeight"/>).
+    /// </summary>
     Wrap,
 
-    /// <summary>Items wrap, and lines stack from the bottom up (the first line is the lowest).</summary>
+    /// <summary>Items wrap, and lines stack in reverse: from the bottom up in a row, from right to left in a column.</summary>
     WrapReverse,
 }
 
@@ -48,6 +51,34 @@ public enum JustifyContent
     SpaceAround,
 
     /// <summary>Equal space between items and at the edges.</summary>
+    SpaceEvenly,
+}
+
+/// <summary>
+/// How the lines of a wrapping flex container share free space on the cross axis (CSS <c>align-content</c>). Free
+/// space exists when the container is taller (rows) or wider (columns) than its lines.
+/// </summary>
+public enum AlignContent
+{
+    /// <summary>Lines grow equally to fill the container (CSS <c>normal</c> and <c>stretch</c>).</summary>
+    Stretch,
+
+    /// <summary>Lines packed at the cross start.</summary>
+    FlexStart,
+
+    /// <summary>Lines packed at the cross end.</summary>
+    FlexEnd,
+
+    /// <summary>Lines centered.</summary>
+    Center,
+
+    /// <summary>The first line at the start, the last at the end, equal space between.</summary>
+    SpaceBetween,
+
+    /// <summary>Equal space around each line.</summary>
+    SpaceAround,
+
+    /// <summary>Equal space between lines and at the edges.</summary>
     SpaceEvenly,
 }
 
@@ -112,7 +143,10 @@ public readonly record struct FlexBasis
     /// <summary>A border-box size in points.</summary>
     public static FlexBasis Points(double points) => new(FlexBasisKind.Points, Math.Max(0, points));
 
-    /// <summary>A percentage (0-100) of the container's content width; in columns it acts as <see cref="Content"/>.</summary>
+    /// <summary>
+    /// A percentage (0-100) of the container's inner main size: its content width in a row, its content height in a
+    /// column with a fixed height (otherwise it acts as <see cref="Content"/>).
+    /// </summary>
     public static FlexBasis Percent(double percent) => new(FlexBasisKind.Percent, Math.Max(0, percent));
 }
 
@@ -126,7 +160,7 @@ internal enum FlexBasisKind
 
 /// <summary>
 /// A flex item: a block placed by its <see cref="FlexBlock"/>. The block's own <see cref="Block.Style"/> supplies its
-/// margin, border, padding, background and width (<see cref="BoxStyle.Width"/>, used by <see cref="FlexBasis.Auto"/>);
+/// margin, border, padding, background, width and heights (used by <see cref="FlexBasis.Auto"/> and as limits);
 /// this class adds how it grows, shrinks and aligns.
 /// </summary>
 public sealed class FlexItem
@@ -165,15 +199,6 @@ public sealed class FlexItem
     /// <summary>Maximum border-box width in points, or <c>null</c> for none.</summary>
     public double? MaxWidth { get; init; }
 
-    /// <summary>Border-box height in points, or <c>null</c> for the content's height (or the line's, when stretched).</summary>
-    public double? Height { get; init; }
-
-    /// <summary>Minimum border-box height in points.</summary>
-    public double? MinHeight { get; init; }
-
-    /// <summary>Maximum border-box height in points (limits stretching; taller content overflows).</summary>
-    public double? MaxHeight { get; init; }
-
     /// <summary>Which of the content's margins are <c>auto</c> (their values in <see cref="BoxStyle.Margin"/> are ignored).</summary>
     public AutoMargins AutoMargins { get; init; }
 }
@@ -183,9 +208,11 @@ public sealed class FlexItem
 /// <see cref="FlexItem.Grow"/> and <see cref="FlexItem.Shrink"/> and aligning them on both axes.
 /// </summary>
 /// <remarks>
-/// The container's height is always its content's. Rows that do not fit on a page are split like the browsers do:
-/// every item continues on the next page in its own column. Use <see cref="PageBreakInside.Avoid"/> on the container
-/// or an item to keep it on one page.
+/// The container is as tall as its content unless its style sets <see cref="BoxStyle.Height"/>,
+/// <see cref="BoxStyle.MinHeight"/> or <see cref="BoxStyle.MaxHeight"/>; then columns grow, shrink and justify
+/// vertically, and wrapped rows share the extra height (<see cref="AlignContent"/>). Rows that do not fit on a page are
+/// split like the browsers do: every item continues on the next page in its own column. Use
+/// <see cref="PageBreakInside.Avoid"/> on the container or an item to keep it on one page.
 /// </remarks>
 /// <example>
 /// <code>
@@ -218,19 +245,22 @@ public sealed class FlexBlock : Block
     /// <summary>The main axis.</summary>
     public FlexDirection Direction { get; init; }
 
-    /// <summary>Line wrapping (rows only: the container's height is its content's, so columns never wrap).</summary>
+    /// <summary>Line wrapping.</summary>
     public FlexWrap Wrap { get; init; }
 
-    /// <summary>Distribution of free space along the main axis (rows only, for the same reason).</summary>
+    /// <summary>Distribution of free space along the main axis (in a column, only when it has a definite height).</summary>
     public JustifyContent JustifyContent { get; init; }
+
+    /// <summary>Distribution of free cross-axis space between the lines of a wrapping container.</summary>
+    public AlignContent AlignContent { get; init; }
 
     /// <summary>Default cross-axis alignment of the items.</summary>
     public FlexAlignment AlignItems { get; init; } = FlexAlignment.Stretch;
 
-    /// <summary>Space between lines of a row container, or between items of a column container (CSS <c>row-gap</c>).</summary>
+    /// <summary>Vertical space: between the lines of a row container, between the items of a column (CSS <c>row-gap</c>).</summary>
     public double RowGap { get; init; }
 
-    /// <summary>Space between items of a row (CSS <c>column-gap</c>).</summary>
+    /// <summary>Horizontal space: between the items of a row, between the lines of a column (CSS <c>column-gap</c>).</summary>
     public double ColumnGap { get; init; }
 
     internal bool IsRow => Direction is FlexDirection.Row or FlexDirection.RowReverse;

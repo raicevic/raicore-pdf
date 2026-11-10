@@ -6,7 +6,12 @@ namespace RaiCore.Pdf.Layout.Blocks;
 /// <param name="StretchTo">The line the box stretches to, when the line's end is only known after all its items.</param>
 /// <param name="StretchInset">The item's bottom margin, kept free above the line's end.</param>
 /// <param name="Isolated">The box is a flex item: its children's margins do not collapse through it.</param>
-internal readonly record struct BoxSizing(double? Height = null, double? MinHeight = null, FlexLineEnd? StretchTo = null, double StretchInset = 0, bool Isolated = false);
+/// <param name="DefiniteHeight">
+/// A flex item's resolved border-box height (flexed, stretched or fixed), which CSS treats as definite: a nested flex
+/// container lays its content out in it.
+/// </param>
+internal readonly record struct BoxSizing(
+    double? Height = null, double? MinHeight = null, FlexLineEnd? StretchTo = null, double StretchInset = 0, bool Isolated = false, double? DefiniteHeight = null);
 
 /// <summary>Where a flex line split across pages ends; stretched items draw their boxes down to it.</summary>
 internal sealed class FlexLineEnd
@@ -27,13 +32,61 @@ internal sealed partial class Paginator
     /// <summary>A flex line of a row container, with its cross size (height) and the largest item baseline.</summary>
     private sealed record RowLine(List<RowItem> Items, double CrossSize, double MaxBaseline);
 
+    /// <summary>A placed column item: Top is its margin-box top within the line, X its border-box left in the container.</summary>
+    private sealed record ColumnItem(FlexItem Item, double Top, double Height, double X, double Width, double MarginTop, double MarginBottom);
+
+    /// <summary>A line of a column container: its items in top-to-bottom order and its position across the container.</summary>
+    private sealed record ColumnLine(List<ColumnItem> Items, double X, double Width);
+
     private static AutoMargins Auto(FlexItem item) => item.AutoMargins;
 
     private static double MarginOrZero(FlexItem item, AutoMargins side, double margin) => (item.AutoMargins & side) != 0 ? 0 : margin;
 
     private static FlexAlignment AlignmentOf(FlexBlock flex, FlexItem item) => item.AlignSelf ?? flex.AlignItems;
 
-    private void LayoutFlex(FlexBlock flex, double x, double width)
+    /// <summary>
+    /// The container's inner (content-box) height limits: a definite height if it has one, and the min and max that
+    /// an auto height is clamped to.
+    /// </summary>
+    private static (double? Definite, double Min, double Max) InnerHeights(FlexBlock flex, double? definiteBorderBox = null)
+    {
+        var style = flex.Style;
+        var decoration = style.Border.Widths.Vertical + style.Padding.Vertical;
+        var min = Math.Max(0, (style.MinHeight ?? 0) - decoration);
+        var max = style.MaxHeight is { } maxHeight ? Math.Max(0, maxHeight - decoration) : double.PositiveInfinity;
+        double? definite = (definiteBorderBox ?? style.Height) is { } height ? Math.Max(Math.Min(Math.Max(0, height - decoration), max), min) : null;
+        return (definite, min, Math.Max(min, max));
+    }
+
+    /// <summary>The size the container's lines are fitted into: definite, or the content size clamped by min/max.</summary>
+    private static double InnerSize(double? definite, double content, double min, double max) => definite ?? Math.Max(Math.Min(content, max), min);
+
+    /// <summary>Positions the lines of a container on the cross axis (CSS align-content) and stretches them.</summary>
+    private static (double[] Starts, double Extra) AlignLines(List<double> sizes, double available, double gap, AlignContent align, bool reverse)
+    {
+        var free = available - sizes.Sum() - (gap * Math.Max(0, sizes.Count - 1));
+        if (align == AlignContent.Stretch && free > 0)
+        {
+            var extra = free / sizes.Count;
+            var (stretchedStarts, _) = FlexAlgorithm.Justify([.. sizes.Select(s => s + extra)], new int[sizes.Count], available, gap, JustifyContent.FlexStart);
+            return (stretchedStarts, extra);
+        }
+
+        // wrap-reverse puts the cross start at the other edge, so start and end packing swap.
+        var justify = align switch
+        {
+            AlignContent.FlexEnd => reverse ? JustifyContent.FlexStart : JustifyContent.FlexEnd,
+            AlignContent.Center => JustifyContent.Center,
+            AlignContent.SpaceBetween => JustifyContent.SpaceBetween,
+            AlignContent.SpaceAround => JustifyContent.SpaceAround,
+            AlignContent.SpaceEvenly => JustifyContent.SpaceEvenly,
+            _ => reverse ? JustifyContent.FlexEnd : JustifyContent.FlexStart,
+        };
+        var (starts, _) = FlexAlgorithm.Justify(sizes, new int[sizes.Count], available, gap, justify);
+        return (starts, 0);
+    }
+
+    private void LayoutFlex(FlexBlock flex, double x, double width, double? definiteHeight)
     {
         var items = flex.OrderedItems();
         if (items.Count == 0)
@@ -43,18 +96,18 @@ internal sealed partial class Paginator
 
         if (flex.IsRow)
         {
-            LayoutFlexRows(flex, items, x, width);
+            LayoutFlexRows(flex, items, x, width, definiteHeight);
         }
         else
         {
-            LayoutFlexColumn(flex, items, x, width);
+            LayoutFlexColumns(flex, items, x, width, definiteHeight);
         }
     }
 
     // ---- Rows -------------------------------------------------------------------------------------------------
 
     /// <summary>The main-axis inputs of a row item: its flex base size and min/max widths, as border-box widths.</summary>
-    private static FlexMainInput MainInput(FlexItem item, double width)
+    private static FlexMainInput RowInput(FlexItem item, double width)
     {
         var content = item.Content;
         var margin = content.Style.Margin;
@@ -76,10 +129,13 @@ internal sealed partial class Paginator
         return new FlexMainInput(baseSize, min, Math.Max(min, max), Math.Max(0, item.Grow), Math.Max(0, item.Shrink), margins);
     }
 
-    /// <summary>Breaks a row container into lines and resolves every item's width, height and baseline.</summary>
-    private List<RowLine> ComputeRows(FlexBlock flex, List<FlexItem> items, double width)
+    /// <summary>
+    /// Breaks a row container into lines, resolves every item's width, height and baseline, and sizes the lines to the
+    /// container's height (a single line fills it; several lines share the free space by align-content).
+    /// </summary>
+    private (List<RowLine> Lines, double[] Starts) ComputeRows(FlexBlock flex, List<FlexItem> items, double width, double? definiteHeight = null)
     {
-        var inputs = items.Select(item => MainInput(item, width)).ToList();
+        var inputs = items.Select(item => RowInput(item, width)).ToList();
         var lines = new List<RowLine>();
         var gap = flex.ColumnGap;
         foreach (var (start, end) in FlexAlgorithm.BreakLines(inputs, width, gap, flex.Wrap != FlexWrap.NoWrap))
@@ -113,7 +169,7 @@ internal sealed partial class Paginator
                     x = width - x - sizes[i];
                 }
 
-                var height = ClampHeight(item, item.Height ?? MeasureBox(content, sizes[i]));
+                var height = MeasureBox(content, sizes[i]);
                 var marginTop = MarginOrZero(item, AutoMargins.Top, margin.Top);
                 var marginBottom = MarginOrZero(item, AutoMargins.Bottom, margin.Bottom);
                 var outerHeight = marginTop + height + marginBottom;
@@ -136,16 +192,34 @@ internal sealed partial class Paginator
             lines.Add(new RowLine(row, Math.Max(crossSize, maxBaseline + maxBelowBaseline), maxBaseline));
         }
 
-        if (flex.Wrap == FlexWrap.WrapReverse)
+        var reverse = flex.Wrap == FlexWrap.WrapReverse;
+        if (reverse)
         {
             lines.Reverse();
         }
 
-        return lines;
-    }
+        // Fit the lines into the container's height: definite, or auto clamped by min-height/max-height.
+        var (definite, min, max) = InnerHeights(flex, definiteHeight);
+        var natural = lines.Sum(l => l.CrossSize) + (flex.RowGap * (lines.Count - 1));
+        var inner = InnerSize(definite, natural, min, max);
+        if (flex.Wrap == FlexWrap.NoWrap)
+        {
+            // A single-line container's line is exactly as tall as the container.
+            lines[0] = lines[0] with { CrossSize = inner };
+            return (lines, [0]);
+        }
 
-    private static double ClampHeight(FlexItem item, double height) =>
-        Math.Max(Math.Min(height, item.MaxHeight ?? double.PositiveInfinity), item.MinHeight ?? 0);
+        var (lineStarts, extra) = AlignLines([.. lines.Select(l => l.CrossSize)], inner, flex.RowGap, flex.AlignContent, reverse);
+        if (extra > 0)
+        {
+            for (var i = 0; i < lines.Count; i++)
+            {
+                lines[i] = lines[i] with { CrossSize = lines[i].CrossSize + extra };
+            }
+        }
+
+        return (lines, lineStarts);
+    }
 
     /// <summary>An item's offset within its line (from the line's top to its margin box) and its final height.</summary>
     private static (double Offset, double Height, bool Stretched) CrossPlacement(FlexBlock flex, RowLine line, RowItem placed)
@@ -161,9 +235,9 @@ internal sealed partial class Paginator
         var reverse = flex.Wrap == FlexWrap.WrapReverse;
         switch (AlignmentOf(flex, item))
         {
-            case FlexAlignment.Stretch when item.Height is null:
-                var stretched = line.CrossSize - placed.MarginTop - placed.MarginBottom;
-                return (0, Math.Max(placed.Height, ClampHeight(item, stretched)), true);
+            case FlexAlignment.Stretch when item.Content.Style.Height is null:
+                var stretched = ApplyHeights(item.Content, line.CrossSize - placed.MarginTop - placed.MarginBottom);
+                return (0, Math.Max(placed.Height, stretched), true);
             case FlexAlignment.Stretch:
             case FlexAlignment.FlexStart:
                 return (reverse ? free : 0, placed.Height, false);
@@ -176,16 +250,19 @@ internal sealed partial class Paginator
         }
     }
 
-    private void LayoutFlexRows(FlexBlock flex, List<FlexItem> items, double x, double width)
+    private void LayoutFlexRows(FlexBlock flex, List<FlexItem> items, double x, double width, double? definiteHeight)
     {
-        var lines = ComputeRows(flex, items, width);
+        var (lines, starts) = ComputeRows(flex, items, width, definiteHeight);
+        var cursor = 0.0; // Where the previous line ended, in unbroken coordinates.
         for (var l = 0; l < lines.Count; l++)
         {
             var line = lines[l];
-            if (l > 0 && !(AtPageTop && TruncateMargins))
+            if (!(AtPageTop && TruncateMargins && l > 0))
             {
-                Y += flex.RowGap;
+                Y += starts[l] - cursor; // The row gap and align-content spacing.
             }
+
+            cursor = starts[l] + line.CrossSize;
 
             // Start the line on a new page if not even the start of its items fits here.
             var needed = 0.0;
@@ -218,12 +295,15 @@ internal sealed partial class Paginator
         var lineBottom = lineTop + line.CrossSize;
         foreach (var placed in line.Items)
         {
-            var (offset, height, _) = CrossPlacement(flex, line, placed);
+            var (offset, height, stretched) = CrossPlacement(flex, line, placed);
             Y = lineTop + offset + placed.MarginTop;
             AddMarker(placed.Item.Content);
 
             // An explicit height is exact (content may overflow); a measured or stretched one only a minimum.
-            var sizing = placed.Item.Height is null ? new BoxSizing(MinHeight: height, Isolated: true) : new BoxSizing(Height: height, Isolated: true);
+            var definite = stretched || placed.Item.Content.Style.Height is not null ? height : (double?)null;
+            var sizing = placed.Item.Content.Style.Height is null
+                ? new BoxSizing(MinHeight: height, Isolated: true, DefiniteHeight: definite)
+                : new BoxSizing(Height: height, Isolated: true, DefiniteHeight: definite);
             LayoutBlock(placed.Item.Content, x + placed.X, placed.Width, sizing);
             lineBottom = Math.Max(lineBottom, Y + placed.MarginBottom);
         }
@@ -237,26 +317,39 @@ internal sealed partial class Paginator
     /// </summary>
     private void LayoutRowAcrossPages(FlexBlock flex, RowLine line, double x)
     {
-        var startPage = PageIndex;
         var lineTop = Y;
-        var truncate = TruncateMargins;
-        var end = new FlexLineEnd { Page = startPage, Y = lineTop };
-        foreach (var placed in line.Items)
+        LayoutSideBySide(line.Items, (placed, end) =>
         {
-            _pageIndex = startPage;
             Y = lineTop + placed.MarginTop;
-            TruncateMargins = truncate;
             var (_, _, stretched) = CrossPlacement(flex, line, placed);
             var sizing = stretched
                 ? new BoxSizing(StretchTo: end, StretchInset: placed.MarginBottom, Isolated: true)
-                : new BoxSizing(MinHeight: placed.Item.Height, Isolated: true);
+                : new BoxSizing(Isolated: true);
             AddMarker(placed.Item.Content);
             LayoutBlock(placed.Item.Content, x + placed.X, placed.Width, sizing);
+            Y += placed.MarginBottom;
+        });
+    }
 
-            var itemEnd = Y + placed.MarginBottom;
-            if (PageIndex > end.Page || (PageIndex == end.Page && itemEnd > end.Y))
+    /// <summary>
+    /// Lays out parts that sit side by side (the items of a row, the lines of a column), each starting at the current
+    /// position and free to continue on later pages. Afterwards the position is where the longest part ended.
+    /// </summary>
+    private void LayoutSideBySide<T>(IEnumerable<T> parts, Action<T, FlexLineEnd> layout)
+    {
+        var startPage = PageIndex;
+        var startY = Y;
+        var truncate = TruncateMargins;
+        var end = new FlexLineEnd { Page = startPage, Y = startY };
+        foreach (var part in parts)
+        {
+            _pageIndex = startPage;
+            Y = startY;
+            TruncateMargins = truncate;
+            layout(part, end);
+            if (PageIndex > end.Page || (PageIndex == end.Page && Y > end.Y))
             {
-                (end.Page, end.Y) = (PageIndex, itemEnd);
+                (end.Page, end.Y) = (PageIndex, Y);
             }
         }
 
@@ -280,8 +373,11 @@ internal sealed partial class Paginator
 
     // ---- Columns ----------------------------------------------------------------------------------------------
 
-    /// <summary>A column item's border-box width and its x offset (to the border box) within the container.</summary>
-    private static (double X, double Width) ColumnCross(FlexBlock flex, FlexItem item, double width)
+    /// <summary>
+    /// A column item's border-box width and its x offset (to the border box) within a line of the given width.
+    /// <paramref name="stretch"/> is false when sizing the item's hypothetical width (to find the width of a wrapped line).
+    /// </summary>
+    private static (double X, double Width) ColumnCross(FlexBlock flex, FlexItem item, double width, bool stretch = true)
     {
         var style = item.Content.Style;
         var auto = Auto(item) & (AutoMargins.Left | AutoMargins.Right);
@@ -295,7 +391,7 @@ internal sealed partial class Paginator
         {
             boxWidth = fixedWidth;
         }
-        else if (alignment == FlexAlignment.Stretch && auto == AutoMargins.None)
+        else if (stretch && alignment == FlexAlignment.Stretch && auto == AutoMargins.None)
         {
             boxWidth = available;
         }
@@ -307,6 +403,7 @@ internal sealed partial class Paginator
 
         boxWidth = Math.Max(Math.Min(boxWidth, item.MaxWidth ?? double.PositiveInfinity), item.MinWidth ?? 0);
         var free = available - boxWidth;
+        var reverse = flex.Wrap == FlexWrap.WrapReverse;
         var offset = auto switch
         {
             AutoMargins.Left | AutoMargins.Right => free / 2,
@@ -314,56 +411,166 @@ internal sealed partial class Paginator
             AutoMargins.Right => 0,
             _ => alignment switch
             {
-                FlexAlignment.FlexEnd => free,
+                FlexAlignment.FlexEnd => reverse ? 0 : free,
                 FlexAlignment.Center => free / 2,
-                _ => 0,
+                _ => reverse ? free : 0,
             },
         };
         return (marginLeft + offset, boxWidth);
     }
 
-    private static IEnumerable<FlexItem> ColumnOrder(FlexBlock flex, List<FlexItem> items) =>
-        flex.Direction == FlexDirection.ColumnReverse ? Enumerable.Reverse(items) : items;
+    /// <summary>The main-axis inputs of a column item: base, min and max heights of its border box at a width.</summary>
+    private FlexMainInput ColumnInput(FlexItem item, double boxWidth, double? definiteHeight)
+    {
+        var content = item.Content;
+        var style = content.Style;
+        var margins = MarginOrZero(item, AutoMargins.Top, style.Margin.Top) + MarginOrZero(item, AutoMargins.Bottom, style.Margin.Bottom);
+        var natural = MeasureContentBox(content, boxWidth);
+        var specified = content is ImageBlock ? null : style.Height;
+        var baseSize = item.Basis.Kind switch
+        {
+            FlexBasisKind.Points => item.Basis.Value,
+            FlexBasisKind.Percent when definiteHeight is { } h => item.Basis.Value / 100 * h,
+            FlexBasisKind.Content or FlexBasisKind.Percent => natural,
+            _ => specified ?? natural,
+        };
+
+        var max = style.MaxHeight ?? double.PositiveInfinity;
+
+        // min-height: auto keeps a column item at least as tall as its content (capped by a specified height).
+        var min = style.MinHeight ?? Math.Min(Math.Min(natural, specified ?? double.PositiveInfinity), max);
+        return new FlexMainInput(baseSize, min, Math.Max(min, max), Math.Max(0, item.Grow), Math.Max(0, item.Shrink), margins);
+    }
 
     /// <summary>
-    /// A column container stacks its items like blocks, without margin collapsing and with row gaps between them.
-    /// Its height is its content's, so there is no free space to grow into or justify.
+    /// Sizes and positions a column container's items: lines (more than one only when wrapping into a limited height),
+    /// item heights flexed into the container's height, justify-content and auto margins vertically, and the lines
+    /// placed across the width by align-content.
     /// </summary>
-    private void LayoutFlexColumn(FlexBlock flex, List<FlexItem> items, double x, double width)
+    private List<ColumnLine> ComputeColumns(FlexBlock flex, List<FlexItem> items, double width, double? definiteHeight = null)
     {
-        var first = true;
-        Block? previous = null;
-        foreach (var item in ColumnOrder(flex, items))
+        var (definite, minInner, maxInner) = InnerHeights(flex, definiteHeight);
+        var wrap = flex.Wrap != FlexWrap.NoWrap && (definite is not null || !double.IsPositiveInfinity(maxInner));
+
+        // Hypothetical widths: a single line is as wide as the container; wrapped lines are as wide as their widest item.
+        var widths = items.Select(item => wrap ? ColumnCross(flex, item, width, stretch: false).Width : ColumnCross(flex, item, width).Width).ToList();
+        var inputs = items.Select((item, i) => ColumnInput(item, widths[i], definite)).ToList();
+        var gap = flex.RowGap;
+        var breakAt = definite ?? maxInner;
+        var ranges = FlexAlgorithm.BreakLines(inputs, breakAt, gap, wrap);
+
+        var lineWidths = ranges.Select(r =>
         {
-            var content = item.Content;
+            if (!wrap)
+            {
+                return width;
+            }
+
+            var widest = 0.0;
+            for (var i = r.Start; i < r.End; i++)
+            {
+                var margin = items[i].Content.Style.Margin;
+                widest = Math.Max(widest, widths[i] + MarginOrZero(items[i], AutoMargins.Left, margin.Left) + MarginOrZero(items[i], AutoMargins.Right, margin.Right));
+            }
+
+            return widest;
+        }).ToList();
+
+        var reverseLines = flex.Wrap == FlexWrap.WrapReverse;
+        var (lineStarts, extra) = wrap
+            ? AlignLines(lineWidths, width, flex.ColumnGap, flex.AlignContent, reverse: false)
+            : ([0.0], 0.0);
+
+        var lines = new List<ColumnLine>();
+        for (var l = 0; l < ranges.Count; l++)
+        {
+            var (start, end) = ranges[l];
+            var count = end - start;
+            var lineInputs = inputs.GetRange(start, count);
+            var natural = lineInputs.Sum(i => i.Hypothetical + i.Margins) + (gap * (count - 1));
+            var inner = InnerSize(definite, natural, minInner, maxInner);
+            var sizes = FlexAlgorithm.ResolveFlexibleLengths(lineInputs, inner - (gap * (count - 1)));
+
+            var outer = new double[count];
+            var autoCounts = new int[count];
+            for (var i = 0; i < count; i++)
+            {
+                outer[i] = sizes[i] + lineInputs[i].Margins;
+                var auto = Auto(items[start + i]);
+                autoCounts[i] = ((auto & AutoMargins.Top) != 0 ? 1 : 0) + ((auto & AutoMargins.Bottom) != 0 ? 1 : 0);
+            }
+
+            var (starts, autoMargin) = FlexAlgorithm.Justify(outer, autoCounts, inner, gap, flex.JustifyContent);
+            var lineWidth = lineWidths[l] + extra;
+            var placed = new List<ColumnItem>(count);
+            for (var i = 0; i < count; i++)
+            {
+                var item = items[start + i];
+                var margin = item.Content.Style.Margin;
+                var marginTop = (Auto(item) & AutoMargins.Top) != 0 ? autoMargin : margin.Top;
+                var marginBottom = (Auto(item) & AutoMargins.Bottom) != 0 ? autoMargin : MarginOrZero(item, AutoMargins.Bottom, margin.Bottom);
+                var top = starts[i];
+                if (flex.Direction == FlexDirection.ColumnReverse)
+                {
+                    top = inner - top - (marginTop + sizes[i] + marginBottom);
+                }
+
+                var (x, boxWidth) = ColumnCross(flex, item, lineWidth);
+                placed.Add(new ColumnItem(item, top, sizes[i], x, boxWidth, marginTop, marginBottom));
+            }
+
+            var lineX = reverseLines ? width - lineStarts[l] - lineWidth : lineStarts[l];
+            lines.Add(new ColumnLine([.. placed.OrderBy(p => p.Top)], lineX, lineWidth));
+        }
+
+        return lines;
+    }
+
+    /// <summary>
+    /// A column container: each line stacks its items top to bottom (they may continue on the next pages); wrapped
+    /// lines sit side by side.
+    /// </summary>
+    private void LayoutFlexColumns(FlexBlock flex, List<FlexItem> items, double x, double width, double? definiteHeight)
+    {
+        var lines = ComputeColumns(flex, items, width, definiteHeight);
+        if (lines.Count == 1)
+        {
+            LayoutColumnLine(lines[0], x);
+        }
+        else
+        {
+            LayoutSideBySide(lines, (line, _) => LayoutColumnLine(line, x));
+        }
+    }
+
+    private void LayoutColumnLine(ColumnLine line, double x)
+    {
+        var cursor = 0.0; // Where the previous item's margin box ended, in unbroken coordinates.
+        Block? previous = null;
+        foreach (var placed in line.Items)
+        {
+            var content = placed.Item.Content;
             var style = content.Style;
             var forced = style.BreakBefore == PageBreak.Page || previous?.Style.BreakAfter == PageBreak.Page;
             if (forced && !_static && !(AtPageTop && _pages[PageIndex].Count == 0))
             {
                 NewPage(forced: true);
             }
-            else if (!first && !(AtPageTop && TruncateMargins))
+            else if (!(AtPageTop && TruncateMargins))
             {
-                Y += flex.RowGap;
+                Y += placed.Top - cursor + placed.MarginTop; // Gap, justify-content spacing and the top margin.
             }
 
-            if (!(AtPageTop && TruncateMargins))
-            {
-                Y += MarginOrZero(item, AutoMargins.Top, style.Margin.Top);
-            }
-
-            var (offset, boxWidth) = ColumnCross(flex, item, width);
-            var needed = style.BreakInside == PageBreakInside.Avoid ? MeasureBox(content, boxWidth) : MinimumStartBox(content, boxWidth);
+            cursor = placed.Top + placed.MarginTop + placed.Height + placed.MarginBottom;
+            var needed = style.BreakInside == PageBreakInside.Avoid || style.Height is not null ? placed.Height : MinimumStartBox(content, placed.Width);
             if (!_static && !AtPageTop && needed > Remaining + Epsilon && needed <= _setup.ContentHeight + Epsilon)
             {
                 NewPage();
             }
 
-            var height = item.Height is { } fixedHeight ? ClampHeight(item, fixedHeight) : (double?)null;
             AddMarker(content);
-            LayoutBlock(content, x + offset, boxWidth, new BoxSizing(Height: height, MinHeight: item.MinHeight, Isolated: true));
-            Y += MarginOrZero(item, AutoMargins.Bottom, style.Margin.Bottom);
-            first = false;
+            LayoutBlock(content, x + line.X + placed.X, placed.Width, new BoxSizing(Height: placed.Height, Isolated: true, DefiniteHeight: placed.Height));
+            Y += placed.MarginBottom;
             previous = content;
         }
     }
@@ -381,20 +588,11 @@ internal sealed partial class Paginator
 
         if (flex.IsRow)
         {
-            var lines = ComputeRows(flex, items, width);
-            return lines.Sum(l => l.CrossSize) + (flex.RowGap * (lines.Count - 1));
+            var (lines, starts) = ComputeRows(flex, items, width);
+            return starts[^1] + lines[^1].CrossSize;
         }
 
-        var height = flex.RowGap * (items.Count - 1);
-        foreach (var item in items)
-        {
-            var (_, boxWidth) = ColumnCross(flex, item, width);
-            var style = item.Content.Style;
-            var box = item.Height is { } fixedHeight ? ClampHeight(item, fixedHeight) : Math.Max(MeasureBox(item.Content, boxWidth), item.MinHeight ?? 0);
-            height += MarginOrZero(item, AutoMargins.Top, style.Margin.Top) + box + MarginOrZero(item, AutoMargins.Bottom, style.Margin.Bottom);
-        }
-
-        return height;
+        return ComputeColumns(flex, items, width).Max(l => l.Items.Count == 0 ? 0 : l.Items.Max(p => p.Top + p.MarginTop + p.Height + p.MarginBottom));
     }
 
     /// <summary>The height a flex container's content needs at the bottom of a page before it is worth starting there.</summary>
@@ -403,13 +601,15 @@ internal sealed partial class Paginator
         var items = flex.OrderedItems();
         if (flex.IsRow)
         {
-            var line = ComputeRows(flex, items, width)[0];
+            var line = ComputeRows(flex, items, width).Lines[0];
             return line.Items.Max(p => p.MarginTop + MinimumStartBox(p.Item.Content, p.Width));
         }
 
-        var first = ColumnOrder(flex, items).First();
-        var (_, boxWidth) = ColumnCross(flex, first, width);
-        return MarginOrZero(first, AutoMargins.Top, first.Content.Style.Margin.Top) + MinimumStartBox(first.Content, boxWidth);
+        return ComputeColumns(flex, items, width).Max(l =>
+        {
+            var first = l.Items[0];
+            return first.Top + first.MarginTop + (first.Item.Content.Style.Height is null ? MinimumStartBox(first.Item.Content, first.Width) : first.Height);
+        });
     }
 
     /// <summary>A flex container's min-content and max-content content widths (CSS Flexbox section 9.9.1).</summary>
@@ -459,10 +659,10 @@ internal sealed partial class Paginator
                 var child = container.Children[0];
                 return FirstBaseline(child, BoxWidth(child, contentWidth)) is { } inner ? top + child.Style.Margin.Top + inner : null;
             case FlexBlock { IsRow: true } flex when flex.Items.Count > 0:
-                var line = ComputeRows(flex, flex.OrderedItems(), contentWidth)[0];
-                var placed = line.Items[0];
-                var (offset, _, _) = CrossPlacement(flex, line, placed);
-                return FirstBaseline(placed.Item.Content, placed.Width) is { } itemBaseline ? top + offset + placed.MarginTop + itemBaseline : null;
+                var (rows, starts) = ComputeRows(flex, flex.OrderedItems(), contentWidth);
+                var placed = rows[0].Items[0];
+                var (offset, _, _) = CrossPlacement(flex, rows[0], placed);
+                return FirstBaseline(placed.Item.Content, placed.Width) is { } itemBaseline ? top + starts[0] + offset + placed.MarginTop + itemBaseline : null;
             default:
                 return null;
         }

@@ -118,6 +118,8 @@ internal sealed record ComputedStyle
 
     public FlexAlignment AlignItems { get; init; } = FlexAlignment.Stretch;
 
+    public AlignContent AlignContent { get; init; }
+
     /// <summary><c>null</c> for <c>align-self: auto</c>.</summary>
     public FlexAlignment? AlignSelf { get; init; }
 
@@ -223,6 +225,16 @@ internal sealed record ComputedStyle
             },
             JustifyContent = ParseJustify(Get("justify-content") is { Length: > 0 } justify ? justify : Get("place-content")),
             AlignItems = ParseAlignment(Get("align-items")) ?? FlexAlignment.Stretch,
+            AlignContent = Get("align-content").Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() switch
+            {
+                "flex-start" or "start" => AlignContent.FlexStart,
+                "flex-end" or "end" => AlignContent.FlexEnd,
+                "center" => AlignContent.Center,
+                "space-between" => AlignContent.SpaceBetween,
+                "space-around" => AlignContent.SpaceAround,
+                "space-evenly" => AlignContent.SpaceEvenly,
+                _ => AlignContent.Stretch,
+            },
             AlignSelf = ParseAlignment(Get("align-self")),
             FlexGrow = Math.Max(0, ParseNumber(Get("flex-grow"), 0)),
             FlexShrink = Math.Max(0, ParseNumber(Get("flex-shrink"), 1)),
