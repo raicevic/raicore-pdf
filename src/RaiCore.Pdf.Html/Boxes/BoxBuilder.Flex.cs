@@ -74,7 +74,13 @@ internal sealed partial class BoxBuilder
 
     /// <summary>Flex items are block-level whatever their display (CSS: blockification); flex stays flex.</summary>
     private static ComputedStyle BlockLevel(ComputedStyle style) =>
-        style.Display is CssDisplay.Flex or CssDisplay.Table or CssDisplay.ListItem ? style : style with { Display = CssDisplay.Block };
+        style.Display switch
+        {
+            CssDisplay.Flex or CssDisplay.Table or CssDisplay.ListItem => style,
+            CssDisplay.InlineFlex => style with { Display = CssDisplay.Flex },
+            CssDisplay.InlineTable => style with { Display = CssDisplay.Table },
+            _ => style with { Display = CssDisplay.Block },
+        };
 
     private FlexItem? BuildFlexItem(IElement container, IElement child, ComputedStyle childStyle, double containerWidth, ref int listIndex)
     {

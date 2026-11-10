@@ -58,7 +58,8 @@ HTML is parsed and styled with [AngleSharp](https://anglesharp.github.io/) (prin
 own engine. Supported today:
 - The cascade, inheritance, `!important`, CSS variables and print media queries.
 - Browser default styles for headings, paragraphs and lists.
-- Block and inline formatting with white-space handling.
+- Block and inline formatting with white-space handling; `inline-block`, `inline-flex` and `inline-table` boxes flow
+  in the text as one item (shrink-to-fit, aligned on their last line of text, or first row for tables).
 - The box model: margin, border, padding, background, width, max-width, `height`, `min-height`, `max-height`, auto
   margins, `box-sizing` and percentages. Percentage heights resolve against definite ancestor heights, starting with
   the page area (so `html, body { height: 100% }` and `100vh` fill the page).
@@ -106,7 +107,7 @@ before rendering, e.g. to set your own page decorator.
 
 Not yet: floats and positioning, grid layout (rendered as blocks), inline box backgrounds and borders,
 `text-decoration`, different page margins for `:first`/`:left`/`:right`, named pages, counters other than
-`page`/`pages`, and `calc()`. `inline-flex` is laid out like `flex`. Content taller than a fixed `height` overflows
+`page`/`pages`, `vertical-align` on inline content, and `calc()`. Content taller than a fixed `height` overflows
 the box (`overflow: hidden` is not supported yet).
 
 ### Razor to PDF
@@ -236,6 +237,7 @@ page.Canvas.DrawImage(logo, x: 400, y: 760, width: 120, height: 40);
 
 flow.Add(new ImageBlock(logo, width: 150) { Alignment = TextAlignment.Right });          // a block image
 new Paragraph(body).Add("Status: ").AddImage(checkIcon, 10, 10).Add(" paid");            // an inline image
+new Paragraph(body).Add("Total ").AddBox(badgeBlock).Add(" due");                        // an inline box (any block)
 ```
 
 Embedded color profiles are ignored (images are treated as sRGB). WebP, SVG and BMP are not supported yet.

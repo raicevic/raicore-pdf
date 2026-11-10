@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using RaiCore.Pdf.Fonts;
+using RaiCore.Pdf.Layout.Blocks;
 using RaiCore.Pdf.Layout.Text;
 
 namespace RaiCore.Pdf.Layout;
@@ -27,13 +28,15 @@ internal static class ParagraphLayouter
             return (0, 0);
         }
 
-        var prefix = MeasurePrefix(text, paragraph.Spans, spanStarts);
+        // Inline boxes contribute their min-content width to unbreakable pieces and their max-content width to lines.
+        var minPrefix = MeasurePrefix(text, paragraph.Spans, spanStarts, box => Paginator.InlineBoxIntrinsic(box.Content).Min);
+        var prefix = MeasurePrefix(text, paragraph.Spans, spanStarts, box => Paginator.InlineBoxIntrinsic(box.Content).Max);
         var indent = paragraph.FirstLineIndent;
         double min = 0, max = 0;
         int segmentStart = 0, lineStart = 0;
         foreach (var opportunity in LineBreaker.GetBreakOpportunities(text))
         {
-            var segment = prefix[TrimEnd(text, segmentStart, opportunity.Position)] - prefix[segmentStart] + (segmentStart == 0 ? Math.Max(0, indent) : 0);
+            var segment = minPrefix[TrimEnd(text, segmentStart, opportunity.Position)] - minPrefix[segmentStart] + (segmentStart == 0 ? Math.Max(0, indent) : 0);
             min = Math.Max(min, segment);
             segmentStart = opportunity.Position;
             if (opportunity.Required || opportunity.Position == text.Length)
@@ -70,7 +73,16 @@ internal static class ParagraphLayouter
             return new ParagraphLayout(width, []);
         }
 
-        var prefix = MeasurePrefix(text, spans, spanStarts);
+        // Inline boxes are laid out once at this width; their outer widths take part in line breaking.
+        var boxes = new Dictionary<InlineBox, InlineBoxFragment>(ReferenceEqualityComparer.Instance);
+        foreach (var box in spans.Where(s => s.Box is not null).Select(s => s.Box!))
+        {
+            var borderWidth = Paginator.InlineBoxWidth(box.Content, width);
+            var (height, baseline, content) = Paginator.LayoutInlineBox(box.Content, borderWidth);
+            boxes[box] = new InlineBoxFragment(box, 0, borderWidth, height, baseline, content);
+        }
+
+        var prefix = MeasurePrefix(text, spans, spanStarts, box => boxes[box].OuterWidth);
         double Measure(int from, int to) => prefix[to] - prefix[from];
 
         var lineRanges = BreakIntoLines(paragraph, text, width, Measure, spans, spanStarts);
@@ -83,7 +95,7 @@ internal static class ParagraphLayouter
             var available = width - (i == 0 ? paragraph.FirstLineIndent : 0);
             var isLast = i == lineRanges.Count - 1;
             var line = BuildLine(paragraph, text, spans, spanStarts, start, end, hyphenate, available, top, i == 0,
-                justify: paragraph.Alignment == TextAlignment.Justify && !isLast && !hard);
+                justify: paragraph.Alignment == TextAlignment.Justify && !isLast && !hard, boxes);
             lines.Add(line);
             top += line.Height;
         }
@@ -92,15 +104,21 @@ internal static class ParagraphLayouter
     }
 
     /// <summary>prefix[i] = width in points of text[0..i), measured by shaping each span.</summary>
-    private static double[] MeasurePrefix(string text, IReadOnlyList<ParagraphSpan> spans, int[] spanStarts)
+    private static double[] MeasurePrefix(string text, IReadOnlyList<ParagraphSpan> spans, int[] spanStarts, Func<InlineBox, double> boxWidth)
     {
         var advance = new double[text.Length];
         for (var s = 0; s < spans.Count; s++)
         {
-            var (spanText, style, image) = spans[s];
+            var (spanText, style, image, box) = spans[s];
             if (image is not null)
             {
                 advance[spanStarts[s]] = image.Width;
+                continue;
+            }
+
+            if (box is not null)
+            {
+                advance[spanStarts[s]] = boxWidth(box);
                 continue;
             }
 
@@ -211,13 +229,14 @@ internal static class ParagraphLayouter
 
     private static LineLayout BuildLine(
         Paragraph paragraph, string text, IReadOnlyList<ParagraphSpan> spans, int[] spanStarts,
-        int start, int end, bool hyphenate, double available, double top, bool firstLine, bool justify)
+        int start, int end, bool hyphenate, double available, double top, bool firstLine, bool justify,
+        Dictionary<InlineBox, InlineBoxFragment> boxes)
     {
         var contentEnd = TrimEnd(text, start, end);
 
         // Shape each span's part of the line again, so kerning and contextual forms are exact at line edges.
-        // Image spans become pieces without a run.
-        var pieces = new List<(ShapedRun? Run, TextStyle Style, InlineImage? Image)>();
+        // Image and box spans become pieces without a run.
+        var pieces = new List<(ShapedRun? Run, TextStyle Style, InlineImage? Image, InlineBoxFragment? Box)>();
         for (var s = 0; s < spans.Count; s++)
         {
             var from = Math.Max(start, spanStarts[s]);
@@ -231,9 +250,9 @@ internal static class ParagraphLayouter
             var isLastPiece = to == contentEnd;
 
             var style = spans[s].Style;
-            if (spans[s].Image is { } image)
+            if (spans[s].Image is not null || spans[s].Box is not null)
             {
-                pieces.Add((null, style, image));
+                pieces.Add((null, style, spans[s].Image, spans[s].Box is { } box ? boxes[box] : null));
                 if (isLastPiece)
                 {
                     break;
@@ -255,7 +274,7 @@ internal static class ParagraphLayouter
 
             foreach (var run in TextShaper.Shape(piece, style.Fonts, style.Shaping).VisualRuns)
             {
-                pieces.Add((run, style, null));
+                pieces.Add((run, style, null, null));
             }
 
             if (isLastPiece)
@@ -265,7 +284,7 @@ internal static class ParagraphLayouter
         }
 
         // Justification: widen spaces so the line fills the available width.
-        var naturalWidth = pieces.Sum(p => p.Run is { } run ? run.Advance * p.Style.FontSize : p.Image!.Width);
+        var naturalWidth = pieces.Sum(p => p.Run is { } run ? run.Advance * p.Style.FontSize : p.Image?.Width ?? p.Box!.OuterWidth);
         var glyphLists = pieces.Select(p => p.Run?.Glyphs ?? []).ToList();
         if (justify && naturalWidth < available)
         {
@@ -283,6 +302,7 @@ internal static class ParagraphLayouter
 
         var fragments = new List<LineFragment>(pieces.Count);
         var images = new List<InlineImageFragment>();
+        var lineBoxes = new List<InlineBoxFragment>();
         var x = 0.0;
         for (var p = 0; p < pieces.Count; p++)
         {
@@ -290,6 +310,13 @@ internal static class ParagraphLayouter
             {
                 images.Add(new InlineImageFragment(image, x));
                 x += image.Width;
+                continue;
+            }
+
+            if (pieces[p].Box is { } box)
+            {
+                lineBoxes.Add(new InlineBoxFragment(box.Box, x, box.Width, box.Height, box.Baseline, box.Content));
+                x += box.OuterWidth;
                 continue;
             }
 
@@ -314,6 +341,14 @@ internal static class ParagraphLayouter
             above = Math.Max(above, image.Image.Height);
         }
 
+        // Inline boxes sit on the baseline too: their margin box extends above and below it.
+        foreach (var box in lineBoxes)
+        {
+            var margin = box.Box.Content.Style.Margin;
+            above = Math.Max(above, margin.Top + box.Baseline);
+            below = Math.Max(below, box.Height - box.Baseline + margin.Bottom);
+        }
+
         var indent = firstLine ? paragraph.FirstLineIndent : 0;
         var offset = paragraph.Alignment switch
         {
@@ -322,7 +357,7 @@ internal static class ParagraphLayouter
             _ => 0,
         };
 
-        return new LineLayout(start, end, top, above + below, above, indent + offset, x, fragments, images);
+        return new LineLayout(start, end, top, above + below, above, indent + offset, x, fragments, images, lineBoxes);
     }
 
     private static (double Above, double Below) InlineBox(PdfFont font, TextStyle style)

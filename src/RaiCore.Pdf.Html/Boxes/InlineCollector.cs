@@ -52,6 +52,14 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         _hasVisibleContent = true;
     }
 
+    /// <summary>Adds an atomic inline box (inline-block, inline-flex, inline-table) as one item of the line.</summary>
+    public void AddBox(Block block)
+    {
+        Paragraph().AddBox(block);
+        _afterSpace = false;
+        _hasVisibleContent = true;
+    }
+
     /// <summary>The finished paragraph as an anonymous block, or null if there was no visible content.</summary>
     public ParagraphBlock? Flush()
     {

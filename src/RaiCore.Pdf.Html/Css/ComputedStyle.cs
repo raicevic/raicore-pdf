@@ -19,6 +19,8 @@ internal enum CssDisplay
     TableRowGroup,
     TableCaption,
     Flex,
+    InlineFlex,
+    InlineTable,
 }
 
 internal enum CssWhiteSpace
@@ -257,12 +259,13 @@ internal sealed record ComputedStyle
     private static CssDisplay ParseDisplay(string value) => value switch
     {
         "none" => CssDisplay.None,
-        // inline-flex is laid out as a block-level flex container (atomic inline boxes come later).
-        "flex" or "inline-flex" => CssDisplay.Flex,
+        "flex" => CssDisplay.Flex,
+        "inline-flex" => CssDisplay.InlineFlex,
         "block" or "grid" or "flow-root" or "flow" => CssDisplay.Block,
         "inline-block" or "inline-grid" => CssDisplay.InlineBlock,
+        "inline-table" => CssDisplay.InlineTable,
         "list-item" => CssDisplay.ListItem,
-        "table" or "inline-table" => CssDisplay.Table,
+        "table" => CssDisplay.Table,
         "table-row" => CssDisplay.TableRow,
         "table-cell" => CssDisplay.TableCell,
         "table-row-group" or "table-header-group" or "table-footer-group" => CssDisplay.TableRowGroup,
