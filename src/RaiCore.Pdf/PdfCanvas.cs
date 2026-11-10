@@ -5,11 +5,38 @@ using RaiCore.Pdf.Objects;
 
 namespace RaiCore.Pdf;
 
+/// <summary>How the ends of open stroked lines and dashes look (PDF line cap style).</summary>
+public enum LineCap
+{
+    /// <summary>Square, ending exactly at the endpoint.</summary>
+    Butt,
+
+    /// <summary>A semicircle around the endpoint (round dots for zero-length dashes).</summary>
+    Round,
+
+    /// <summary>Square, extending half the line width past the endpoint.</summary>
+    Square,
+}
+
+/// <summary>How corners of stroked paths look (PDF line join style).</summary>
+public enum LineJoin
+{
+    /// <summary>Sharp corners, cut off by the miter limit.</summary>
+    Miter,
+
+    /// <summary>Rounded corners.</summary>
+    Round,
+
+    /// <summary>Flattened corners.</summary>
+    Bevel,
+}
+
 /// <summary>
 /// Draws on a page by building its content stream. Coordinates are in PDF points (1/72 inch)
 /// with the origin in the bottom-left corner of the page.
 /// </summary>
-public sealed class PdfCanvas
+/// <remarks>Partial: feature areas may add drawing operations in their own files (<c>PdfCanvas.*.cs</c>).</remarks>
+public sealed partial class PdfCanvas
 {
     private readonly StringBuilder _ops = new();
     private readonly PdfPage _page;
@@ -30,6 +57,41 @@ public sealed class PdfCanvas
 
     /// <summary>Sets the stroke line width in points.</summary>
     public PdfCanvas SetLineWidth(double width) => Op($"{N(width)} w");
+
+    /// <summary>
+    /// Sets the dash pattern for strokes: lengths of alternating dashes and gaps in points, starting
+    /// <paramref name="phase"/> points into the pattern. An empty pattern draws solid lines.
+    /// </summary>
+    public PdfCanvas SetDash(IReadOnlyList<double> pattern, double phase = 0)
+    {
+        ArgumentNullException.ThrowIfNull(pattern);
+        if (pattern.Any(length => length < 0) || (pattern.Count > 0 && pattern.All(length => length == 0)))
+        {
+            throw new ArgumentException("Dash lengths must be non-negative and not all zero.", nameof(pattern));
+        }
+
+        return Op($"[{string.Join(' ', pattern.Select(N))}] {N(phase)} d");
+    }
+
+    /// <summary>Sets how the ends of open lines and dashes are drawn.</summary>
+    public PdfCanvas SetLineCap(LineCap cap) => Op($"{(int)cap} J");
+
+    /// <summary>Sets how corners of stroked paths are drawn.</summary>
+    public PdfCanvas SetLineJoin(LineJoin join) => Op($"{(int)join} j");
+
+    /// <summary>Sets the miter limit: the longest miter, as a multiple of the line width, before a corner is beveled.</summary>
+    public PdfCanvas SetMiterLimit(double limit)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        return Op($"{N(limit)} M");
+    }
+
+    /// <summary>
+    /// Concatenates a transformation matrix with the current one (<c>cm</c>): later coordinates map as
+    /// x' = a·x + c·y + e and y' = b·x + d·y + f. Use <see cref="SaveState"/>/<see cref="RestoreState"/> to undo it.
+    /// </summary>
+    public PdfCanvas Transform(double a, double b, double c, double d, double e, double f) =>
+        Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} cm");
 
     /// <summary>Starts a new subpath at the given point.</summary>
     public PdfCanvas MoveTo(double x, double y) => Op($"{N(x)} {N(y)} m");
@@ -56,6 +118,21 @@ public sealed class PdfCanvas
 
     /// <summary>Fills and then strokes the current path.</summary>
     public PdfCanvas FillAndStroke() => Op("B");
+
+    /// <summary>Fills the current path with the even-odd rule (holes where subpaths overlap an even number of times).</summary>
+    public PdfCanvas FillEvenOdd() => Op("f*");
+
+    /// <summary>Fills the current path with the even-odd rule and then strokes it.</summary>
+    public PdfCanvas FillAndStrokeEvenOdd() => Op("B*");
+
+    /// <summary>
+    /// Intersects the clipping region with the current path and ends the path without painting it. Everything drawn
+    /// afterwards is clipped until <see cref="RestoreState"/>.
+    /// </summary>
+    public PdfCanvas Clip(bool evenOdd = false) => Op(evenOdd ? "W* n" : "W n");
+
+    /// <summary>Ends the current path without painting it.</summary>
+    public PdfCanvas EndPath() => Op("n");
 
     /// <summary>
     /// Draws a single line of text with its baseline starting at (<paramref name="x"/>, <paramref name="y"/>),
