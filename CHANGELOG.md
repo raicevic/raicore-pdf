@@ -114,6 +114,12 @@ change at any time, and this section lists what the packages can do so far.
   `url()` images; `none` and `normal` generate nothing. `<q>` elements get quotes from the browser default styles.
 - `height`, `min-height` and `max-height`; percentage heights resolve against definite ancestor heights, starting
   with the page area, and `vh` units are the page area (to within a pixel).
+- `calc()`, `min()`, `max()` and `clamp()` in every length (sizes, margins, padding, `flex-basis`, gaps, `font-size`,
+  `line-height`, `text-indent`, `vertical-align`, `letter-spacing`, `word-spacing`, `text-decoration-thickness`,
+  `text-underline-offset`, table and `<col>` widths, `@page` size and margins): nested, with
+  CSS variables, any mix of units, and percentages resolved against the containing block like plain percentages.
+  Invalid expressions fall back to the property's initial value; results are clamped at 0 where lengths cannot be
+  negative. Viewport units (`vw`, `vh`, `vmin`, `vmax`) follow the page area set by `@page`.
 - CSS Paged Media: `@page` size and margins, `:first`/`:left`/`:right`, margin boxes for headers and footers,
   `counter(page)`/`counter(pages)`, `string-set` and running elements (which can be flex containers).
 - Web fonts: `@font-face` with `url()` and `local()` sources, `format()` hints (unsupported formats are not
@@ -143,8 +149,8 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   boxes (`inline-block`) or in running elements; links inside them work. A link's clickable area is the line box
   (rectangles, not rotated with transforms), and in a line mixing right-to-left and left-to-right text it may cover
   the wrong part.
-- Floats, positioning and grid (rendered as blocks); `calc()`, `overflow: hidden`, transparency (blended with white),
-  rounded corners and background images.
+- Floats, positioning and grid (rendered as blocks); `overflow: hidden`, transparency (blended with white), rounded
+  corners and background images.
 - Mixed left-to-right and right-to-left text on one line (the Unicode bidi algorithm); no hyphenation.
 - No synthetic bold or italic: a family without a bold or italic face uses its closest face as is.
 - `:first`/`:left`/`:right` cannot change page margins; no named pages. Bookmark labels cannot use counters, and inline

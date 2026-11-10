@@ -76,6 +76,11 @@ own engine. Supported today:
   outset), padding, background, width, max-width, `height`, `min-height`, `max-height`, auto margins, `box-sizing` and
   percentages. Percentage heights resolve against definite ancestor heights, starting with the page area (so
   `html, body { height: 100% }` and `100vh` fill the page).
+- `calc()`, `min()`, `max()` and `clamp()`, nested and with CSS variables, in every length: widths, heights, margins,
+  padding, `flex-basis`, gaps, `font-size`, `line-height`, `text-indent`, `vertical-align`, `letter-spacing`,
+  `word-spacing`, `text-decoration-thickness`, `text-underline-offset`, table and `<col>` widths, and `@page` size and
+  margins. Percentages inside them resolve like plain percentages (e.g. a sidebar layout with
+  `width: calc(100% - 200px)`); `vw`, `vh`, `vmin` and `vmax` are the page content area.
 - Fonts (`font-family` fallback lists, weight, style), color, `text-align`, `text-indent`, `line-height` and `text-transform`.
 - Web fonts: `@font-face` with `url()` (TTF, OTF, TTC, WOFF, WOFF2, also as `data:` URIs) and `local()` sources,
   `format()` hints, `font-weight` ranges for variable fonts, `font-style` and `unicode-range` (so per-script files as
@@ -142,8 +147,8 @@ Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowD
 before rendering, e.g. to set your own page decorator.
 
 Not yet: floats and positioning, grid layout (rendered as blocks),
-different page margins for `:first`/`:left`/`:right`, named pages, counters other than
-`page`/`pages`, and `calc()`. Content taller than a fixed `height` overflows
+different page margins for `:first`/`:left`/`:right`, named pages and counters other than
+`page`/`pages`. Content taller than a fixed `height` overflows
 the box (`overflow: hidden` is not supported yet).
 
 ### Razor to PDF
