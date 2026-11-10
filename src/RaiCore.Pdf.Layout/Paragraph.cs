@@ -21,6 +21,9 @@ public sealed record InlineImage(PdfImage Image, double Width, double Height, In
 {
     /// <summary>The image's opacity, from 0 (invisible) to 1 (opaque, the default), as CSS <c>opacity</c>.</summary>
     public double Opacity { get; init; } = 1;
+
+    /// <summary>Rounded corners the image is clipped to (CSS <c>border-radius</c>); percentages are of its width and height.</summary>
+    public CornerRadii BorderRadius { get; init; }
 }
 
 /// <summary>
@@ -227,12 +230,17 @@ public sealed class Paragraph
     /// <param name="height">Height in points.</param>
     /// <param name="alignment">Its vertical position in the line (CSS <c>vertical-align</c>).</param>
     /// <param name="opacity">Its opacity, from 0 (invisible) to 1 (opaque).</param>
-    public Paragraph AddImage(PdfImage image, double width, double height, InlineAlignment alignment = default, double opacity = 1)
+    /// <param name="borderRadius">Rounded corners to clip it to (see <see cref="InlineImage.BorderRadius"/>).</param>
+    public Paragraph AddImage(PdfImage image, double width, double height, InlineAlignment alignment = default, double opacity = 1, CornerRadii borderRadius = default)
     {
         ArgumentNullException.ThrowIfNull(image);
         ArgumentOutOfRangeException.ThrowIfNegative(width);
         ArgumentOutOfRangeException.ThrowIfNegative(height);
-        _spans.Add(new ParagraphSpan("\uFFFC", Style, new InlineImage(image, width, height, alignment) { Opacity = Math.Clamp(double.IsNaN(opacity) ? 1 : opacity, 0, 1) }));
+        _spans.Add(new ParagraphSpan("\uFFFC", Style, new InlineImage(image, width, height, alignment)
+        {
+            Opacity = Math.Clamp(double.IsNaN(opacity) ? 1 : opacity, 0, 1),
+            BorderRadius = borderRadius,
+        }));
         _length++;
         return this;
     }

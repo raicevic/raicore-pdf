@@ -477,7 +477,7 @@ internal sealed partial class BoxBuilder
             Limit(style.MinWidth, isMax: false); // The minimum wins.
 
             AddAnchors(element, collector);
-            collector.AddImage(image, w, h, verticalAlign, style.Opacity);
+            collector.AddImage(image, w, h, verticalAlign, style.Opacity, RadiiFor(style, w, h));
             return;
         }
 
@@ -605,6 +605,8 @@ internal sealed partial class BoxBuilder
             Padding = padding,
             Border = borders,
             Background = style.Background,
+            BackgroundClip = style.BackgroundClip,
+            BorderRadius = RadiiFor(style, usedWidth),
             Width = borderBoxWidth,
             MinWidth = minWidth,
             MaxWidth = maxWidth,
@@ -634,6 +636,43 @@ internal sealed partial class BoxBuilder
             var vertical = padding.Vertical + borders.Widths.Vertical;
             return value is { } v ? Math.Max(style.BorderBox ? Math.Max(v, vertical) : v + vertical, 0) : null;
         }
+    }
+
+    /// <summary>
+    /// The corner radii of a box. Lengths and percentages, also combined (<c>calc(50% - 2px)</c>), resolve against the
+    /// border box when it is painted; min(), max() and clamp() with percentages are evaluated here against
+    /// <paramref name="width"/> (the border box's width as far as it is known) and <paramref name="height"/> (or the width).
+    /// </summary>
+    private static CornerRadii RadiiFor(ComputedStyle style, double width, double? height = null)
+    {
+        if (style.BorderRadius.Length < 4 || style.BorderRadius.All(r => r is ({ Kind: CssLengthKind.Points, Value: 0 }, _) or (_, { Kind: CssLengthKind.Points, Value: 0 })))
+        {
+            return CornerRadii.None;
+        }
+
+        RadiusLength Length(CssLength length, double reference)
+        {
+            switch (length.Kind)
+            {
+                case CssLengthKind.Points:
+                    return RadiusLength.FromPoints(length.Value);
+                case CssLengthKind.Percent:
+                    return RadiusLength.FromPercent(length.Value);
+                case CssLengthKind.Calc:
+                    // Points plus a percentage when linear (calc() with + and -), else the value for the reference.
+                    var (zero, hundred, thousand) = (length.Resolve(0), length.Resolve(100), length.Resolve(1000));
+                    var percent = hundred - zero;
+                    return Math.Abs(zero + (10 * percent) - thousand) < 1e-6 * Math.Max(1, Math.Abs(thousand))
+                        ? new RadiusLength(zero, percent)
+                        : RadiusLength.FromPoints(Math.Max(0, length.Resolve(reference)));
+                default:
+                    return RadiusLength.Zero;
+            }
+        }
+
+        CornerRadius Corner(int corner) =>
+            new(Length(style.BorderRadius[corner].Horizontal, width), Length(style.BorderRadius[corner].Vertical, height ?? width));
+        return new CornerRadii(Corner(0), Corner(1), Corner(2), Corner(3));
     }
 
     private IReadOnlyList<PdfFont> FontsFor(ComputedStyle style)

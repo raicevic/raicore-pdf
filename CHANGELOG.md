@@ -85,6 +85,13 @@ change at any time, and this section lists what the packages can do so far.
 - Border styles (`BorderStyle` on `BorderSide`): solid, dashed, dotted, double, groove, ridge, inset and outset, drawn
   like browsers draw them, with sides of different colors or styles meeting on the corner diagonals. Collapsed table
   borders resolve conflicts as in CSS 2.1 (`hidden` wins, then the wider border, then the style) and keep their style.
+- Rounded corners (`BoxStyle.BorderRadius`, `CornerRadii`): circular or elliptical radii in points, percentages of the
+  border box or both, with overlapping radii scaled down as CSS specifies. Backgrounds, borders in every style (sides of
+  different widths and colors meet on the corner diagonals; dashes and dots run around the curves, and translucent ones
+  are painted once where sides meet) and the images of
+  image blocks and inline images (`InlineImage.BorderRadius`) follow them. A box split across pages is rounded only at
+  its own top and bottom, an inline element only at its first and last line; tables with collapsed borders are not
+  rounded. `BoxStyle.BackgroundClip` paints the background over the border, padding or content box.
 - Text decorations (`TextStyle.Decorations`): underline, overline and line-through, solid, double, dotted, dashed or
   wavy, with their own color, thickness and underline offset. Each is drawn with the metrics of the font that declared
   it (the `post` and `OS/2` tables; `PdfFont.UnderlinePosition`, `StrikeoutPosition` and their thicknesses) as one
@@ -131,6 +138,9 @@ change at any time, and this section lists what the packages can do so far.
   baseline of the element that declared them, as browsers do.
 - `letter-spacing` and `word-spacing` (lengths, including negative ones).
 - `border-style` and `border-{side}-style` (also through the `border` shorthands), including `hidden` in collapsed tables.
+- `border-radius` and its longhands: one to four values, the elliptical `/` form, lengths, percentages and `calc()`, on
+  blocks, flex items, table cells, inline elements and images (an `<img>` is clipped to its rounded content box); and
+  `background-clip`.
 - Generated content: `::before` and `::after` (also the legacy `:before`/`:after`), inserted as the element's first
   and last child in blocks, inline elements, list items, table cells and flex containers. They have their own styles
   (inheriting from their element): inline with an inline box for background, border and padding, `inline-block` as
@@ -173,7 +183,9 @@ change at any time, and this section lists what the packages can do so far.
 
 ### Known limitations
 The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these.
-- Borders on inline elements are drawn solid.
+- Borders on inline elements are drawn solid, unless they have rounded corners.
+- `min()`, `max()` and `clamp()` with percentages in `border-radius` are evaluated against the box's width as far as it
+  is known when the styles are read (plain percentages and `calc()` follow the painted box exactly).
 - Generated content: `counter()`/`counters()` generate nothing (no CSS counters yet); no `::marker`,
   `::first-line` or `::first-letter`; the legacy `:before`/`:after` count as a class in specificity (AngleSharp), not
   as an element.
@@ -181,7 +193,7 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   boxes (`inline-block`) or in running elements; links inside them work. A link's clickable area is the line box
   (rectangles, not rotated with transforms), and in a line mixing right-to-left and left-to-right text it may cover
   the wrong part.
-- Floats, positioning and grid (rendered as blocks); `overflow: hidden`, rounded corners and background images.
+- Floats, positioning and grid (rendered as blocks); `overflow: hidden` and background images.
 - `opacity` on inline elements (other than images and inline boxes) and on table rows and cells is ignored; where
   translucent collapsed table borders cross, they are painted twice. PDF/A-1 forbids transparency (PDF/A is not
   written yet).
