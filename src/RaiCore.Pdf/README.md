@@ -31,6 +31,8 @@ doc.Save("hello.pdf");
 - JPEG (embedded as is), PNG (every color type, transparency), GIF and SVG (drawn as vector graphics) images, each
   stored once per document.
 - Bookmarks: `PdfDocument.Outline` holds nested `PdfOutlineItem`s with Unicode titles.
+- Links: `PdfPage.AddLink` makes a rectangle open a URI or jump to a place in the document, also through named
+  destinations (`PdfDocument.NamedDestinations`).
 - Coordinates are PDF points (1/72 inch) with the origin at the bottom-left of the page.
 
 ## More

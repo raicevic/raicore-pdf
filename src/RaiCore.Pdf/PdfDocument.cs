@@ -41,6 +41,14 @@ public sealed class PdfDocument
     /// </summary>
     public PdfPageMode PageMode { get; set; } = PdfPageMode.Automatic;
 
+    /// <summary>
+    /// Named destinations: places in the document that links refer to by name
+    /// (<see cref="PdfPage.AddLink(double, double, double, double, string)"/>), written to the catalog's <c>/Names</c>
+    /// tree. Names are compared exactly (ordinal). Links may be added before their destinations; links to names
+    /// missing here when the document is saved are left out.
+    /// </summary>
+    public IDictionary<string, PdfDestination> NamedDestinations { get; } = new Dictionary<string, PdfDestination>(StringComparer.Ordinal);
+
     /// <summary>Appends a new, empty page.</summary>
     public PdfPage AddPage(PdfPageSize size)
     {
@@ -114,6 +122,7 @@ public sealed class PdfDocument
 
         var kids = new PdfArray();
         var pageRefs = new Dictionary<PdfPage, PdfReference>(ReferenceEqualityComparer.Instance);
+        var pageDictionaries = new List<PdfDictionary>(_pages.Count);
         foreach (var page in _pages)
         {
             var fontResources = new PdfDictionary();
@@ -142,16 +151,27 @@ public sealed class PdfDocument
             var content = page.Canvas.ToBytes();
             var contentStream = CompressContent ? PdfStreamObject.CreateCompressed(content) : new PdfStreamObject(content);
 
-            var pageRef = writer.Add(new PdfDictionary
+            var pageDictionary = new PdfDictionary
             {
                 ["Type"] = new PdfName("Page"),
                 ["Parent"] = pageTreeRef,
                 ["MediaBox"] = PdfArray.OfNumbers(0, 0, page.Width, page.Height),
                 ["Resources"] = resources,
                 ["Contents"] = writer.Add(contentStream),
-            });
+            };
+            var pageRef = writer.Add(pageDictionary);
             kids.Items.Add(pageRef);
             pageRefs[page] = pageRef;
+            pageDictionaries.Add(pageDictionary);
+        }
+
+        // Links may point at any page, so they are written once every page has its object number.
+        for (var i = 0; i < _pages.Count; i++)
+        {
+            if (PdfLinkWriter.WriteAnnotations(writer, _pages[i], pageRefs, NamedDestinations) is { } annotations)
+            {
+                pageDictionaries[i]["Annots"] = annotations;
+            }
         }
 
         pageTree["Kids"] = kids;
@@ -160,6 +180,11 @@ public sealed class PdfDocument
         if (Outline.Count > 0)
         {
             catalog["Outlines"] = PdfOutlineWriter.Write(writer, Outline, pageRefs);
+        }
+
+        if (NamedDestinations.Count > 0)
+        {
+            catalog["Names"] = new PdfDictionary { ["Dests"] = PdfLinkWriter.WriteNames(writer, NamedDestinations, pageRefs) };
         }
 
         if (PageMode == PdfPageMode.UseOutlines || (PageMode == PdfPageMode.Automatic && Outline.Count > 0))

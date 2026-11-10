@@ -20,6 +20,19 @@ public abstract class Block
     /// that moved to a later page). <c>null</c> (the default) for none.
     /// </summary>
     public Bookmark? Bookmark { get; init; }
+
+    /// <summary>
+    /// Names the block as a link destination: links to <see cref="LinkTarget.ToDestination"/> with this id jump to where
+    /// the block starts (where its content starts, if that moved to a later page). It becomes a named destination of the
+    /// PDF. When several blocks have the same id, the first one wins. <c>null</c> (the default) for none.
+    /// </summary>
+    public string? Id { get; init; }
+
+    /// <summary>
+    /// Makes the whole block (its border box, on every page it continues on) a link. <c>null</c> (the default) for none.
+    /// For links in text, see <see cref="Paragraph.BeginLink"/>.
+    /// </summary>
+    public LinkTarget? Link { get; init; }
 }
 
 /// <summary>A block containing one paragraph of text.</summary>

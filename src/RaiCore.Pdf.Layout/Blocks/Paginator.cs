@@ -15,20 +15,28 @@ internal delegate void DrawOperation(PdfCanvas canvas, double pageHeight);
 internal sealed record Placement(int Page, Block Block, double Top, double Bottom, int FirstLine, int EndLine, double Left = 0, double Width = 0);
 
 /// <summary>
-/// Where a block that can be navigated to (one with a <see cref="Block.Bookmark"/>) starts: the top of its border box,
-/// or of its content when that moved to a later page. Y values are from the top of the page.
+/// Where a block that can be navigated to (one with a <see cref="Block.Bookmark"/> or a <see cref="Block.Id"/>) starts:
+/// the top of its border box, or of its content when that moved to a later page. Also where a paragraph's anchor
+/// (<see cref="Paragraph.AddAnchor"/>) is: the top of its line. Y values are from the top of the page.
 /// </summary>
-/// <param name="Block">The block.</param>
+/// <param name="Block">The block (for a paragraph's anchor, the paragraph's block).</param>
 /// <param name="Page">0-based page index.</param>
-/// <param name="Top">Top of the block.</param>
-/// <param name="Left">Left edge of the block's border box.</param>
-internal sealed record Anchor(Block Block, int Page, double Top, double Left);
+/// <param name="Top">Top of the block, or of the anchor's line.</param>
+/// <param name="Left">Left edge of the block's border box, or of the anchor's line.</param>
+internal sealed record Anchor(Block Block, int Page, double Top, double Left)
+{
+    /// <summary>The id of a paragraph's anchor; <c>null</c> for the block's own anchor.</summary>
+    public string? Name { get; init; }
+
+    /// <summary>The name of the destination: the paragraph anchor's id or the block's.</summary>
+    public string? DestinationName => Name ?? Block.Id;
+}
 
 /// <summary>The result of pagination: drawing operations per page, and where everything went.</summary>
 /// <param name="Pages">Drawing operations per page.</param>
 /// <param name="Placements">Where each piece of each block went.</param>
 /// <param name="Markers">The markers of the blocks starting on each page.</param>
-/// <param name="Anchors">Where the blocks with bookmarks start, in document order.</param>
+/// <param name="Anchors">Where the blocks with bookmarks or ids, and the paragraphs' anchors, are, in document order.</param>
 internal sealed record PaginationResult(
     IReadOnlyList<IReadOnlyList<DrawOperation>> Pages, IReadOnlyList<Placement> Placements, IReadOnlyList<(int Page, object Marker)> Markers,
     IReadOnlyList<Anchor> Anchors);
@@ -238,7 +246,7 @@ internal sealed partial class Paginator
                     _markers.Add((PageIndex, emptyMarker));
                 }
 
-                if (block.Bookmark is not null)
+                if (block.Bookmark is not null || block.Id is not null)
                 {
                     _anchors.Add(new Anchor(block, PageIndex, Y, x + style.Margin.Left));
                 }
@@ -394,12 +402,12 @@ internal sealed partial class Paginator
     }
 
     /// <summary>
-    /// Records where a block with a bookmark starts (its border box at the current position), before its content is
-    /// laid out so that anchors stay in document order. Returns the anchor's index, or -1 when it has none.
+    /// Records where a block with a bookmark or an id starts (its border box at the current position), before its
+    /// content is laid out so that anchors stay in document order. Returns the anchor's index, or -1 when it has none.
     /// </summary>
     private int BeginAnchor(Block block, double x)
     {
-        if (block.Bookmark is null)
+        if (block.Bookmark is null && block.Id is null)
         {
             return -1;
         }
@@ -447,6 +455,7 @@ internal sealed partial class Paginator
         var style = styleOverride ?? block.Style;
         var border = style.Border.Widths;
         var decorated = style.Background is not null || border.Vertical > 0 || border.Horizontal > 0;
+        var link = block.Link;
 
         var startPage = PageIndex;
         var startY = Y;
@@ -475,7 +484,7 @@ internal sealed partial class Paginator
 
         if (sizing.StretchTo is { } line)
         {
-            if (decorated)
+            if (decorated || link is not null)
             {
                 line.Pending.Add(() => Decorate(line.Page, line.Y - sizing.StretchInset));
             }
@@ -483,11 +492,12 @@ internal sealed partial class Paginator
             return;
         }
 
-        if (decorated)
+        if (decorated || link is not null)
         {
             Decorate(PageIndex, Y);
         }
 
+        // Backgrounds and borders of each page fragment, and the link over it.
         void Decorate(int endPage, double endY)
         {
             for (var page = startPage; page <= endPage; page++)
@@ -496,9 +506,17 @@ internal sealed partial class Paginator
                 var last = page == endPage;
                 var top = first ? startY : PageTop(page);
                 var bottom = last ? endY : PageBottom(page);
-                var index = first ? insertAt : 0; // Pages created inside the box: under everything on them.
-                _pages[page].Insert(index, (canvas, pageHeight) => DrawBox(canvas, pageHeight, style, x, top, width, bottom - top, first, last));
-                _placements.Add(new Placement(page, block, top, bottom, -1, -1, x, width));
+                if (decorated)
+                {
+                    var index = first ? insertAt : 0; // Pages created inside the box: under everything on them.
+                    _pages[page].Insert(index, (canvas, pageHeight) => DrawBox(canvas, pageHeight, style, x, top, width, bottom - top, first, last));
+                    _placements.Add(new Placement(page, block, top, bottom, -1, -1, x, width));
+                }
+
+                if (link is not null)
+                {
+                    _pages[page].Add((canvas, pageHeight) => link.AddTo(canvas, x, pageHeight - bottom, width, bottom - top));
+                }
             }
         }
     }
@@ -616,6 +634,29 @@ internal sealed partial class Paginator
         _pages[PageIndex].Add((canvas, pageHeight) => layout.Draw(canvas, x, pageHeight - top, first, end));
         Y += layout.Lines[end - 1].Top + layout.Lines[end - 1].Height - layout.Lines[first].Top;
         _placements.Add(new Placement(PageIndex, block, top, Y, first, end, x, layout.AvailableWidth));
+        AddParagraphAnchors(block, layout, x, top, first, end);
+    }
+
+    /// <summary>
+    /// Records the paragraph's anchors (<see cref="Paragraph.AddAnchor"/>) on lines [first, end), placed from
+    /// <paramref name="top"/> on the current page: each at the top of the line containing it (an anchor at the very end
+    /// of the text belongs to the last line).
+    /// </summary>
+    private void AddParagraphAnchors(ParagraphBlock block, ParagraphLayout layout, double x, double top, int first, int end)
+    {
+        var lines = layout.Lines;
+        foreach (var anchor in block.Paragraph.Anchors)
+        {
+            for (var i = first; i < end; i++)
+            {
+                var line = lines[i];
+                if (anchor.Index >= line.Start && (anchor.Index < line.End || i == lines.Count - 1))
+                {
+                    _anchors.Add(new Anchor(block, PageIndex, top + line.Top - lines[first].Top, x + line.X) { Name = anchor.Id });
+                    break;
+                }
+            }
+        }
     }
 
     private static int CountFittingLines(IReadOnlyList<LineLayout> lines, int start, double available)

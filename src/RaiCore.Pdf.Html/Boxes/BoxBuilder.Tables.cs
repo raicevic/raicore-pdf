@@ -52,6 +52,7 @@ internal sealed partial class BoxBuilder
         var captions = new List<Block>();
         var table = new TableBlock(box)
         {
+            Id = IdFor(element),
             BorderCollapse = style.BorderCollapse ? BorderCollapse.Collapse : BorderCollapse.Separate,
             HorizontalSpacing = spacingAttribute ?? style.BorderSpacingX,
             VerticalSpacing = spacingAttribute ?? style.BorderSpacingY,

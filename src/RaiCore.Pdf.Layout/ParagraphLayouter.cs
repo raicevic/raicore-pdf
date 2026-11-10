@@ -336,10 +336,25 @@ internal static class ParagraphLayouter
             openDecorations[decoration] = (0, false); // Continued from the previous line.
         }
 
+        // Links on this line: each covers its pieces, from where its first piece's element boxes start to where its
+        // last piece's end (a link continued from the previous line, or continuing on the next, runs to the line's edge).
+        var links = paragraph.Links.Where(l => l.Start < contentEnd && l.End > start).ToList();
+        var openLinks = new Dictionary<InlineLink, double>(ReferenceEqualityComparer.Instance);
+        foreach (var link in links.Where(l => l.Start < start))
+        {
+            openLinks[link] = 0; // Continued from the previous line.
+        }
+
+        var linkPieces = new List<InlineLinkFragment>();
+
         var x = 0.0;
         for (var p = 0; p < pieces.Count; p++)
         {
             var (run, _, style, image, box, from, to) = pieces[p];
+            foreach (var link in links.Where(l => l.Start == from))
+            {
+                openLinks[link] = x;
+            }
 
             // Elements starting here, outer ones (ending later) first: margin, then the border box starts.
             foreach (var decoration in decorations.Where(d => d.Start == from).OrderByDescending(d => d.End))
@@ -380,6 +395,19 @@ internal static class ParagraphLayouter
 
                 x += edge ? decoration.Box.Margin.Right : 0;
             }
+
+            foreach (var link in links.Where(l => l.End == to))
+            {
+                if (openLinks.Remove(link, out var linkX0))
+                {
+                    linkPieces.Add(new InlineLinkFragment(link, linkX0, x));
+                }
+            }
+        }
+
+        foreach (var (link, linkX0) in openLinks)
+        {
+            linkPieces.Add(new InlineLinkFragment(link, linkX0, x));
         }
 
         // Elements continuing on the next line end at the line's end, without their right edge.
@@ -470,7 +498,10 @@ internal static class ParagraphLayouter
             })
             .ToList();
 
-        return new LineLayout(start, end, top, above + below, above, indent + offset, x, fragments, images, lineBoxes, decorationFragments);
+        return new LineLayout(start, end, top, above + below, above, indent + offset, x, fragments, images, lineBoxes, decorationFragments)
+        {
+            Links = linkPieces,
+        };
     }
 
     private static double StartEdge(BoxStyle box) => box.Margin.Left + box.Border.Left.Width + box.Padding.Left;

@@ -75,6 +75,8 @@ internal sealed partial class BoxBuilder
             ColumnGap = Math.Max(0, style.ColumnGap.Resolve(contentWidth)),
             Marker = _paged?.MarkerFor(element),
             Bookmark = BookmarkFor(element),
+            Id = IdFor(element),
+            Link = LinkFor(element),
         };
     }
 
