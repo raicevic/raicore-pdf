@@ -24,10 +24,22 @@ internal sealed record ElementItem(string Name, string Policy) : ContentItem;
 /// </summary>
 internal sealed record ElementTextItem(string Part = "text") : ContentItem;
 
-/// <summary><c>attr(name)</c>: an attribute of the element (in <c>string-set</c> and <c>bookmark-label</c>).</summary>
+/// <summary><c>attr(name)</c>: an attribute of the element (in <c>string-set</c>, <c>bookmark-label</c> and <c>content</c>).</summary>
 internal sealed record AttributeItem(string Name) : ContentItem;
 
-/// <summary>Parses CSS content values: strings (with CSS escapes) and the functions used in paged media.</summary>
+/// <summary>
+/// <c>open-quote</c>, <c>close-quote</c>, <c>no-open-quote</c> or <c>no-close-quote</c> (in the <c>content</c> of
+/// <c>::before</c> and <c>::after</c>).
+/// </summary>
+internal sealed record QuoteItem(string Kind) : ContentItem;
+
+/// <summary><c>url(address)</c>: an image (in the <c>content</c> of <c>::before</c> and <c>::after</c>).</summary>
+internal sealed record ImageItem(string Url) : ContentItem;
+
+/// <summary>
+/// Parses CSS content values: strings (with CSS escapes), quotes, images and the functions used in generated content
+/// and paged media.
+/// </summary>
 internal static class ContentValue
 {
     /// <summary>Parses a value; returns null for <c>none</c>/<c>normal</c> (no content).</summary>
@@ -70,6 +82,8 @@ internal static class ContentValue
                     "element" => new ElementItem(Arg(0, string.Empty), Arg(1, "first").ToLowerInvariant()),
                     "content" => new ElementTextItem(Arg(0, "text").ToLowerInvariant()),
                     "attr" => new AttributeItem(Arg(0, string.Empty)),
+                    "open-quote" or "close-quote" or "no-open-quote" or "no-close-quote" => new QuoteItem(name),
+                    "url" => new ImageItem(string.Join(',', arguments).Trim()), // An unquoted data URI has commas.
                     _ => null,
                 };
                 if (item is not null)

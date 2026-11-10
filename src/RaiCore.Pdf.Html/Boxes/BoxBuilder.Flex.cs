@@ -4,7 +4,10 @@ using RaiCore.Pdf.Layout.Blocks;
 
 namespace RaiCore.Pdf.Html.Boxes;
 
-/// <summary>Flex containers (CSS Flexbox): every child element becomes a flex item, and so does each run of loose text.</summary>
+/// <summary>
+/// Flex containers (CSS Flexbox): every child element (and <c>::before</c>/<c>::after</c>) becomes a flex item, and so
+/// does each run of loose text.
+/// </summary>
 internal sealed partial class BoxBuilder
 {
     private FlexBlock BuildFlex(IElement element, ComputedStyle style, double containingWidth, bool flexItem)
@@ -25,7 +28,7 @@ internal sealed partial class BoxBuilder
             }
         }
 
-        foreach (var node in element.ChildNodes)
+        foreach (var node in WithGeneratedContent(element))
         {
             switch (node)
             {

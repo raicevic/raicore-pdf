@@ -95,6 +95,12 @@ change at any time, and this section lists what the packages can do so far.
   baseline of the element that declared them, as browsers do.
 - `letter-spacing` and `word-spacing` (lengths, including negative ones).
 - `border-style` and `border-{side}-style` (also through the `border` shorthands), including `hidden` in collapsed tables.
+- Generated content: `::before` and `::after` (also the legacy `:before`/`:after`), inserted as the element's first
+  and last child in blocks, inline elements, list items, table cells and flex containers. They have their own styles
+  (inheriting from their element): inline with an inline box for background, border and padding, `inline-block` as
+  atomic inline boxes, or block-level. `content` takes strings with CSS escapes, `attr()`, `open-quote`/`close-quote`
+  (with `quotes`; by default double quotes, then single quotes for nested ones), `no-open-quote`/`no-close-quote` and
+  `url()` images; `none` and `normal` generate nothing. `<q>` elements get quotes from the browser default styles.
 - `height`, `min-height` and `max-height`; percentage heights resolve against definite ancestor heights, starting
   with the page area, and `vh` units are the page area (to within a pixel).
 - CSS Paged Media: `@page` size and margins, `:first`/`:left`/`:right`, margin boxes for headers and footers,
@@ -104,8 +110,8 @@ change at any time, and this section lists what the packages can do so far.
   declared family hides installed fonts of the same name; a family that fails to load falls back to the next one.
   `PdfFont.WithUnicodeRanges` restricts a font to code point ranges, embedding it once however many views use it.
 - PDF bookmarks from `h1`-`h6`, nested by level, customized with the CSS GCPM properties `bookmark-level`,
-  `bookmark-label` (strings, `content()`, `content(first-letter)` and `attr()`) and `bookmark-state`, cascaded by
-  specificity. `HtmlConverterOptions.CreateBookmarks = false` turns them off.
+  `bookmark-label` (strings, `content()`, `content(first-letter)`, `content(before)`/`content(after)` and `attr()`)
+  and `bookmark-state`, cascaded by specificity. `HtmlConverterOptions.CreateBookmarks = false` turns them off.
 - Network access is off unless you supply a `ResourceLoader`.
 
 ### RaiCore.Pdf.Razor
@@ -114,13 +120,16 @@ change at any time, and this section lists what the packages can do so far.
 
 ### Known limitations
 The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these.
-- No `::before`/`::after` or links. Borders on inline elements are drawn solid.
+- No links. Borders on inline elements are drawn solid.
+- Generated content: `counter()`/`counters()` generate nothing (no CSS counters yet); no `::marker`,
+  `::first-line` or `::first-letter`; the legacy `:before`/`:after` count as a class in specificity (AngleSharp), not
+  as an element.
 - Floats, positioning and grid (rendered as blocks); `calc()`, `overflow: hidden`, transparency (blended with white),
   rounded corners and background images.
 - Mixed left-to-right and right-to-left text on one line (the Unicode bidi algorithm); no hyphenation.
 - No synthetic bold or italic: a family without a bold or italic face uses its closest face as is.
-- `:first`/`:left`/`:right` cannot change page margins; no named pages. Bookmark labels cannot use counters or
-  `content(before)`/`content(after)` (they give empty text), and inline elements cannot be bookmarks.
+- `:first`/`:left`/`:right` cannot change page margins; no named pages. Bookmark labels cannot use counters, and inline
+  elements cannot be bookmarks.
 - No tagged PDF, PDF/A or encryption. WebP and BMP images are not supported.
 - SVG: no filters, masks, markers, patterns, `spreadMethod` `reflect`/`repeat` (drawn as `pad`), text on a path or
   per-character positions (only the first `x`/`y`/`dx`/`dy`), and no web fonts in SVG text (the standard fonts are
