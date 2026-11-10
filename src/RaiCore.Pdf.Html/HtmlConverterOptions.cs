@@ -34,6 +34,12 @@ public sealed class HtmlConverterOptions
 
     /// <summary>Extra CSS applied after the document's own styles (as if it were the last stylesheet).</summary>
     public string? UserStyleSheet { get; init; }
+
+    /// <summary>
+    /// Whether to create PDF bookmarks (the document outline): from <c>h1</c>-<c>h6</c> by default, customized with the
+    /// CSS properties <c>bookmark-level</c>, <c>bookmark-label</c> and <c>bookmark-state</c>. Defaults to <c>true</c>.
+    /// </summary>
+    public bool CreateBookmarks { get; init; } = true;
 }
 
 /// <summary>Built-in resource loading.</summary>
