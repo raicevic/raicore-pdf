@@ -54,6 +54,8 @@ internal static class UserAgentStyleSheet
         center { text-align: center; }
         a:link, a:visited, a { color: #0000EE; }
         mark { color: black; }
+        q::before { content: open-quote; }
+        q::after { content: close-quote; }
         hr { border-style: solid; border-width: 1px 0 0 0; border-color: gray; margin: 0.5em 0; }
         """;
 }

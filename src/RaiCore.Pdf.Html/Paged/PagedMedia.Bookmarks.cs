@@ -23,7 +23,12 @@ internal sealed partial class PagedMedia
     private int _bookmarkOrder;
 
     /// <summary>The bookmark for the block of <paramref name="element"/>, or null when it has none.</summary>
-    public Bookmark? BookmarkFor(IElement element)
+    /// <param name="element">The element.</param>
+    /// <param name="generatedText">
+    /// The text of the element's <c>::before</c> or <c>::after</c> (given "before" or "after"), for
+    /// <c>content(before)</c> and <c>content(after)</c>.
+    /// </param>
+    public Bookmark? BookmarkFor(IElement element, Func<string, string>? generatedText = null)
     {
         if (!_bookmarkProperties.TryGetValue(element, out var properties)
             || !properties.TryGetValue("bookmark-level", out var levelDeclaration)
@@ -38,8 +43,9 @@ internal sealed partial class PagedMedia
             TextItem text => text.Text,
             ElementTextItem { Part: "text" } => TextOf(element),
             ElementTextItem { Part: "first-letter" } => FirstLetter(TextOf(element)),
+            ElementTextItem { Part: "before" or "after" } part => generatedText?.Invoke(part.Part) ?? string.Empty,
             AttributeItem attribute => element.GetAttribute(attribute.Name) ?? string.Empty,
-            _ => string.Empty, // content(before|after|marker) (no pseudo-elements yet) and counters.
+            _ => string.Empty, // content(marker) and counters.
         })));
         if (title.Length == 0)
         {

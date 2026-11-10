@@ -144,9 +144,13 @@ internal sealed partial class BoxBuilder
     /// The PDF bookmark for an element's block (headings by default), unless bookmarks are off. Running elements may
     /// get one too, but it has no effect: margin boxes are drawn outside the flow, which is what the outline is made of.
     /// </summary>
-    private Bookmark? BookmarkFor(IElement element) => _options.CreateBookmarks ? _paged?.BookmarkFor(element) : null;
+    private Bookmark? BookmarkFor(IElement element) =>
+        _options.CreateBookmarks ? _paged?.BookmarkFor(element, pseudo => GeneratedText(element, pseudo)) : null;
 
-    /// <summary>Adds the element's children: inline content goes to the collector, block-level children become blocks.</summary>
+    /// <summary>
+    /// Adds the element's children, with its <c>::before</c> and <c>::after</c>: inline content goes to the collector,
+    /// block-level children become blocks.
+    /// </summary>
     /// <param name="element">The element whose children are added.</param>
     /// <param name="style">Its computed style.</param>
     /// <param name="contentWidth">The width of the block the inline content flows in.</param>
@@ -159,7 +163,7 @@ internal sealed partial class BoxBuilder
     private void AddChildren(IElement element, ComputedStyle style, double contentWidth, List<Block> children, InlineCollector collector, InlineAlignment inherited = default)
     {
         var listIndex = ListStart(element);
-        foreach (var node in element.ChildNodes)
+        foreach (var node in WithGeneratedContent(element))
         {
             switch (node)
             {
