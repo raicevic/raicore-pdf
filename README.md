@@ -67,6 +67,11 @@ own engine. Supported today:
 - `text-decoration`: underline, overline and line-through in every style (solid, double, dotted, dashed, wavy), with
   color, thickness and `text-underline-offset`, propagated to descendants and placed with the font's own metrics.
 - `letter-spacing` and `word-spacing`, also with justified text.
+- Generated content: `::before` and `::after` (also `:before`/`:after`) with their own styles, inline, `inline-block`
+  or block-level, in any element, list item, table cell or flex container. `content` takes strings with CSS escapes
+  (`"\201C"`, `"\A"` with `white-space: pre`), `attr()`, `open-quote`/`close-quote` (following `quotes`, nested
+  quotes alternate between double and single; `<q>` gets them by default), `no-open-quote`/`no-close-quote` and
+  `url()` images; `none` and `normal` generate nothing.
 - The box model: margin, border (every `border-style`: solid, dashed, dotted, double, groove, ridge, inset and
   outset), padding, background, width, max-width, `height`, `min-height`, `max-height`, auto margins, `box-sizing` and
   percentages. Percentage heights resolve against definite ancestor heights, starting with the page area (so
@@ -123,7 +128,8 @@ h2          { bookmark-state: closed; }                       /* collapsed until
 
 - `bookmark-level`: `none` or a level (`h1`-`h6` default to 1-6; a skipped level nests under the nearest shallower
   entry).
-- `bookmark-label`: strings, `content()` (the element's text, the default), `content(first-letter)` and `attr()`.
+- `bookmark-label`: strings, `content()` (the element's text, the default), `content(first-letter)`,
+  `content(before)`/`content(after)` (the text of the `::before`/`::after`) and `attr()`.
 - `bookmark-state`: `open` (the default) or `closed`.
 
 Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowDocument` returns the laid-out document
