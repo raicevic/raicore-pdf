@@ -33,6 +33,14 @@ public class HtmlLetterSpacingTests
     }
 
     [Fact]
+    public void Em_spacing_is_inherited_as_the_parents_length()
+    {
+        var spans = Spans("<p style='font-size: 20px; letter-spacing: 0.1em'>a <span style='font-size: 10px'>b</span></p>");
+
+        Assert.Equal(2 * Px, Span(spans, "b").Style.LetterSpacing, 6); // Computed on the p, not on the span's 10px.
+    }
+
+    [Fact]
     public void Spaced_text_is_wider_in_the_document()
     {
         double LineWidth(string css) => Flatten(HtmlToPdf.CreateFlowDocument($"<p style='{css}'>Spaced out</p>").Blocks)
