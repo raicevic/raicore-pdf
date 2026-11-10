@@ -22,7 +22,7 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
     /// <summary>A list marker to place before the first content (or alone, if the item is empty).</summary>
     public void SetMarker(string marker) => _marker = marker;
 
-    public void AddText(string text, ComputedStyle style)
+    public void AddText(string text, ComputedStyle style, InlineAlignment alignment = default)
     {
         var processed = ProcessWhiteSpace(Transform(text, style.TextTransform), style.WhiteSpace);
         if (processed.Length == 0)
@@ -30,7 +30,8 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
             return;
         }
 
-        Paragraph().Add(processed, builder.TextStyleFor(style));
+        var textStyle = builder.TextStyleFor(style);
+        Paragraph().Add(processed, alignment == default ? textStyle : textStyle with { VerticalAlign = alignment });
         if (processed.Any(c => !char.IsWhiteSpace(c)))
         {
             _hasVisibleContent = true;
@@ -45,17 +46,17 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         _hasVisibleContent = true;
     }
 
-    public void AddImage(PdfImage image, double width, double height)
+    public void AddImage(PdfImage image, double width, double height, InlineAlignment alignment = default)
     {
-        Paragraph().AddImage(image, width, height);
+        Paragraph().AddImage(image, width, height, alignment);
         _afterSpace = false;
         _hasVisibleContent = true;
     }
 
     /// <summary>Adds an atomic inline box (inline-block, inline-flex, inline-table) as one item of the line.</summary>
-    public void AddBox(Block block)
+    public void AddBox(Block block, InlineAlignment alignment = default)
     {
-        Paragraph().AddBox(block);
+        Paragraph().AddBox(block, alignment);
         _afterSpace = false;
         _hasVisibleContent = true;
     }

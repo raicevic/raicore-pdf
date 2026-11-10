@@ -300,53 +300,89 @@ internal static class ParagraphLayouter
             }
         }
 
-        var fragments = new List<LineFragment>(pieces.Count);
-        var images = new List<InlineImageFragment>();
-        var lineBoxes = new List<InlineBoxFragment>();
+        // Each piece's extent above and below its own baseline, its alignment, and its x position.
+        var items = new (double Above, double Below, InlineAlignment Align, double X)[pieces.Count];
         var x = 0.0;
         for (var p = 0; p < pieces.Count; p++)
         {
-            if (pieces[p].Image is { } image)
+            var (run, style, image, box) = pieces[p];
+            if (image is not null)
             {
-                images.Add(new InlineImageFragment(image, x));
+                items[p] = (image.Height, 0, image.Alignment, x); // An image's bottom is its baseline.
                 x += image.Width;
-                continue;
             }
-
-            if (pieces[p].Box is { } box)
+            else if (box is not null)
             {
-                lineBoxes.Add(new InlineBoxFragment(box.Box, x, box.Width, box.Height, box.Baseline, box.Content));
+                var margin = box.Box.Content.Style.Margin;
+                items[p] = (margin.Top + box.Baseline, box.Height - box.Baseline + margin.Bottom, box.Box.Alignment, x);
                 x += box.OuterWidth;
-                continue;
             }
-
-            var fragment = new LineFragment(pieces[p].Run!, pieces[p].Style, glyphLists[p], x);
-            fragments.Add(fragment);
-            x += fragment.Width;
+            else
+            {
+                var (a, d) = InlineBox(run!.Font, style);
+                items[p] = (a, d, style.VerticalAlign, x);
+                x += glyphLists[p].Sum(g => g.Advance) * style.FontSize;
+            }
         }
 
-        // Line box (CSS 2.1 section 10.8): the strut and every fragment contribute ascent + half-leading
-        // above the baseline and descent + half-leading below it.
-        var (above, below) = InlineBox(paragraph.Style.Fonts[0], paragraph.Style);
-        foreach (var fragment in fragments)
+        // Line box (CSS 2.1 section 10.8): the strut and every item contribute their extent above and below the
+        // baseline, after their vertical-align shift. Items aligned to the line's top or bottom come last, once the
+        // line box is known, and only make it taller if they do not fit.
+        var strut = paragraph.Style;
+        var strutFont = strut.Fonts[0];
+        var (above, below) = InlineBox(strutFont, strut);
+        var shifts = new double[pieces.Count];
+        for (var p = 0; p < pieces.Count; p++)
         {
-            var (a, d) = InlineBox(fragment.Run.Font, fragment.Style);
-            above = Math.Max(above, a);
-            below = Math.Max(below, d);
+            var (a, d, align, _) = items[p];
+            shifts[p] = align.Shift + align.Kind switch
+            {
+                InlineAlignmentKind.Middle => (strutFont.XHeight * strut.FontSize / 2) - ((a - d) / 2),
+                InlineAlignmentKind.TextTop => (strutFont.Ascent * strut.FontSize) - a,
+                InlineAlignmentKind.TextBottom => d + (strutFont.Descent * strut.FontSize),
+                _ => 0,
+            };
+            if (align.Kind is not (InlineAlignmentKind.Top or InlineAlignmentKind.Bottom))
+            {
+                above = Math.Max(above, a + shifts[p]);
+                below = Math.Max(below, d - shifts[p]);
+            }
         }
 
-        // Images sit on the baseline (CSS vertical-align: baseline), so they only add height above it.
-        foreach (var image in images)
+        for (var p = 0; p < pieces.Count; p++)
         {
-            above = Math.Max(above, image.Image.Height);
+            var (a, d, align, _) = items[p];
+            if (align.Kind == InlineAlignmentKind.Top)
+            {
+                shifts[p] = above - a;
+                below = Math.Max(below, a + d - above);
+            }
+            else if (align.Kind == InlineAlignmentKind.Bottom)
+            {
+                shifts[p] = d - below;
+                above = Math.Max(above, a + d - below);
+            }
         }
 
-        // Inline boxes sit on the baseline too: their margin box extends above and below it.
-        foreach (var box in lineBoxes)
+        var fragments = new List<LineFragment>(pieces.Count);
+        var images = new List<InlineImageFragment>();
+        var lineBoxes = new List<InlineBoxFragment>();
+        for (var p = 0; p < pieces.Count; p++)
         {
-            var margin = box.Box.Content.Style.Margin;
-            above = Math.Max(above, margin.Top + box.Baseline);
-            below = Math.Max(below, box.Height - box.Baseline + margin.Bottom);
+            var (run, style, image, box) = pieces[p];
+            var itemX = items[p].X;
+            if (image is not null)
+            {
+                images.Add(new InlineImageFragment(image, itemX, shifts[p]));
+            }
+            else if (box is not null)
+            {
+                lineBoxes.Add(new InlineBoxFragment(box.Box, itemX, box.Width, box.Height, box.Baseline, box.Content, shifts[p]));
+            }
+            else
+            {
+                fragments.Add(new LineFragment(run!, style, glyphLists[p], itemX, shifts[p]));
+            }
         }
 
         var indent = firstLine ? paragraph.FirstLineIndent : 0;

@@ -112,4 +112,45 @@ public sealed record TextStyle
 
     /// <summary>OpenType features and language for shaping.</summary>
     public ShapingOptions Shaping { get; init; } = ShapingOptions.Default;
+
+    /// <summary>Vertical position of this text in its line (CSS <c>vertical-align</c>), e.g. raised for superscripts.</summary>
+    public InlineAlignment VerticalAlign { get; init; }
+}
+
+/// <summary>What an inline item is aligned to in its line (the kinds of CSS <c>vertical-align</c>).</summary>
+public enum InlineAlignmentKind
+{
+    /// <summary>Its baseline on the line's baseline, raised by <see cref="InlineAlignment.Shift"/>.</summary>
+    Baseline,
+
+    /// <summary>Its middle at the line's baseline plus half the paragraph font's x-height.</summary>
+    Middle,
+
+    /// <summary>Its top at the top of the paragraph font (its ascent above the baseline).</summary>
+    TextTop,
+
+    /// <summary>Its bottom at the bottom of the paragraph font (its descent below the baseline).</summary>
+    TextBottom,
+
+    /// <summary>Its top at the top of the line box.</summary>
+    Top,
+
+    /// <summary>Its bottom at the bottom of the line box.</summary>
+    Bottom,
+}
+
+/// <summary>
+/// The vertical position of an inline item (text, image or box) in its line, like CSS <c>vertical-align</c>.
+/// The default is the baseline. Sub- and superscripts, lengths and percentages are baselines raised or lowered by a
+/// <see cref="Shift"/>; the other kinds align the item's edges or middle and add the shift.
+/// </summary>
+/// <param name="Kind">What the item is aligned to.</param>
+/// <param name="Shift">Points to raise the item by (negative lowers it).</param>
+public readonly record struct InlineAlignment(InlineAlignmentKind Kind, double Shift = 0)
+{
+    /// <summary>On the baseline (CSS <c>vertical-align: baseline</c>).</summary>
+    public static InlineAlignment Baseline { get; }
+
+    /// <summary>The baseline raised by <paramref name="points"/> (lowered when negative), e.g. for <c>sub</c>/<c>super</c>.</summary>
+    public static InlineAlignment Raised(double points) => new(InlineAlignmentKind.Baseline, points);
 }

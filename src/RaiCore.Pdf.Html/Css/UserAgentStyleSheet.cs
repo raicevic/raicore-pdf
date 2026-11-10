@@ -47,6 +47,8 @@ internal static class UserAgentStyleSheet
         small { font-size: smaller; }
         big { font-size: larger; }
         sub, sup { font-size: smaller; }
+        sub { vertical-align: sub; }
+        sup { vertical-align: super; }
         center { text-align: center; }
         a:link, a:visited, a { color: #0000EE; }
         mark { color: black; }

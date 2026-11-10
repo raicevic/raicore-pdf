@@ -9,13 +9,15 @@ namespace RaiCore.Pdf.Layout;
 /// sits on the line's baseline (or its bottom margin edge, when it has no text). Its margins add space around it.
 /// </summary>
 /// <param name="Content">The box and its content. Its children's margins stay inside it.</param>
-public sealed record InlineBox(Block Content);
+/// <param name="Alignment">Its vertical position in the line (CSS <c>vertical-align</c>).</param>
+public sealed record InlineBox(Block Content, InlineAlignment Alignment = default);
 
 /// <summary>An image placed in a line of text, with its bottom on the baseline (like an HTML <c>img</c> in a <c>p</c>).</summary>
 /// <param name="Image">The image.</param>
 /// <param name="Width">Width in points.</param>
 /// <param name="Height">Height in points.</param>
-public sealed record InlineImage(PdfImage Image, double Width, double Height);
+/// <param name="Alignment">Its vertical position in the line (CSS <c>vertical-align</c>).</param>
+public sealed record InlineImage(PdfImage Image, double Width, double Height, InlineAlignment Alignment = default);
 
 /// <summary>A run of text in one style, an inline image or an inline box.</summary>
 /// <param name="Text">The text; U+FFFC for an image or a box.</param>
@@ -89,12 +91,12 @@ public sealed class Paragraph
     /// Appends an image that flows with the text: it sits on the baseline, makes its line taller if needed,
     /// and lines may break before and after it.
     /// </summary>
-    public Paragraph AddImage(PdfImage image, double width, double height)
+    public Paragraph AddImage(PdfImage image, double width, double height, InlineAlignment alignment = default)
     {
         ArgumentNullException.ThrowIfNull(image);
         ArgumentOutOfRangeException.ThrowIfNegative(width);
         ArgumentOutOfRangeException.ThrowIfNegative(height);
-        _spans.Add(new ParagraphSpan("\uFFFC", Style, new InlineImage(image, width, height)));
+        _spans.Add(new ParagraphSpan("\uFFFC", Style, new InlineImage(image, width, height, alignment)));
         return this;
     }
 
@@ -102,10 +104,10 @@ public sealed class Paragraph
     /// Appends a block that flows with the text as one unbreakable item (see <see cref="InlineBox"/>): lines may break
     /// before and after it, and it makes its line taller if needed.
     /// </summary>
-    public Paragraph AddBox(Block content)
+    public Paragraph AddBox(Block content, InlineAlignment alignment = default)
     {
         ArgumentNullException.ThrowIfNull(content);
-        _spans.Add(new ParagraphSpan("\uFFFC", Style, Box: new InlineBox(content)));
+        _spans.Add(new ParagraphSpan("\uFFFC", Style, Box: new InlineBox(content, alignment)));
         return this;
     }
 
