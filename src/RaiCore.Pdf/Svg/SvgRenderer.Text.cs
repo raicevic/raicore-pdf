@@ -208,11 +208,21 @@ internal sealed partial class SvgRenderer
         }
     }
 
-    /// <summary>Maps a CSS font family list to a standard font: generic families and well-known names, else Helvetica.</summary>
+    /// <summary>
+    /// Maps a CSS font family list to a standard font: generic families and well-known names, else Helvetica. Exported
+    /// files often name a face instead of setting the weight (<c>MyriadPro-Bold</c>), so such names count too.
+    /// </summary>
     internal static StandardFont FontFor(SvgStyle style)
     {
         var kind = KindOf(style.FontFamily);
-        var (bold, italic) = (style.FontWeight >= 600, style.Italic);
+        // The style part of a face name: "MinionPro-BoldIt" -> "BOLDIT".
+        var face = style.FontFamily?.Split(',')[0].Trim().Trim('"', '\'').ToUpperInvariant() ?? string.Empty;
+        var dash = face.LastIndexOf('-');
+        face = face[(dash + 1)..];
+        var bold = style.FontWeight >= 600 || face.Contains("BOLD", StringComparison.Ordinal) || face.Contains("BLACK", StringComparison.Ordinal)
+            || face.Contains("HEAVY", StringComparison.Ordinal);
+        var italic = style.Italic || face.Contains("ITALIC", StringComparison.Ordinal) || face.Contains("OBLIQUE", StringComparison.Ordinal)
+            || (dash >= 0 && face.EndsWith("IT", StringComparison.Ordinal));
         return kind switch
         {
             FontKind.Serif => bold ? (italic ? StandardFont.TimesBoldItalic : StandardFont.TimesBold) : italic ? StandardFont.TimesItalic : StandardFont.TimesRoman,

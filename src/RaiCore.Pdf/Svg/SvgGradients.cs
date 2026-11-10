@@ -102,7 +102,7 @@ internal static class SvgGradients
 
         var transform = SvgMatrix.Parse(Attribute(chain, "gradientTransform")) ?? SvgMatrix.Identity;
         var matrix = transform.Then(units).Then(ctm);
-        if (!matrix.IsFinite || Math.Abs((matrix.A * matrix.D) - (matrix.B * matrix.C)) < 1e-12)
+        if (!matrix.IsFinite || matrix.IsSingular)
         {
             return new SvgResolvedPaint(lastColor, null);
         }

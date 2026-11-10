@@ -272,6 +272,30 @@ public partial class SvgRenderingTests
         Assert.Contains("/Times-Roman", Encoding.Latin1.GetString(Pdf("""<text y="10">x</text><text y="20" font-family="serif">y</text>""")));
     }
 
+    [Theory]
+    [InlineData("font-family=\"Arial\"", "Helvetica")]
+    [InlineData("font-family=\"'Times New Roman', serif\" font-weight=\"bold\"", "Times-Bold")]
+    [InlineData("font-family=\"Consolas, monospace\" font-style=\"italic\"", "Courier-Oblique")]
+    [InlineData("font-family=\"MyriadPro-BoldIt\"", "Helvetica-BoldOblique")] // Exported face names carry the style.
+    [InlineData("font-family=\"NoSuchFont, sans-serif\"", "Helvetica")]
+    [InlineData("font-family=\"NoSuchFont\"", "Helvetica")]
+    [InlineData("", "Times-Roman")]                                          // Browsers default to serif.
+    public void Font_families_map_to_standard_fonts(string attributes, string font) =>
+        Assert.Contains($"/BaseFont /{font}", Encoding.Latin1.GetString(Pdf($"""<text y="10" {attributes}>x</text>""")), StringComparison.Ordinal);
+
+    [Fact]
+    public void Extreme_scales_draw_or_are_skipped()
+    {
+        using var huge = RenderDocument("""
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000000 1000000"><rect width="500000" height="1000000" fill="#f00"/></svg>
+            """);
+        using var collapsed = Render("""<rect width="100" height="100" fill="#f00" transform="scale(0 1)"/>""");
+
+        AssertColor(huge, 25, 50, "#ff0000");
+        AssertColor(huge, 75, 50, "#ffffff");
+        AssertColor(collapsed, 0, 50, "#ffffff");
+    }
+
     [Fact]
     public void Text_is_extractable()
     {

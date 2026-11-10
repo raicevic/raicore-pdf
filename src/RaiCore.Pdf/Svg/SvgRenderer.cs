@@ -97,9 +97,9 @@ internal sealed partial class SvgRenderer
             }
 
             var state = new RenderState(transform.Then(parent.Ctm), parent.Viewport, parent.Opacity * style.Opacity, parent.Depth + 1);
-            if (!state.Ctm.IsFinite || state.Opacity <= 0)
+            if (!state.Ctm.IsFinite || state.Ctm.IsSingular || state.Opacity <= 0)
             {
-                return;
+                return; // Nothing visible (e.g. scale(0)).
             }
 
             _canvas.SaveState();

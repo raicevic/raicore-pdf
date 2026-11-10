@@ -12,6 +12,9 @@ internal readonly record struct SvgMatrix(double A, double B, double C, double D
     public bool IsFinite =>
         double.IsFinite(A) && double.IsFinite(B) && double.IsFinite(C) && double.IsFinite(D) && double.IsFinite(E) && double.IsFinite(F);
 
+    /// <summary>Whether the transformation collapses the plane to a line or a point (it then draws nothing), at any scale.</summary>
+    public bool IsSingular => Math.Abs((A * D) - (B * C)) <= 1e-9 * ((A * A) + (B * B) + (C * C) + (D * D));
+
     public static SvgMatrix Translate(double x, double y) => new(1, 0, 0, 1, x, y);
 
     public static SvgMatrix Scale(double x, double y) => new(x, 0, 0, y, 0, 0);
