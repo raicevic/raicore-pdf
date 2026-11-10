@@ -49,7 +49,7 @@ internal static class PageRules
 
     internal static PdfPageSize ParseSize(string value, PdfPageSize current)
     {
-        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(p => p.ToUpperInvariant()).ToList();
+        var parts = CssValues.SplitComponents(value).Select(p => p.ToUpperInvariant()).ToList();
         var landscape = parts.Remove("LANDSCAPE");
         var portrait = parts.Remove("PORTRAIT");
         PdfPageSize size = current;
@@ -98,7 +98,7 @@ internal static class PageRules
 
     private static Thickness ParseMargin(string value, Thickness current)
     {
-        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(p => Length(p, double.NaN)).ToArray();
+        var parts = CssValues.SplitComponents(value).Select(p => Length(p, double.NaN)).ToArray();
         if (parts.Length == 0 || parts.Any(double.IsNaN))
         {
             return current;

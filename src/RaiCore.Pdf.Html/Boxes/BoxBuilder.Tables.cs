@@ -88,7 +88,7 @@ internal sealed partial class BoxBuilder
                     break;
                 case "colgroup":
                 case "col":
-                    AddColumns(table, child);
+                    AddColumns(table, child, contentWidth);
                     break;
                 case "thead":
                     header.AddRange(Rows(child, contentWidth, cellDefaults, isHeader: true));
@@ -190,16 +190,20 @@ internal sealed partial class BoxBuilder
                 "BOTTOM" or "TEXT-BOTTOM" => VerticalAlignment.Bottom,
                 _ => VerticalAlignment.Middle,
             },
-            Width = width switch
-            {
-                { Kind: CssLengthKind.Points } points => TableWidth.Points(points.Value),
-                { Kind: CssLengthKind.Percent } percent => TableWidth.Percent(percent.Value),
-                _ => null,
-            },
+            Width = TableWidthFor(width, tableWidth),
         };
     }
 
-    private void AddColumns(TableBlock table, IElement element)
+    /// <summary>A cell or column width; calc() with a percentage is resolved against the table's content width.</summary>
+    private static TableWidth? TableWidthFor(CssLength? length, double tableWidth) => length switch
+    {
+        { Kind: CssLengthKind.Points } points => TableWidth.Points(points.Value),
+        { Kind: CssLengthKind.Percent } percent => TableWidth.Percent(percent.Value),
+        { Kind: CssLengthKind.Calc } calc => TableWidth.Points(Math.Max(0, calc.Resolve(tableWidth))),
+        _ => null,
+    };
+
+    private void AddColumns(TableBlock table, IElement element, double tableWidth)
     {
         IEnumerable<IElement> cols = element.LocalName == "col" ? [element] : element.Children.Where(c => c.LocalName == "col");
         if (element.LocalName == "colgroup" && !element.Children.Any(c => c.LocalName == "col"))
@@ -211,12 +215,7 @@ internal sealed partial class BoxBuilder
         {
             var style = Style(col);
             var length = style.Width.IsAuto ? Dimension(col.GetAttribute("width")) : style.Width;
-            TableWidth? width = length switch
-            {
-                { Kind: CssLengthKind.Points } points => TableWidth.Points(points.Value),
-                { Kind: CssLengthKind.Percent } percent => TableWidth.Percent(percent.Value),
-                _ => null,
-            };
+            var width = TableWidthFor(length, tableWidth);
             for (var i = 0; i < Math.Max(1, Integer(col.GetAttribute("span")) ?? 1); i++)
             {
                 table.ColumnWidths.Add(width);
