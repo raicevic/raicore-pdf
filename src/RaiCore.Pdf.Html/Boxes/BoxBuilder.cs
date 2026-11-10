@@ -28,6 +28,7 @@ internal sealed partial class BoxBuilder
     private readonly HashSet<Block> _anonymous = new(ReferenceEqualityComparer.Instance);
     private readonly double _rootFontSize;
     private readonly Paged.PagedMedia? _paged;
+    private readonly WebFonts? _webFonts;
     private double _pageContentWidth;
 
     /// <summary>
@@ -36,9 +37,10 @@ internal sealed partial class BoxBuilder
     /// </summary>
     private double? _containingHeight;
 
-    public BoxBuilder(IDocument document, HtmlConverterOptions options, FontCollection fonts, Uri? baseUri, Paged.PagedMedia? paged = null)
+    public BoxBuilder(IDocument document, HtmlConverterOptions options, FontCollection fonts, Uri? baseUri, Paged.PagedMedia? paged = null, WebFonts? webFonts = null)
     {
         _paged = paged;
+        _webFonts = webFonts;
         _window = document.DefaultView ?? throw new InvalidOperationException("The document has no window for style computation.");
         _options = options;
         _fonts = fonts;
@@ -425,7 +427,13 @@ internal sealed partial class BoxBuilder
         var fonts = new List<PdfFont>();
         foreach (var family in style.FontFamilies.Concat(_options.FallbackFontFamilies).Append("sans-serif"))
         {
-            if (_fonts.Find(family, style.FontWeight, style.Italic) is { } font && !fonts.Contains(font))
+            // A family declared with @font-face hides installed fonts of the same name; all its matching faces
+            // (e.g. one per unicode-range) are tried in turn.
+            var name = family.Trim().Trim('"', '\'');
+            var candidates = _webFonts?.Declares(name) == true
+                ? _webFonts.Find(name, style.FontWeight, style.Italic)
+                : _fonts.Find(name, style.FontWeight, style.Italic) is { } found ? [found] : [];
+            foreach (var font in candidates.Where(f => !fonts.Contains(f)))
             {
                 fonts.Add(font);
             }

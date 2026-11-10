@@ -55,6 +55,10 @@ change at any time, and this section lists what the packages can do so far.
   with the page area, and `vh` units are the page area (to within a pixel).
 - CSS Paged Media: `@page` size and margins, `:first`/`:left`/`:right`, margin boxes for headers and footers,
   `counter(page)`/`counter(pages)`, `string-set` and running elements (which can be flex containers).
+- Web fonts: `@font-face` with `url()` and `local()` sources, `format()` hints (unsupported formats are not
+  downloaded), weight ranges, `font-style` and `unicode-range`, matched like CSS Fonts 4 and loaded on first use. A
+  declared family hides installed fonts of the same name; a family that fails to load falls back to the next one.
+  `PdfFont.WithUnicodeRanges` restricts a font to code point ranges, embedding it once however many views use it.
 - Network access is off unless you supply a `ResourceLoader`.
 
 ### RaiCore.Pdf.Razor
@@ -63,11 +67,12 @@ change at any time, and this section lists what the packages can do so far.
 
 ### Known limitations
 The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these.
-- No web fonts (`@font-face`), `::before`/`::after`, links, bookmarks, `text-decoration`, `sub`/`sup` offsets or
+- No `::before`/`::after`, links, bookmarks, `text-decoration`, `sub`/`sup` offsets or
   inline box backgrounds and borders. `inline-block` is flattened into its text, and `inline-flex` is laid out like
   `flex`.
 - Floats, positioning and grid (rendered as blocks); `calc()`, `overflow: hidden`, transparency (blended with white),
   border styles other than solid, rounded corners and background images.
 - Mixed left-to-right and right-to-left text on one line (the Unicode bidi algorithm); no hyphenation.
+- No synthetic bold or italic: a family without a bold or italic face uses its closest face as is.
 - `:first`/`:left`/`:right` cannot change page margins; no named pages.
 - No tagged PDF, PDF/A or encryption. WebP, SVG and BMP images are not supported.

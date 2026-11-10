@@ -73,10 +73,12 @@ public static class HtmlToPdf
             cancellationToken).ConfigureAwait(false);
 
         var styleSheets = PrepareStyles(document, options);
-        var setup = PageRules.Apply(options.Page, styleSheets);
-        var paged = Paged.PagedMedia.Load(document, styleSheets);
+        var cssTexts = styleSheets.Select(s => s.Css).ToList();
+        var setup = PageRules.Apply(options.Page, cssTexts);
+        var paged = Paged.PagedMedia.Load(document, cssTexts);
+        var webFonts = WebFonts.Load(styleSheets, options.ResourceLoader, fonts);
 
-        var builder = new BoxBuilder(document, options, fonts, options.BaseUri, paged);
+        var builder = new BoxBuilder(document, options, fonts, options.BaseUri, paged, webFonts);
         var flow = new FlowDocument(setup);
         foreach (var block in builder.Build(setup.ContentWidth, setup.ContentHeight))
         {
@@ -94,12 +96,14 @@ public static class HtmlToPdf
 
     /// <summary>
     /// Puts the user-agent stylesheet first, replaces linked stylesheets with their content (loaded through the
-    /// resource loader) and appends the user stylesheet. Returns all CSS text, for reading @page rules.
+    /// resource loader) and appends the user stylesheet. Returns all CSS text with the URI its relative URLs resolve
+    /// against (a linked stylesheet's own address), for reading the rules AngleSharp does not keep.
     /// </summary>
-    private static List<string> PrepareStyles(IDocument document, HtmlConverterOptions options)
+    private static List<StyleSheetText> PrepareStyles(IDocument document, HtmlConverterOptions options)
     {
         var head = document.Head ?? document.DocumentElement.AppendElement(document.CreateElement("head"));
-        var cssTexts = new List<string> { UserAgentStyleSheet.Css };
+        var cssTexts = new List<StyleSheetText> { new(UserAgentStyleSheet.Css, null) };
+        var linkedBases = new Dictionary<IElement, Uri?>();
 
         var userAgent = document.CreateElement("style");
         userAgent.TextContent = UserAgentStyleSheet.Css;
@@ -110,11 +114,20 @@ public static class HtmlToPdf
             var media = link.GetAttribute("media");
             var href = link.GetAttribute("href")!;
             string? css = null;
+            var sheetUri = options.BaseUri;
             if (media is null or "" || media.Contains("print", StringComparison.OrdinalIgnoreCase) || media.Contains("all", StringComparison.OrdinalIgnoreCase))
             {
-                var data = href.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
-                    ? Resources.DecodeDataUri(href)
-                    : ResolveUri(options.BaseUri, href) is { } uri ? options.ResourceLoader(uri) : null;
+                byte[]? data = null;
+                if (href.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                {
+                    data = Resources.DecodeDataUri(href);
+                }
+                else if (ResolveUri(options.BaseUri, href) is { } uri)
+                {
+                    data = options.ResourceLoader(uri);
+                    sheetUri = uri;
+                }
+
                 css = data is null ? null : Encoding.UTF8.GetString(data);
             }
 
@@ -127,6 +140,7 @@ public static class HtmlToPdf
             var style = document.CreateElement("style");
             style.TextContent = css;
             link.Replace(style);
+            linkedBases[style] = sheetUri;
         }
 
         foreach (var style in document.QuerySelectorAll("style").Skip(1))
@@ -139,7 +153,7 @@ public static class HtmlToPdf
             var media = style.GetAttribute("media");
             if (media is null or "" || media.Contains("print", StringComparison.OrdinalIgnoreCase) || media.Contains("all", StringComparison.OrdinalIgnoreCase))
             {
-                cssTexts.Add(style.TextContent);
+                cssTexts.Add(new(style.TextContent, linkedBases.GetValueOrDefault(style, options.BaseUri)));
             }
         }
 
@@ -157,7 +171,7 @@ public static class HtmlToPdf
             var user = document.CreateElement("style");
             user.TextContent = LegacyBreaks.Rewrite(options.UserStyleSheet);
             head.AppendChild(user);
-            cssTexts.Add(options.UserStyleSheet);
+            cssTexts.Add(new(options.UserStyleSheet, options.BaseUri));
         }
 
         return cssTexts;

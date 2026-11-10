@@ -63,6 +63,10 @@ own engine. Supported today:
   margins, `box-sizing` and percentages. Percentage heights resolve against definite ancestor heights, starting with
   the page area (so `html, body { height: 100% }` and `100vh` fill the page).
 - Fonts (`font-family` fallback lists, weight, style), color, `text-align`, `text-indent`, `line-height` and `text-transform`.
+- Web fonts: `@font-face` with `url()` (TTF, OTF, TTC, WOFF, WOFF2, also as `data:` URIs) and `local()` sources,
+  `format()` hints, `font-weight` ranges for variable fonts, `font-style` and `unicode-range` (so per-script files as
+  Google Fonts serves them work as one family). Fonts load through the `ResourceLoader` when text first needs them;
+  URLs in linked stylesheets resolve against the stylesheet.
 - List markers: bullets, decimal, alpha and roman numerals, `start`, `reversed` and `value`.
 - Images from `data:` and `file:` URLs, linked stylesheets, `@page` size and margins, and page break properties.
 - Tables: automatic and fixed column widths, `colspan`/`rowspan`, `thead` and `tfoot` rows repeated on every page,
