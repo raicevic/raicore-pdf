@@ -57,13 +57,13 @@ public sealed class ParagraphLayout
                 }
 
                 canvas.DrawGlyphs(
-                    fragment.Glyphs, fragment.Run.Font, fragment.Style.FontSize, x + line.X + fragment.X, baseline,
+                    fragment.Glyphs, fragment.Run.Font, fragment.Style.FontSize, x + line.X + fragment.X, baseline + fragment.BaselineShift,
                     fragment.Run.NeedsActualText ? fragment.Run.Text : null);
             }
 
             foreach (var image in line.Images)
             {
-                canvas.DrawImage(image.Image.Image, x + line.X + image.X, baseline, image.Image.Width, image.Image.Height);
+                canvas.DrawImage(image.Image.Image, x + line.X + image.X, baseline + image.BaselineShift, image.Image.Width, image.Image.Height);
             }
 
             foreach (var box in line.Boxes)
@@ -73,7 +73,7 @@ public sealed class ParagraphLayout
                 canvas.SaveState().Transform(1, 0, 0, 1, left, 0);
                 foreach (var draw in box.Content)
                 {
-                    draw(canvas, baseline + box.Baseline);
+                    draw(canvas, baseline + box.BaselineShift + box.Baseline);
                 }
 
                 canvas.RestoreState();
@@ -136,8 +136,9 @@ public sealed class LineLayout
 /// <summary>An inline box on a line.</summary>
 public sealed class InlineBoxFragment
 {
-    internal InlineBoxFragment(InlineBox box, double x, double width, double height, double baseline, IReadOnlyList<Blocks.DrawOperation> content)
+    internal InlineBoxFragment(InlineBox box, double x, double width, double height, double baseline, IReadOnlyList<Blocks.DrawOperation> content, double baselineShift = 0)
     {
+        BaselineShift = baselineShift;
         Box = box;
         X = x;
         Width = width;
@@ -161,6 +162,9 @@ public sealed class InlineBoxFragment
     /// <summary>Distance from the top of the border box to the baseline it is aligned on.</summary>
     public double Baseline { get; }
 
+    /// <summary>How far the box's baseline is above the line's baseline (CSS <c>vertical-align</c>).</summary>
+    public double BaselineShift { get; }
+
     /// <summary>Width including the horizontal margins: the space it takes on the line.</summary>
     public double OuterWidth => Box.Content.Style.Margin.Horizontal + Width;
 
@@ -171,13 +175,15 @@ public sealed class InlineBoxFragment
 /// <summary>An inline image on a line.</summary>
 /// <param name="Image">The image and its size.</param>
 /// <param name="X">Offset from the start of the line's content.</param>
-public sealed record InlineImageFragment(InlineImage Image, double X);
+/// <param name="BaselineShift">How far the image's bottom is above the line's baseline (CSS <c>vertical-align</c>).</param>
+public sealed record InlineImageFragment(InlineImage Image, double X, double BaselineShift = 0);
 
 /// <summary>A run of glyphs on a line, in one style and font.</summary>
 public sealed class LineFragment
 {
-    internal LineFragment(ShapedRun run, TextStyle style, IReadOnlyList<PositionedGlyph> glyphs, double x)
+    internal LineFragment(ShapedRun run, TextStyle style, IReadOnlyList<PositionedGlyph> glyphs, double x, double baselineShift = 0)
     {
+        BaselineShift = baselineShift;
         Run = run;
         Style = style;
         Glyphs = glyphs;
@@ -187,6 +193,9 @@ public sealed class LineFragment
 
     /// <summary>The shaped run (font, script, direction, source text).</summary>
     public ShapedRun Run { get; }
+
+    /// <summary>How far this text's baseline is above the line's baseline (CSS <c>vertical-align</c>).</summary>
+    public double BaselineShift { get; }
 
     /// <summary>The style of the text.</summary>
     public TextStyle Style { get; }

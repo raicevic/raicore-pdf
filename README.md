@@ -60,6 +60,8 @@ own engine. Supported today:
 - Browser default styles for headings, paragraphs and lists.
 - Block and inline formatting with white-space handling; `inline-block`, `inline-flex` and `inline-table` boxes flow
   in the text as one item (shrink-to-fit, aligned on their last line of text, or first row for tables).
+- `vertical-align` on inline text, images and inline boxes: `sub`, `super` (also for `<sub>`/`<sup>`), lengths,
+  percentages, `middle`, `text-top`, `text-bottom`, `top` and `bottom`; nested shifts add up.
 - The box model: margin, border, padding, background, width, max-width, `height`, `min-height`, `max-height`, auto
   margins, `box-sizing` and percentages. Percentage heights resolve against definite ancestor heights, starting with
   the page area (so `html, body { height: 100% }` and `100vh` fill the page).
@@ -107,7 +109,7 @@ before rendering, e.g. to set your own page decorator.
 
 Not yet: floats and positioning, grid layout (rendered as blocks), inline box backgrounds and borders,
 `text-decoration`, different page margins for `:first`/`:left`/`:right`, named pages, counters other than
-`page`/`pages`, `vertical-align` on inline content, and `calc()`. Content taller than a fixed `height` overflows
+`page`/`pages`, and `calc()`. Content taller than a fixed `height` overflows
 the box (`overflow: hidden` is not supported yet).
 
 ### Razor to PDF

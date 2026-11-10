@@ -128,7 +128,16 @@ internal sealed partial class BoxBuilder
     }
 
     /// <summary>Adds the element's children: inline content goes to the collector, block-level children become blocks.</summary>
-    private void AddChildren(IElement element, ComputedStyle style, double contentWidth, List<Block> children, InlineCollector collector)
+    /// <param name="element">The element whose children are added.</param>
+    /// <param name="style">Its computed style.</param>
+    /// <param name="contentWidth">The width of the block the inline content flows in.</param>
+    /// <param name="children">Receives block-level children and finished paragraphs.</param>
+    /// <param name="collector">Collects inline content.</param>
+    /// <param name="inherited">
+    /// The vertical alignment of the inline element whose children these are (nested inline elements' shifts add up);
+    /// the baseline for a block's own content.
+    /// </param>
+    private void AddChildren(IElement element, ComputedStyle style, double contentWidth, List<Block> children, InlineCollector collector, InlineAlignment inherited = default)
     {
         var listIndex = ListStart(element);
         foreach (var node in element.ChildNodes)
@@ -136,7 +145,7 @@ internal sealed partial class BoxBuilder
             switch (node)
             {
                 case IText text:
-                    collector.AddText(text.Data, style);
+                    collector.AddText(text.Data, style, inherited);
                     break;
                 case IElement child:
                     var childStyle = Style(child);
@@ -162,13 +171,13 @@ internal sealed partial class BoxBuilder
 
                     if (child.LocalName == "img")
                     {
-                        AddImage(child, childStyle, contentWidth, children, collector);
+                        AddImage(child, childStyle, contentWidth, children, collector, VerticalAlign(inherited, childStyle, style));
                         break;
                     }
 
                     if (childStyle.Display == CssDisplay.Inline)
                     {
-                        AddChildren(child, childStyle, contentWidth, children, collector);
+                        AddChildren(child, childStyle, contentWidth, children, collector, VerticalAlign(inherited, childStyle, style));
                         break;
                     }
 
@@ -176,7 +185,7 @@ internal sealed partial class BoxBuilder
                     {
                         if (BuildAtomicInline(child, childStyle, contentWidth) is { } box)
                         {
-                            collector.AddBox(box);
+                            collector.AddBox(box, VerticalAlign(inherited, childStyle, style));
                         }
 
                         break;
@@ -244,6 +253,45 @@ internal sealed partial class BoxBuilder
         return outer;
     }
 
+    /// <summary>
+    /// An inline element's vertical alignment (CSS <c>vertical-align</c>) given its parent's: <c>sub</c>, <c>super</c>,
+    /// lengths and percentages raise or lower the parent's baseline (sub by a fifth and super by a third of the
+    /// parent's font size, as browsers do); keywords align to the line, keeping the parent's shift.
+    /// </summary>
+    private InlineAlignment VerticalAlign(InlineAlignment parent, ComputedStyle style, ComputedStyle parentStyle)
+    {
+        var value = style.VerticalAlign.Trim().ToUpperInvariant();
+        InlineAlignment Kind(InlineAlignmentKind kind) => new(kind, parent.Shift);
+        switch (value)
+        {
+            case "" or "BASELINE":
+                return parent;
+            case "SUB":
+                return parent with { Shift = parent.Shift - (parentStyle.FontSize / 5) };
+            case "SUPER":
+                return parent with { Shift = parent.Shift + (parentStyle.FontSize / 3) };
+            case "MIDDLE":
+                return Kind(InlineAlignmentKind.Middle);
+            case "TEXT-TOP":
+                return Kind(InlineAlignmentKind.TextTop);
+            case "TEXT-BOTTOM":
+                return Kind(InlineAlignmentKind.TextBottom);
+            case "TOP":
+                return Kind(InlineAlignmentKind.Top);
+            case "BOTTOM":
+                return Kind(InlineAlignmentKind.Bottom);
+        }
+
+        var length = CssValues.ParseLength(style.VerticalAlign, style.FontSize, _rootFontSize);
+        var shift = length.Kind switch
+        {
+            CssLengthKind.Points => length.Value,
+            CssLengthKind.Percent => length.Value / 100 * TextStyleFor(style).LineHeight.Resolve(TextStyleFor(style).Fonts[0], style.FontSize),
+            _ => 0,
+        };
+        return parent with { Shift = parent.Shift + shift };
+    }
+
     /// <summary>The marker text of a list item, advancing the list's counter (honoring value and reversed).</summary>
     private static string? NextListMarker(IElement list, IElement item, ComputedStyle style, ref int listIndex)
     {
@@ -262,14 +310,14 @@ internal sealed partial class BoxBuilder
         }
     }
 
-    private void AddImage(IElement element, ComputedStyle style, double containingWidth, List<Block> children, InlineCollector collector)
+    private void AddImage(IElement element, ComputedStyle style, double containingWidth, List<Block> children, InlineCollector collector, InlineAlignment verticalAlign = default)
     {
         var src = element.GetAttribute("src");
         if (string.IsNullOrWhiteSpace(src) || LoadImage(src) is not { } image)
         {
             if (element.GetAttribute("alt") is { Length: > 0 } alt)
             {
-                collector.AddText(alt, style);
+                collector.AddText(alt, style, verticalAlign);
             }
 
             return;
@@ -287,7 +335,7 @@ internal sealed partial class BoxBuilder
                 (null, { } fh) => (fh * image.PixelWidth / image.PixelHeight, fh),
                 _ => natural,
             };
-            collector.AddImage(image, w, h);
+            collector.AddImage(image, w, h, verticalAlign);
             return;
         }
 
