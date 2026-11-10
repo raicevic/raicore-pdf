@@ -88,14 +88,25 @@ public partial class SvgRenderingTests
     public void Drawn_at_another_aspect_ratio_the_drawing_keeps_its_own()
     {
         var image = PdfImage.LoadSvg("""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#f00"/></svg>""");
+        var top = PdfImage.LoadSvg("""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" preserveAspectRatio="xMinYMin"><rect width="10" height="10" fill="#00f"/></svg>""");
+        var stretched = PdfImage.LoadSvg("""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" preserveAspectRatio="none"><rect width="10" height="10" fill="#0f0"/></svg>""");
         var doc = new PdfDocument();
-        doc.AddPage(new PdfPageSize(100, 100)).Canvas.DrawImage(image, 0, 0, 100, 50);
+        doc.AddPage(new PdfPageSize(100, 100)).Canvas
+            .DrawImage(image, 0, 0, 100, 50)
+            .DrawImage(top, 0, 50, 20, 50)
+            .DrawImage(stretched, 80, 50, 20, 50);
         using var bitmap = Conversion.ToImage(doc.ToArray(), page: 0, options: new RenderOptions(Dpi: 72));
 
         // A 50 x 50 square centered in the 100 x 50 rectangle at the bottom of the page.
         AssertColor(bitmap, 50, 75, "#ff0000");
         AssertColor(bitmap, 10, 75, "#ffffff");
         AssertColor(bitmap, 90, 75, "#ffffff");
+
+        // yMin is the top of the 20 x 50 rectangle above it; none stretches.
+        AssertColor(bitmap, 10, 5, "#0000ff");
+        AssertColor(bitmap, 10, 45, "#ffffff");
+        AssertColor(bitmap, 90, 5, "#00ff00");
+        AssertColor(bitmap, 90, 45, "#00ff00");
     }
 
     [Fact]
@@ -235,6 +246,7 @@ public partial class SvgRenderingTests
             <use href="#sq" x="10" y="10" width="30" height="30"/>
             <use xlink:href="#r" x="60" y="10" fill="#0a0"/>
             <use href="#r" x="60" y="60" class="big" fill="none"/>
+            <use href="#r" x="5" y="30" transform="scale(2)" fill="#f0f"/>
             """);
 
         AssertColor(bitmap, 25, 25, "#1a4f8b");
@@ -242,6 +254,8 @@ public partial class SvgRenderingTests
         AssertColor(bitmap, 70, 20, "#00aa00");  // Fill inherited from the use element.
         AssertColor(bitmap, 60, 70, "#ff0000");  // Stroke from the use element's class.
         AssertColor(bitmap, 70, 70, "#ffffff");
+        AssertColor(bitmap, 15, 65, "#ff00ff");  // x and y move the content before the transform: (10, 60) to (50, 100).
+        AssertColor(bitmap, 8, 65, "#ffffff");
     }
 
     [Fact]
