@@ -92,6 +92,12 @@ public sealed partial class ParagraphLayout
                 canvas.RestoreState();
                 current = null; // The box may have changed the fill color.
             }
+
+            // Links cover the whole height of the line, so the rectangles of a wrapped link touch without overlapping.
+            foreach (var link in line.Links)
+            {
+                link.Link.Target.AddTo(canvas, x + line.X + link.X0, baseline - (line.Height - line.Baseline), link.X1 - link.X0, line.Height);
+            }
         }
     }
 }
@@ -290,7 +296,16 @@ public sealed class LineLayout
 
     /// <summary>The pieces of inline elements' boxes on this line, outer ones first.</summary>
     public IReadOnlyList<InlineDecorationFragment> Decorations { get; }
+
+    /// <summary>The pieces of links (<see cref="Paragraph.BeginLink"/>) on this line.</summary>
+    public IReadOnlyList<InlineLinkFragment> Links { get; internal init; } = [];
 }
+
+/// <summary>The piece of a link (<see cref="InlineLink"/>) on one line: it is clickable over the whole height of the line.</summary>
+/// <param name="Link">The link.</param>
+/// <param name="X0">Left edge, from the start of the line's content.</param>
+/// <param name="X1">Right edge.</param>
+public sealed record InlineLinkFragment(InlineLink Link, double X0, double X1);
 
 /// <summary>The piece of an inline element's box (<see cref="InlineDecoration"/>) on one line.</summary>
 /// <param name="Decoration">The element's box.</param>

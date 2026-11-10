@@ -132,6 +132,12 @@ h2          { bookmark-state: closed; }                       /* collapsed until
   `content(before)`/`content(after)` (the text of the `::before`/`::after`) and `attr()`.
 - `bookmark-state`: `open` (the default) or `closed`.
 
+Links are clickable: `<a href>` to web pages, `mailto:`, `tel:` and other URIs (relative URLs resolve against
+`HtmlConverterOptions.BaseUri`, or stay as written without one), and `href="#id"` to any element with that `id` (or
+an `<a name>`), on whatever page it ends up. A link that wraps is clickable on every line and page it covers, and an
+`<a>` around blocks (a card, a button with `display: block`) is clickable over their whole box. Links to ids that do
+not exist are left out.
+
 Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowDocument` returns the laid-out document
 before rendering, e.g. to set your own page decorator.
 
@@ -236,6 +242,16 @@ Bookmarks (the document outline) jump to a page and position, nest, and take any
 var chapter = new PdfOutlineItem("Chapter 1", page, top: page.Height - 72);
 chapter.Children.Add(new PdfOutlineItem("Section 1.1", page, top: 400) { IsOpen = false });
 doc.Outline.Add(chapter);   // viewers open the outline panel (see PdfDocument.PageMode)
+```
+
+Links are rectangles of a page that open a URI or jump to a place in the document, directly or through a named
+destination (which can be added after the link):
+
+```csharp
+page.AddLink(72, 700, 120, 14, new Uri("https://example.com/"));       // x, y, width, height
+page.AddLink(72, 680, 120, 14, "appendix");                           // a named destination
+doc.NamedDestinations["appendix"] = new PdfDestination(lastPage, top: lastPage.Height - 72);
+page.Canvas.AddLink(0, 0, 50, 20, new PdfDestination(firstPage));     // in the canvas's transformed coordinates
 ```
 
 ### Fonts
@@ -354,6 +370,9 @@ flow.Render().Save("report.pdf");
 - Boxes split across pages are sliced: the top border on the first page, the bottom border on the last.
 - Bookmarks: a block with `Bookmark = new Bookmark("Results", level: 2)` becomes an entry in the PDF outline, nested
   by level and pointing at where the block starts (also inside flex items and table cells).
+- Links: `Paragraph.AddLink("the docs", LinkTarget.ToUri(uri))` (or `BeginLink`/`EndLink` around any content) makes
+  text clickable on every line and page it covers; `Block.Link` makes a whole block clickable. `Block.Id` and
+  `Paragraph.AddAnchor("id")` are destinations that `LinkTarget.ToDestination("id")` jumps to.
 - Tables (`TableBlock`) use the CSS automatic or fixed table layout. Header rows repeat at the top of every page and
   footer rows (`TableRow.IsFooter`) below the body on every page, rows that do
   not fit are split with each cell continuing on the next page (unless `TableRow.BreakInside` is `Avoid`), rows that

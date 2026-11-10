@@ -31,6 +31,17 @@ public sealed record InlineImage(PdfImage Image, double Width, double Height, In
 /// <param name="HasEndEdge">False when it continues in a later paragraph.</param>
 public sealed record InlineDecoration(int Start, int End, BoxStyle Box, TextStyle Style, bool HasStartEdge = true, bool HasEndEdge = true);
 
+/// <summary>A link around part of a paragraph's text (see <see cref="Paragraph.BeginLink"/>).</summary>
+/// <param name="Start">Index in the paragraph text where the link starts.</param>
+/// <param name="End">Index where it ends (exclusive).</param>
+/// <param name="Target">Where it goes.</param>
+public sealed record InlineLink(int Start, int End, LinkTarget Target);
+
+/// <summary>A link destination inside a paragraph (see <see cref="Paragraph.AddAnchor"/>).</summary>
+/// <param name="Index">Index in the paragraph text: the destination is the line containing it.</param>
+/// <param name="Id">The id links refer to (<see cref="LinkTarget.ToDestination"/>).</param>
+public sealed record InlineAnchor(int Index, string Id);
+
 /// <summary>A run of text in one style, an inline image or an inline box.</summary>
 /// <param name="Text">The text; U+FFFC for an image or a box.</param>
 /// <param name="Style">The style (for an image or a box, the paragraph style).</param>
@@ -59,6 +70,9 @@ public sealed class Paragraph
     private readonly List<ParagraphSpan> _spans = [];
     private readonly List<InlineDecoration> _decorations = [];
     private readonly Stack<(int Start, BoxStyle Box, TextStyle Style, bool StartEdge)> _open = new();
+    private readonly List<InlineLink> _links = [];
+    private readonly Stack<(int Start, LinkTarget Target)> _openLinks = new();
+    private readonly List<InlineAnchor> _anchors = [];
     private int _length;
 
     /// <summary>Creates a paragraph. <paramref name="style"/> is the default for spans and sets the minimum line height (the CSS "strut").</summary>
@@ -88,6 +102,59 @@ public sealed class Paragraph
 
     /// <summary>The boxes of inline elements (see <see cref="BeginInline"/>), in the order they end.</summary>
     public IReadOnlyList<InlineDecoration> Decorations => _decorations;
+
+    /// <summary>The links in the text (see <see cref="BeginLink"/>), in the order they end.</summary>
+    public IReadOnlyList<InlineLink> Links => _links;
+
+    /// <summary>The link destinations in the text (see <see cref="AddAnchor"/>), in order.</summary>
+    public IReadOnlyList<InlineAnchor> Anchors => _anchors;
+
+    /// <summary>
+    /// Starts a link: the text, images and boxes added until the matching <see cref="EndLink"/> become clickable. Each
+    /// line the link covers gets its own rectangle, as high as the line, on the page where the line is drawn.
+    /// </summary>
+    public Paragraph BeginLink(LinkTarget target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        _openLinks.Push((_length, target));
+        return this;
+    }
+
+    /// <summary>Ends the innermost link started with <see cref="BeginLink"/>. An empty one is dropped.</summary>
+    public Paragraph EndLink()
+    {
+        if (_openLinks.Count == 0)
+        {
+            throw new InvalidOperationException("EndLink without a matching BeginLink.");
+        }
+
+        var (start, target) = _openLinks.Pop();
+        if (_length > start)
+        {
+            _links.Add(new InlineLink(start, _length, target));
+        }
+
+        return this;
+    }
+
+    /// <summary>Appends text that links to <paramref name="target"/>, in the paragraph's style or <paramref name="style"/>.</summary>
+    public Paragraph AddLink(string text, LinkTarget target, TextStyle? style = null)
+    {
+        BeginLink(target);
+        Add(text, style ?? Style);
+        return EndLink();
+    }
+
+    /// <summary>
+    /// Marks the current position (the end of the text added so far) as a destination that links can jump to with
+    /// <see cref="LinkTarget.ToDestination"/>: the top of the line it falls on, once the paragraph is laid out.
+    /// </summary>
+    public Paragraph AddAnchor(string id)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        _anchors.Add(new InlineAnchor(_length, id));
+        return this;
+    }
 
     /// <summary>
     /// Starts an inline element with a box: the text added until the matching <see cref="EndInline"/> gets its

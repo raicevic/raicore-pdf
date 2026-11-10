@@ -29,6 +29,8 @@ flow.Render().Save("report.pdf");
   `align-content`, gaps, auto margins and containers with a fixed or minimum height; rows split across pages side by
   side.
 - Bookmarks: `Block.Bookmark` adds a block to the PDF outline, nested by level.
+- Links: in text (`Paragraph.AddLink`, `BeginLink`/`EndLink`) and on whole blocks (`Block.Link`), to URIs or to
+  blocks and paragraph anchors by id (`Block.Id`, `Paragraph.AddAnchor`).
 
 ## More
 

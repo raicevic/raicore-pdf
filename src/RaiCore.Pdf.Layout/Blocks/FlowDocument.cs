@@ -86,7 +86,9 @@ public sealed class FlowDocument
 
     /// <summary>
     /// Lays out the blocks and appends the pages to <paramref name="document"/>. Blocks with a
-    /// <see cref="Block.Bookmark"/> are appended to its <see cref="PdfDocument.Outline"/>, nested by level.
+    /// <see cref="Block.Bookmark"/> are appended to its <see cref="PdfDocument.Outline"/>, nested by level; blocks with
+    /// an <see cref="Block.Id"/> and paragraph anchors (<see cref="Paragraph.AddAnchor"/>) become its
+    /// <see cref="PdfDocument.NamedDestinations"/>, which links (<see cref="LinkTarget.ToDestination"/>) jump to.
     /// </summary>
     public void RenderTo(PdfDocument document)
     {
@@ -108,6 +110,23 @@ public sealed class FlowDocument
         }
 
         AddOutline(document.Outline, result.Anchors, rendered);
+        AddDestinations(document.NamedDestinations, result.Anchors, rendered);
+    }
+
+    /// <summary>
+    /// Turns the blocks' ids and the paragraphs' anchors into named destinations, which links to them refer to. The
+    /// first one with a name wins, also over destinations the document already has.
+    /// </summary>
+    private static void AddDestinations(IDictionary<string, PdfDestination> destinations, IReadOnlyList<Anchor> anchors, List<PdfPage> pages)
+    {
+        foreach (var anchor in anchors)
+        {
+            if (anchor.DestinationName is { } name && !destinations.ContainsKey(name))
+            {
+                var page = pages[anchor.Page];
+                destinations[name] = new PdfDestination(page, page.Height - anchor.Top);
+            }
+        }
     }
 
     /// <summary>
@@ -119,7 +138,7 @@ public sealed class FlowDocument
         var open = new List<(int Level, PdfOutlineItem Item)>(); // The current item at each nesting depth.
         foreach (var anchor in anchors)
         {
-            if (anchor.Block.Bookmark is not { } bookmark)
+            if (anchor.Name is not null || anchor.Block.Bookmark is not { } bookmark)
             {
                 continue;
             }

@@ -8,6 +8,7 @@ public sealed class PdfPage
 {
     private readonly List<(PdfFont Font, string Name, FontUsage Usage)> _fonts = [];
     private readonly List<(PdfImage Image, string Name)> _images = [];
+    private readonly List<PdfLink> _links = [];
 
     internal PdfPage(PdfPageSize size)
     {
@@ -27,9 +28,68 @@ public sealed class PdfPage
     /// <summary>Draws on the page.</summary>
     public PdfCanvas Canvas { get; }
 
+    /// <summary>The links on the page (link annotations), in the order they were added.</summary>
+    public IReadOnlyList<PdfLink> Links => _links;
+
     internal IReadOnlyList<(PdfFont Font, string Name, FontUsage Usage)> Fonts => _fonts;
 
     internal IReadOnlyList<(PdfImage Image, string Name)> Images => _images;
+
+    /// <summary>
+    /// Makes a rectangle of the page a link that opens <paramref name="uri"/> (a URI action), e.g. a web page or a
+    /// <c>mailto:</c> address. Coordinates are PDF points with the origin in the bottom-left corner of the page.
+    /// </summary>
+    /// <param name="x">The left edge.</param>
+    /// <param name="y">The bottom edge.</param>
+    /// <param name="width">The width.</param>
+    /// <param name="height">The height.</param>
+    /// <param name="uri">The URI to open. Relative URIs are written as they are; viewers resolve them against the file's location.</param>
+    public PdfLink AddLink(double x, double y, double width, double height, Uri uri)
+    {
+        ArgumentNullException.ThrowIfNull(uri);
+        return Add(x, y, width, height, uri, null, null);
+    }
+
+    /// <summary>
+    /// Makes a rectangle of the page a link that jumps to a named destination of the document (see
+    /// <see cref="PdfDocument.NamedDestinations"/>). The destination may be added later, before the document is saved;
+    /// a link to a name the document does not define when it is saved is left out.
+    /// </summary>
+    /// <param name="x">The left edge.</param>
+    /// <param name="y">The bottom edge.</param>
+    /// <param name="width">The width.</param>
+    /// <param name="height">The height.</param>
+    /// <param name="destinationName">The name of the destination.</param>
+    public PdfLink AddLink(double x, double y, double width, double height, string destinationName)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(destinationName);
+        return Add(x, y, width, height, null, destinationName, null);
+    }
+
+    /// <summary>Makes a rectangle of the page a link that jumps to a place in the document.</summary>
+    /// <param name="x">The left edge.</param>
+    /// <param name="y">The bottom edge.</param>
+    /// <param name="width">The width.</param>
+    /// <param name="height">The height.</param>
+    /// <param name="destination">Where to jump to. Its page must belong to the same document.</param>
+    public PdfLink AddLink(double x, double y, double width, double height, PdfDestination destination)
+    {
+        ArgumentNullException.ThrowIfNull(destination);
+        return Add(x, y, width, height, null, null, destination);
+    }
+
+    private PdfLink Add(double x, double y, double width, double height, Uri? uri, string? name, PdfDestination? destination)
+    {
+        if (!double.IsFinite(x) || !double.IsFinite(y) || !double.IsFinite(width) || !double.IsFinite(height))
+        {
+            throw new ArgumentException("The link rectangle must have finite coordinates.");
+        }
+
+        // A rectangle with a negative width or height extends to the left or below its corner.
+        var link = new PdfLink(Math.Min(x, x + width), Math.Min(y, y + height), Math.Abs(width), Math.Abs(height), uri, name, destination);
+        _links.Add(link);
+        return link;
+    }
 
     /// <summary>Returns the page-local resource name (e.g. <c>Im1</c>) for an image, registering it on first use.</summary>
     internal string UseImage(PdfImage image)

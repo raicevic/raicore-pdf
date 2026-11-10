@@ -26,6 +26,12 @@ change at any time, and this section lists what the packages can do so far.
 - Document outline (bookmarks): `PdfDocument.Outline` with nested `PdfOutlineItem`s (Unicode titles, a page and
   position to jump to, open or closed), and `PdfDocument.PageMode`, which by default opens the outline panel when
   the document has an outline.
+- Links: `PdfPage.AddLink` writes link annotations (borderless) that open a URI (a URI action, written as 7-bit ASCII
+  with other characters percent-encoded) or jump to a `PdfDestination` or a named destination.
+  `PdfDocument.NamedDestinations` is written as the catalog's `/Names` tree; links may be added before their
+  destinations, and links to names missing when the document is saved are left out. `PdfCanvas.AddLink` places links
+  in the canvas's current coordinates (it follows `Transform`, `SaveState` and `RestoreState`), and `PdfPage.Links`
+  lists them.
 
 ### RaiCore.Pdf.Fonts
 - Bundled Liberation Sans, Serif and Mono (SIL OFL 1.1), metric-compatible with Arial, Times New Roman and Courier New.
@@ -69,6 +75,11 @@ change at any time, and this section lists what the packages can do so far.
   unspaced, as browsers do.
 - Bookmarks: `Block.Bookmark` makes a block an entry in the PDF outline. Entries nest by level and point at where
   the block starts (where its content starts, if that moved to a later page), also inside flex items and table cells.
+- Links: `LinkTarget` (a URI, or a destination id), `Paragraph.BeginLink`/`EndLink`/`AddLink` for links in text (one
+  rectangle per line, as high as the line, on the page each line is drawn on; `LineLayout.Links` gives the pieces)
+  and `Block.Link` for whole blocks (their border box on every page they continue on). `Block.Id` and
+  `Paragraph.AddAnchor` (the top of the line it falls on) become the PDF's named destinations when rendered; the first
+  one with an id wins. Links work in flex items, table cells, inline boxes and page decorators.
 
 ### RaiCore.Pdf.Html
 - HTML and CSS to PDF via AngleSharp: the cascade, inheritance, `!important`, custom properties and print media
@@ -112,6 +123,10 @@ change at any time, and this section lists what the packages can do so far.
 - PDF bookmarks from `h1`-`h6`, nested by level, customized with the CSS GCPM properties `bookmark-level`,
   `bookmark-label` (strings, `content()`, `content(first-letter)`, `content(before)`/`content(after)` and `attr()`)
   and `bookmark-state`, cascaded by specificity. `HtmlConverterOptions.CreateBookmarks = false` turns them off.
+- Links: `<a href>` to URIs (`http(s):`, `mailto:`, `tel:` and others; relative URLs resolve against `BaseUri`, or
+  are kept as written without one; `javascript:` and empty links are dropped) and `href="#id"` to the element with
+  that `id` or an `<a name>` (block elements at the top of their box, inline ones at the line they start on). A link
+  around blocks is clickable over their boxes; links to ids that do not exist are left out.
 - Network access is off unless you supply a `ResourceLoader`.
 
 ### RaiCore.Pdf.Razor
@@ -120,10 +135,14 @@ change at any time, and this section lists what the packages can do so far.
 
 ### Known limitations
 The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these.
-- No links. Borders on inline elements are drawn solid.
+- Borders on inline elements are drawn solid.
 - Generated content: `counter()`/`counters()` generate nothing (no CSS counters yet); no `::marker`,
   `::first-line` or `::first-letter`; the legacy `:before`/`:after` count as a class in specificity (AngleSharp), not
   as an element.
+- Ids on table rows and cells are not link destinations (ids inside cells are), and neither are ids inside inline
+  boxes (`inline-block`) or in running elements; links inside them work. A link's clickable area is the line box
+  (rectangles, not rotated with transforms), and in a line mixing right-to-left and left-to-right text it may cover
+  the wrong part.
 - Floats, positioning and grid (rendered as blocks); `calc()`, `overflow: hidden`, transparency (blended with white),
   rounded corners and background images.
 - Mixed left-to-right and right-to-left text on one line (the Unicode bidi algorithm); no hyphenation.

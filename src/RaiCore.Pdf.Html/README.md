@@ -26,7 +26,7 @@ Supported: the CSS cascade and print media queries, the box model, fonts and tex
 borders), flexbox and CSS Paged Media: `@page` size and margins, headers and footers in margin boxes, page
 counters, `string-set` and running elements. `::before`/`::after` generated content (strings, `attr()`, quotes and
 images, styled inline or as blocks). Headings become PDF bookmarks, customized with `bookmark-level`,
-`bookmark-label` and `bookmark-state`.
+`bookmark-label` and `bookmark-state`. Links (`<a href>`) are clickable, to URIs and to elements by `#id`.
 
 Not yet: floats, positioning, grid (rendered as blocks) and `text-decoration`.
 

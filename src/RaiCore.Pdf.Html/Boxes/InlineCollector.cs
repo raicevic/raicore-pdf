@@ -22,6 +22,18 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
     /// <summary>Inline elements with a box that are open, outer first (they continue in the next paragraph after a block).</summary>
     private readonly List<(BoxStyle Box, TextStyle Style)> _openInlines = [];
 
+    /// <summary>Links that are open, outer first (they continue in the next paragraph after a block).</summary>
+    private readonly List<LinkTarget> _openLinks = [];
+
+    /// <summary>The innermost open link: block-level content inside it is linked as a whole.</summary>
+    public LinkTarget? CurrentLink => _openLinks.Count > 0 ? _openLinks[^1] : null;
+
+    /// <summary>
+    /// The anchors of the last paragraph flushed without visible content (e.g. <c>&lt;p&gt;&lt;a id="x"&gt;&lt;/a&gt;&lt;/p&gt;</c>),
+    /// which no paragraph block keeps.
+    /// </summary>
+    public IReadOnlyList<string> DroppedAnchors { get; private set; } = [];
+
     /// <summary>A list marker to place before the first content (or alone, if the item is empty).</summary>
     public void SetMarker(string marker) => _marker = marker;
 
@@ -80,6 +92,23 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         _paragraph?.EndInline();
     }
 
+    /// <summary>Starts a link around the inline content that follows.</summary>
+    public void BeginLink(LinkTarget target)
+    {
+        Paragraph().BeginLink(target);
+        _openLinks.Add(target);
+    }
+
+    /// <summary>Ends the innermost link started with <see cref="BeginLink"/>.</summary>
+    public void EndLink()
+    {
+        _openLinks.RemoveAt(_openLinks.Count - 1);
+        _paragraph?.EndLink();
+    }
+
+    /// <summary>Marks the current position as a link destination (an inline element's id).</summary>
+    public void AddAnchor(string id) => Paragraph().AddAnchor(id);
+
     /// <summary>Adds an atomic inline box (inline-block, inline-flex, inline-table) as one item of the line.</summary>
     public void AddBox(Block block, InlineAlignment alignment = default)
     {
@@ -104,9 +133,15 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
             _paragraph.EndInline(endEdge: false);
         }
 
+        for (var i = 0; i < _openLinks.Count && _paragraph is not null; i++)
+        {
+            _paragraph.EndLink();
+        }
+
         var result = _hasVisibleContent && _paragraph is not null
             ? new ParagraphBlock(_paragraph, new BoxStyle { Orphans = blockStyle.Orphans, Widows = blockStyle.Widows })
             : null;
+        DroppedAnchors = result is null && _paragraph is not null ? [.. _paragraph.Anchors.Select(a => a.Id)] : [];
         _paragraph = null;
         _hasVisibleContent = false;
         _afterSpace = true;
@@ -146,6 +181,11 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         foreach (var (box, style) in _openInlines)
         {
             _paragraph.BeginInline(box, style, startEdge: false);
+        }
+
+        foreach (var link in _openLinks)
+        {
+            _paragraph.BeginLink(link);
         }
 
         return _paragraph;

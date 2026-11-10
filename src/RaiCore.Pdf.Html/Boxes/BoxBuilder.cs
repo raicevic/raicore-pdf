@@ -134,10 +134,10 @@ internal sealed partial class BoxBuilder
         var pageMarker = _paged?.MarkerFor(element);
         if (children is [ParagraphBlock only] && _anonymous.Contains(only))
         {
-            return new ParagraphBlock(only.Paragraph, box) { Marker = pageMarker, Bookmark = BookmarkFor(element) };
+            return new ParagraphBlock(only.Paragraph, box) { Marker = pageMarker, Bookmark = BookmarkFor(element), Id = IdFor(element), Link = LinkFor(element) };
         }
 
-        return new ContainerBlock(box, children) { Marker = pageMarker, Bookmark = BookmarkFor(element) };
+        return new ContainerBlock(box, children) { Marker = pageMarker, Bookmark = BookmarkFor(element), Id = IdFor(element), Link = LinkFor(element) };
     }
 
     /// <summary>
@@ -202,14 +202,26 @@ internal sealed partial class BoxBuilder
                     {
                         var align = VerticalAlign(inherited, childStyle, style);
                         var box = InlineElementBox(childStyle, contentWidth);
+                        var link = LinkFor(child);
+                        AddAnchors(child, collector);
                         if (box is not null)
                         {
                             collector.BeginInline(box, TextStyleFor(childStyle) with { VerticalAlign = align });
                         }
 
+                        if (link is not null)
+                        {
+                            collector.BeginLink(link);
+                        }
+
                         var outerDecorations = EnterDecoration(childStyle, align.Kind == InlineAlignmentKind.Baseline ? align.Shift : 0);
                         AddChildren(child, childStyle, contentWidth, children, collector, align);
                         _decorations = outerDecorations;
+                        if (link is not null)
+                        {
+                            collector.EndLink();
+                        }
+
                         if (box is not null)
                         {
                             collector.EndInline();
@@ -220,6 +232,7 @@ internal sealed partial class BoxBuilder
 
                     if (childStyle.Display is CssDisplay.InlineBlock or CssDisplay.InlineFlex or CssDisplay.InlineTable)
                     {
+                        AddAnchors(child, collector);
                         if (BuildAtomicInline(child, childStyle, contentWidth) is { } box)
                         {
                             collector.AddBox(box, VerticalAlign(inherited, childStyle, style));
@@ -230,9 +243,11 @@ internal sealed partial class BoxBuilder
 
                     // A block-level child ends the current run of inline content.
                     Flush(collector, children);
+                    var blockStart = children.Count;
                     if (childStyle.Display == CssDisplay.Table)
                     {
                         children.AddRange(BuildTable(child, childStyle, contentWidth));
+                        LinkBlocks(children, blockStart, collector.CurrentLink);
                         break;
                     }
 
@@ -247,6 +262,7 @@ internal sealed partial class BoxBuilder
                         children.Add(block);
                     }
 
+                    LinkBlocks(children, blockStart, collector.CurrentLink);
                     break;
             }
         }
@@ -410,6 +426,12 @@ internal sealed partial class BoxBuilder
             _anonymous.Add(paragraph);
             children.Add(paragraph);
         }
+
+        // Destinations in inline content without text (an empty a name) keep their place as empty blocks.
+        foreach (var id in collector.DroppedAnchors)
+        {
+            children.Add(new ContainerBlock { Id = id });
+        }
     }
 
     /// <summary>Adds an <c>img</c> or an inline <c>svg</c> element, which is sized and placed like an image.</summary>
@@ -421,6 +443,7 @@ internal sealed partial class BoxBuilder
             : LoadImage(src);
         if (image is null)
         {
+            AddAnchors(element, collector);
             if (element.GetAttribute("alt") is { Length: > 0 } alt)
             {
                 collector.AddText(alt, style, verticalAlign);
@@ -440,6 +463,7 @@ internal sealed partial class BoxBuilder
                 (null, { } fh) => (fh * image.NaturalWidth / image.NaturalHeight, fh),
                 _ => (image.NaturalWidth, image.NaturalHeight),
             };
+            AddAnchors(element, collector);
             collector.AddImage(image, w, h, verticalAlign);
             return;
         }
@@ -452,7 +476,9 @@ internal sealed partial class BoxBuilder
             (true, false) => TextAlignment.Right,
             _ => TextAlignment.Left,
         };
-        children.Add(new ImageBlock(image, width, height, box) { Alignment = alignment });
+        var blockStart = children.Count;
+        children.Add(new ImageBlock(image, width, height, box) { Alignment = alignment, Id = IdFor(element) });
+        LinkBlocks(children, blockStart, collector.CurrentLink);
     }
 
     private PdfImage? LoadImage(string src)

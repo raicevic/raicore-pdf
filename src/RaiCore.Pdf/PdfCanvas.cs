@@ -44,10 +44,18 @@ public sealed partial class PdfCanvas
     internal PdfCanvas(PdfPage page) => _page = page;
 
     /// <summary>Saves the graphics state (<c>q</c>). Pair with <see cref="RestoreState"/>.</summary>
-    public PdfCanvas SaveState() => Op("q");
+    public PdfCanvas SaveState()
+    {
+        PushTransform();
+        return Op("q");
+    }
 
     /// <summary>Restores the graphics state (<c>Q</c>).</summary>
-    public PdfCanvas RestoreState() => Op("Q");
+    public PdfCanvas RestoreState()
+    {
+        PopTransform();
+        return Op("Q");
+    }
 
     /// <summary>Sets the color used by fill operations and text.</summary>
     public PdfCanvas SetFillColor(PdfColor color) => Op($"{N(color.Red)} {N(color.Green)} {N(color.Blue)} rg");
@@ -90,8 +98,11 @@ public sealed partial class PdfCanvas
     /// Concatenates a transformation matrix with the current one (<c>cm</c>): later coordinates map as
     /// x' = a·x + c·y + e and y' = b·x + d·y + f. Use <see cref="SaveState"/>/<see cref="RestoreState"/> to undo it.
     /// </summary>
-    public PdfCanvas Transform(double a, double b, double c, double d, double e, double f) =>
-        Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} cm");
+    public PdfCanvas Transform(double a, double b, double c, double d, double e, double f)
+    {
+        ConcatTransform(a, b, c, d, e, f);
+        return Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} cm");
+    }
 
     /// <summary>Starts a new subpath at the given point.</summary>
     public PdfCanvas MoveTo(double x, double y) => Op($"{N(x)} {N(y)} m");
