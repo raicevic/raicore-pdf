@@ -133,6 +133,21 @@ public sealed record BoxStyle
     public double? Width { get; init; }
 
     /// <summary>
+    /// Minimum border-box width in points. <c>null</c> is CSS <c>min-width: auto</c>: no minimum, except for flex
+    /// items in a row, which do not shrink below their min-content width (e.g. their longest word). Applies to fixed,
+    /// filling and shrink-to-fit widths alike, and wins over <see cref="MaxWidth"/> (as in CSS).
+    /// </summary>
+    public double? MinWidth { get; init; }
+
+    /// <summary>
+    /// Maximum border-box width in points, or <c>null</c> for none. A block without a <see cref="Width"/> fills the
+    /// available width up to this; images scale to it (keeping their aspect ratio unless given both a width and a
+    /// height) and tables shrink to fit within it, but a table without a width never gets narrower than its content's
+    /// minimum width.
+    /// </summary>
+    public double? MaxWidth { get; init; }
+
+    /// <summary>
     /// Height of the border box in points, or <c>null</c> for the content's height. Content that does not fit
     /// overflows (it is drawn, and what follows is placed after the box), as with CSS <c>overflow: visible</c>.
     /// A box with a fixed height moves to the next page as a whole when it fits on one. For tables it is a minimum,
@@ -163,4 +178,8 @@ public sealed record BoxStyle
 
     /// <summary>Minimum number of a paragraph's lines carried to the top of the next page (CSS <c>widows</c>).</summary>
     public int Widows { get; init; } = 2;
+
+    /// <summary>A border-box width limited by <see cref="MaxWidth"/> and then <see cref="MinWidth"/>.</summary>
+    internal double ClampWidth(double width) =>
+        Math.Max(Math.Min(width, MaxWidth ?? double.PositiveInfinity), MinWidth ?? 0);
 }

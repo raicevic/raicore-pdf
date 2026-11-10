@@ -362,7 +362,7 @@ internal sealed partial class BoxBuilder
     private static BoxStyle? InlineElementBox(ComputedStyle style, double containingWidth)
     {
         var (box, _) = BoxStyleFor(
-            style with { Width = CssLength.Auto, MaxWidth = CssLength.Auto, Height = CssLength.Auto, MinHeight = CssLength.Auto, MaxHeight = CssLength.Auto },
+            style with { Width = CssLength.Auto, MinWidth = CssLength.Auto, MaxWidth = CssLength.Auto, Height = CssLength.Auto, MinHeight = CssLength.Auto, MaxHeight = CssLength.Auto },
             containingWidth,
             flexItem: true);
         var visible = box.Background is not null || box.Border.Widths != Thickness.Zero || box.Padding != Thickness.Zero
@@ -449,8 +449,9 @@ internal sealed partial class BoxBuilder
             return;
         }
 
-        var width = ImageDimension(style.Width, element.GetAttribute("width"), containingWidth);
-        var height = ImageDimension(style.Height, element.GetAttribute("height"), 0);
+        // A declared width or height (even auto, e.g. max-width: 100%; height: auto) overrides the attribute.
+        var width = ImageDimension(style.Width, style.WidthDeclared ? null : element.GetAttribute("width"), containingWidth);
+        var height = ImageDimension(style.Height, style.HeightDeclared ? null : element.GetAttribute("height"), 0);
         if (style.Display is CssDisplay.Inline or CssDisplay.InlineBlock)
         {
             var (w, h) = (width, height) switch
@@ -460,6 +461,21 @@ internal sealed partial class BoxBuilder
                 (null, { } fh) => (fh * image.NaturalWidth / image.NaturalHeight, fh),
                 _ => (image.NaturalWidth, image.NaturalHeight),
             };
+
+            // min-width and max-width scale the image, keeping its aspect ratio unless both sizes are given.
+            var stretched = width is not null && height is not null;
+            void Limit(CssLength limit, bool isMax)
+            {
+                if (!limit.IsAuto && Math.Max(limit.Resolve(containingWidth), 1e-3) is var bound && (isMax ? w > bound : w < bound))
+                {
+                    h = stretched ? h : h * bound / w;
+                    w = bound;
+                }
+            }
+
+            Limit(style.MaxWidth, isMax: true);
+            Limit(style.MinWidth, isMax: false); // The minimum wins.
+
             AddAnchors(element, collector);
             collector.AddImage(image, w, h, verticalAlign);
             return;
@@ -529,11 +545,11 @@ internal sealed partial class BoxBuilder
             : null;
     }
 
-    /// <summary>The box style and the content width, with percentages, auto margins and width/max-width resolved.</summary>
-    /// <remarks>
-    /// For a flex item, auto margins are left at 0 (the flex layout distributes free space to them) and max-width only
-    /// caps a fixed width (the flex layout clamps the rest).
-    /// </remarks>
+    /// <summary>
+    /// The box style and the content width its children are built for, with percentages and auto margins resolved and
+    /// the widths made border-box widths.
+    /// </summary>
+    /// <remarks>For a flex item, auto margins are left at 0 (the flex layout distributes free space to them).</remarks>
     private static (BoxStyle Box, double ContentWidth) BoxStyleFor(ComputedStyle style, double containingWidth, bool flexItem = false, double? containingHeight = null)
     {
         var padding = new Thickness(
@@ -544,38 +560,35 @@ internal sealed partial class BoxBuilder
             new BorderSide(style.BorderWidth[2], style.BorderColor[2], style.BorderStyle[2]), new BorderSide(style.BorderWidth[3], style.BorderColor[3], style.BorderStyle[3]));
         var decoration = padding.Horizontal + borders.Widths.Horizontal;
 
-        double? borderBoxWidth = null;
-        if (!style.Width.IsAuto)
+        // Widths are content-box unless box-sizing: border-box; the layout engine works with border boxes and applies
+        // the min and max widths itself (also to shrink-to-fit widths, which are only known there).
+        double? BorderBoxWidth(CssLength length)
         {
-            var width = style.Width.Resolve(containingWidth);
-            borderBoxWidth = style.BorderBox ? Math.Max(width, decoration) : width + decoration;
+            if (length.IsAuto)
+            {
+                return null;
+            }
+
+            var value = length.Resolve(containingWidth);
+            return style.BorderBox ? Math.Max(value, decoration) : value + decoration;
         }
 
-        if (!style.MaxWidth.IsAuto && !(flexItem && borderBoxWidth is null))
-        {
-            var max = style.MaxWidth.Resolve(containingWidth);
-            var maxBorderBox = style.BorderBox ? max : max + decoration;
-            if (borderBoxWidth is null)
-            {
-                // max-width without width: the block is as wide as the container allows, up to the maximum.
-                var natural = containingWidth - style.Margin[1].Resolve(containingWidth) - style.Margin[3].Resolve(containingWidth);
-                if (natural > maxBorderBox)
-                {
-                    borderBoxWidth = maxBorderBox;
-                }
-            }
-            else
-            {
-                borderBoxWidth = Math.Min(borderBoxWidth.Value, maxBorderBox);
-            }
-        }
+        var borderBoxWidth = BorderBoxWidth(style.Width);
+        var minWidth = BorderBoxWidth(style.MinWidth);
+        var maxWidth = BorderBoxWidth(style.MaxWidth);
+        double Clamp(double width) => Math.Max(Math.Min(width, maxWidth ?? double.PositiveInfinity), minWidth ?? 0);
 
         var left = style.Margin[3].Resolve(containingWidth);
         var right = style.Margin[1].Resolve(containingWidth);
-        if (borderBoxWidth is { } fixedWidth && !flexItem)
+        var nonAutoMargins = (style.Margin[3].IsAuto ? 0 : left) + (style.Margin[1].IsAuto ? 0 : right);
+
+        // The used width in a containing block of this width: an auto width fills it, within the min and max widths.
+        var usedWidth = Clamp(borderBoxWidth ?? (containingWidth - nonAutoMargins));
+        if (!flexItem)
         {
-            // Auto horizontal margins share the free space (CSS 2.1 section 10.3.3), e.g. margin: 0 auto centers.
-            var free = containingWidth - fixedWidth - (style.Margin[3].IsAuto ? 0 : left) - (style.Margin[1].IsAuto ? 0 : right);
+            // Auto horizontal margins share the free space (CSS 2.1 section 10.3.3), e.g. margin: 0 auto centers. An
+            // auto width leaves none, unless the max width narrows the box.
+            var free = containingWidth - usedWidth - nonAutoMargins;
             if (style.Margin[3].IsAuto && style.Margin[1].IsAuto)
             {
                 left = right = Math.Max(0, free / 2);
@@ -593,6 +606,8 @@ internal sealed partial class BoxBuilder
             Border = borders,
             Background = style.Background,
             Width = borderBoxWidth,
+            MinWidth = minWidth,
+            MaxWidth = maxWidth,
             Height = BorderBoxHeight(style.Height),
             MinHeight = BorderBoxHeight(style.MinHeight),
             MaxHeight = BorderBoxHeight(style.MaxHeight),
@@ -602,7 +617,7 @@ internal sealed partial class BoxBuilder
             Orphans = style.Orphans,
             Widows = style.Widows,
         };
-        var content = (borderBoxWidth ?? (containingWidth - box.Margin.Horizontal)) - decoration;
+        var content = Clamp(borderBoxWidth ?? (containingWidth - box.Margin.Horizontal)) - decoration;
         return (box, Math.Max(1, content));
 
         // Heights are content-box unless box-sizing: border-box; a percentage (also in calc()) needs a definite

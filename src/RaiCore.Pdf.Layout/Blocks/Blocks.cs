@@ -132,8 +132,11 @@ public sealed class ImageBlock : Block
     /// <summary>Horizontal position within the available width.</summary>
     public TextAlignment Alignment { get; init; } = TextAlignment.Left;
 
-    /// <summary>The drawn size: the requested or natural size, scaled down (keeping the aspect ratio) to fit.</summary>
-    internal (double Width, double Height) GetSize(double maxWidth, double maxHeight)
+    /// <summary>
+    /// The drawn size: the requested or natural size within the width limits (scaled, keeping the aspect ratio, or
+    /// only widened or narrowed when both a width and a height are requested, as CSS does), then scaled down to fit.
+    /// </summary>
+    internal (double Width, double Height) GetSize(double maxWidth, double maxHeight, (double Min, double Max) limits = default)
     {
         var aspect = Image.NaturalHeight / Image.NaturalWidth;
         var (w, h) = (Width, Height) switch
@@ -143,6 +146,12 @@ public sealed class ImageBlock : Block
             (null, { } fh) => (fh / aspect, fh),
             _ => (Image.NaturalWidth, Image.NaturalHeight),
         };
+
+        var limited = Math.Max(Math.Min(w, limits.Max > 0 ? limits.Max : double.PositiveInfinity), limits.Min);
+        if (limited != w)
+        {
+            (w, h) = (limited, Width is not null && Height is not null ? h : h * limited / w);
+        }
 
         var scale = Math.Min(1, Math.Min(maxWidth / w, maxHeight / h));
         return scale < 1 ? (w * scale, h * scale) : (w, h);

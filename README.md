@@ -73,8 +73,9 @@ own engine. Supported today:
   quotes alternate between double and single; `<q>` gets them by default), `no-open-quote`/`no-close-quote` and
   `url()` images; `none` and `normal` generate nothing.
 - The box model: margin, border (every `border-style`: solid, dashed, dotted, double, groove, ridge, inset and
-  outset), padding, background, width, max-width, `height`, `min-height`, `max-height`, auto margins, `box-sizing` and
-  percentages. Percentage heights resolve against definite ancestor heights, starting with the page area (so
+  outset), padding, background, width, `min-width`, `max-width`, `height`, `min-height`, `max-height`, auto margins,
+  `box-sizing` and percentages. `min-width`/`max-width` also limit shrink-to-fit boxes and scale images (with
+  `max-width: 100%; height: auto` keeping the aspect ratio). Percentage heights resolve against definite ancestor heights, starting with the page area (so
   `html, body { height: 100% }` and `100vh` fill the page).
 - `calc()`, `min()`, `max()` and `clamp()`, nested and with CSS variables, in every length: widths, heights, margins,
   padding, `flex-basis`, gaps, `font-size`, `line-height`, `text-indent`, `vertical-align`, `letter-spacing`,

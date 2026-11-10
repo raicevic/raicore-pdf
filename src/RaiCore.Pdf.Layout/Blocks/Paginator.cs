@@ -148,8 +148,13 @@ internal sealed partial class Paginator
         return (min + style.Margin.Horizontal, max + style.Margin.Horizontal);
     }
 
-    private static (double Min, double Max) IntrinsicBorderBox(Block block) =>
-        block.Style.Width is { } fixedWidth ? (fixedWidth, fixedWidth) : IntrinsicContentBorderBox(block);
+    /// <summary>The border-box min-content and max-content widths: a fixed width or the content's, within the min/max widths.</summary>
+    private static (double Min, double Max) IntrinsicBorderBox(Block block)
+    {
+        var style = block.Style;
+        var (min, max) = style.Width is { } fixedWidth ? (fixedWidth, fixedWidth) : IntrinsicContentBorderBox(block);
+        return (style.ClampWidth(min), style.ClampWidth(max));
+    }
 
     /// <summary>The border-box min-content and max-content widths from the content, ignoring a fixed width.</summary>
     private static (double Min, double Max) IntrinsicContentBorderBox(Block block)
@@ -159,18 +164,22 @@ internal sealed partial class Paginator
         var (min, max) = block switch
         {
             ParagraphBlock paragraph => paragraph.Paragraph.MeasureIntrinsicWidths(),
-            ImageBlock image => (image.GetSize(double.MaxValue, double.MaxValue).Width, image.GetSize(double.MaxValue, double.MaxValue).Width),
+            ImageBlock image => Both(image.GetSize(double.MaxValue, double.MaxValue, ImageWidthLimits(image)).Width),
             ContainerBlock container => container.Children.Select(MeasureIntrinsic).Aggregate((Min: 0.0, Max: 0.0), (a, b) => (Math.Max(a.Min, b.Min), Math.Max(a.Max, b.Max))),
             TableBlock table => TableLayouter.MeasureIntrinsic(table),
             FlexBlock flex => FlexIntrinsic(flex),
             _ => (0, 0),
         };
         return (min + decoration, max + decoration);
+
+        static (double, double) Both(double width) => (width, width);
     }
 
     /// <summary>
     /// The border-box width a block gets: its fixed width, or the available width; images and tables without a
-    /// width shrink to fit their content (CSS shrink-to-fit).
+    /// width shrink to fit their content (CSS shrink-to-fit). The min and max widths limit all of these, except that
+    /// an image still scales down to fit the available width and a table without a width does not get narrower than its
+    /// content allows.
     /// </summary>
     private double BoxWidth(Block block, double width)
     {
@@ -178,20 +187,28 @@ internal sealed partial class Paginator
         var available = Math.Max(0, width - style.Margin.Horizontal);
         if (style.Width is { } fixedWidth)
         {
-            return fixedWidth;
+            return style.ClampWidth(fixedWidth);
         }
 
         switch (block)
         {
             case ImageBlock image:
                 var decoration = style.Border.Widths.Horizontal + style.Padding.Horizontal;
-                return Math.Min(available, image.GetSize(Math.Max(1e-3, available - decoration), ImageMaxHeight(image)).Width + decoration);
+                return Math.Min(available, image.GetSize(Math.Max(1e-3, available - decoration), ImageMaxHeight(image), ImageWidthLimits(image)).Width + decoration);
             case TableBlock:
-                var (min, max) = IntrinsicBorderBox(block);
-                return Math.Max(min, Math.Min(available, max));
+                var (min, max) = IntrinsicContentBorderBox(block);
+                return Math.Max(min, style.ClampWidth(Math.Min(available, max)));
             default:
-                return available;
+                return style.ClampWidth(available);
         }
+    }
+
+    /// <summary>An image's minimum and maximum content widths from its box's border-box limits (0 for none).</summary>
+    private static (double Min, double Max) ImageWidthLimits(Block block)
+    {
+        var style = block.Style;
+        var decoration = style.Border.Widths.Horizontal + style.Padding.Horizontal;
+        return (Math.Max(0, (style.MinWidth ?? 0) - decoration), style.MaxWidth is { } max ? Math.Max(1e-3, max - decoration) : 0);
     }
 
     /// <summary>Moves to the next page, creating it unless a side-by-side flex item already did.</summary>
@@ -560,7 +577,7 @@ internal sealed partial class Paginator
 
     private void LayoutImage(ImageBlock block, double x, double width)
     {
-        var (w, h) = block.GetSize(width, ImageMaxHeight(block));
+        var (w, h) = block.GetSize(width, ImageMaxHeight(block), ImageWidthLimits(block));
         if (h > Remaining + Epsilon && !AtPageTop)
         {
             NewPage(); // Normally avoided by MinimumStartHeight; happens only inside a tall box.
@@ -950,7 +967,7 @@ internal sealed partial class Paginator
             case ParagraphBlock paragraph:
                 return decoration + paragraph.Paragraph.Layout(contentWidth).Height;
             case ImageBlock image:
-                return decoration + image.GetSize(contentWidth, ImageMaxHeight(image)).Height;
+                return decoration + image.GetSize(contentWidth, ImageMaxHeight(image), ImageWidthLimits(image)).Height;
             case TableBlock table:
                 var tableLayout = TableLayouter.Layout(table, 0, contentWidth);
                 return decoration + tableLayout.Height(0, table.Rows.Count) + (2 * tableLayout.SpacingY);

@@ -150,8 +150,8 @@ public class FlexLayoutTests
         Assert.Equal(wordWidth, placements.Single(p => p.Block == word).Width, 3);
         Assert.Equal(160 - wordWidth, Horizontal(placements, wide).Width, 3);
 
-        var free = new ParagraphBlock(new Paragraph(Text).Add("Supercalifragilistic"));
-        var shrunk = Layout(new FlexBlock().Add(new FlexItem(free) { MinWidth = 0 }).Add(Rect(150, 10)));
+        var free = new ParagraphBlock(new Paragraph(Text).Add("Supercalifragilistic"), new BoxStyle { MinWidth = 0 });
+        var shrunk = Layout(new FlexBlock().Add(new FlexItem(free)).Add(Rect(150, 10)));
         Assert.True(shrunk.First(p => p.Block == free).Width < wordWidth);
     }
 

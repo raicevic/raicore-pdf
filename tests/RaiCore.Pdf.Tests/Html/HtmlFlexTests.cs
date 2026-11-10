@@ -89,11 +89,11 @@ public class HtmlFlexTests
         Assert.Null(b.AlignSelf);
 
         // Content-box sizes become border-box sizes.
-        Assert.Equal(0 + (20 * Px), c.MinWidth);
-        Assert.Equal((100 + 20) * Px, c.MaxWidth!.Value, 6);
+        Assert.Equal(0 + (20 * Px), c.Content.Style.MinWidth);
+        Assert.Equal((100 + 20) * Px, c.Content.Style.MaxWidth!.Value, 6);
         Assert.Null(c.Content.Style.Width); // max-width does not make a flex item as wide as possible.
 
-        Assert.Equal(50 * Px, d.MinWidth);
+        Assert.Equal(50 * Px, d.Content.Style.MinWidth);
         Assert.Equal(30 * Px, d.Content.Style.Height);
     }
 

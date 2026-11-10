@@ -171,7 +171,7 @@ internal sealed partial class BoxBuilder
         }
 
         var valign = td.GetAttribute("valign")?.ToUpperInvariant() ?? style.VerticalAlign.ToUpperInvariant();
-        var (box, contentWidth) = BoxStyleFor(style with { Margin = [CssLength.Zero, CssLength.Zero, CssLength.Zero, CssLength.Zero], Width = CssLength.Auto, MaxWidth = CssLength.Auto }, tableWidth);
+        var (box, contentWidth) = BoxStyleFor(style with { Margin = [CssLength.Zero, CssLength.Zero, CssLength.Zero, CssLength.Zero], Width = CssLength.Auto, MinWidth = CssLength.Auto, MaxWidth = CssLength.Auto }, tableWidth);
 
         var content = new List<Block>();
         var collector = new InlineCollector(this, style, contentWidth);

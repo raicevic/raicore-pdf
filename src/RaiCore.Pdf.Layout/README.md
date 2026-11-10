@@ -21,7 +21,7 @@ flow.Render().Save("report.pdf");
 
 - Paragraphs: alignment and justification, line heights, indents, soft hyphens, orphans and widows; inline images
   and inline boxes (any block as one item of a line, like CSS `inline-block`).
-- Blocks: margins (with collapsing), borders in every CSS style, padding, backgrounds, heights with min/max limits, forced and avoided
+- Blocks: margins (with collapsing), borders in every CSS style, padding, backgrounds, widths and heights with min/max limits, forced and avoided
   page breaks.
 - Tables: automatic and fixed layout, spans, header and footer rows repeated on every page, rows split across pages,
   separate or collapsed borders.

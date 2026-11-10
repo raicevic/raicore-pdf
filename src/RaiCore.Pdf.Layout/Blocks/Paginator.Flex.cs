@@ -122,10 +122,10 @@ internal sealed partial class Paginator
             _ => specified ?? maxContent,
         };
 
-        var max = item.MaxWidth ?? double.PositiveInfinity;
+        var max = content.Style.MaxWidth ?? double.PositiveInfinity;
 
         // min-width: auto is the content's min-content width, capped by a specified width and the max width.
-        var min = item.MinWidth ?? Math.Min(Math.Min(minContent, specified ?? double.PositiveInfinity), max);
+        var min = content.Style.MinWidth ?? Math.Min(Math.Min(minContent, specified ?? double.PositiveInfinity), max);
         return new FlexMainInput(baseSize, min, Math.Max(min, max), Math.Max(0, item.Grow), Math.Max(0, item.Shrink), margins);
     }
 
@@ -401,7 +401,7 @@ internal sealed partial class Paginator
             boxWidth = Math.Min(max, Math.Max(min, available)); // Shrink to fit.
         }
 
-        boxWidth = Math.Max(Math.Min(boxWidth, item.MaxWidth ?? double.PositiveInfinity), item.MinWidth ?? 0);
+        boxWidth = style.ClampWidth(boxWidth);
         var free = available - boxWidth;
         var reverse = flex.Wrap == FlexWrap.WrapReverse;
         var offset = auto switch
@@ -619,9 +619,8 @@ internal sealed partial class Paginator
         {
             var margin = item.Content.Style.Margin;
             var margins = MarginOrZero(item, AutoMargins.Left, margin.Left) + MarginOrZero(item, AutoMargins.Right, margin.Right);
-            var (min, max) = IntrinsicBorderBox(item.Content);
-            double Clamp(double w) => Math.Max(Math.Min(w, item.MaxWidth ?? double.PositiveInfinity), item.MinWidth ?? 0);
-            return (Min: Clamp(min) + margins, Max: Clamp(max) + margins);
+            var (min, max) = IntrinsicBorderBox(item.Content); // Within the item's min and max widths.
+            return (Min: min + margins, Max: max + margins);
         }).ToList();
 
         if (contributions.Count == 0)

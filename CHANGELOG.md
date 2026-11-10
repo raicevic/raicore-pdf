@@ -51,6 +51,11 @@ change at any time, and this section lists what the packages can do so far.
 - `height`, `min-height` and `max-height` on every block (`BoxStyle.Height`, `MinHeight`, `MaxHeight`). Content
   taller than a fixed height overflows, as with `overflow: visible`; a fixed-height box that fits on a page is not
   split.
+- `min-width` and `max-width` on every block (`BoxStyle.MinWidth`, `MaxWidth`, as border-box widths), applied by the
+  layout engine to fixed, filling and shrink-to-fit widths alike (inline boxes, tables, flex items in rows and
+  columns) and to intrinsic widths; the minimum wins over the maximum, as in CSS. Images scale to them, keeping their
+  aspect ratio unless both a width and a height are given; a table without a width does not get narrower than its
+  content. They replace `FlexItem.MinWidth`/`MaxWidth`.
 - Tables: automatic and fixed layout, `colspan`/`rowspan`, separate and collapsed borders. Header rows repeat at the
   top of every page and footer rows (`TableRow.IsFooter`) right below the body; footers taller than a quarter of the
   page are not repeated, as in Chrome. Rows that do not fit are split like browsers do, each cell continuing on the
@@ -112,6 +117,10 @@ change at any time, and this section lists what the packages can do so far.
   atomic inline boxes, or block-level. `content` takes strings with CSS escapes, `attr()`, `open-quote`/`close-quote`
   (with `quotes`; by default double quotes, then single quotes for nested ones), `no-open-quote`/`no-close-quote` and
   `url()` images; `none` and `normal` generate nothing. `<q>` elements get quotes from the browser default styles.
+- `min-width` and `max-width` (also with percentages and `calc()`), applied in layout, so they also limit
+  shrink-to-fit boxes (`inline-block`, tables, flex items) and the content inside them; a block narrowed by
+  `max-width` is centered by auto margins. Images scale to them, and a declared `width` or `height` (even `auto`, as
+  in `img { max-width: 100%; height: auto }`) overrides the `width`/`height` attributes, as in browsers.
 - `height`, `min-height` and `max-height`; percentage heights resolve against definite ancestor heights, starting
   with the page area, and `vh` units are the page area (to within a pixel).
 - `calc()`, `min()`, `max()` and `clamp()` in every length (sizes, margins, padding, `flex-basis`, gaps, `font-size`,

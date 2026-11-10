@@ -49,8 +49,9 @@ public class HtmlCalcTests
             <div id="c" style="width: max(100px, 50%); margin: 0 auto">c</div>
             """);
 
-        Assert.Equal(400 * 0.9, blocks["a"].Style.Width!.Value, 6);
-        Assert.Equal(500 * Px, blocks["b"].Style.Width!.Value, 6);
+        Assert.Null(blocks["a"].Style.Width); // The layout engine applies the max width.
+        Assert.Equal(400 * 0.9, blocks["a"].Style.MaxWidth!.Value, 6);
+        Assert.Equal(500 * Px, blocks["b"].Style.MaxWidth!.Value, 6);
         Assert.Equal(200, blocks["c"].Style.Width!.Value, 6);
         Assert.Equal(100, blocks["c"].Style.Margin.Left, 6); // Auto margins share what calc() leaves.
     }
