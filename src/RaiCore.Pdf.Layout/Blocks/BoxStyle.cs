@@ -19,11 +19,53 @@ public readonly record struct Thickness(double Top, double Right, double Bottom,
     public double Vertical => Top + Bottom;
 }
 
-/// <summary>One side of a border: a solid line of a width and color.</summary>
+/// <summary>How a border side is drawn (CSS <c>border-style</c>). CSS <c>none</c> is a side of width 0.</summary>
+public enum BorderStyle
+{
+    /// <summary>A single solid line.</summary>
+    Solid,
+
+    /// <summary>Dashes about three times as long as the line is wide, spaced so the side starts and ends with a dash.</summary>
+    Dashed,
+
+    /// <summary>Dots about a dot apart: round, or square for lines thinner than 3 px (2.25 pt), as browsers draw them.</summary>
+    Dotted,
+
+    /// <summary>Two lines with a gap between, each about a third of the width. Widths below 3 px (2.25 pt) draw solid.</summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "The CSS keyword.")]
+    Double,
+
+    /// <summary>Carved into the page: the outer half shaded like <see cref="Inset"/>, the inner half like <see cref="Outset"/>.</summary>
+    Groove,
+
+    /// <summary>Raised from the page: the outer half shaded like <see cref="Outset"/>, the inner half like <see cref="Inset"/>.</summary>
+    Ridge,
+
+    /// <summary>The box looks embedded: top and left sides darker, bottom and right sides lighter.</summary>
+    Inset,
+
+    /// <summary>The box looks raised: top and left sides lighter, bottom and right sides darker.</summary>
+    Outset,
+
+    /// <summary>
+    /// No border, like a side of width 0 (give it width 0, as CSS computes it). With collapsed table borders it also
+    /// suppresses every other border at that position (CSS 2.1 section 17.6.2.1).
+    /// </summary>
+    Hidden,
+}
+
+/// <summary>One side of a border: a line of a width, color and style (solid unless <see cref="Style"/> says otherwise).</summary>
 public readonly record struct BorderSide(double Width, PdfColor Color)
 {
+    /// <summary>A side of a width, color and style.</summary>
+    public BorderSide(double width, PdfColor color, BorderStyle style)
+        : this(width, color) => Style = style;
+
     /// <summary>No border.</summary>
     public static BorderSide None { get; }
+
+    /// <summary>How the side is drawn.</summary>
+    public BorderStyle Style { get; init; }
 }
 
 /// <summary>The four sides of a border.</summary>
@@ -33,8 +75,11 @@ public readonly record struct Borders(BorderSide Top, BorderSide Right, BorderSi
     public static Borders None { get; }
 
     /// <summary>The same border on all four sides.</summary>
-    public static Borders All(double width, PdfColor color) =>
-        new(new(width, color), new(width, color), new(width, color), new(width, color));
+    public static Borders All(double width, PdfColor color) => All(width, color, BorderStyle.Solid);
+
+    /// <summary>The same border, in a style, on all four sides.</summary>
+    public static Borders All(double width, PdfColor color, BorderStyle style) =>
+        new(new(width, color, style), new(width, color, style), new(width, color, style), new(width, color, style));
 
     /// <summary>The border widths as a <see cref="Thickness"/>.</summary>
     public Thickness Widths => new(Top.Width, Right.Width, Bottom.Width, Left.Width);

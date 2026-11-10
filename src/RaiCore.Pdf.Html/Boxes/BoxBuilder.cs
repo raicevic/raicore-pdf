@@ -439,8 +439,8 @@ internal sealed partial class BoxBuilder
             style.Padding[0].Resolve(containingWidth), style.Padding[1].Resolve(containingWidth),
             style.Padding[2].Resolve(containingWidth), style.Padding[3].Resolve(containingWidth));
         var borders = new Borders(
-            new BorderSide(style.BorderWidth[0], style.BorderColor[0]), new BorderSide(style.BorderWidth[1], style.BorderColor[1]),
-            new BorderSide(style.BorderWidth[2], style.BorderColor[2]), new BorderSide(style.BorderWidth[3], style.BorderColor[3]));
+            new BorderSide(style.BorderWidth[0], style.BorderColor[0], style.BorderStyle[0]), new BorderSide(style.BorderWidth[1], style.BorderColor[1], style.BorderStyle[1]),
+            new BorderSide(style.BorderWidth[2], style.BorderColor[2], style.BorderStyle[2]), new BorderSide(style.BorderWidth[3], style.BorderColor[3], style.BorderStyle[3]));
         var decoration = padding.Horizontal + borders.Widths.Horizontal;
 
         double? borderBoxWidth = null;

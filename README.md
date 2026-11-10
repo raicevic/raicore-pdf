@@ -64,9 +64,10 @@ own engine. Supported today:
   break across lines or around a block inside them.
 - `vertical-align` on inline text, images and inline boxes: `sub`, `super` (also for `<sub>`/`<sup>`), lengths,
   percentages, `middle`, `text-top`, `text-bottom`, `top` and `bottom`; nested shifts add up.
-- The box model: margin, border, padding, background, width, max-width, `height`, `min-height`, `max-height`, auto
-  margins, `box-sizing` and percentages. Percentage heights resolve against definite ancestor heights, starting with
-  the page area (so `html, body { height: 100% }` and `100vh` fill the page).
+- The box model: margin, border (every `border-style`: solid, dashed, dotted, double, groove, ridge, inset and
+  outset), padding, background, width, max-width, `height`, `min-height`, `max-height`, auto margins, `box-sizing` and
+  percentages. Percentage heights resolve against definite ancestor heights, starting with the page area (so
+  `html, body { height: 100% }` and `100vh` fill the page).
 - Fonts (`font-family` fallback lists, weight, style), color, `text-align`, `text-indent`, `line-height` and `text-transform`.
 - Web fonts: `@font-face` with `url()` (TTF, OTF, TTC, WOFF, WOFF2, also as `data:` URIs) and `local()` sources,
   `format()` hints, `font-weight` ranges for variable fonts, `font-style` and `unicode-range` (so per-script files as
@@ -298,7 +299,8 @@ flow.PageDecorator = (canvas, page) => /* header/footer, e.g. $"Page {page.Numbe
 flow.Render().Save("report.pdf");
 ```
 
-- Box model: margin, border, padding, background and fixed widths.
+- Box model: margin, border (solid, dashed, dotted, double, groove, ridge, inset or outset, with corners joined like
+  browsers join them), padding, background and fixed widths.
 - Vertical margins collapse between siblings and through parents without border or padding.
 - Paragraphs split between lines with orphans and widows (default 2).
 - Page breaks: forced (`break-before`/`break-after: page`), avoided (`break-after: avoid` keeps headings with their text,
@@ -308,7 +310,7 @@ flow.Render().Save("report.pdf");
   footer rows (`TableRow.IsFooter`) below the body on every page, rows that do
   not fit are split with each cell continuing on the next page (unless `TableRow.BreakInside` is `Avoid`), rows that
   rowspans join may also break between them with the spanning cell continuing alongside, and borders can be separate
-  or collapsed.
+  or collapsed (conflicts resolved by width and style as in CSS 2.1).
 
 ## Architecture
 

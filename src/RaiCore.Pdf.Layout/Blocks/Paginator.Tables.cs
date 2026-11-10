@@ -190,19 +190,24 @@ internal sealed partial class Paginator
         var columns = layout.ColumnX.Length - 1;
         foreach (var row in rows)
         {
+            var verticals = new List<BorderPainter.Edge>();
             for (var c = 0; c <= columns; c++)
             {
                 var line = vertical[row.Row, c];
                 if (line.Width > 0)
                 {
-                    canvas.SetFillColor(line.Color).Rectangle(x + layout.ColumnX[c] - (line.Width / 2), pageHeight - row.Top - row.Height, line.Width, row.Height).Fill();
+                    var lineBottom = pageHeight - row.Top - row.Height;
+                    verticals.Add(BorderPainter.VerticalLine(line, x + layout.ColumnX[c], lineBottom, lineBottom + row.Height));
                 }
             }
+
+            BorderPainter.Paint(canvas, verticals);
 
             // A row's top line only where the row starts, its bottom line only where it ends. Lines inside a spanning
             // cell have no width, so they are skipped.
             void Horizontal(int gridRow, double lineY)
             {
+                var horizontals = new List<BorderPainter.Edge>();
                 for (var c = 0; c < columns; c++)
                 {
                     var line = horizontal[gridRow, c];
@@ -210,9 +215,11 @@ internal sealed partial class Paginator
                     {
                         var x0 = x + layout.ColumnX[c] - (vertical[row.Row, c].Width / 2);
                         var x1 = x + layout.ColumnX[c + 1] + (vertical[row.Row, c + 1].Width / 2);
-                        canvas.SetFillColor(line.Color).Rectangle(x0, pageHeight - lineY - (line.Width / 2), x1 - x0, line.Width).Fill();
+                        horizontals.Add(BorderPainter.HorizontalLine(line, x0, x1, pageHeight - lineY));
                     }
                 }
+
+                BorderPainter.Paint(canvas, horizontals);
             }
 
             if (row.First)
