@@ -177,7 +177,19 @@ internal sealed partial class BoxBuilder
 
                     if (childStyle.Display == CssDisplay.Inline)
                     {
-                        AddChildren(child, childStyle, contentWidth, children, collector, VerticalAlign(inherited, childStyle, style));
+                        var align = VerticalAlign(inherited, childStyle, style);
+                        var box = InlineElementBox(childStyle, contentWidth);
+                        if (box is not null)
+                        {
+                            collector.BeginInline(box, TextStyleFor(childStyle) with { VerticalAlign = align });
+                        }
+
+                        AddChildren(child, childStyle, contentWidth, children, collector, align);
+                        if (box is not null)
+                        {
+                            collector.EndInline();
+                        }
+
                         break;
                     }
 
@@ -251,6 +263,21 @@ internal sealed partial class BoxBuilder
         var outer = _containingHeight;
         _containingHeight = box.Height is { } height ? Math.Max(0, height - box.Padding.Vertical - box.Border.Widths.Vertical) : null;
         return outer;
+    }
+
+    /// <summary>
+    /// The box of an inline element (a <c>span</c> with a background, border, padding or horizontal margins), or
+    /// <c>null</c> when it has none. Widths and heights do not apply to inline elements.
+    /// </summary>
+    private static BoxStyle? InlineElementBox(ComputedStyle style, double containingWidth)
+    {
+        var (box, _) = BoxStyleFor(
+            style with { Width = CssLength.Auto, MaxWidth = CssLength.Auto, Height = CssLength.Auto, MinHeight = CssLength.Auto, MaxHeight = CssLength.Auto },
+            containingWidth,
+            flexItem: true);
+        var visible = box.Background is not null || box.Border.Widths != Thickness.Zero || box.Padding != Thickness.Zero
+            || box.Margin.Left != 0 || box.Margin.Right != 0;
+        return visible ? box : null;
     }
 
     /// <summary>

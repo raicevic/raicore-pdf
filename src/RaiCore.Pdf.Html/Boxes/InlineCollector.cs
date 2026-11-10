@@ -19,6 +19,9 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
     private int _column; // For tab stops in preserved text.
     private string? _marker;
 
+    /// <summary>Inline elements with a box that are open, outer first (they continue in the next paragraph after a block).</summary>
+    private readonly List<(BoxStyle Box, TextStyle Style)> _openInlines = [];
+
     /// <summary>A list marker to place before the first content (or alone, if the item is empty).</summary>
     public void SetMarker(string marker) => _marker = marker;
 
@@ -53,6 +56,20 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         _hasVisibleContent = true;
     }
 
+    /// <summary>Starts an inline element with a background, border, padding or horizontal margins.</summary>
+    public void BeginInline(BoxStyle box, TextStyle style)
+    {
+        Paragraph().BeginInline(box, style);
+        _openInlines.Add((box, style));
+    }
+
+    /// <summary>Ends the innermost inline element started with <see cref="BeginInline"/>.</summary>
+    public void EndInline()
+    {
+        _openInlines.RemoveAt(_openInlines.Count - 1);
+        _paragraph?.EndInline();
+    }
+
     /// <summary>Adds an atomic inline box (inline-block, inline-flex, inline-table) as one item of the line.</summary>
     public void AddBox(Block block, InlineAlignment alignment = default)
     {
@@ -68,6 +85,13 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         {
             Paragraph(); // An empty list item still shows its marker.
             _hasVisibleContent = true;
+        }
+
+        // A block inside an inline element splits it: its box ends here without its right edge and continues in the
+        // next paragraph without its left edge.
+        for (var i = 0; i < _openInlines.Count && _paragraph is not null; i++)
+        {
+            _paragraph.EndInline(endEdge: false);
         }
 
         var result = _hasVisibleContent && _paragraph is not null
@@ -107,6 +131,11 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
             }
 
             _marker = null;
+        }
+
+        foreach (var (box, style) in _openInlines)
+        {
+            _paragraph.BeginInline(box, style, startEdge: false);
         }
 
         return _paragraph;

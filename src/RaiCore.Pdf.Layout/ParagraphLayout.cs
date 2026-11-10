@@ -3,7 +3,7 @@ using RaiCore.Pdf.Layout.Text;
 namespace RaiCore.Pdf.Layout;
 
 /// <summary>A paragraph broken into lines, ready to draw or to split across pages.</summary>
-public sealed class ParagraphLayout
+public sealed partial class ParagraphLayout
 {
     internal ParagraphLayout(double availableWidth, IReadOnlyList<LineLayout> lines)
     {
@@ -48,6 +48,14 @@ public sealed class ParagraphLayout
         {
             var line = Lines[i];
             var baseline = top - (line.Top - offset) - line.Baseline;
+
+            // Inline elements' backgrounds and borders go under the line's content.
+            foreach (var decoration in line.Decorations)
+            {
+                DrawDecoration(canvas, decoration, x + line.X, baseline);
+                current = null;
+            }
+
             foreach (var fragment in line.Fragments)
             {
                 if (current != fragment.Style.Color)
@@ -83,13 +91,51 @@ public sealed class ParagraphLayout
     }
 }
 
+/// <summary>Drawing helpers for <see cref="ParagraphLayout"/>.</summary>
+public sealed partial class ParagraphLayout
+{
+    private static void DrawDecoration(PdfCanvas canvas, InlineDecorationFragment piece, double lineX, double baseline)
+    {
+        var box = piece.Decoration.Box;
+        var (left, right) = (lineX + piece.X0, lineX + piece.X1);
+        var (bottom, top) = (baseline - piece.Below, baseline + piece.Above);
+        if (box.Background is { } background)
+        {
+            canvas.SetFillColor(background).Rectangle(left, bottom, right - left, top - bottom).Fill();
+        }
+
+        void Side(Blocks.BorderSide side, double sx, double sy, double sw, double sh)
+        {
+            if (side.Width > 0)
+            {
+                canvas.SetFillColor(side.Color).Rectangle(sx, sy, sw, sh).Fill();
+            }
+        }
+
+        var border = box.Border;
+        Side(border.Top, left, top - border.Top.Width, right - left, border.Top.Width);
+        Side(border.Bottom, left, bottom, right - left, border.Bottom.Width);
+        if (piece.StartEdge)
+        {
+            Side(border.Left, left, bottom, border.Left.Width, top - bottom);
+        }
+
+        if (piece.EndEdge)
+        {
+            Side(border.Right, right - border.Right.Width, bottom, border.Right.Width, top - bottom);
+        }
+    }
+}
+
 /// <summary>One line of a <see cref="ParagraphLayout"/>.</summary>
 public sealed class LineLayout
 {
     internal LineLayout(
         int start, int end, double top, double height, double baseline, double x, double width,
-        IReadOnlyList<LineFragment> fragments, IReadOnlyList<InlineImageFragment> images, IReadOnlyList<InlineBoxFragment>? boxes = null)
+        IReadOnlyList<LineFragment> fragments, IReadOnlyList<InlineImageFragment> images, IReadOnlyList<InlineBoxFragment>? boxes = null,
+        IReadOnlyList<InlineDecorationFragment>? decorations = null)
     {
+        Decorations = decorations ?? [];
         Images = images;
         Boxes = boxes ?? [];
         Start = start;
@@ -131,7 +177,20 @@ public sealed class LineLayout
 
     /// <summary>Inline boxes on this line.</summary>
     public IReadOnlyList<InlineBoxFragment> Boxes { get; }
+
+    /// <summary>The pieces of inline elements' boxes on this line, outer ones first.</summary>
+    public IReadOnlyList<InlineDecorationFragment> Decorations { get; }
 }
+
+/// <summary>The piece of an inline element's box (<see cref="InlineDecoration"/>) on one line.</summary>
+/// <param name="Decoration">The element's box.</param>
+/// <param name="X0">Left edge of the border box, from the start of the line's content.</param>
+/// <param name="X1">Right edge of the border box.</param>
+/// <param name="Above">Top of the border box above the line's baseline.</param>
+/// <param name="Below">Bottom of the border box below the line's baseline.</param>
+/// <param name="StartEdge">The element starts on this line: its left border is drawn.</param>
+/// <param name="EndEdge">The element ends on this line: its right border is drawn.</param>
+public sealed record InlineDecorationFragment(InlineDecoration Decoration, double X0, double X1, double Above, double Below, bool StartEdge, bool EndEdge);
 
 /// <summary>An inline box on a line.</summary>
 public sealed class InlineBoxFragment

@@ -27,7 +27,8 @@ change at any time, and this section lists what the packages can do so far.
 - Unicode line breaking (UAX #14, passing the full conformance test) and paragraphs with alignment, justification,
   line heights, indents, soft hyphens and hard breaks; inline images and inline boxes (`Paragraph.AddBox`: any block
   as one item of a line, shrink-to-fit, aligned on its last baseline); `InlineAlignment` positions inline text, images
-  and boxes vertically (CSS 2.1 section 10.8).
+  and boxes vertically (CSS 2.1 section 10.8); `Paragraph.BeginInline`/`EndInline`/`AddInline` give part of the text an
+  inline element's box (`InlineDecoration`).
 - Block layout and pagination: the box model, margin collapsing, orphans and widows, forced and avoided page breaks,
   boxes sliced across pages, page decorators for headers and footers. A paragraph whose orphans and widows leave no
   possible break needs all its lines at the bottom of a page before it starts there.
@@ -53,6 +54,9 @@ change at any time, and this section lists what the packages can do so far.
   list markers, images, linked stylesheets and tables (including the legacy table attributes, `thead`, `tfoot` and
   `tr { break-inside: avoid }`).
 - `display: flex`, with all the flex properties above.
+- Backgrounds, borders, padding and horizontal margins on inline elements: drawn behind the text of each line they
+  cover (the font's content area plus padding and border, raised with the element), sliced at line breaks and around
+  blocks inside them; horizontal edges take space on the line, vertical ones do not change its height.
 - `vertical-align` on inline content (text, images, inline boxes): `sub` and `super` (a fifth and a third of the
   parent's font size, as browsers do; `<sub>`/`<sup>` use them by default), lengths, percentages of the line height,
   `middle`, `text-top`, `text-bottom`, `top` and `bottom`. Nested shifts add up; a block's or table cell's own
@@ -76,7 +80,7 @@ change at any time, and this section lists what the packages can do so far.
 
 ### Known limitations
 The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these.
-- No `::before`/`::after`, links, bookmarks, `text-decoration`, or backgrounds and borders on inline elements.
+- No `::before`/`::after`, links, bookmarks or `text-decoration`. Borders on inline elements are drawn solid.
 - Floats, positioning and grid (rendered as blocks); `calc()`, `overflow: hidden`, transparency (blended with white),
   border styles other than solid, rounded corners and background images.
 - Mixed left-to-right and right-to-left text on one line (the Unicode bidi algorithm); no hyphenation.
