@@ -5,7 +5,7 @@ Render Razor components (`.razor` files) to PDF. Components are rendered to HTML
 server, browser or HTTP request is needed, so it works in console apps, background jobs and ASP.NET Core alike.
 
 ```sh
-dotnet add package RaiCore.Pdf.Razor --prerelease
+dotnet add package RaiCore.Pdf.Razor
 ```
 
 ```razor

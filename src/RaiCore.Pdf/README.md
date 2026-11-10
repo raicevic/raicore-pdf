@@ -6,7 +6,7 @@ core of RaiCore.Pdf. Most applications use it through
 [RaiCore.Pdf.Razor](https://www.nuget.org/packages/RaiCore.Pdf.Razor).
 
 ```sh
-dotnet add package RaiCore.Pdf --prerelease
+dotnet add package RaiCore.Pdf
 ```
 
 ```csharp

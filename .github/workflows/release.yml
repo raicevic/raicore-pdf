@@ -1,6 +1,7 @@
 name: Release
 
-# Push a tag such as v0.1.0 or v0.1.0-alpha.1 to build, test and publish every package with that version.
+# Push a tag such as v1.0.0 or v1.1.0-rc.1 to build, test and publish every package with that version.
+# Nothing is released before 1.0: tags below v1.0.0 (including 1.0.0 prereleases) are refused.
 # One-time setup (see CONTRIBUTING.md): a nuget.org trusted publishing policy for this repository and the workflow
 # file "release.yml" in environment "nuget", and the repository secret NUGET_USER (the nuget.org profile name).
 on:
@@ -30,6 +31,10 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::Tag $GITHUB_REF_NAME is not v<major>.<minor>.<patch>[-prerelease]"
+            exit 1
+          fi
+          if [[ "$version" == 0.* || "$version" == 1.0.0-* ]]; then
+            echo "::error::Nothing is released before 1.0; $GITHUB_REF_NAME is below v1.0.0. See CONTRIBUTING.md."
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"

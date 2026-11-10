@@ -23,9 +23,9 @@
     <PackageTags>pdf;html-to-pdf;razor;document;conversion</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageReleaseNotes>https://github.com/raicevic/raicore-pdf/blob/main/CHANGELOG.md</PackageReleaseNotes>
-    <!-- Local and CI builds; the release workflow sets Version from the git tag (v0.1.0 -> 0.1.0). -->
-    <VersionPrefix>0.1.0</VersionPrefix>
-    <VersionSuffix>alpha</VersionSuffix>
+    <!-- Local and CI builds (never published); the release workflow sets Version from the git tag (v1.0.0 -> 1.0.0). -->
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionSuffix>dev</VersionSuffix>
   </PropertyGroup>
 
   <!-- Debugging into the packages: symbol packages (.snupkg) and SourceLink to the exact GitHub commit. -->
