@@ -37,6 +37,9 @@ internal sealed class TableLayout
 
     public required int HeaderRows { get; init; }
 
+    /// <summary>The number of footer rows at the end of the table.</summary>
+    public required int FooterRows { get; init; }
+
     /// <summary>Row ranges that row spans join: placed together when they fit, split between and inside rows otherwise.</summary>
     public required IReadOnlyList<(int Start, int End)> Groups { get; init; }
 
@@ -179,6 +182,7 @@ internal static class TableLayouter
             Vertical = vertical,
             Slots = slots,
             HeaderRows = table.Rows.TakeWhile(r => r.IsHeader).Count(),
+            FooterRows = Math.Min(table.Rows.Reverse().TakeWhile(r => r.IsFooter).Count(), rows - table.Rows.TakeWhile(r => r.IsHeader).Count()),
             Groups = RowGroups(cells, rows),
         };
     }

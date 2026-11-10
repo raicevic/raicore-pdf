@@ -47,7 +47,7 @@ public enum VerticalAlignment
 
 /// <summary>
 /// A table: rows of cells laid out on a grid, with column widths computed from the content (CSS automatic table
-/// layout) or fixed. Header rows repeat at the top of every page the table continues on. A row that does not fit on
+/// layout) or fixed. Header rows repeat at the top of every page the table continues on, footer rows at the bottom. A row that does not fit on
 /// the page is split, as browsers do: each cell's content continues on the next page (paragraph orphans and widows
 /// still apply, so rows of a few lines move whole). Rows joined by row spans may also break between them; a cell
 /// spanning rows then continues alongside the rows on the next page. Rows with <see cref="TableRow.BreakInside"/> set
@@ -114,6 +114,12 @@ public sealed class TableRow
 
     /// <summary>A header row repeats at the top of every page the table continues on. Header rows must come first.</summary>
     public bool IsHeader { get; init; }
+
+    /// <summary>
+    /// A footer row (CSS <c>tfoot</c>) ends the table and repeats below the last body row on every page the table
+    /// continues from. Footer rows must come last. Footers taller than a quarter of the page are not repeated.
+    /// </summary>
+    public bool IsFooter { get; init; }
 
     /// <summary>Background behind the row's cells (a cell's own background is drawn over it).</summary>
     public PdfColor? Background { get; init; }

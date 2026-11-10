@@ -134,7 +134,7 @@ internal sealed partial class Paginator
         }
 
         var top = page == from.Page ? from.Y : PageTop(page);
-        var bottom = page == to.Page ? to.Y : ContentBottom;
+        var bottom = page == to.Page ? to.Y : PageBottom(page);
         return (top, Math.Max(0, bottom - top), page == from.Page, page == to.Page);
     }
 

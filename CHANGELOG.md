@@ -29,11 +29,14 @@ and versions follow [Semantic Versioning](https://semver.org/). Before 1.0, mino
 - Rows joined by `rowspan` split across pages too: between rows, where a row's start does not fit, and inside rows.
   A spanning cell's content continues alongside its rows on the next page, and its background and borders end with
   the rows it covers on each page.
+- `tfoot` rows (`TableRow.IsFooter`) end the table and repeat right below the last body row, or row piece, on
+  every page the table continues from; their space is kept free at the bottom of those pages. Like Chrome, footers
+  taller than a quarter of the page are not repeated. A table starts on a page only if its footer fits there too.
 - A paragraph whose orphans and widows leave no possible break needs all its lines at the bottom of a page before it
   starts there, so it no longer leaves its box's top edge or a split table row's first piece behind.
 
 ### Known limitations
-- `inline-flex` is laid out like `flex`. `calc()` is not evaluated. `tfoot` rows are not repeated on every page.
+- `inline-flex` is laid out like `flex`. `calc()` is not evaluated.
 
 ## [0.1.0] - Unreleased
 

@@ -22,7 +22,7 @@ pdf.Save("invoice.pdf");
 ```
 
 Supported: the CSS cascade and print media queries, the box model, fonts and text styling, lists, images
-(`data:` and `file:` URLs), linked stylesheets, tables (repeated headers, `colspan`/`rowspan`, collapsed
+(`data:` and `file:` URLs), linked stylesheets, tables (repeated headers and footers, `colspan`/`rowspan`, collapsed
 borders), flexbox and CSS Paged Media: `@page` size and margins, headers and footers in margin boxes, page
 counters, `string-set` and running elements.
 

@@ -90,7 +90,7 @@ internal sealed partial class BoxBuilder
                     header.AddRange(Rows(child, contentWidth, cellDefaults, isHeader: true));
                     break;
                 case "tfoot":
-                    footer.AddRange(Rows(child, contentWidth, cellDefaults, isHeader: false));
+                    footer.AddRange(Rows(child, contentWidth, cellDefaults, isHeader: false, isFooter: true));
                     break;
                 case "tbody":
                     body.AddRange(Rows(child, contentWidth, cellDefaults, isHeader: false));
@@ -112,7 +112,7 @@ internal sealed partial class BoxBuilder
     private Block? BuildBlockForTable(IElement element, ComputedStyle style, double width) =>
         BuildBlock(element, style with { Display = CssDisplay.Block }, width, marker: null);
 
-    private IEnumerable<TableRow> Rows(IElement group, double tableWidth, CellDefaults defaults, bool isHeader, IElement? only = null)
+    private IEnumerable<TableRow> Rows(IElement group, double tableWidth, CellDefaults defaults, bool isHeader, IElement? only = null, bool isFooter = false)
     {
         foreach (var tr in only is null ? group.Children.Where(c => c.LocalName == "tr") : [only])
         {
@@ -135,6 +135,7 @@ internal sealed partial class BoxBuilder
             yield return new TableRow(cells)
             {
                 IsHeader = isHeader,
+                IsFooter = isFooter,
                 Background = rowStyle.Background,
                 MinHeight = rowStyle.Height.Kind == CssLengthKind.Points ? rowStyle.Height.Value : 0,
                 BreakInside = rowStyle.BreakInside,
