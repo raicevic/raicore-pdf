@@ -27,6 +27,7 @@ internal sealed partial class BoxBuilder
     private readonly Dictionary<string, PdfImage?> _images = new(StringComparer.Ordinal);
     private readonly HashSet<Block> _anonymous = new(ReferenceEqualityComparer.Instance);
     private readonly double _rootFontSize;
+    private readonly CssViewport _viewport;
     private readonly Paged.PagedMedia? _paged;
     private readonly WebFonts? _webFonts;
     private double _pageContentWidth;
@@ -55,6 +56,9 @@ internal sealed partial class BoxBuilder
         _fonts = fonts;
         _baseUri = baseUri;
         Document = document;
+        _viewport = document.Context.GetService<AngleSharp.Css.IRenderDevice>() is { } device
+            ? new CssViewport(device.ViewPortWidth * CssValues.PointsPerPixel, device.ViewPortHeight * CssValues.PointsPerPixel)
+            : default;
         _rootFontSize = 12;
         if (document.DocumentElement is { } root)
         {
@@ -81,7 +85,7 @@ internal sealed partial class BoxBuilder
     {
         if (!_styles.TryGetValue(element, out var style))
         {
-            style = ComputedStyle.From(_window.GetComputedStyle(element), _rootFontSize);
+            style = ComputedStyle.From(_window.GetComputedStyle(element), _rootFontSize, _viewport);
             _styles[element] = style;
         }
 
@@ -325,12 +329,7 @@ internal sealed partial class BoxBuilder
             return outer;
         }
 
-        double? Length(CssLength length) => length.Kind switch
-        {
-            CssLengthKind.Points => length.Value,
-            CssLengthKind.Percent => length.Value / 100 * style.FontSize, // Percentages of 1em.
-            _ => null,
-        };
+        double? Length(CssLength length) => length.IsAuto ? null : length.Resolve(style.FontSize); // Percentages of 1em.
 
         var decoration = new TextDecoration(style.TextDecorationLine, style.TextDecorationColor ?? style.Color)
         {
@@ -400,13 +399,11 @@ internal sealed partial class BoxBuilder
                 return Kind(InlineAlignmentKind.Bottom);
         }
 
-        var length = CssValues.ParseLength(style.VerticalAlign, style.FontSize, _rootFontSize);
-        var shift = length.Kind switch
-        {
-            CssLengthKind.Points => length.Value,
-            CssLengthKind.Percent => length.Value / 100 * TextStyleFor(style).LineHeight.Resolve(TextStyleFor(style).Fonts[0], style.FontSize),
-            _ => 0,
-        };
+        // Percentages (also inside calc()) refer to the element's line height.
+        var length = CssValues.ParseLength(style.VerticalAlign, style.FontSize, _rootFontSize, _viewport);
+        var shift = length.IsAuto ? 0
+            : length.HasPercentage ? length.Resolve(TextStyleFor(style).LineHeight.Resolve(TextStyleFor(style).Fonts[0], style.FontSize))
+            : length.Value;
         return parent with { Shift = parent.Shift + shift };
     }
 
@@ -522,9 +519,9 @@ internal sealed partial class BoxBuilder
             return css.Value;
         }
 
-        if (css.Kind == CssLengthKind.Percent && reference > 0)
+        if (css.HasPercentage && reference > 0 && css.Resolve(reference) is var resolved && resolved > 0)
         {
-            return css.Resolve(reference);
+            return resolved;
         }
 
         return double.TryParse(attribute, NumberStyles.Float, CultureInfo.InvariantCulture, out var pixels) && pixels > 0
@@ -608,13 +605,14 @@ internal sealed partial class BoxBuilder
         var content = (borderBoxWidth ?? (containingWidth - box.Margin.Horizontal)) - decoration;
         return (box, Math.Max(1, content));
 
-        // Heights are content-box unless box-sizing: border-box; a percentage needs a definite containing height.
+        // Heights are content-box unless box-sizing: border-box; a percentage (also in calc()) needs a definite
+        // containing height, otherwise the height is auto (and min/max heights have no effect).
         double? BorderBoxHeight(CssLength length)
         {
             double? value = length.Kind switch
             {
                 CssLengthKind.Points => length.Value,
-                CssLengthKind.Percent when containingHeight is { } reference => length.Value / 100 * reference,
+                CssLengthKind.Percent or CssLengthKind.Calc when containingHeight is { } reference => length.Resolve(reference),
                 _ => null,
             };
             var vertical = padding.Vertical + borders.Widths.Vertical;

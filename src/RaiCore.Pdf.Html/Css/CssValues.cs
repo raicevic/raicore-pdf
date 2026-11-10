@@ -2,7 +2,10 @@ using System.Globalization;
 
 namespace RaiCore.Pdf.Html.Css;
 
-/// <summary>A CSS length after parsing: points, a percentage of the containing block, or <c>auto</c>.</summary>
+/// <summary>
+/// A CSS length after parsing: points, a percentage of the containing block, <c>auto</c>, or a math function that
+/// mixes both (<c>calc(100% - 20px)</c>, <c>min()</c>, <c>max()</c>, <c>clamp()</c>), resolved with the percentages.
+/// </summary>
 internal readonly record struct CssLength(double Value, CssLengthKind Kind)
 {
     public static readonly CssLength Zero = new(0, CssLengthKind.Points);
@@ -10,12 +13,29 @@ internal readonly record struct CssLength(double Value, CssLengthKind Kind)
 
     public bool IsAuto => Kind == CssLengthKind.Auto;
 
+    /// <summary>Whether the length depends on the percentage reference: a percentage or a calc expression.</summary>
+    public bool HasPercentage => Kind is CssLengthKind.Percent or CssLengthKind.Calc;
+
+    /// <summary>The expression of a <see cref="CssLengthKind.Calc"/> length.</summary>
+    public CssCalc? Calc { get; private init; }
+
+    public static CssLength FromCalc(CssCalc calc) => new(0, CssLengthKind.Calc) { Calc = calc };
+
     /// <summary>The length in points; percentages resolve against <paramref name="reference"/>, auto becomes 0.</summary>
     public double Resolve(double reference) => Kind switch
     {
         CssLengthKind.Points => Value,
         CssLengthKind.Percent => Value / 100 * reference,
+        CssLengthKind.Calc => Calc?.Evaluate(reference) ?? 0,
         _ => 0,
+    };
+
+    /// <summary>The length clamped at 0, for properties that cannot be negative (a calc() result can be).</summary>
+    public CssLength NonNegative() => Kind switch
+    {
+        CssLengthKind.Calc when Calc is not null => FromCalc(Calc.NonNegative()),
+        CssLengthKind.Points or CssLengthKind.Percent when Value < 0 => this with { Value = 0 },
+        _ => this,
     };
 }
 
@@ -24,7 +44,13 @@ internal enum CssLengthKind
     Points,
     Percent,
     Auto,
+
+    /// <summary>A math function that depends on the percentage reference; see <see cref="CssLength.Calc"/>.</summary>
+    Calc,
 }
+
+/// <summary>The viewport that <c>vw</c>, <c>vh</c>, <c>vmin</c> and <c>vmax</c> refer to (the page content area), in points; empty when unknown.</summary>
+internal readonly record struct CssViewport(double Width, double Height);
 
 /// <summary>Parses the CSS value strings that AngleSharp returns from computed styles.</summary>
 internal static partial class CssValues
@@ -32,11 +58,20 @@ internal static partial class CssValues
     /// <summary>CSS pixels are 1/96 inch; PDF points are 1/72 inch.</summary>
     public const double PointsPerPixel = 0.75;
 
-    public static CssLength ParseLength(string? value, double fontSize = 12, double rootFontSize = 12)
+    /// <summary>Parses a length; empty and invalid values are 0 (see <see cref="TryParseLength"/>).</summary>
+    public static CssLength ParseLength(string? value, double fontSize = 12, double rootFontSize = 12, CssViewport viewport = default) =>
+        TryParseLength(value, fontSize, rootFontSize, viewport) ?? CssLength.Zero;
+
+    /// <summary>
+    /// Parses a length, a percentage, a math function (<c>calc()</c>, <c>min()</c>, <c>max()</c>, <c>clamp()</c>) or
+    /// a keyword that means auto. Returns <c>null</c> when the value is empty or invalid, so callers can fall back to
+    /// the property's initial value.
+    /// </summary>
+    public static CssLength? TryParseLength(string? value, double fontSize = 12, double rootFontSize = 12, CssViewport viewport = default)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            return CssLength.Zero;
+            return null;
         }
 
         value = value.Trim();
@@ -45,29 +80,70 @@ internal static partial class CssValues
             return CssLength.Auto;
         }
 
+        if (value.Contains('(', StringComparison.Ordinal))
+        {
+            return CssCalc.Parse(value, fontSize, rootFontSize, viewport)?.ToLength();
+        }
+
         var match = LengthRegex().Match(value);
         if (!match.Success || !double.TryParse(match.Groups[1].ValueSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
         {
-            return CssLength.Zero;
+            return null;
         }
 
-        var unit = match.Groups[2].Value.ToUpperInvariant();
-        return unit switch
+        return match.Groups[2].Value switch
         {
-            "" or "PX" => new(number * PointsPerPixel, CssLengthKind.Points),
-            "PT" => new(number, CssLengthKind.Points),
-            "PC" => new(number * 12, CssLengthKind.Points),
-            "IN" => new(number * 72, CssLengthKind.Points),
-            "CM" => new(number * 72 / 2.54, CssLengthKind.Points),
-            "MM" => new(number * 72 / 25.4, CssLengthKind.Points),
-            "Q" => new(number * 72 / 101.6, CssLengthKind.Points),
-            "EM" => new(number * fontSize, CssLengthKind.Points),
-            "REM" => new(number * rootFontSize, CssLengthKind.Points),
-            "EX" => new(number * fontSize / 2, CssLengthKind.Points),
-            "CH" => new(number * fontSize / 2, CssLengthKind.Points),
+            "" => new(number * PointsPerPixel, CssLengthKind.Points),
             "%" => new(number, CssLengthKind.Percent),
-            _ => CssLength.Zero,
+            var unit => ToPoints(number, unit, fontSize, rootFontSize, viewport) is { } points ? new(points, CssLengthKind.Points) : null,
         };
+    }
+
+    /// <summary>Converts a number with a length unit to points; <c>null</c> for unknown units (or viewport units without a viewport).</summary>
+    public static double? ToPoints(double number, string unit, double fontSize, double rootFontSize, CssViewport viewport) => unit.ToUpperInvariant() switch
+    {
+        "PX" => number * PointsPerPixel,
+        "PT" => number,
+        "PC" => number * 12,
+        "IN" => number * 72,
+        "CM" => number * 72 / 2.54,
+        "MM" => number * 72 / 25.4,
+        "Q" => number * 72 / 101.6,
+        "EM" => number * fontSize,
+        "REM" => number * rootFontSize,
+        "EX" or "CH" => number * fontSize / 2,
+        "VW" when viewport.Width > 0 => number * viewport.Width / 100,
+        "VH" when viewport.Height > 0 => number * viewport.Height / 100,
+        "VMIN" when viewport.Width > 0 && viewport.Height > 0 => number * Math.Min(viewport.Width, viewport.Height) / 100,
+        "VMAX" when viewport.Width > 0 && viewport.Height > 0 => number * Math.Max(viewport.Width, viewport.Height) / 100,
+        _ => null,
+    };
+
+    /// <summary>Splits a value at whitespace outside parentheses, so <c>calc(1px + 2px) 3px</c> has two components.</summary>
+    public static List<string> SplitComponents(string value)
+    {
+        var parts = new List<string>();
+        var depth = 0;
+        var start = -1;
+        for (var i = 0; i <= value.Length; i++)
+        {
+            var c = i < value.Length ? value[i] : ' ';
+            depth += c switch { '(' => 1, ')' => -1, _ => 0 };
+            if (char.IsWhiteSpace(c) && depth <= 0)
+            {
+                if (start >= 0)
+                {
+                    parts.Add(value[start..i]);
+                    start = -1;
+                }
+            }
+            else if (start < 0)
+            {
+                start = i;
+            }
+        }
+
+        return parts;
     }
 
     /// <summary>Parses rgb()/rgba()/#hex/basic names. Returns null for transparent; translucent colors are blended with white.</summary>

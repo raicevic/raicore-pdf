@@ -71,7 +71,8 @@ internal sealed partial class BoxBuilder
             JustifyContent = style.JustifyContent,
             AlignItems = style.AlignItems,
             AlignContent = style.AlignContent,
-            RowGap = Math.Max(0, style.RowGap.Kind == CssLengthKind.Percent ? (innerHeight is { } h ? style.RowGap.Resolve(h) : 0) : style.RowGap.Resolve(0)),
+            // Percentages of an auto height resolve against 0.
+            RowGap = Math.Max(0, style.RowGap.Resolve(innerHeight ?? 0)),
             ColumnGap = Math.Max(0, style.ColumnGap.Resolve(contentWidth)),
             Marker = _paged?.MarkerFor(element),
             Bookmark = BookmarkFor(element),
@@ -130,11 +131,15 @@ internal sealed partial class BoxBuilder
         // CSS sizes are content-box unless box-sizing: border-box; the layout engine works with border boxes.
         double? Width(CssLength length) => length.IsAuto ? null : Math.Max(0, length.Resolve(containerWidth) + (style.BorderBox ? 0 : horizontal));
 
-        // In a column the main size is a height: a percentage refers to the container's height (resolved in layout).
+        // In a column the main size is a height: a percentage refers to the container's height (resolved in layout);
+        // a calc() with a percentage is resolved here against the container's definite inner height, if it has one.
         var column = Style(container).FlexDirection is FlexDirection.Column or FlexDirection.ColumnReverse;
         var basis = style.FlexBasisContent ? FlexBasis.Content
             : style.FlexBasis.IsAuto ? FlexBasis.Auto
             : column && style.FlexBasis.Kind == CssLengthKind.Percent ? FlexBasis.Percent(style.FlexBasis.Value)
+            : column && style.FlexBasis.Kind == CssLengthKind.Calc ? _containingHeight is { } innerHeight
+                ? FlexBasis.Points(Math.Max(0, style.FlexBasis.Resolve(innerHeight) + (style.BorderBox ? 0 : vertical)))
+                : FlexBasis.Content
             : column ? FlexBasis.Points(Math.Max(0, style.FlexBasis.Resolve(0) + (style.BorderBox ? 0 : vertical)))
             : FlexBasis.Points(Width(style.FlexBasis) ?? 0);
 

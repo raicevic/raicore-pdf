@@ -75,6 +75,11 @@ public static class HtmlToPdf
         var styleSheets = PrepareStyles(document, options);
         var cssTexts = styleSheets.Select(s => s.Css).ToList();
         var setup = PageRules.Apply(options.Page, cssTexts);
+
+        // @page can change the page size and margins; styles are computed lazily, so vw/vh still see the final area.
+        device.ViewPortWidth = (int)(setup.ContentWidth / CssValues.PointsPerPixel);
+        device.ViewPortHeight = (int)(setup.ContentHeight / CssValues.PointsPerPixel);
+
         var paged = Paged.PagedMedia.Load(document, cssTexts);
         var webFonts = WebFonts.Load(styleSheets, options.ResourceLoader, fonts);
 

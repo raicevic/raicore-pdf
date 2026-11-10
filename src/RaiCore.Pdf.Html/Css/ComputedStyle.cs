@@ -163,16 +163,23 @@ internal sealed record ComputedStyle
 
     public CssLength ColumnGap { get; init; } = CssLength.Zero;
 
-    /// <summary>Reads an element's computed style (AngleSharp has already applied the cascade, inheritance and em units).</summary>
-    public static ComputedStyle From(ICssStyleDeclaration css, double rootFontSize)
+    /// <summary>
+    /// Reads an element's computed style (AngleSharp has already applied the cascade, inheritance and em units, and
+    /// evaluated math functions without percentages). Invalid values fall back to the property's initial value.
+    /// </summary>
+    /// <param name="css">The computed style declaration.</param>
+    /// <param name="rootFontSize">The root element's font size in points, for <c>rem</c>.</param>
+    /// <param name="viewport">The page content area, for viewport units AngleSharp leaves in a value.</param>
+    public static ComputedStyle From(ICssStyleDeclaration css, double rootFontSize, CssViewport viewport = default)
     {
         string Get(string name) => css.GetPropertyValue(name) ?? string.Empty;
 
-        var fontSize = CssValues.ParseLength(Get("font-size"), 12, rootFontSize) is { Kind: CssLengthKind.Points } size && size.Value > 0 ? size.Value : 12;
-        CssLength Length(string name) => CssValues.ParseLength(Get(name), fontSize, rootFontSize);
+        var fontSize = CssValues.ParseLength(Get("font-size"), 12, rootFontSize, viewport) is { Kind: CssLengthKind.Points } size && size.Value > 0 ? size.Value : 12;
+        CssLength? Parse(string value) => CssValues.TryParseLength(value, fontSize, rootFontSize, viewport);
 
-        // Sizes default to auto when unset (AngleSharp returns an empty string), unlike margins and padding.
-        CssLength Size(string name) => Get(name) is { Length: > 0 } value ? CssValues.ParseLength(value, fontSize, rootFontSize) : CssLength.Auto;
+        // Margins, padding and the like are 0 when unset or invalid; sizes are auto (AngleSharp returns an empty string when unset).
+        CssLength Length(string name) => Parse(Get(name)) ?? CssLength.Zero;
+        CssLength Size(string name) => Parse(Get(name))?.NonNegative() ?? CssLength.Auto;
         CssLength[] Sides(string prefix, string suffix = "") =>
             [Length($"{prefix}-top{suffix}"), Length($"{prefix}-right{suffix}"), Length($"{prefix}-bottom{suffix}"), Length($"{prefix}-left{suffix}")];
 
@@ -191,7 +198,7 @@ internal sealed record ComputedStyle
             FontWeight = CssValues.ParseFontWeight(Get("font-weight")),
             Italic = Get("font-style") is "italic" or "oblique" || Get("font-style").StartsWith("oblique", StringComparison.Ordinal),
             Color = color,
-            LineHeight = ParseLineHeight(Get("line-height"), fontSize, rootFontSize),
+            LineHeight = ParseLineHeight(Get("line-height"), fontSize, rootFontSize, viewport),
             TextAlign = Get("text-align") switch
             {
                 "right" or "end" => TextAlignment.Right,
@@ -213,7 +220,7 @@ internal sealed record ComputedStyle
             TextTransform = Get("text-transform") is { Length: > 0 } transform ? transform : "none",
             FontFeatures = Get("font-feature-settings") is { Length: > 0 } features ? features : "normal",
             Margin = Sides("margin"),
-            Padding = Sides("padding"),
+            Padding = [.. Sides("padding").Select(p => p.NonNegative())],
             BorderWidth = borderWidth,
             BorderColor = borderColor,
             BorderStyle = borderStyle,
@@ -267,7 +274,7 @@ internal sealed record ComputedStyle
             AlignSelf = ParseAlignment(Get("align-self")),
             FlexGrow = Math.Max(0, ParseNumber(Get("flex-grow"), 0)),
             FlexShrink = Math.Max(0, ParseNumber(Get("flex-shrink"), 1)),
-            FlexBasis = Get("flex-basis") is "" or "auto" or "content" ? CssLength.Auto : Length("flex-basis"),
+            FlexBasis = Get("flex-basis") is "" or "auto" or "content" ? CssLength.Auto : Size("flex-basis"),
             FlexBasisContent = Get("flex-basis") == "content",
             Order = CssValues.ParseInteger(Get("order"), 0),
             TextDecorationLine = ParseDecorationLines(Get("text-decoration-line")),
@@ -282,18 +289,22 @@ internal sealed record ComputedStyle
             TextDecorationColor = Get("text-decoration-color") is { Length: > 0 } decorationColor and not "currentcolor" and not "currentColor"
                 ? CssValues.ParseColor(decorationColor)
                 : null,
-            TextDecorationThickness = Get("text-decoration-thickness") is "" or "auto" or "from-font" ? CssLength.Auto : Length("text-decoration-thickness"),
-            TextUnderlineOffset = Get("text-underline-offset") is "" or "auto" ? CssLength.Auto : Length("text-underline-offset"),
-            RowGap = Get("row-gap") is "" or "normal" ? CssLength.Zero : Length("row-gap"),
-            ColumnGap = Get("column-gap") is "" or "normal" ? CssLength.Zero : Length("column-gap"),
+            // Invalid values are auto (the initial value); percentages, also inside calc(), are of 1em.
+            TextDecorationThickness = Parse(Get("text-decoration-thickness"))?.NonNegative() ?? CssLength.Auto, // from-font is auto too.
+            TextUnderlineOffset = Parse(Get("text-underline-offset")) ?? CssLength.Auto,
+            RowGap = Gap("row-gap"),
+            ColumnGap = Gap("column-gap"),
         };
+
+        // Gaps are normal (0 outside grids and multi-column) when unset or invalid.
+        CssLength Gap(string name) => Parse(Get(name)) is { IsAuto: false } gap ? gap.NonNegative() : CssLength.Zero;
 
         // border-spacing: one length for both directions, or horizontal then vertical.
         double Spacing(int index)
         {
-            var parts = Get("border-spacing").Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var part = parts.Length == 0 ? null : parts[Math.Min(index, parts.Length - 1)];
-            return Math.Max(0, CssValues.ParseLength(part, fontSize, rootFontSize).Resolve(0));
+            var parts = CssValues.SplitComponents(Get("border-spacing"));
+            var part = parts.Count == 0 ? null : parts[Math.Min(index, parts.Count - 1)];
+            return Math.Max(0, CssValues.ParseLength(part, fontSize, rootFontSize, viewport).Resolve(0));
         }
     }
 
@@ -370,7 +381,7 @@ internal sealed record ComputedStyle
     private static double ParseNumber(string value, double fallback) =>
         double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number) ? number : fallback;
 
-    private static LineHeight ParseLineHeight(string value, double fontSize, double rootFontSize)
+    private static LineHeight ParseLineHeight(string value, double fontSize, double rootFontSize, CssViewport viewport)
     {
         if (string.IsNullOrWhiteSpace(value) || value == "normal")
         {
@@ -382,11 +393,12 @@ internal sealed record ComputedStyle
             return LineHeight.Multiple(Math.Max(0, factor));
         }
 
-        var length = CssValues.ParseLength(value, fontSize, rootFontSize);
-        return length.Kind switch
+        // Percentages refer to the font size; invalid values are normal (the initial value).
+        var length = CssValues.TryParseLength(value, fontSize, rootFontSize, viewport);
+        return length?.Kind switch
         {
-            CssLengthKind.Percent => LineHeight.Multiple(Math.Max(0, length.Value / 100)),
-            CssLengthKind.Points => LineHeight.Points(Math.Max(0, length.Value)),
+            CssLengthKind.Percent => LineHeight.Multiple(Math.Max(0, length.Value.Value / 100)),
+            CssLengthKind.Points or CssLengthKind.Calc => LineHeight.Points(Math.Max(0, length.Value.Resolve(fontSize))),
             _ => LineHeight.Normal,
         };
     }

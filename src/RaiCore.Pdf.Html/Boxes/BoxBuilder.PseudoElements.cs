@@ -79,7 +79,7 @@ internal sealed partial class BoxBuilder
             return null;
         }
 
-        var style = ComputedStyle.From(css, _rootFontSize);
+        var style = ComputedStyle.From(css, _rootFontSize, _viewport);
         if (style.Display == CssDisplay.None)
         {
             return null;

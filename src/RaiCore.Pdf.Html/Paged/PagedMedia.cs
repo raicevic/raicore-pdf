@@ -295,6 +295,7 @@ internal sealed partial class PagedMedia
                 {
                     { Kind: CssLengthKind.Points } points => style with { FontSize = points.Value },
                     { Kind: CssLengthKind.Percent } percent => style with { FontSize = root.FontSize * percent.Value / 100 },
+                    { Kind: CssLengthKind.Calc } calc => style with { FontSize = Math.Max(0, calc.Resolve(root.FontSize)) },
                     _ => style,
                 },
                 "font-family" => style with { FontFamilies = CssValues.ParseFontFamilies(value) },
