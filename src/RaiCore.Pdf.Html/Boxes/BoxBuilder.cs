@@ -98,9 +98,9 @@ internal sealed partial class BoxBuilder
 
     private Block? BuildBlock(IElement element, ComputedStyle style, double containingWidth, string? marker, bool flexItem = false)
     {
-        if (style.Display == CssDisplay.Flex)
+        if (style.Display is CssDisplay.Flex or CssDisplay.InlineFlex)
         {
-            return BuildFlex(element, style, containingWidth, flexItem);
+            return BuildFlex(element, style with { Display = CssDisplay.Flex }, containingWidth, flexItem);
         }
 
         var (box, contentWidth) = BoxStyleFor(style, containingWidth, flexItem, _containingHeight);
@@ -166,9 +166,19 @@ internal sealed partial class BoxBuilder
                         break;
                     }
 
-                    if (childStyle.Display is CssDisplay.Inline or CssDisplay.InlineBlock)
+                    if (childStyle.Display == CssDisplay.Inline)
                     {
                         AddChildren(child, childStyle, contentWidth, children, collector);
+                        break;
+                    }
+
+                    if (childStyle.Display is CssDisplay.InlineBlock or CssDisplay.InlineFlex or CssDisplay.InlineTable)
+                    {
+                        if (BuildAtomicInline(child, childStyle, contentWidth) is { } box)
+                        {
+                            collector.AddBox(box);
+                        }
+
                         break;
                     }
 
@@ -196,12 +206,29 @@ internal sealed partial class BoxBuilder
         }
     }
 
+    /// <summary>
+    /// The block inside an atomic inline box (CSS inline-block, inline-flex, inline-table). Like a flex item, it
+    /// shrinks to fit (no width from <c>max-width</c>) and its auto margins are 0.
+    /// </summary>
+    private Block? BuildAtomicInline(IElement element, ComputedStyle style, double containingWidth)
+    {
+        if (style.Display == CssDisplay.InlineTable)
+        {
+            var blocks = BuildTable(element, style with { Display = CssDisplay.Table }, containingWidth);
+            return blocks.Count == 1 ? blocks[0] : new ContainerBlock(null, blocks);
+        }
+
+        var display = style.Display == CssDisplay.InlineFlex ? CssDisplay.Flex : CssDisplay.Block;
+        return BuildBlock(element, style with { Display = display }, containingWidth, marker: null, flexItem: true);
+    }
+
     /// <summary>A running element is laid out as a block (or a flex container) in a page margin box.</summary>
     private Block? BuildRunning(IElement element, ComputedStyle style)
     {
         var outerHeight = _containingHeight;
         _containingHeight = null; // Margin boxes have no definite height.
-        var block = BuildBlock(element, style.Display == CssDisplay.Flex ? style : style with { Display = CssDisplay.Block }, _pageContentWidth, marker: null);
+        var display = style.Display is CssDisplay.Flex or CssDisplay.InlineFlex ? CssDisplay.Flex : CssDisplay.Block;
+        var block = BuildBlock(element, style with { Display = display }, _pageContentWidth, marker: null);
         _containingHeight = outerHeight;
         return block;
     }
