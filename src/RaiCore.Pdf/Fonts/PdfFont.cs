@@ -52,6 +52,18 @@ public abstract class PdfFont
     /// <summary>Height of lowercase letters such as "x", as a fraction of the font size.</summary>
     public abstract double XHeight { get; }
 
+    /// <summary>Top of the underline relative to the baseline, as a fraction of the font size (negative is below).</summary>
+    public virtual double UnderlinePosition => -0.1;
+
+    /// <summary>Thickness of the underline, as a fraction of the font size.</summary>
+    public virtual double UnderlineThickness => 0.05;
+
+    /// <summary>Top of the line-through line above the baseline, as a fraction of the font size.</summary>
+    public virtual double StrikeoutPosition => (XHeight / 2) + (StrikeoutThickness / 2);
+
+    /// <summary>Thickness of the line-through line, as a fraction of the font size.</summary>
+    public virtual double StrikeoutThickness => UnderlineThickness;
+
     /// <summary>Returns one of the 14 standard PDF fonts. These are not embedded and only cover WinAnsi (Western European) text.</summary>
     public static PdfFont Standard(StandardFont font) => StandardFonts[(int)font];
 
@@ -267,6 +279,14 @@ internal sealed class OpenTypePdfFont(OpenTypeFont font, UnicodeRange[]? ranges 
     public override double CapHeight => Font.CapHeight / (double)Font.UnitsPerEm;
 
     public override double XHeight => Font.XHeight / (double)Font.UnitsPerEm;
+
+    public override double UnderlinePosition => Font.UnderlineThickness > 0 ? Font.UnderlinePosition / (double)Font.UnitsPerEm : base.UnderlinePosition;
+
+    public override double UnderlineThickness => Font.UnderlineThickness > 0 ? Font.UnderlineThickness / (double)Font.UnitsPerEm : base.UnderlineThickness;
+
+    public override double StrikeoutPosition => Font.StrikeoutThickness > 0 ? Font.StrikeoutPosition / (double)Font.UnitsPerEm : base.StrikeoutPosition;
+
+    public override double StrikeoutThickness => Font.StrikeoutThickness > 0 ? Font.StrikeoutThickness / (double)Font.UnitsPerEm : base.StrikeoutThickness;
 
     public override bool HasGlyph(int codePoint) => Covers(codePoint) && Font.GetGlyphId(codePoint) != 0;
 

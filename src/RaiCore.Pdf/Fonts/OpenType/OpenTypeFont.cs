@@ -117,6 +117,18 @@ internal sealed class OpenTypeFont
 
     public bool IsFixedPitch { get; private set; }
 
+    /// <summary><c>post</c> table: top of the underline relative to the baseline, in font units (negative is below).</summary>
+    public short UnderlinePosition { get; private set; }
+
+    /// <summary><c>post</c> table: thickness of the underline in font units (0 if unknown).</summary>
+    public short UnderlineThickness { get; private set; }
+
+    /// <summary><c>OS/2</c> table: top of the strikeout line above the baseline, in font units (0 if unknown).</summary>
+    public short StrikeoutPosition { get; private set; }
+
+    /// <summary><c>OS/2</c> table: thickness of the strikeout line in font units (0 if unknown).</summary>
+    public short StrikeoutThickness { get; private set; }
+
     public bool IsItalic { get; private set; }
 
     public bool IsBold { get; private set; }
@@ -351,7 +363,8 @@ internal sealed class OpenTypeFont
         var r = TableReader("post", 16);
         r.Skip(4);
         ItalicAngle = r.ReadFixed();
-        r.Skip(4);
+        UnderlinePosition = r.ReadInt16();
+        UnderlineThickness = r.ReadInt16();
         IsFixedPitch = r.ReadUInt32() != 0;
     }
 
@@ -371,6 +384,9 @@ internal sealed class OpenTypeFont
         WeightClass = Math.Clamp((int)r.ReadUInt16(), 1, 1000);
         r.Skip(2);
         FsType = r.ReadUInt16();
+        r.Position = start + 26;
+        StrikeoutThickness = r.ReadInt16();
+        StrikeoutPosition = r.ReadInt16();
         r.Position = start + 62;
         var fsSelection = r.ReadUInt16();
         IsItalic |= (fsSelection & 0x0001) != 0;

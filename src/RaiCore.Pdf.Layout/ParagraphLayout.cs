@@ -69,6 +69,11 @@ public sealed partial class ParagraphLayout
                     fragment.Run.NeedsActualText ? fragment.Run.Text : null);
             }
 
+            if (DrawDecorations(canvas, line, x + line.X, baseline))
+            {
+                current = null;
+            }
+
             foreach (var image in line.Images)
             {
                 canvas.DrawImage(image.Image.Image, x + line.X + image.X, baseline + image.BaselineShift, image.Image.Width, image.Image.Height);
@@ -94,6 +99,111 @@ public sealed partial class ParagraphLayout
 /// <summary>Drawing helpers for <see cref="ParagraphLayout"/>.</summary>
 public sealed partial class ParagraphLayout
 {
+    /// <summary>
+    /// Draws a line's text decorations: each decoration as one segment per run of adjacent fragments that share it.
+    /// Returns whether anything was drawn (the fill color changed).
+    /// </summary>
+    private static bool DrawDecorations(PdfCanvas canvas, LineLayout line, double lineX, double baseline)
+    {
+        var drawn = false;
+        var open = new Dictionary<TextDecoration, (double Start, double End, LineFragment First)>(ReferenceEqualityComparer.Instance);
+        void Close(TextDecoration decoration)
+        {
+            var (start, end, first) = open[decoration];
+            open.Remove(decoration);
+            DrawDecorationLines(canvas, decoration, first, lineX + start, lineX + end, baseline);
+            drawn = true;
+        }
+
+        foreach (var fragment in line.Fragments)
+        {
+            foreach (var decoration in open.Keys.Where(d => !fragment.Style.Decorations.Contains(d) || Math.Abs(open[d].End - fragment.X) > 0.01).ToList())
+            {
+                Close(decoration);
+            }
+
+            foreach (var decoration in fragment.Style.Decorations)
+            {
+                open[decoration] = open.TryGetValue(decoration, out var segment)
+                    ? (segment.Start, fragment.X + fragment.Width, segment.First)
+                    : (fragment.X, fragment.X + fragment.Width, fragment);
+            }
+        }
+
+        foreach (var decoration in open.Keys.ToList())
+        {
+            Close(decoration);
+        }
+
+        return drawn;
+    }
+
+    private static void DrawDecorationLines(PdfCanvas canvas, TextDecoration decoration, LineFragment first, double left, double right, double baseline)
+    {
+        var font = decoration.Font ?? first.Run.Font;
+        var size = decoration.FontSize > 0 ? decoration.FontSize : first.Style.FontSize;
+        var y0 = baseline + decoration.BaselineShift;
+        canvas.SetFillColor(decoration.Color).SetStrokeColor(decoration.Color);
+
+        void Line(double top, double thickness, int direction)
+        {
+            // direction: where a second (double) line goes, -1 below, +1 above.
+            var bottom = top - thickness;
+            switch (decoration.Style)
+            {
+                case TextDecorationStyle.Double:
+                    canvas.Rectangle(left, bottom, right - left, thickness).Fill();
+                    canvas.Rectangle(left, bottom + (2 * thickness * direction), right - left, thickness).Fill();
+                    break;
+                case TextDecorationStyle.Dotted or TextDecorationStyle.Dashed:
+                    var middle = top - (thickness / 2);
+                    var dots = decoration.Style == TextDecorationStyle.Dotted;
+                    canvas.SaveState().SetLineWidth(thickness)
+                        .SetLineCap(dots ? LineCap.Round : LineCap.Butt)
+                        .SetDash(dots ? [0, 2 * thickness] : [3 * thickness, 2 * thickness])
+                        .MoveTo(left + (dots ? thickness / 2 : 0), middle).LineTo(right, middle).Stroke().RestoreState();
+                    break;
+                case TextDecorationStyle.Wavy:
+                    var amplitude = thickness * 1.5;
+                    var wave = Math.Max(4 * thickness, 2);
+                    var center = top - (thickness / 2);
+                    canvas.SaveState().SetLineWidth(thickness).SetLineCap(LineCap.Round).MoveTo(left, center);
+                    for (var x = left; x < right; x += wave)
+                    {
+                        var end = Math.Min(right, x + wave);
+                        var half = (end - x) / 2;
+                        canvas.CurveTo(x + (half / 2), center + amplitude, x + half - (half / 2), center + amplitude, x + half, center)
+                            .CurveTo(x + half + (half / 2), center - amplitude, end - (half / 2), center - amplitude, end, center);
+                    }
+
+                    canvas.Stroke().RestoreState();
+                    break;
+                default:
+                    canvas.Rectangle(left, bottom, right - left, thickness).Fill();
+                    break;
+            }
+        }
+
+        if (decoration.Lines.HasFlag(TextDecorationLines.Underline))
+        {
+            var thickness = decoration.Thickness ?? Math.Max(font.UnderlineThickness * size, 0.5);
+            var top = decoration.UnderlineOffset is { } offset ? y0 - offset : y0 + (font.UnderlinePosition * size);
+            Line(top, thickness, -1);
+        }
+
+        if (decoration.Lines.HasFlag(TextDecorationLines.Overline))
+        {
+            var thickness = decoration.Thickness ?? Math.Max(font.UnderlineThickness * size, 0.5);
+            Line(y0 + (font.Ascent * size), thickness, +1);
+        }
+
+        if (decoration.Lines.HasFlag(TextDecorationLines.LineThrough))
+        {
+            var thickness = decoration.Thickness ?? Math.Max(font.StrikeoutThickness * size, 0.5);
+            Line(y0 + (font.StrikeoutPosition * size), thickness, +1);
+        }
+    }
+
     private static void DrawDecoration(PdfCanvas canvas, InlineDecorationFragment piece, double lineX, double baseline)
     {
         var box = piece.Decoration.Box;

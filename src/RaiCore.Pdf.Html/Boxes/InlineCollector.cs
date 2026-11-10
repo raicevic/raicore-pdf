@@ -34,7 +34,17 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         }
 
         var textStyle = builder.TextStyleFor(style);
-        Paragraph().Add(processed, alignment == default ? textStyle : textStyle with { VerticalAlign = alignment });
+        if (alignment != default)
+        {
+            textStyle = textStyle with { VerticalAlign = alignment };
+        }
+
+        if (builder.CurrentDecorations.Count > 0)
+        {
+            textStyle = textStyle with { Decorations = builder.CurrentDecorations };
+        }
+
+        Paragraph().Add(processed, textStyle);
         if (processed.Any(c => !char.IsWhiteSpace(c)))
         {
             _hasVisibleContent = true;

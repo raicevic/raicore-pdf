@@ -59,6 +59,10 @@ change at any time, and this section lists what the packages can do so far.
 - Border styles (`BorderStyle` on `BorderSide`): solid, dashed, dotted, double, groove, ridge, inset and outset, drawn
   like browsers draw them, with sides of different colors or styles meeting on the corner diagonals. Collapsed table
   borders resolve conflicts as in CSS 2.1 (`hidden` wins, then the wider border, then the style) and keep their style.
+- Text decorations (`TextStyle.Decorations`): underline, overline and line-through, solid, double, dotted, dashed or
+  wavy, with their own color, thickness and underline offset. Each is drawn with the metrics of the font that declared
+  it (the `post` and `OS/2` tables; `PdfFont.UnderlinePosition`, `StrikeoutPosition` and their thicknesses) as one
+  continuous line across adjacent text.
 - Bookmarks: `Block.Bookmark` makes a block an entry in the PDF outline. Entries nest by level and point at where
   the block starts (where its content starts, if that moved to a later page), also inside flex items and table cells.
 
@@ -81,6 +85,10 @@ change at any time, and this section lists what the packages can do so far.
 - `inline-block`, `inline-flex` and `inline-table` as atomic inline boxes: one unbreakable item of the line with its
   own padding, border, background and width (or shrink-to-fit), aligned on the baseline of its last line of text (the
   first row for tables, the first baseline for flex containers, the bottom margin edge without text).
+- `text-decoration` (and its `-line`, `-style`, `-color` and `-thickness` longhands) and `text-underline-offset`;
+  `<u>`, `<ins>`, `<s>`, `<del>` and `<strike>` by default. Decorations propagate to all inline content, cannot be
+  removed by descendants, skip atomic inline boxes and running elements, and are drawn with the font, size and
+  baseline of the element that declared them, as browsers do.
 - `border-style` and `border-{side}-style` (also through the `border` shorthands), including `hidden` in collapsed tables.
 - `height`, `min-height` and `max-height`; percentage heights resolve against definite ancestor heights, starting
   with the page area, and `vh` units are the page area (to within a pixel).
@@ -101,7 +109,7 @@ change at any time, and this section lists what the packages can do so far.
 
 ### Known limitations
 The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these.
-- No `::before`/`::after`, links or `text-decoration`. Borders on inline elements are drawn solid.
+- No `::before`/`::after` or links. Borders on inline elements are drawn solid.
 - Floats, positioning and grid (rendered as blocks); `calc()`, `overflow: hidden`, transparency (blended with white),
   rounded corners and background images.
 - Mixed left-to-right and right-to-left text on one line (the Unicode bidi algorithm); no hyphenation.

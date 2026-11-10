@@ -3,6 +3,7 @@ using RaiCore.Pdf.Layout;
 using RaiCore.Pdf.Layout.Blocks;
 using FlexDirection = RaiCore.Pdf.Layout.Blocks.FlexDirection;
 using FlexWrap = RaiCore.Pdf.Layout.Blocks.FlexWrap;
+using TextDecorationStyle = RaiCore.Pdf.Layout.TextDecorationStyle;
 
 namespace RaiCore.Pdf.Html.Css;
 
@@ -139,6 +140,19 @@ internal sealed record ComputedStyle
 
     public int Order { get; init; }
 
+    public TextDecorationLines TextDecorationLine { get; init; }
+
+    public TextDecorationStyle TextDecorationStyle { get; init; }
+
+    /// <summary><c>null</c> for <c>currentColor</c>.</summary>
+    public PdfColor? TextDecorationColor { get; init; }
+
+    /// <summary>A length, a percentage of 1em, or auto (the font's).</summary>
+    public CssLength TextDecorationThickness { get; init; } = CssLength.Auto;
+
+    /// <summary>A length, a percentage of 1em, or auto (the font's).</summary>
+    public CssLength TextUnderlineOffset { get; init; } = CssLength.Auto;
+
     public CssLength RowGap { get; init; } = CssLength.Zero;
 
     public CssLength ColumnGap { get; init; } = CssLength.Zero;
@@ -248,6 +262,20 @@ internal sealed record ComputedStyle
             FlexBasis = Get("flex-basis") is "" or "auto" or "content" ? CssLength.Auto : Length("flex-basis"),
             FlexBasisContent = Get("flex-basis") == "content",
             Order = CssValues.ParseInteger(Get("order"), 0),
+            TextDecorationLine = ParseDecorationLines(Get("text-decoration-line")),
+            TextDecorationStyle = Get("text-decoration-style") switch
+            {
+                "double" => TextDecorationStyle.Double,
+                "dotted" => TextDecorationStyle.Dotted,
+                "dashed" => TextDecorationStyle.Dashed,
+                "wavy" => TextDecorationStyle.Wavy,
+                _ => TextDecorationStyle.Solid,
+            },
+            TextDecorationColor = Get("text-decoration-color") is { Length: > 0 } decorationColor and not "currentcolor" and not "currentColor"
+                ? CssValues.ParseColor(decorationColor)
+                : null,
+            TextDecorationThickness = Get("text-decoration-thickness") is "" or "auto" or "from-font" ? CssLength.Auto : Length("text-decoration-thickness"),
+            TextUnderlineOffset = Get("text-underline-offset") is "" or "auto" ? CssLength.Auto : Length("text-underline-offset"),
             RowGap = Get("row-gap") is "" or "normal" ? CssLength.Zero : Length("row-gap"),
             ColumnGap = Get("column-gap") is "" or "normal" ? CssLength.Zero : Length("column-gap"),
         };
@@ -291,6 +319,23 @@ internal sealed record ComputedStyle
         "" or "inline" or "contents" => CssDisplay.Inline,
         _ => CssDisplay.Block,
     };
+
+    private static TextDecorationLines ParseDecorationLines(string value)
+    {
+        var lines = TextDecorationLines.None;
+        foreach (var token in value.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            lines |= token switch
+            {
+                "underline" => TextDecorationLines.Underline,
+                "overline" => TextDecorationLines.Overline,
+                "line-through" => TextDecorationLines.LineThrough,
+                _ => TextDecorationLines.None,
+            };
+        }
+
+        return lines;
+    }
 
     /// <summary>justify-content (or the last value of place-content); the last keyword wins over safe/unsafe.</summary>
     private static JustifyContent ParseJustify(string value) => value.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() switch
