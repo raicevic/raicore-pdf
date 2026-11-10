@@ -63,6 +63,10 @@ own engine. Supported today:
 - Tables: automatic and fixed column widths, `colspan`/`rowspan`, `thead` rows repeated on every page,
   `border-collapse`/`border-spacing`, `vertical-align`, `<col>` widths, captions, and the legacy
   `border`/`cellpadding`/`cellspacing`/`width` attributes.
+- Flexbox: `flex-direction`, `flex-wrap`, `justify-content`, `align-items`/`align-self` (including `stretch` and
+  `baseline`), `gap`, `order`, `flex`/`flex-grow`/`flex-shrink`/`flex-basis`, `min-`/`max-width` and auto margins.
+  A row too tall for the page is split like browsers do: each item continues on the next page in its own column,
+  and stretched items (e.g. a sidebar background) run down to the end of the row.
 
 Headers and footers come from CSS Paged Media:
 
@@ -87,9 +91,11 @@ h1 { string-set: chapter content(); }
 Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowDocument` returns the laid-out document
 before rendering, e.g. to set your own page decorator.
 
-Not yet: floats and positioning, flexbox and grid layout (rendered as blocks), inline box backgrounds and borders,
+Not yet: floats and positioning, grid layout (rendered as blocks), inline box backgrounds and borders,
 `text-decoration`, splitting a single table row across pages, different page margins for `:first`/`:left`/`:right`,
-named pages, and counters other than `page`/`pages`.
+named pages, and counters other than `page`/`pages`. Flex containers are always as tall as their content (`height`
+on a container is ignored, so `align-content` and `justify-content` in columns have no free space to use), and
+`inline-flex` is laid out like `flex`.
 
 ### Razor to PDF
 
@@ -299,7 +305,7 @@ Every input format is mapped to one shared document model and laid out by one en
 2. **Layout engine:** HarfBuzz text shaping and font fallback ✅, line breaking (UAX #14) and paragraphs ✅, block layout and pagination ✅.
 3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine ✅, tables ✅, headers and footers (margin boxes, counters, running strings and elements) ✅.
 4. **0.1 release:** the Razor adapter ✅, packaging, symbols and a release pipeline ✅.
-5. **0.2:** flexbox, inline SVG, text decoration, tagged PDF and PDF/A.
+5. **0.2:** flexbox ✅, inline SVG, text decoration, tagged PDF and PDF/A.
 6. **Later:** DOCX, PDF editing, XSL-FO, XLSX and PPTX.
 
 JavaScript is not executed, by design: the target is print documents such as invoices and reports.

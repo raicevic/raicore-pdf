@@ -1,6 +1,8 @@
 using AngleSharp.Css.Dom;
 using RaiCore.Pdf.Layout;
 using RaiCore.Pdf.Layout.Blocks;
+using FlexDirection = RaiCore.Pdf.Layout.Blocks.FlexDirection;
+using FlexWrap = RaiCore.Pdf.Layout.Blocks.FlexWrap;
 
 namespace RaiCore.Pdf.Html.Css;
 
@@ -16,6 +18,7 @@ internal enum CssDisplay
     TableCell,
     TableRowGroup,
     TableCaption,
+    Flex,
 }
 
 internal enum CssWhiteSpace
@@ -101,6 +104,38 @@ internal sealed record ComputedStyle
 
     public string VerticalAlign { get; init; } = "baseline";
 
+    public CssLength MinWidth { get; init; } = CssLength.Auto;
+
+    public CssLength MinHeight { get; init; } = CssLength.Auto;
+
+    public CssLength MaxHeight { get; init; } = CssLength.Auto;
+
+    public FlexDirection FlexDirection { get; init; }
+
+    public FlexWrap FlexWrap { get; init; }
+
+    public JustifyContent JustifyContent { get; init; }
+
+    public FlexAlignment AlignItems { get; init; } = FlexAlignment.Stretch;
+
+    /// <summary><c>null</c> for <c>align-self: auto</c>.</summary>
+    public FlexAlignment? AlignSelf { get; init; }
+
+    public double FlexGrow { get; init; }
+
+    public double FlexShrink { get; init; } = 1;
+
+    /// <summary>A length, a percentage or <c>auto</c>; see also <see cref="FlexBasisContent"/>.</summary>
+    public CssLength FlexBasis { get; init; } = CssLength.Auto;
+
+    public bool FlexBasisContent { get; init; }
+
+    public int Order { get; init; }
+
+    public CssLength RowGap { get; init; } = CssLength.Zero;
+
+    public CssLength ColumnGap { get; init; } = CssLength.Zero;
+
     /// <summary>Reads an element's computed style (AngleSharp has already applied the cascade, inheritance and em units).</summary>
     public static ComputedStyle From(ICssStyleDeclaration css, double rootFontSize)
     {
@@ -170,6 +205,32 @@ internal sealed record ComputedStyle
             BorderSpacingY = Spacing(1),
             TableLayoutFixed = Get("table-layout") == "fixed",
             VerticalAlign = Get("vertical-align") is { Length: > 0 } valign ? valign : "baseline",
+            MinWidth = Size("min-width"),
+            MinHeight = Size("min-height"),
+            MaxHeight = Size("max-height"),
+            FlexDirection = Get("flex-direction") switch
+            {
+                "row-reverse" => FlexDirection.RowReverse,
+                "column" => FlexDirection.Column,
+                "column-reverse" => FlexDirection.ColumnReverse,
+                _ => FlexDirection.Row,
+            },
+            FlexWrap = Get("flex-wrap") switch
+            {
+                "wrap" => FlexWrap.Wrap,
+                "wrap-reverse" => FlexWrap.WrapReverse,
+                _ => FlexWrap.NoWrap,
+            },
+            JustifyContent = ParseJustify(Get("justify-content") is { Length: > 0 } justify ? justify : Get("place-content")),
+            AlignItems = ParseAlignment(Get("align-items")) ?? FlexAlignment.Stretch,
+            AlignSelf = ParseAlignment(Get("align-self")),
+            FlexGrow = Math.Max(0, ParseNumber(Get("flex-grow"), 0)),
+            FlexShrink = Math.Max(0, ParseNumber(Get("flex-shrink"), 1)),
+            FlexBasis = Get("flex-basis") is "" or "auto" or "content" ? CssLength.Auto : Length("flex-basis"),
+            FlexBasisContent = Get("flex-basis") == "content",
+            Order = CssValues.ParseInteger(Get("order"), 0),
+            RowGap = Get("row-gap") is "" or "normal" ? CssLength.Zero : Length("row-gap"),
+            ColumnGap = Get("column-gap") is "" or "normal" ? CssLength.Zero : Length("column-gap"),
         };
 
         // border-spacing: one length for both directions, or horizontal then vertical.
@@ -184,8 +245,10 @@ internal sealed record ComputedStyle
     private static CssDisplay ParseDisplay(string value) => value switch
     {
         "none" => CssDisplay.None,
-        "block" or "flex" or "grid" or "flow-root" or "flow" => CssDisplay.Block,
-        "inline-block" or "inline-flex" or "inline-grid" => CssDisplay.InlineBlock,
+        // inline-flex is laid out as a block-level flex container (atomic inline boxes come later).
+        "flex" or "inline-flex" => CssDisplay.Flex,
+        "block" or "grid" or "flow-root" or "flow" => CssDisplay.Block,
+        "inline-block" or "inline-grid" => CssDisplay.InlineBlock,
         "list-item" => CssDisplay.ListItem,
         "table" or "inline-table" => CssDisplay.Table,
         "table-row" => CssDisplay.TableRow,
@@ -195,6 +258,31 @@ internal sealed record ComputedStyle
         "" or "inline" or "contents" => CssDisplay.Inline,
         _ => CssDisplay.Block,
     };
+
+    /// <summary>justify-content (or the last value of place-content); the last keyword wins over safe/unsafe.</summary>
+    private static JustifyContent ParseJustify(string value) => value.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() switch
+    {
+        "flex-end" or "end" or "right" => JustifyContent.FlexEnd,
+        "center" => JustifyContent.Center,
+        "space-between" => JustifyContent.SpaceBetween,
+        "space-around" => JustifyContent.SpaceAround,
+        "space-evenly" => JustifyContent.SpaceEvenly,
+        _ => JustifyContent.FlexStart,
+    };
+
+    /// <summary>align-items/align-self; <c>null</c> for auto (and unset).</summary>
+    private static FlexAlignment? ParseAlignment(string value) => value.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() switch
+    {
+        "flex-start" or "start" or "self-start" => FlexAlignment.FlexStart,
+        "flex-end" or "end" or "self-end" => FlexAlignment.FlexEnd,
+        "center" => FlexAlignment.Center,
+        "baseline" => FlexAlignment.Baseline,
+        "stretch" or "normal" => FlexAlignment.Stretch,
+        _ => null,
+    };
+
+    private static double ParseNumber(string value, double fallback) =>
+        double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number) ? number : fallback;
 
     private static LineHeight ParseLineHeight(string value, double fontSize, double rootFontSize)
     {

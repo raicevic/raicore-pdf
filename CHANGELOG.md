@@ -5,6 +5,19 @@ and versions follow [Semantic Versioning](https://semver.org/). Before 1.0, mino
 
 ## [Unreleased]
 
+### Added
+- Flexbox in `RaiCore.Pdf.Layout` (`FlexBlock`, `FlexItem`) and `RaiCore.Pdf.Html` (`display: flex` and
+  `inline-flex`): all flex directions, `flex-wrap` (including `wrap-reverse`), `justify-content`,
+  `align-items`/`align-self` (`stretch`, `flex-start`, `flex-end`, `center`, `baseline`), `gap`, `order`,
+  `flex`/`flex-grow`/`flex-shrink`/`flex-basis`, min/max sizes with the automatic minimum size, and auto margins.
+- Flex rows taller than the space left on a page are split like browsers do: every item continues on the next
+  page in its own column, and stretched items run down to the end of the row.
+- Running elements (`position: running()`) can be flex containers, e.g. a header with a logo and an address.
+
+### Known limitations
+- A flex container is as tall as its content: `height` on the container, `align-content` and `justify-content` in
+  column containers have no effect. `inline-flex` is laid out like `flex`.
+
 ## [0.1.0] - Unreleased
 
 The first release: HTML and Razor to PDF with RaiCore.Pdf's own layout engine.

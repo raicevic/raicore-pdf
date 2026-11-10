@@ -22,6 +22,8 @@ flow.Render().Save("report.pdf");
 - Paragraphs: alignment and justification, line heights, indents, soft hyphens, orphans and widows.
 - Blocks: margins (with collapsing), borders, padding, backgrounds, forced and avoided page breaks.
 - Tables: automatic and fixed layout, spans, header rows repeated on every page, separate or collapsed borders.
+- Flexbox (`FlexBlock`): rows and columns, wrapping, grow/shrink/basis, justification, alignment including baselines,
+  gaps and auto margins; rows split across pages side by side.
 
 ## More
 
