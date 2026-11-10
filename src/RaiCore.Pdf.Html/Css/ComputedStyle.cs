@@ -76,6 +76,14 @@ internal sealed record ComputedStyle
 
     public PdfColor? Background { get; init; }
 
+    public BackgroundClip BackgroundClip { get; init; }
+
+    /// <summary>
+    /// Corner radii (top left, top right, bottom right, bottom left), each a horizontal and a vertical length or
+    /// percentage (of the border box's width and height); 0 when unset or invalid.
+    /// </summary>
+    public (CssLength Horizontal, CssLength Vertical)[] BorderRadius { get; init; } = [];
+
     public CssLength Width { get; init; } = CssLength.Auto;
 
     /// <summary>
@@ -237,6 +245,14 @@ internal sealed record ComputedStyle
             BorderColor = borderColor,
             BorderStyle = borderStyle,
             Background = CssValues.ParseColor(Get("background-color")) is { Alpha: > 0 } background ? background : null, // Transparent is none.
+            // The background color is clipped like the bottom background layer: the last of a list.
+            BackgroundClip = Get("background-clip").Split(',').Last().Trim() switch
+            {
+                "padding-box" => BackgroundClip.PaddingBox,
+                "content-box" => BackgroundClip.ContentBox,
+                _ => BackgroundClip.BorderBox,
+            },
+            BorderRadius = [Radius("top-left"), Radius("top-right"), Radius("bottom-right"), Radius("bottom-left")],
             Width = Size("width"),
             WidthDeclared = Get("width").Length > 0,
             HeightDeclared = Get("height").Length > 0,
@@ -310,6 +326,18 @@ internal sealed record ComputedStyle
             ColumnGap = Gap("column-gap"),
             Opacity = ParseNumber(Get("opacity"), 1) is var opacity && double.IsFinite(opacity) ? Math.Clamp(opacity, 0, 1) : 1, // AngleSharp computes percentages as numbers.
         };
+
+        // AngleSharp expands border-radius into longhands of one value (circular) or two (horizontal, then vertical).
+        (CssLength Horizontal, CssLength Vertical) Radius(string corner)
+        {
+            var parts = CssValues.SplitComponents(Get($"border-{corner}-radius"));
+            var horizontal = Corner(parts.Count > 0 ? parts[0] : null);
+            return (horizontal, parts.Count > 1 ? Corner(parts[1]) : horizontal);
+
+            // Negative values are invalid (0, the initial value), as are keywords; calc() results are clamped when painted.
+            CssLength Corner(string? value) => Parse(value ?? string.Empty) is { IsAuto: false } length
+                && (length.Kind == CssLengthKind.Calc || length.Value >= 0) ? length : CssLength.Zero;
+        }
 
         // Gaps are normal (0 outside grids and multi-column) when unset or invalid.
         CssLength Gap(string name) => Parse(Get(name)) is { IsAuto: false } gap ? gap.NonNegative() : CssLength.Zero;

@@ -73,7 +73,8 @@ own engine. Supported today:
   quotes alternate between double and single; `<q>` gets them by default), `no-open-quote`/`no-close-quote` and
   `url()` images; `none` and `normal` generate nothing.
 - The box model: margin, border (every `border-style`: solid, dashed, dotted, double, groove, ridge, inset and
-  outset), padding, background, width, `min-width`, `max-width`, `height`, `min-height`, `max-height`, auto margins,
+  outset), `border-radius` (elliptical and percentage radii, every border style, rounded images), padding, background
+  and `background-clip`, width, `min-width`, `max-width`, `height`, `min-height`, `max-height`, auto margins,
   `box-sizing` and percentages. `min-width`/`max-width` also limit shrink-to-fit boxes and scale images (with
   `max-width: 100%; height: auto` keeping the aspect ratio). Percentage heights resolve against definite ancestor heights, starting with the page area (so
   `html, body { height: 100% }` and `100vh` fill the page).
@@ -387,7 +388,7 @@ flow.Render().Save("report.pdf");
 ```
 
 - Box model: margin, border (solid, dashed, dotted, double, groove, ridge, inset or outset, with corners joined like
-  browsers join them), padding, background and fixed widths.
+  browsers join them), rounded corners (`BoxStyle.BorderRadius`), padding, background and fixed widths.
 - Transparency: colors with an alpha, and `BoxStyle.Opacity`, which draws a block with everything inside it as one
   transparency group per page.
 - Vertical margins collapse between siblings and through parents without border or padding.

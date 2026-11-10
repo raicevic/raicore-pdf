@@ -85,6 +85,19 @@ public readonly record struct Borders(BorderSide Top, BorderSide Right, BorderSi
     public Thickness Widths => new(Top.Width, Right.Width, Bottom.Width, Left.Width);
 }
 
+/// <summary>The area a box's background color covers (CSS <c>background-clip</c>).</summary>
+public enum BackgroundClip
+{
+    /// <summary>The border box: behind the border and the padding (the default).</summary>
+    BorderBox,
+
+    /// <summary>The padding box: inside the border.</summary>
+    PaddingBox,
+
+    /// <summary>The content box: inside the padding.</summary>
+    ContentBox,
+}
+
 /// <summary>Page break behavior before or after a block (CSS <c>break-before</c>/<c>break-after</c>).</summary>
 public enum PageBreak
 {
@@ -128,6 +141,20 @@ public sealed record BoxStyle
 
     /// <summary>Background color behind the padding and border, or <c>null</c> for none.</summary>
     public PdfColor? Background { get; init; }
+
+    /// <summary>
+    /// The area the background covers: the border box (the default), the padding box or the content box, with the
+    /// rounded corners of <see cref="BorderRadius"/> reduced accordingly.
+    /// </summary>
+    public BackgroundClip BackgroundClip { get; init; }
+
+    /// <summary>
+    /// Rounded corners of the border box (CSS <c>border-radius</c>): the background and the border follow them, and an
+    /// image block's image is clipped to its content box with the radii reduced by the border and padding. They do not
+    /// clip a container's children. Ignored by tables with collapsed borders, as in CSS. A box split across pages has
+    /// its top corners rounded on the first page and its bottom corners on the last.
+    /// </summary>
+    public CornerRadii BorderRadius { get; init; }
 
     /// <summary>Width of the border box in points, or <c>null</c> to fill the available width.</summary>
     public double? Width { get; init; }

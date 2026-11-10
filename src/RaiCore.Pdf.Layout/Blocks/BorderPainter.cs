@@ -5,13 +5,13 @@ namespace RaiCore.Pdf.Layout.Blocks;
 /// width; where two sides meet, the corner is split on the diagonal from the outer to the inner corner, so sides of
 /// different colors or styles meet in trapezoids. Solid, double and the 3D styles are filled shapes (one path per color,
 /// so sides of the same color join without seams); dashed and dotted sides are dashed strokes along the side's center
-/// line, clipped to the side's band.
+/// line, clipped to the side's band. Boxes with rounded corners are drawn along the curves (BorderPainter.Rounded.cs).
 /// </summary>
 /// <remarks>
 /// Geometry that browsers snap to device pixels is reckoned in CSS pixels (0.75 pt): the thirds of a double line, and
 /// the widths below which double draws solid and dots are square.
 /// </remarks>
-internal static class BorderPainter
+internal static partial class BorderPainter
 {
     /// <summary>One CSS pixel in points.</summary>
     private const double Pixel = 0.75;
@@ -51,14 +51,22 @@ internal static class BorderPainter
     /// <summary>
     /// Draws a box's borders around the rectangle with its bottom-left corner at (<paramref name="x"/>, <paramref name="y"/>)
     /// (PDF coordinates). <paramref name="top"/>/<paramref name="bottom"/> false leave that side out, for the fragments of a
-    /// box split across pages; the sides next to it then run straight to the edge.
+    /// box split across pages; the sides next to it then run straight to the edge. With rounded
+    /// <paramref name="corners"/> the sides follow the curves (see <see cref="PaintRounded"/>).
     /// </summary>
-    public static void PaintBox(PdfCanvas canvas, Borders borders, double x, double y, double width, double height, bool top = true, bool bottom = true)
+    public static void PaintBox(
+        PdfCanvas canvas, Borders borders, double x, double y, double width, double height, bool top = true, bool bottom = true, RoundedCorners corners = default)
     {
         var t = top && Visible(borders.Top) ? borders.Top : BorderSide.None;
         var r = Visible(borders.Right) ? borders.Right : BorderSide.None;
         var b = bottom && Visible(borders.Bottom) ? borders.Bottom : BorderSide.None;
         var l = Visible(borders.Left) ? borders.Left : BorderSide.None;
+        if (!corners.IsSquare && width > 0 && height > 0)
+        {
+            PaintRounded(canvas, [t, r, b, l], x, y, width, height, corners.Fit(width, height));
+            return;
+        }
+
         var (x1, y1) = (x + width, y + height);
 
         var edges = new List<Edge>(4);
@@ -96,37 +104,17 @@ internal static class BorderPainter
         var strokes = new List<Edge>();
         foreach (var edge in edges)
         {
-            var (width, color) = (edge.Border.Width, edge.Border.Color);
-            if (width <= 0 || edge.Length <= 0)
+            if (edge.Border.Width <= 0 || edge.Length <= 0)
             {
                 continue;
             }
 
-            switch (edge.Border.Style)
+            if (edge.Border.Style is BorderStyle.Dashed or BorderStyle.Dotted)
             {
-                case BorderStyle.Dashed or BorderStyle.Dotted:
-                    strokes.Add(edge);
-                    break;
-                case BorderStyle.Double when DoubleLine(width) is { } line:
-                    fills.Add((color, edge, 0, line));
-                    fills.Add((color, edge, width - line, width));
-                    break;
-                case BorderStyle.Inset or BorderStyle.Outset:
-                    fills.Add((Shade(color, edge.Border.Style, edge.Side, outer: true), edge, 0, width));
-                    break;
-                case BorderStyle.Groove or BorderStyle.Ridge when width < (2 * Pixel) - Epsilon:
-                    fills.Add((Shade(color, edge.Border.Style, edge.Side, outer: true), edge, 0, width)); // Too thin for two halves.
-                    break;
-                case BorderStyle.Groove or BorderStyle.Ridge:
-                    fills.Add((Shade(color, edge.Border.Style, edge.Side, outer: true), edge, 0, width / 2));
-                    fills.Add((Shade(color, edge.Border.Style, edge.Side, outer: false), edge, width / 2, width));
-                    break;
-                case BorderStyle.Hidden:
-                    break;
-                default: // Solid, and double lines too thin to split.
-                    fills.Add((color, edge, 0, width));
-                    break;
+                strokes.Add(edge);
             }
+
+            fills.AddRange(Bands(edge.Border, edge.Side).Select(band => (band.Color, edge, band.From, band.To)));
         }
 
         foreach (var group in fills.GroupBy(f => f.Color))
@@ -158,6 +146,37 @@ internal static class BorderPainter
             {
                 canvas.EndGroup();
             }
+        }
+    }
+
+    /// <summary>
+    /// The filled parts of a side in its style: the color and the depths (from the outer edge inward) of each band.
+    /// None for dashed and dotted sides, which are stroked, and for hidden ones.
+    /// </summary>
+    internal static IEnumerable<(PdfColor Color, double From, double To)> Bands(BorderSide border, Side side)
+    {
+        var (width, color, style) = (border.Width, border.Color, border.Style);
+        switch (style)
+        {
+            case BorderStyle.Dashed or BorderStyle.Dotted or BorderStyle.Hidden:
+                break;
+            case BorderStyle.Double when DoubleLine(width) is { } line:
+                yield return (color, 0, line);
+                yield return (color, width - line, width);
+                break;
+            case BorderStyle.Inset or BorderStyle.Outset:
+                yield return (Shade(color, style, side, outer: true), 0, width);
+                break;
+            case BorderStyle.Groove or BorderStyle.Ridge when width < (2 * Pixel) - Epsilon:
+                yield return (Shade(color, style, side, outer: true), 0, width); // Too thin for two halves.
+                break;
+            case BorderStyle.Groove or BorderStyle.Ridge:
+                yield return (Shade(color, style, side, outer: true), 0, width / 2);
+                yield return (Shade(color, style, side, outer: false), width / 2, width);
+                break;
+            default: // Solid, and double lines too thin to split.
+                yield return (color, 0, width);
+                break;
         }
     }
 
@@ -208,14 +227,21 @@ internal static class BorderPainter
     /// corner to the other, or square below 3 px, laid out like dashes. A side too short for two whole dashes gets
     /// three equal parts (dash, gap, dash); <c>null</c> when even those would be shorter than wide: it is drawn solid.
     /// </summary>
-    internal static DashStroke? Dashes(Edge edge)
+    internal static DashStroke? Dashes(Edge edge) =>
+        // Round dots centered from corner to corner: the corner's center when a side meets there, else a dot's radius in.
+        Dashes(edge.Border, edge.Length, (edge.StartJoin > 0 ? edge.StartJoin : edge.Border.Width) / 2, (edge.EndJoin > 0 ? edge.EndJoin : edge.Border.Width) / 2);
+
+    /// <summary>
+    /// The dashes or dots of a side <paramref name="length"/> long (see <see cref="Dashes(Edge)"/>); round dots are
+    /// centered from <paramref name="startDot"/> after the start to <paramref name="endDot"/> before the end.
+    /// </summary>
+    internal static DashStroke? Dashes(BorderSide border, double length, double startDot, double endDot)
     {
-        var width = edge.Border.Width;
-        if (edge.Border.Style == BorderStyle.Dotted && width >= (3 * Pixel) - Epsilon)
+        var width = border.Width;
+        if (border.Style == BorderStyle.Dotted && width >= (3 * Pixel) - Epsilon)
         {
-            // Round dots centered from corner to corner: the corner's center when a side meets there, else a dot's radius in.
-            var from = (edge.StartJoin > 0 ? edge.StartJoin : width) / 2;
-            var to = edge.Length - ((edge.EndJoin > 0 ? edge.EndJoin : width) / 2);
+            var from = startDot;
+            var to = length - endDot;
             var span = to - from;
             if (span < width)
             {
@@ -229,15 +255,15 @@ internal static class BorderPainter
             return new DashStroke(from - (spacing / 2), to + (spacing / 2), [0, spacing], spacing / 2, LineCap.Round);
         }
 
-        var dash = edge.Border.Style == BorderStyle.Dotted ? width : 3 * width;
-        if (Gap(edge.Length, dash) is { } gap)
+        var dash = border.Style == BorderStyle.Dotted ? width : 3 * width;
+        if (Gap(length, dash) is { } gap)
         {
-            return new DashStroke(0, edge.Length, [dash, gap], 0, LineCap.Butt);
+            return new DashStroke(0, length, [dash, gap], 0, LineCap.Butt);
         }
 
         // Too short for two whole dashes: shorter dashes (dash, gap, dash) while they are still at least square.
-        var third = edge.Length / 3;
-        return third >= width - Epsilon ? new DashStroke(0, edge.Length, [third, third], 0, LineCap.Butt) : null;
+        var third = length / 3;
+        return third >= width - Epsilon ? new DashStroke(0, length, [third, third], 0, LineCap.Butt) : null;
     }
 
     /// <summary>

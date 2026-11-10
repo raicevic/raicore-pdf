@@ -387,7 +387,7 @@ internal sealed partial class Paginator
                 break;
             case TableBlock table:
                 // With collapsed borders, the table's border takes part in the grid lines instead of framing the table.
-                var tableStyle = table.BorderCollapse == BorderCollapse.Collapse ? table.Style with { Border = Borders.None } : table.Style;
+                var tableStyle = table.BorderCollapse == BorderCollapse.Collapse ? table.Style with { Border = Borders.None, BorderRadius = CornerRadii.None } : table.Style;
                 LayoutBox(block, x, width, (contentX, contentWidth) => LayoutTable(table, contentX, contentWidth), sizing, tableStyle);
                 break;
             case FlexBlock flex:
@@ -517,6 +517,19 @@ internal sealed partial class Paginator
         // Backgrounds and borders of each page fragment, and the link over it.
         void Decorate(int endPage, double endY)
         {
+            // Rounded corners are sized for the whole box; each fragment keeps the corners it has.
+            var corners = default(RoundedCorners);
+            if (decorated && !style.BorderRadius.IsSquare)
+            {
+                var height = 0.0;
+                for (var page = startPage; page <= endPage; page++)
+                {
+                    height += (page == endPage ? endY : PageBottom(page)) - (page == startPage ? startY : PageTop(page));
+                }
+
+                corners = style.BorderRadius.Resolve(width, height);
+            }
+
             for (var page = startPage; page <= endPage; page++)
             {
                 var first = page == startPage;
@@ -526,7 +539,8 @@ internal sealed partial class Paginator
                 if (decorated)
                 {
                     var index = first ? insertAt : 0; // Pages created inside the box: under everything on them.
-                    _pages[page].Insert(index, (canvas, pageHeight) => DrawBox(canvas, pageHeight, style, x, top, width, bottom - top, first, last));
+                    var fragment = corners.Fragment(first, last, width, bottom - top);
+                    _pages[page].Insert(index, (canvas, pageHeight) => DrawBox(canvas, pageHeight, style, x, top, width, bottom - top, first, last, fragment));
                     _placements.Add(new Placement(page, block, top, bottom, -1, -1, x, width));
                 }
 
@@ -564,15 +578,58 @@ internal sealed partial class Paginator
         return Math.Max(Math.Min(fixedHeight ?? natural, max), min);
     }
 
-    private static void DrawBox(PdfCanvas canvas, double pageHeight, BoxStyle style, double x, double top, double width, double height, bool first, bool last)
+    /// <summary>
+    /// Draws a box's (or a fragment's) background and borders. Rounded <paramref name="corners"/> are those of the
+    /// fragment; <c>null</c> sizes the style's radii to the fragment.
+    /// </summary>
+    private static void DrawBox(
+        PdfCanvas canvas, double pageHeight, BoxStyle style, double x, double top, double width, double height, bool first, bool last, RoundedCorners? corners = null)
     {
         var y = pageHeight - top - height; // PDF y of the bottom edge.
+        var rounded = corners ?? (style.BorderRadius.IsSquare ? default : style.BorderRadius.Resolve(width, height).Fragment(first, last, width, height));
         if (style.Background is { } background)
         {
-            canvas.SetFillColor(background).Rectangle(x, y, width, height).Fill();
+            canvas.SetFillColor(background);
+            if (AddBackgroundArea(canvas, style, rounded, x, y, width, height, first, last))
+            {
+                canvas.Fill();
+            }
         }
 
-        BorderPainter.PaintBox(canvas, style.Border, x, y, width, height, top: first, bottom: last);
+        BorderPainter.PaintBox(canvas, style.Border, x, y, width, height, top: first, bottom: last, corners: rounded);
+    }
+
+    /// <summary>
+    /// Adds the area a box's background covers (CSS <c>background-clip</c>) as a path: the border box, or the padding or
+    /// content box (inset on the edges the fragment has), with the corners reduced by the inset. False when it is empty.
+    /// </summary>
+    private static bool AddBackgroundArea(PdfCanvas canvas, BoxStyle style, RoundedCorners corners, double x, double y, double width, double height, bool first, bool last)
+    {
+        var inset = style.BackgroundClip switch
+        {
+            BackgroundClip.PaddingBox => style.Border.Widths,
+            BackgroundClip.ContentBox => new Thickness(
+                style.Border.Top.Width + style.Padding.Top, style.Border.Right.Width + style.Padding.Right,
+                style.Border.Bottom.Width + style.Padding.Bottom, style.Border.Left.Width + style.Padding.Left),
+            _ => Thickness.Zero,
+        };
+        var (top, bottom) = (first ? inset.Top : 0, last ? inset.Bottom : 0);
+        var (areaWidth, areaHeight) = (width - inset.Horizontal, height - top - bottom);
+        if (areaWidth <= 0 || areaHeight <= 0)
+        {
+            return false;
+        }
+
+        if (corners.IsSquare)
+        {
+            canvas.Rectangle(x + inset.Left, y + bottom, areaWidth, areaHeight);
+        }
+        else
+        {
+            corners.Inset(top, inset.Right, bottom, inset.Left).AddPath(canvas, x + inset.Left, y + bottom, areaWidth, areaHeight);
+        }
+
+        return true;
     }
 
     private void LayoutImage(ImageBlock block, double x, double width)
@@ -590,7 +647,25 @@ internal sealed partial class Paginator
             _ => 0,
         };
         var top = Y;
-        _pages[PageIndex].Add((canvas, pageHeight) => canvas.DrawImage(block.Image, left, pageHeight - top - h, w, h));
+        if (block.Style.BorderRadius.IsSquare)
+        {
+            _pages[PageIndex].Add((canvas, pageHeight) => canvas.DrawImage(block.Image, left, pageHeight - top - h, w, h));
+        }
+        else
+        {
+            // Clipped to the content box's curves: the border box's radii, reduced by the border and padding.
+            var (border, padding) = (block.Style.Border.Widths, block.Style.Padding);
+            var corners = block.Style.BorderRadius.Resolve(w + border.Horizontal + padding.Horizontal, h + border.Vertical + padding.Vertical)
+                .Inset(border.Top + padding.Top, border.Right + padding.Right, border.Bottom + padding.Bottom, border.Left + padding.Left);
+            _pages[PageIndex].Add((canvas, pageHeight) =>
+            {
+                canvas.SaveState();
+                corners.Clip(canvas, left, pageHeight - top - h, w, h);
+                canvas.DrawImage(block.Image, left, pageHeight - top - h, w, h);
+                canvas.RestoreState();
+            });
+        }
+
         Y += h;
         _placements.Add(new Placement(PageIndex, block, top, Y, -1, -1, left, w));
     }

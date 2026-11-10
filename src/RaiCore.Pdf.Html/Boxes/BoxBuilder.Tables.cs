@@ -181,7 +181,7 @@ internal sealed partial class BoxBuilder
         var width = style.Width.IsAuto ? Dimension(td.GetAttribute("width")) : style.Width;
         return new TableCell(content)
         {
-            Style = new BoxStyle { Padding = box.Padding, Border = box.Border, Background = box.Background },
+            Style = new BoxStyle { Padding = box.Padding, Border = box.Border, Background = box.Background, BackgroundClip = box.BackgroundClip, BorderRadius = box.BorderRadius },
             ColumnSpan = Math.Max(1, Integer(td.GetAttribute("colspan")) ?? 1),
             RowSpan = Math.Max(1, Integer(td.GetAttribute("rowspan")) ?? 1),
             VerticalAlignment = valign switch

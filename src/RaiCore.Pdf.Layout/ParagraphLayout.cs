@@ -76,13 +76,26 @@ public sealed partial class ParagraphLayout
 
             foreach (var image in line.Images)
             {
+                var (left, bottom, width, height) = (x + line.X + image.X, baseline + image.BaselineShift, image.Image.Width, image.Image.Height);
                 var translucent = image.Image.Opacity < 1;
+                var rounded = !image.Image.BorderRadius.IsSquare;
                 if (translucent)
                 {
                     canvas.BeginGroup(image.Image.Opacity);
                 }
 
-                canvas.DrawImage(image.Image.Image, x + line.X + image.X, baseline + image.BaselineShift, image.Image.Width, image.Image.Height);
+                if (rounded)
+                {
+                    canvas.SaveState();
+                    image.Image.BorderRadius.Resolve(width, height).Clip(canvas, left, bottom, width, height);
+                }
+
+                canvas.DrawImage(image.Image.Image, left, bottom, width, height);
+                if (rounded)
+                {
+                    canvas.RestoreState();
+                }
+
                 if (translucent)
                 {
                     canvas.EndGroup();
@@ -220,11 +233,40 @@ public sealed partial class ParagraphLayout
         }
     }
 
+    /// <summary>
+    /// An inline element's piece with rounded corners: only the corners at the edges it has (the left ones on the
+    /// element's first line, the right ones on its last), with the background and borders following them.
+    /// </summary>
+    private static void DrawRoundedDecoration(PdfCanvas canvas, InlineDecorationFragment piece, double x, double y, double width, double height)
+    {
+        var box = piece.Decoration.Box;
+        var corners = box.BorderRadius.Resolve(width, height).Fragment(true, true, width, height, left: piece.StartEdge, right: piece.EndEdge);
+        if (box.Background is { } background)
+        {
+            canvas.SetFillColor(background);
+            corners.AddPath(canvas, x, y, width, height);
+            canvas.Fill();
+        }
+
+        var border = box.Border with
+        {
+            Left = piece.StartEdge ? box.Border.Left : Blocks.BorderSide.None,
+            Right = piece.EndEdge ? box.Border.Right : Blocks.BorderSide.None,
+        };
+        Blocks.BorderPainter.PaintBox(canvas, border, x, y, width, height, corners: corners);
+    }
+
     private static void DrawDecoration(PdfCanvas canvas, InlineDecorationFragment piece, double lineX, double baseline)
     {
         var box = piece.Decoration.Box;
         var (left, right) = (lineX + piece.X0, lineX + piece.X1);
         var (bottom, top) = (baseline - piece.Below, baseline + piece.Above);
+        if (!box.BorderRadius.IsSquare)
+        {
+            DrawRoundedDecoration(canvas, piece, left, bottom, right - left, top - bottom);
+            return;
+        }
+
         if (box.Background is { } background)
         {
             canvas.SetFillColor(background).Rectangle(left, bottom, right - left, top - bottom).Fill();
