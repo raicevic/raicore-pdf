@@ -151,8 +151,9 @@ public class HtmlConversionTests
         Assert.Equal(150, b.Style.Width!.Value, 3); // border-box: padding included
         Assert.Equal(75, b.Style.Margin.Left, 3); // (300 - 150) / 2
         var c = Paragraph(blocks, "c");
-        Assert.Equal(75, c.Style.Width!.Value, 3);
-        Assert.Equal(225, c.Style.Margin.Left, 3); // pushed right
+        Assert.Null(c.Style.Width);
+        Assert.Equal(75, c.Style.MaxWidth!.Value, 3);
+        Assert.Equal(225, c.Style.Margin.Left, 3); // pushed right by the space the max width leaves
     }
 
     [Fact]

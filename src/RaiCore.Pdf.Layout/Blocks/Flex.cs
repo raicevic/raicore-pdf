@@ -160,7 +160,8 @@ internal enum FlexBasisKind
 
 /// <summary>
 /// A flex item: a block placed by its <see cref="FlexBlock"/>. The block's own <see cref="Block.Style"/> supplies its
-/// margin, border, padding, background, width and heights (used by <see cref="FlexBasis.Auto"/> and as limits);
+/// margin, border, padding, background, width and height (used by <see cref="FlexBasis.Auto"/>) and their minimums
+/// and maximums (<see cref="BoxStyle.MinWidth"/>, <see cref="BoxStyle.MaxHeight"/> and so on, used as limits);
 /// this class adds how it grows, shrinks and aligns.
 /// </summary>
 public sealed class FlexItem
@@ -189,15 +190,6 @@ public sealed class FlexItem
 
     /// <summary>Items are placed in ascending order (CSS <c>order</c>); equal values keep their original order.</summary>
     public int Order { get; init; }
-
-    /// <summary>
-    /// Minimum border-box width in points. <c>null</c> is CSS <c>min-width: auto</c>: a row item does not shrink below
-    /// its min-content width (e.g. its longest word).
-    /// </summary>
-    public double? MinWidth { get; init; }
-
-    /// <summary>Maximum border-box width in points, or <c>null</c> for none.</summary>
-    public double? MaxWidth { get; init; }
 
     /// <summary>Which of the content's margins are <c>auto</c> (their values in <see cref="BoxStyle.Margin"/> are ignored).</summary>
     public AutoMargins AutoMargins { get; init; }

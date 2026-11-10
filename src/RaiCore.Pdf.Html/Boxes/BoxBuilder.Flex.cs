@@ -171,8 +171,6 @@ internal sealed partial class BoxBuilder
             Basis = basis,
             AlignSelf = style.AlignSelf,
             Order = style.Order,
-            MinWidth = Width(style.MinWidth),
-            MaxWidth = Width(style.MaxWidth),
             AutoMargins = auto,
         };
     }

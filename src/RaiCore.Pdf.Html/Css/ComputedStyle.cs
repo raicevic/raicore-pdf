@@ -78,6 +78,15 @@ internal sealed record ComputedStyle
 
     public CssLength Width { get; init; } = CssLength.Auto;
 
+    /// <summary>
+    /// Whether the cascade gives <c>width</c>/<c>height</c> a value (including <c>auto</c>, and the presentational
+    /// hints AngleSharp makes of <c>width</c> and <c>height</c> attributes), so an image's attributes do not apply.
+    /// </summary>
+    public bool WidthDeclared { get; init; }
+
+    /// <inheritdoc cref="WidthDeclared"/>
+    public bool HeightDeclared { get; init; }
+
     public CssLength MaxWidth { get; init; } = CssLength.Auto;
 
     public CssLength Height { get; init; } = CssLength.Auto;
@@ -226,6 +235,8 @@ internal sealed record ComputedStyle
             BorderStyle = borderStyle,
             Background = CssValues.ParseColor(Get("background-color")),
             Width = Size("width"),
+            WidthDeclared = Get("width").Length > 0,
+            HeightDeclared = Get("height").Length > 0,
             MaxWidth = Size("max-width"),
             Height = Size("height"),
             BorderBox = Get("box-sizing") == "border-box",

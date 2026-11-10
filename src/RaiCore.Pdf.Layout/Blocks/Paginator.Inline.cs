@@ -12,11 +12,11 @@ internal sealed partial class Paginator
         var style = block.Style;
         if (style.Width is { } width)
         {
-            return width;
+            return style.ClampWidth(width);
         }
 
         var (min, max) = IntrinsicContentBorderBox(block);
-        return Math.Min(max, Math.Max(min, availableWidth - style.Margin.Horizontal));
+        return style.ClampWidth(Math.Min(max, Math.Max(min, availableWidth - style.Margin.Horizontal)));
     }
 
     /// <summary>The min-content and max-content widths an inline box takes on a line, margins included.</summary>
