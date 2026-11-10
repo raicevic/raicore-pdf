@@ -13,6 +13,9 @@ internal sealed record CellLayout(
 {
     /// <summary>The width of the cell's content box.</summary>
     public double InnerWidth => Math.Max(1, Width - InsetLeft - InsetRight);
+
+    /// <summary>Anchors in the cell's content, with tops relative to the top of its content box.</summary>
+    public IReadOnlyList<Anchor> Anchors { get; init; } = [];
 }
 
 /// <summary>A table laid out at a width, independent of pages: column positions, row heights and cell content.</summary>
@@ -150,8 +153,8 @@ internal static class TableLayouter
             var (left, right, top, bottom) = Insets(cell, horizontal, vertical);
             var innerX = x + cellX + left;
             var innerWidth = Math.Max(1, cellWidth - left - right);
-            var (height, content) = Paginator.LayoutStatic(cell.Cell.Content, innerX, innerWidth);
-            layouts.Add(new CellLayout(cell, cellX, cellWidth, height, top, bottom, content, left, right));
+            var (height, content, anchors) = Paginator.LayoutStatic(cell.Cell.Content, innerX, innerWidth);
+            layouts.Add(new CellLayout(cell, cellX, cellWidth, height, top, bottom, content, left, right) { Anchors = anchors });
         }
 
         // Row heights: the tallest single-row cell; cells spanning rows stretch their last row if needed.

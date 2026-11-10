@@ -14,6 +14,12 @@ public abstract class Block
     /// takes no space and can mark a position.
     /// </summary>
     public object? Marker { get; init; }
+
+    /// <summary>
+    /// Makes the block an entry in the PDF outline that jumps to where the block starts (where its content starts, if
+    /// that moved to a later page). <c>null</c> (the default) for none.
+    /// </summary>
+    public Bookmark? Bookmark { get; init; }
 }
 
 /// <summary>A block containing one paragraph of text.</summary>
