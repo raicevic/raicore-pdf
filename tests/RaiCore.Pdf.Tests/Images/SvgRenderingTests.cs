@@ -139,6 +139,21 @@ public partial class SvgRenderingTests
     }
 
     [Fact]
+    public void Gradients_follow_the_transforms_of_the_element_and_its_ancestors()
+    {
+        using var bitmap = Render("""
+            <defs><linearGradient id="g"><stop offset="0" stop-color="#f00"/><stop offset="1" stop-color="#00f"/></linearGradient></defs>
+            <g transform="translate(50 0)"><rect width="40" height="40" fill="url(#g)" transform="scale(1.25)"/></g>
+            <g transform="rotate(90 25 75)"><rect y="50" width="50" height="50" fill="url(#g)"/></g>
+            """);
+
+        AssertColor(bitmap, 51, 25, "#ff0000", tolerance: 16);
+        AssertColor(bitmap, 99, 25, "#0000ff", tolerance: 16);
+        AssertColor(bitmap, 25, 51, "#ff0000", tolerance: 16);  // Rotated: the gradient runs top to bottom.
+        AssertColor(bitmap, 25, 99, "#0000ff", tolerance: 16);
+    }
+
+    [Fact]
     public void Radial_gradients_and_stop_opacity()
     {
         using var bitmap = Render("""
