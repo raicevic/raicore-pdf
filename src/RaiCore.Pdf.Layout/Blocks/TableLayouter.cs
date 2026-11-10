@@ -4,7 +4,7 @@ namespace RaiCore.Pdf.Layout.Blocks;
 internal sealed record GridCell(TableCell Cell, int Row, int Column, int RowSpan, int ColumnSpan);
 
 /// <summary>A grid line segment in the collapsing border model.</summary>
-internal readonly record struct GridLine(double Width, PdfColor Color);
+internal readonly record struct GridLine(double Width, PdfColor Color, BorderStyle Style = BorderStyle.Solid);
 
 /// <summary>A laid-out cell: where its box is and how to draw its content.</summary>
 internal sealed record CellLayout(
@@ -400,7 +400,7 @@ internal static class TableLayouter
         return groups;
     }
 
-    /// <summary>Collapsed horizontal borders: for each line, the widest of the borders that meet there (CSS 2.1 section 17.6.2.1).</summary>
+    /// <summary>Collapsed horizontal borders: for each line, the winner of the borders that meet there (see <see cref="Resolve"/>).</summary>
     private static GridLine[,] CollapseHorizontal(TableBlock table, GridCell?[,] slots, int rows, int columns)
     {
         var lines = new GridLine[rows + 1, columns];
@@ -436,13 +436,14 @@ internal static class TableLayouter
                     candidates.Add(table.Style.Border.Bottom);
                 }
 
-                lines[r, c] = Widest(candidates);
+                lines[r, c] = Resolve(candidates);
             }
         }
 
         return lines;
     }
 
+    /// <summary>Collapsed vertical borders: for each line, the winner of the borders that meet there (see <see cref="Resolve"/>).</summary>
     private static GridLine[,] CollapseVertical(TableBlock table, GridCell?[,] slots, int rows, int columns)
     {
         var lines = new GridLine[rows, columns + 1];
@@ -478,18 +479,42 @@ internal static class TableLayouter
                     candidates.Add(table.Style.Border.Right);
                 }
 
-                lines[r, c] = Widest(candidates);
+                lines[r, c] = Resolve(candidates);
             }
         }
 
         return lines;
     }
 
-    private static GridLine Widest(List<BorderSide> sides)
+    /// <summary>
+    /// Border conflict resolution (CSS 2.1 section 17.6.2.1): a hidden border suppresses all others; otherwise the
+    /// widest wins, then the style that ranks first (double, solid, dashed, dotted, ridge, outset, groove, inset). For
+    /// equal width and style the first candidate wins: callers list the cell before the table, and the cell above
+    /// (or to the left) before the one below (or to the right).
+    /// </summary>
+    internal static GridLine Resolve(IReadOnlyList<BorderSide> sides)
     {
-        var best = sides.Where(s => s.Width > 0).OrderByDescending(s => s.Width).FirstOrDefault();
-        return new GridLine(best.Width, best.Color);
+        if (sides.Any(s => s.Style == BorderStyle.Hidden))
+        {
+            return default;
+        }
+
+        var best = sides.Where(s => s.Width > 0).OrderByDescending(s => s.Width).ThenBy(s => StyleRank(s.Style)).FirstOrDefault();
+        return new GridLine(best.Width, best.Color, best.Style);
     }
+
+    /// <summary>Priority of border styles in conflicts, lower first.</summary>
+    private static int StyleRank(BorderStyle style) => style switch
+    {
+        BorderStyle.Double => 0,
+        BorderStyle.Solid => 1,
+        BorderStyle.Dashed => 2,
+        BorderStyle.Dotted => 3,
+        BorderStyle.Ridge => 4,
+        BorderStyle.Outset => 5,
+        BorderStyle.Groove => 6,
+        _ => 7, // Inset
+    };
 
     private static bool IsOccupied(List<bool[]> occupied, int row, int column) =>
         row < occupied.Count && column < occupied[row].Length && occupied[row][column];

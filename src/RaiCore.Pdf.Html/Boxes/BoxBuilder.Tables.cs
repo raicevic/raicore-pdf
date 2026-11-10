@@ -42,6 +42,7 @@ internal sealed partial class BoxBuilder
             {
                 BorderWidth = [borderAttribute.Value, borderAttribute.Value, borderAttribute.Value, borderAttribute.Value],
                 BorderColor = [Gray, Gray, Gray, Gray],
+                BorderStyle = [BorderStyle.Solid, BorderStyle.Solid, BorderStyle.Solid, BorderStyle.Solid],
             };
         }
 
@@ -153,7 +154,12 @@ internal sealed partial class BoxBuilder
 
         if (defaults.Border is { } border && style.BorderWidth.All(w => w == 0))
         {
-            style = style with { BorderWidth = [border, border, border, border], BorderColor = [Gray, Gray, Gray, Gray] };
+            style = style with
+            {
+                BorderWidth = [border, border, border, border],
+                BorderColor = [Gray, Gray, Gray, Gray],
+                BorderStyle = [BorderStyle.Solid, BorderStyle.Solid, BorderStyle.Solid, BorderStyle.Solid],
+            };
         }
 
         if (td.GetAttribute("align") is { } align && style.TextAlign == TextAlignment.Left)

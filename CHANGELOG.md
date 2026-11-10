@@ -46,6 +46,9 @@ change at any time, and this section lists what the packages can do so far.
   definite or minimum height flex their columns vertically and wrap into side-by-side columns; a flex item's flexed or
   stretched size is definite for a flex container inside it. Rows taller than the space left on a page are split like
   browsers do, each item continuing in its own column and stretched items running down to the end of the row.
+- Border styles (`BorderStyle` on `BorderSide`): solid, dashed, dotted, double, groove, ridge, inset and outset, drawn
+  like browsers draw them, with sides of different colors or styles meeting on the corner diagonals. Collapsed table
+  borders resolve conflicts as in CSS 2.1 (`hidden` wins, then the wider border, then the style) and keep their style.
 
 ### RaiCore.Pdf.Html
 - HTML and CSS to PDF via AngleSharp: the cascade, inheritance, `!important`, custom properties and print media
@@ -64,6 +67,7 @@ change at any time, and this section lists what the packages can do so far.
 - `inline-block`, `inline-flex` and `inline-table` as atomic inline boxes: one unbreakable item of the line with its
   own padding, border, background and width (or shrink-to-fit), aligned on the baseline of its last line of text (the
   first row for tables, the first baseline for flex containers, the bottom margin edge without text).
+- `border-style` and `border-{side}-style` (also through the `border` shorthands), including `hidden` in collapsed tables.
 - `height`, `min-height` and `max-height`; percentage heights resolve against definite ancestor heights, starting
   with the page area, and `vh` units are the page area (to within a pixel).
 - CSS Paged Media: `@page` size and margins, `:first`/`:left`/`:right`, margin boxes for headers and footers,
@@ -82,7 +86,7 @@ change at any time, and this section lists what the packages can do so far.
 The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these.
 - No `::before`/`::after`, links, bookmarks or `text-decoration`. Borders on inline elements are drawn solid.
 - Floats, positioning and grid (rendered as blocks); `calc()`, `overflow: hidden`, transparency (blended with white),
-  border styles other than solid, rounded corners and background images.
+  rounded corners and background images.
 - Mixed left-to-right and right-to-left text on one line (the Unicode bidi algorithm); no hyphenation.
 - No synthetic bold or italic: a family without a bold or italic face uses its closest face as is.
 - `:first`/`:left`/`:right` cannot change page margins; no named pages.

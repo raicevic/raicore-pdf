@@ -468,27 +468,7 @@ internal sealed partial class Paginator
             canvas.SetFillColor(background).Rectangle(x, y, width, height).Fill();
         }
 
-        var b = style.Border;
-        void Side(BorderSide side, double sx, double sy, double sw, double sh)
-        {
-            if (side.Width > 0)
-            {
-                canvas.SetFillColor(side.Color).Rectangle(sx, sy, sw, sh).Fill();
-            }
-        }
-
-        if (first)
-        {
-            Side(b.Top, x, y + height - b.Top.Width, width, b.Top.Width);
-        }
-
-        if (last)
-        {
-            Side(b.Bottom, x, y, width, b.Bottom.Width);
-        }
-
-        Side(b.Left, x, y, b.Left.Width, height);
-        Side(b.Right, x + width - b.Right.Width, y, b.Right.Width, height);
+        BorderPainter.PaintBox(canvas, style.Border, x, y, width, height, top: first, bottom: last);
     }
 
     private void LayoutImage(ImageBlock block, double x, double width)
@@ -771,6 +751,7 @@ internal sealed partial class Paginator
         var bottom = topOf(end - 1) + layout.RowHeights[end - 1];
         double MaxVertical(int row, int column) => vertical[row, column].Width;
 
+        var verticals = new List<BorderPainter.Edge>();
         for (var r = start; r < end; r++)
         {
             for (var c = 0; c <= columns; c++)
@@ -778,13 +759,16 @@ internal sealed partial class Paginator
                 var line = vertical[r, c];
                 if (line.Width > 0)
                 {
-                    var lineTop = topOf(r);
-                    canvas.SetFillColor(line.Color)
-                        .Rectangle(x + layout.ColumnX[c] - (line.Width / 2), pageHeight - lineTop - layout.RowHeights[r], line.Width, layout.RowHeights[r]).Fill();
+                    var lineBottom = pageHeight - topOf(r) - layout.RowHeights[r];
+                    verticals.Add(BorderPainter.VerticalLine(line, x + layout.ColumnX[c], lineBottom, lineBottom + layout.RowHeights[r]));
                 }
             }
         }
 
+        BorderPainter.Paint(canvas, verticals);
+
+        // Horizontal lines on top, so they run through the crossings.
+        var horizontals = new List<BorderPainter.Edge>();
         for (var r = start; r <= end; r++)
         {
             var y = r == end ? bottom : topOf(r);
@@ -800,9 +784,11 @@ internal sealed partial class Paginator
                 var row = Math.Min(r, end - 1);
                 var x0 = x + layout.ColumnX[c] - (MaxVertical(row, c) / 2);
                 var x1 = x + layout.ColumnX[c + 1] + (MaxVertical(row, c + 1) / 2);
-                canvas.SetFillColor(line.Color).Rectangle(x0, pageHeight - y - (line.Width / 2), x1 - x0, line.Width).Fill();
+                horizontals.Add(BorderPainter.HorizontalLine(line, x0, x1, pageHeight - y));
             }
         }
+
+        BorderPainter.Paint(canvas, horizontals);
     }
 
     /// <summary>Height of a block's border box if it were laid out without page breaks.</summary>
