@@ -139,6 +139,27 @@ public partial class SvgRenderingTests
     }
 
     [Fact]
+    public void Decreasing_offsets_and_bounding_box_gradient_transforms()
+    {
+        using var bitmap = Render("""
+            <defs>
+              <linearGradient id="back"><stop offset="0.6" stop-color="#f00"/><stop offset="0.4" stop-color="#00f"/></linearGradient>
+              <linearGradient id="half" gradientTransform="scale(0.5)"><stop offset="0" stop-color="#f00"/><stop offset="1" stop-color="#00f"/></linearGradient>
+            </defs>
+            <rect width="100" height="40" fill="url(#back)"/>
+            <rect x="50" y="50" width="50" height="50" fill="url(#half)"/>
+            """);
+
+        // An offset below the previous one is raised to it: a hard edge at 60%.
+        AssertColor(bitmap, 50, 20, "#ff0000");
+        AssertColor(bitmap, 70, 20, "#0000ff");
+
+        // The gradient transform applies in bounding box units: the gradient ends halfway across the box.
+        AssertColor(bitmap, 51, 75, "#ff0000", tolerance: 24);
+        AssertColor(bitmap, 80, 75, "#0000ff");
+    }
+
+    [Fact]
     public void Gradients_follow_the_transforms_of_the_element_and_its_ancestors()
     {
         using var bitmap = Render("""
