@@ -46,6 +46,18 @@ colored quadrants in RGB, progressive, gray and Adobe CMYK JPEG, all eight EXIF 
 displays upright), and plain, interlaced, transparent and animated GIFs. PNG coverage comes from PngSuite, which is
 committed as-is in `Fixtures/PngSuite`.
 
+## `generate_webp_bmp_fixtures.py`
+
+Regenerates the BMP and WebP fixtures in `tests/RaiCore.Pdf.Tests/Fixtures/Bmp` and `Fixtures/WebP` (needs Pillow),
+each with a PNG of the pixels it must decode to. The BMPs are written byte by byte to cover every header version, bit
+depth, compression and mask layout (cross-checked with Pillow where it reads the variant). The WebPs are encoded with
+libwebp, through Pillow and, for settings Pillow does not expose (simple loop filter, token partitions, alpha
+filters), through `ctypes` on the libwebp library Pillow bundles; their PNGs are libwebp's own decoding.
+
+```sh
+.venv/bin/pip install pillow && .venv/bin/python tools/generate_webp_bmp_fixtures.py
+```
+
 ## `font-verification/`
 
 Cross-checks the font parser against fontTools on a large set of real fonts, which unit tests cannot cover:

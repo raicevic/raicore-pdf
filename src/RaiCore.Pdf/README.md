@@ -28,8 +28,8 @@ doc.Save("hello.pdf");
 ```
 
 - Fonts are subset to the glyphs used and stay searchable and copyable in every script.
-- JPEG (embedded as is), PNG (every color type, transparency), GIF and SVG (drawn as vector graphics) images, each
-  stored once per document.
+- JPEG (embedded as is), PNG (every color type, transparency), GIF, BMP, WebP (lossy and lossless, with alpha) and
+  SVG (drawn as vector graphics) images, each stored once per document.
 - Bookmarks: `PdfDocument.Outline` holds nested `PdfOutlineItem`s with Unicode titles.
 - Links: `PdfPage.AddLink` makes a rectangle open a URI or jump to a place in the document, also through named
   destinations (`PdfDocument.NamedDestinations`).
