@@ -29,6 +29,18 @@ public sealed class PdfDocument
     /// <summary>Whether content streams are Flate-compressed. Turn off to inspect output by eye.</summary>
     public bool CompressContent { get; set; } = true;
 
+    /// <summary>
+    /// The document outline: the top-level bookmarks a PDF viewer shows in its navigation panel, each with nested
+    /// entries. Empty by default (no outline is written).
+    /// </summary>
+    public IList<PdfOutlineItem> Outline { get; } = new List<PdfOutlineItem>();
+
+    /// <summary>
+    /// How a viewer opens the document. By default (<see cref="PdfPageMode.Automatic"/>) the outline panel opens when
+    /// the document has an outline.
+    /// </summary>
+    public PdfPageMode PageMode { get; set; } = PdfPageMode.Automatic;
+
     /// <summary>Appends a new, empty page.</summary>
     public PdfPage AddPage(PdfPageSize size)
     {
@@ -101,6 +113,7 @@ public sealed class PdfDocument
         }
 
         var kids = new PdfArray();
+        var pageRefs = new Dictionary<PdfPage, PdfReference>(ReferenceEqualityComparer.Instance);
         foreach (var page in _pages)
         {
             var fontResources = new PdfDictionary();
@@ -129,18 +142,30 @@ public sealed class PdfDocument
             var content = page.Canvas.ToBytes();
             var contentStream = CompressContent ? PdfStreamObject.CreateCompressed(content) : new PdfStreamObject(content);
 
-            kids.Items.Add(writer.Add(new PdfDictionary
+            var pageRef = writer.Add(new PdfDictionary
             {
                 ["Type"] = new PdfName("Page"),
                 ["Parent"] = pageTreeRef,
                 ["MediaBox"] = PdfArray.OfNumbers(0, 0, page.Width, page.Height),
                 ["Resources"] = resources,
                 ["Contents"] = writer.Add(contentStream),
-            }));
+            });
+            kids.Items.Add(pageRef);
+            pageRefs[page] = pageRef;
         }
 
         pageTree["Kids"] = kids;
         pageTree["Count"] = new PdfInteger(_pages.Count);
+
+        if (Outline.Count > 0)
+        {
+            catalog["Outlines"] = PdfOutlineWriter.Write(writer, Outline, pageRefs);
+        }
+
+        if (PageMode == PdfPageMode.UseOutlines || (PageMode == PdfPageMode.Automatic && Outline.Count > 0))
+        {
+            catalog["PageMode"] = new PdfName("UseOutlines");
+        }
 
         var infoRef = writer.Add(Info.ToDictionary());
         writer.Write(stream, catalogRef, infoRef);
