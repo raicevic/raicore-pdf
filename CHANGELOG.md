@@ -26,11 +26,14 @@ and versions follow [Semantic Versioning](https://semver.org/). Before 1.0, mino
   in its own column, below the repeated header rows, and cell backgrounds and borders (separate or collapsed) are
   sliced with the top edge on the first page and the bottom edge on the last. `tr { break-inside: avoid }`
   (`TableRow.BreakInside`) keeps a row whole when it fits on a page.
+- Rows joined by `rowspan` split across pages too: between rows, where a row's start does not fit, and inside rows.
+  A spanning cell's content continues alongside its rows on the next page, and its background and borders end with
+  the rows it covers on each page.
 - A paragraph whose orphans and widows leave no possible break needs all its lines at the bottom of a page before it
   starts there, so it no longer leaves its box's top edge or a split table row's first piece behind.
 
 ### Known limitations
-- `inline-flex` is laid out like `flex`. `calc()` is not evaluated. Rows joined by `rowspan` are not split.
+- `inline-flex` is laid out like `flex`. `calc()` is not evaluated. `tfoot` rows are not repeated on every page.
 
 ## [0.1.0] - Unreleased
 

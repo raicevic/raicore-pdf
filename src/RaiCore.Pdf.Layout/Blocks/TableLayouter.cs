@@ -37,7 +37,7 @@ internal sealed class TableLayout
 
     public required int HeaderRows { get; init; }
 
-    /// <summary>Row ranges that are placed together because rowspans join them (single rows may be split).</summary>
+    /// <summary>Row ranges that row spans join: placed together when they fit, split between and inside rows otherwise.</summary>
     public required IReadOnlyList<(int Start, int End)> Groups { get; init; }
 
     public double SpacingX => Table.BorderCollapse == BorderCollapse.Separate ? Table.HorizontalSpacing : 0;
@@ -371,7 +371,7 @@ internal static class TableLayouter
         return [.. widths.Select(w => w ?? (auto > 0 ? free / auto : 0))];
     }
 
-    /// <summary>Rows joined by row spans form groups that are kept on one page.</summary>
+    /// <summary>Rows joined by row spans form groups, which are kept on one page when they fit on it.</summary>
     private static List<(int, int)> RowGroups(List<GridCell> cells, int rows)
     {
         var reach = Enumerable.Range(0, rows).Select(r => r + 1).ToArray();
