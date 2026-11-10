@@ -2,7 +2,7 @@
 
 An open-source .NET library for creating PDF documents and converting HTML, Razor and office documents to PDF, built on its own layout engine with no headless browser.
 
-> **Status:** early development (0.1.0-alpha). The PDF writer works; HTML/Razor conversion is in progress. APIs will change.
+> **Status:** early development (0.1.0-alpha). The PDF writer, HTML and Razor conversion work; APIs will change.
 
 ## Packages
 
@@ -12,7 +12,7 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | 🟢 Usable |
 | `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables | 🟡 In progress |
 | `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | 🟡 In progress |
-| `RaiCore.Pdf.Razor` | Razor components → PDF | ⚪ Planned |
+| `RaiCore.Pdf.Razor` | Razor components → PDF | 🟡 In progress |
 | `RaiCore.Pdf.Docx`, `.Xlsx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ Later |
 
 ## Quick start
@@ -75,6 +75,74 @@ before rendering, e.g. to set your own page decorator.
 Not yet: floats and positioning, flexbox and grid layout (rendered as blocks), inline box backgrounds and borders,
 `text-decoration`, splitting a single table row across pages, different page margins for `:first`/`:left`/`:right`,
 named pages, and counters other than `page`/`pages`.
+
+### Razor to PDF
+
+`RaiCore.Pdf.Razor` renders Razor components (`.razor` files) to HTML with Blazor's static `HtmlRenderer` and converts
+the HTML with `HtmlToPdf`. It needs no web server, browser or HTTP request, so it works in console apps, background
+jobs and Azure Functions as well as in ASP.NET Core.
+
+```razor
+@* InvoiceDocument.razor *@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Invoice @Invoice.Number</title>
+    <style>
+        @@page { size: A4; margin: 20mm; @@bottom-right { content: counter(page) " / " counter(pages); } }
+        body { font-family: Arial, sans-serif; }
+    </style>
+</head>
+<body>
+    <h1>Invoice @Invoice.Number</h1>
+    <table>
+        @foreach (var line in Invoice.Lines)
+        {
+            <tr><td>@line.Description</td><td>@line.Amount.ToString("N2")</td></tr>
+        }
+    </table>
+</body>
+</html>
+
+@code {
+    [Parameter] public Invoice Invoice { get; set; } = default!;
+}
+```
+
+```csharp
+using RaiCore.Pdf.Razor;
+
+var pdf = await RazorToPdf.ConvertAsync<InvoiceDocument>(new Dictionary<string, object?>
+{
+    [nameof(InvoiceDocument.Invoice)] = invoice,
+});
+pdf.Save("invoice.pdf");
+```
+
+When components `@inject` services, register the renderer with dependency injection. It is scoped, so components
+share the request's scoped services. Here `InvoicePage` takes an `Id` parameter, injects a `DbContext` and loads the
+invoice in `OnInitializedAsync`:
+
+```csharp
+builder.Services.AddRazorPdf();
+
+app.MapGet("/invoices/{id}.pdf", async (int id, RazorPdfRenderer renderer) =>
+{
+    var pdf = await renderer.ConvertAsync<InvoicePage>(new Dictionary<string, object?> { ["Id"] = id });
+    return Results.File(pdf.ToArray(), "application/pdf", $"invoice-{id}.pdf");
+});
+```
+
+Outside a host, pass any `IServiceProvider` to `new RazorPdfRenderer(services)`.
+
+- Parameters, child components, layout components with `ChildContent`, `@foreach`/`@if` and HTML encoding work as in
+  Blazor. Rendering waits for `OnInitializedAsync`, so components can load their own data.
+- Put CSS in a `<style>` element (or `HtmlConverterOptions.UserStyleSheet`) and write at-rules with a double `@` in
+  `.razor` files: `@@page`, `@@media print`. CSS isolation files (`.razor.css`) are not applied.
+- `RenderHtmlAsync` returns the HTML for debugging; `CreateFlowDocumentAsync` returns the laid-out document.
+- Static rendering only: event handlers and JavaScript interop do nothing, interactive render modes are not
+  supported, and `<PageTitle>`/`<HeadContent>` have no effect (use a `<title>` element). MVC views and Razor Pages (`.cshtml`) are not
+  supported.
 
 ### Drawing directly
 
@@ -215,7 +283,7 @@ Every input format is mapped to one shared document model and laid out by one en
 1. **PDF writer:** objects, compression, standard fonts ✅, embedded TrueType/OpenType/WOFF fonts with subsetting ✅, JPEG/PNG/GIF images ✅, then links and bookmarks.
 2. **Layout engine:** HarfBuzz text shaping and font fallback ✅, line breaking (UAX #14) and paragraphs ✅, block layout and pagination ✅.
 3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine ✅, tables ✅, headers and footers (margin boxes, counters, running strings and elements) ✅.
-4. **0.1 release:** the Razor adapter, then packaging and documentation.
+4. **0.1 release:** the Razor adapter ✅, then packaging and documentation.
 5. **0.2:** flexbox, inline SVG, text decoration, tagged PDF and PDF/A.
 6. **Later:** DOCX, PDF editing, XSL-FO, XLSX and PPTX.
 

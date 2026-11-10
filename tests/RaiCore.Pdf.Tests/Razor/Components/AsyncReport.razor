@@ -1,0 +1,12 @@
+@inject IReportData Data
+
+<p>@(items is null ? "Loading" : string.Join(", ", items))</p>
+
+@code {
+    private IReadOnlyList<string>? items;
+
+    protected override async Task OnInitializedAsync()
+    {
+        items = await Data.GetItemsAsync();
+    }
+}
