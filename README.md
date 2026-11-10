@@ -64,6 +64,8 @@ own engine. Supported today:
   break across lines or around a block inside them.
 - `vertical-align` on inline text, images and inline boxes: `sub`, `super` (also for `<sub>`/`<sup>`), lengths,
   percentages, `middle`, `text-top`, `text-bottom`, `top` and `bottom`; nested shifts add up.
+- `text-decoration`: underline, overline and line-through in every style (solid, double, dotted, dashed, wavy), with
+  color, thickness and `text-underline-offset`, propagated to descendants and placed with the font's own metrics.
 - The box model: margin, border (every `border-style`: solid, dashed, dotted, double, groove, ridge, inset and
   outset), padding, background, width, max-width, `height`, `min-height`, `max-height`, auto margins, `box-sizing` and
   percentages. Percentage heights resolve against definite ancestor heights, starting with the page area (so
@@ -127,7 +129,7 @@ Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowD
 before rendering, e.g. to set your own page decorator.
 
 Not yet: floats and positioning, grid layout (rendered as blocks),
-`text-decoration`, different page margins for `:first`/`:left`/`:right`, named pages, counters other than
+different page margins for `:first`/`:left`/`:right`, named pages, counters other than
 `page`/`pages`, and `calc()`. Content taller than a fixed `height` overflows
 the box (`overflow: hidden` is not supported yet).
 

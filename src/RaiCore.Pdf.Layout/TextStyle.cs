@@ -115,6 +115,83 @@ public sealed record TextStyle
 
     /// <summary>Vertical position of this text in its line (CSS <c>vertical-align</c>), e.g. raised for superscripts.</summary>
     public InlineAlignment VerticalAlign { get; init; }
+
+    /// <summary>
+    /// Lines drawn with this text (CSS <c>text-decoration</c>): the decorations of every element the text is in.
+    /// Adjacent text sharing a decoration gets one continuous line.
+    /// </summary>
+    public IReadOnlyList<TextDecoration> Decorations { get; init; } = [];
+}
+
+/// <summary>Which lines a <see cref="TextDecoration"/> draws (CSS <c>text-decoration-line</c>).</summary>
+[Flags]
+public enum TextDecorationLines
+{
+    /// <summary>No line.</summary>
+    None = 0,
+
+    /// <summary>Below the baseline.</summary>
+    Underline = 1,
+
+    /// <summary>Above the text.</summary>
+    Overline = 2,
+
+    /// <summary>Through the middle of the lowercase letters.</summary>
+    LineThrough = 4,
+}
+
+/// <summary>How a <see cref="TextDecoration"/> line is drawn (CSS <c>text-decoration-style</c>).</summary>
+public enum TextDecorationStyle
+{
+    /// <summary>A single solid line.</summary>
+    Solid,
+
+    /// <summary>Two parallel lines.</summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "The CSS keyword.")]
+    Double,
+
+    /// <summary>Round dots.</summary>
+    Dotted,
+
+    /// <summary>Dashes.</summary>
+    Dashed,
+
+    /// <summary>A wavy line.</summary>
+    Wavy,
+}
+
+/// <summary>
+/// Lines drawn under, over or through text (CSS <c>text-decoration</c>). As in CSS, the position and thickness come
+/// from the font of the element that declared the decoration (<see cref="Font"/>, <see cref="FontSize"/>), so one
+/// straight line runs under text of mixed sizes.
+/// </summary>
+/// <param name="Lines">Which lines to draw.</param>
+/// <param name="Color">Their color.</param>
+public sealed record TextDecoration(TextDecorationLines Lines, PdfColor Color)
+{
+    /// <summary>How the lines are drawn.</summary>
+    public TextDecorationStyle Style { get; init; }
+
+    /// <summary>Line thickness in points, or <c>null</c> for the font's (CSS <c>text-decoration-thickness: auto</c>).</summary>
+    public double? Thickness { get; init; }
+
+    /// <summary>
+    /// Distance from the baseline down to the underline in points, or <c>null</c> for the font's
+    /// (CSS <c>text-underline-offset</c>).
+    /// </summary>
+    public double? UnderlineOffset { get; init; }
+
+    /// <summary>The font whose metrics place the lines, or <c>null</c> for the decorated text's own.</summary>
+    public PdfFont? Font { get; init; }
+
+    /// <summary>The font size for those metrics, or 0 for the decorated text's own.</summary>
+    public double FontSize { get; init; }
+
+    /// <summary>
+    /// How far the declaring element's baseline is above the line's (its <c>vertical-align</c> shift): lines stay at that
+    /// baseline even under raised or lowered descendants.
+    /// </summary>
+    public double BaselineShift { get; init; }
 }
 
 /// <summary>What an inline item is aligned to in its line (the kinds of CSS <c>vertical-align</c>).</summary>

@@ -15,6 +15,7 @@ internal sealed partial class BoxBuilder
         // Table cells have no definite height, so percentage heights inside them are auto.
         var outerHeight = _containingHeight;
         _containingHeight = null;
+        var outerDecorations = EnterDecoration(style, 0);
         try
         {
             return [.. BuildTableBlocks(element, style, containingWidth)];
@@ -22,6 +23,7 @@ internal sealed partial class BoxBuilder
         finally
         {
             _containingHeight = outerHeight;
+            _decorations = outerDecorations;
         }
     }
 

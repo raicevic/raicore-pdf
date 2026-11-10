@@ -37,6 +37,15 @@ internal sealed partial class BoxBuilder
     /// </summary>
     private double? _containingHeight;
 
+    /// <summary>
+    /// The text decorations in effect (CSS: decorations propagate to all in-flow descendants' text, and descendants
+    /// cannot remove them), outermost first.
+    /// </summary>
+    private IReadOnlyList<TextDecoration> _decorations = [];
+
+    /// <summary>The text decorations the text being collected gets.</summary>
+    public IReadOnlyList<TextDecoration> CurrentDecorations => _decorations;
+
     public BoxBuilder(IDocument document, HtmlConverterOptions options, FontCollection fonts, Uri? baseUri, Paged.PagedMedia? paged = null, WebFonts? webFonts = null)
     {
         _paged = paged;
@@ -112,8 +121,10 @@ internal sealed partial class BoxBuilder
         }
 
         var outerHeight = EnterBox(box);
+        var outerDecorations = EnterDecoration(style, 0);
         AddChildren(element, style, contentWidth, children, collector);
         Flush(collector, children);
+        _decorations = outerDecorations;
         _containingHeight = outerHeight;
 
         // A block whose only content is one anonymous paragraph becomes a paragraph block with the element's box.
@@ -190,7 +201,9 @@ internal sealed partial class BoxBuilder
                             collector.BeginInline(box, TextStyleFor(childStyle) with { VerticalAlign = align });
                         }
 
+                        var outerDecorations = EnterDecoration(childStyle, align.Kind == InlineAlignmentKind.Baseline ? align.Shift : 0);
                         AddChildren(child, childStyle, contentWidth, children, collector, align);
+                        _decorations = outerDecorations;
                         if (box is not null)
                         {
                             collector.EndInline();
@@ -239,6 +252,21 @@ internal sealed partial class BoxBuilder
     /// </summary>
     private Block? BuildAtomicInline(IElement element, ComputedStyle style, double containingWidth)
     {
+        // Text decorations do not propagate into atomic inline boxes.
+        var outerDecorations = _decorations;
+        _decorations = [];
+        try
+        {
+            return BuildAtomicInlineCore(element, style, containingWidth);
+        }
+        finally
+        {
+            _decorations = outerDecorations;
+        }
+    }
+
+    private Block? BuildAtomicInlineCore(IElement element, ComputedStyle style, double containingWidth)
+    {
         if (style.Display == CssDisplay.InlineTable)
         {
             var blocks = BuildTable(element, style with { Display = CssDisplay.Table }, containingWidth);
@@ -253,11 +281,46 @@ internal sealed partial class BoxBuilder
     private Block? BuildRunning(IElement element, ComputedStyle style)
     {
         var outerHeight = _containingHeight;
+        var outerDecorations = _decorations;
         _containingHeight = null; // Margin boxes have no definite height.
+        _decorations = []; // A running element leaves the flow: no decorations from its ancestors.
         var display = style.Display is CssDisplay.Flex or CssDisplay.InlineFlex ? CssDisplay.Flex : CssDisplay.Block;
         var block = BuildBlock(element, style with { Display = display }, _pageContentWidth, marker: null);
         _containingHeight = outerHeight;
+        _decorations = outerDecorations;
         return block;
+    }
+
+    /// <summary>
+    /// Adds the element's text decoration (if it declares one) to those in effect for its content, with the element's
+    /// font for the line positions and its baseline shift. Returns the previous decorations, to restore afterwards.
+    /// </summary>
+    private IReadOnlyList<TextDecoration> EnterDecoration(ComputedStyle style, double baselineShift)
+    {
+        var outer = _decorations;
+        if (style.TextDecorationLine == TextDecorationLines.None)
+        {
+            return outer;
+        }
+
+        double? Length(CssLength length) => length.Kind switch
+        {
+            CssLengthKind.Points => length.Value,
+            CssLengthKind.Percent => length.Value / 100 * style.FontSize, // Percentages of 1em.
+            _ => null,
+        };
+
+        var decoration = new TextDecoration(style.TextDecorationLine, style.TextDecorationColor ?? style.Color)
+        {
+            Style = style.TextDecorationStyle,
+            Thickness = Length(style.TextDecorationThickness),
+            UnderlineOffset = Length(style.TextUnderlineOffset),
+            Font = TextStyleFor(style).Fonts[0],
+            FontSize = style.FontSize,
+            BaselineShift = baselineShift,
+        };
+        _decorations = [.. outer, decoration];
+        return outer;
     }
 
     /// <summary>

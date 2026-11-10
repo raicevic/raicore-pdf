@@ -11,6 +11,7 @@ internal sealed partial class BoxBuilder
     {
         var (box, contentWidth) = BoxStyleFor(style, containingWidth, flexItem, _containingHeight);
         var outerHeight = EnterBox(box);
+        var outerDecorations = EnterDecoration(style, 0);
         var items = new List<FlexItem>();
         var collector = new InlineCollector(this, style, contentWidth);
         var listIndex = ListStart(element);
@@ -59,6 +60,7 @@ internal sealed partial class BoxBuilder
         FlushText();
         var innerHeight = _containingHeight;
         _containingHeight = outerHeight;
+        _decorations = outerDecorations;
         return new FlexBlock(box, items)
         {
             Direction = style.FlexDirection,
