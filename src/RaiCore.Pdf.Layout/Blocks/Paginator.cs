@@ -171,6 +171,7 @@ internal sealed partial class Paginator
             // An empty block without border or padding takes no space: its margins collapse through it (CSS 2.1
             // section 8.3.1), so it only records its marker where the next content will start.
             if (block is ContainerBlock { Children.Count: 0 } && !HasTopEdge(style) && !HasBottomEdge(style) && style.Background is null
+                && style.Height is not > 0 && style.MinHeight is not > 0
                 && style.BreakBefore != PageBreak.Page && style.BreakAfter != PageBreak.Page)
             {
                 pending.Add(style.Margin.Top);
@@ -301,7 +302,7 @@ internal sealed partial class Paginator
                 LayoutBox(block, x, width, (contentX, contentWidth) => LayoutTable(table, contentX, contentWidth), sizing, tableStyle);
                 break;
             case FlexBlock flex:
-                LayoutBox(block, x, width, (contentX, contentWidth) => LayoutFlex(flex, contentX, contentWidth), sizing);
+                LayoutBox(block, x, width, (contentX, contentWidth) => LayoutFlex(flex, contentX, contentWidth, sizing.DefiniteHeight), sizing);
                 break;
             case ContainerBlock container:
                 // A flex item is an independent formatting context: its children's margins stay inside it.
@@ -345,14 +346,21 @@ internal sealed partial class Paginator
         layoutContent(x + border.Left + style.Padding.Left, Math.Max(MinimumContentWidth, width - border.Horizontal - style.Padding.Horizontal));
         Y += style.Padding.Bottom + border.Bottom;
 
-        // A flex item's height may be fixed, or stretched to its line (which can end on a later page).
-        if (PageIndex == startPage && sizing.Height is { } height)
+        // CSS height, min-height and max-height; a flex item's size from its container overrides height.
+        var (fixedHeight, minHeight, maxHeight) = HeightLimits(block, sizing);
+        if (PageIndex == startPage)
         {
-            Y = startY + height;
+            Y = startY + Math.Max(Math.Min(fixedHeight ?? (Y - startY), maxHeight), minHeight);
         }
-        else if (PageIndex == startPage && sizing.MinHeight is { } minHeight)
+        else
         {
-            Y = Math.Max(Y, startY + minHeight);
+            // A box split across pages: its fragments add up to the height; only growing it is possible here.
+            var total = ContentBottom - startY + ((PageIndex - startPage - 1) * _setup.ContentHeight) + (Y - ContentTop);
+            var target = Math.Max(Math.Min(fixedHeight ?? total, maxHeight), minHeight);
+            if (target > total)
+            {
+                Y = Math.Min(ContentBottom, Y + target - total);
+            }
         }
 
         if (sizing.StretchTo is { } line)
@@ -383,6 +391,32 @@ internal sealed partial class Paginator
                 _placements.Add(new Placement(page, block, top, bottom, -1, -1, x, width));
             }
         }
+    }
+
+    /// <summary>
+    /// A block's height constraints: a fixed height (from a flex container, or CSS height), a minimum and a maximum.
+    /// Images ignore them (they size themselves); for tables a height is a minimum, as in CSS.
+    /// </summary>
+    private static (double? Fixed, double Min, double Max) HeightLimits(Block block, BoxSizing sizing = default)
+    {
+        var style = block.Style;
+        if (block is ImageBlock or SpacerBlock)
+        {
+            return (sizing.Height, sizing.MinHeight ?? 0, double.PositiveInfinity);
+        }
+
+        var isTable = block is TableBlock;
+        var fixedHeight = sizing.Height ?? (isTable ? null : style.Height);
+        var min = Math.Max(sizing.MinHeight ?? 0, Math.Max(style.MinHeight ?? 0, isTable ? style.Height ?? 0 : 0));
+        var max = sizing.Height is null ? style.MaxHeight ?? double.PositiveInfinity : double.PositiveInfinity;
+        return (fixedHeight, min, max);
+    }
+
+    /// <summary>A block's border-box height from its natural (content) height and its height constraints; min wins over max.</summary>
+    private static double ApplyHeights(Block block, double natural)
+    {
+        var (fixedHeight, min, max) = HeightLimits(block);
+        return Math.Max(Math.Min(fixedHeight ?? natural, max), min);
     }
 
     private static void DrawBox(PdfCanvas canvas, double pageHeight, BoxStyle style, double x, double top, double width, double height, bool first, bool last)
@@ -670,7 +704,10 @@ internal sealed partial class Paginator
     private double MeasureHeight(Block block, double width) => MeasureBox(block, BoxWidth(block, width));
 
     /// <summary>Height of a block's border box at a given border-box width, if laid out without page breaks.</summary>
-    private double MeasureBox(Block block, double boxWidth)
+    private double MeasureBox(Block block, double boxWidth) => ApplyHeights(block, MeasureContentBox(block, boxWidth));
+
+    /// <summary>Height of a block's border box from its content alone, ignoring its height properties.</summary>
+    private double MeasureContentBox(Block block, double boxWidth)
     {
         var style = block.Style;
         var decoration = style.Border.Widths.Vertical + style.Padding.Vertical;
@@ -715,6 +752,11 @@ internal sealed partial class Paginator
     private double MinimumStartBox(Block block, double boxWidth)
     {
         var style = block.Style;
+        if (style.Height is not null && block is not TableBlock)
+        {
+            return MeasureBox(block, boxWidth); // A fixed-height box is kept on one page when it fits on one.
+        }
+
         var top = style.Border.Top.Width + style.Padding.Top;
         var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
         switch (block)

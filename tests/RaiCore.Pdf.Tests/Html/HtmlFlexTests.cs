@@ -88,7 +88,7 @@ public class HtmlFlexTests
         Assert.Null(c.Content.Style.Width); // max-width does not make a flex item as wide as possible.
 
         Assert.Equal(50 * Px, d.MinWidth);
-        Assert.Equal(30 * Px, d.Height);
+        Assert.Equal(30 * Px, d.Content.Style.Height);
     }
 
     [Fact]

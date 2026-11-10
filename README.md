@@ -56,7 +56,9 @@ own engine. Supported today:
 - The cascade, inheritance, `!important`, CSS variables and print media queries.
 - Browser default styles for headings, paragraphs and lists.
 - Block and inline formatting with white-space handling.
-- The box model: margin, border, padding, background, width, max-width, auto margins, `box-sizing` and percentages.
+- The box model: margin, border, padding, background, width, max-width, `height`, `min-height`, `max-height`, auto
+  margins, `box-sizing` and percentages. Percentage heights resolve against definite ancestor heights, starting with
+  the page area (so `html, body { height: 100% }` and `100vh` fill the page).
 - Fonts (`font-family` fallback lists, weight, style), color, `text-align`, `text-indent`, `line-height` and `text-transform`.
 - List markers: bullets, decimal, alpha and roman numerals, `start`, `reversed` and `value`.
 - Images from `data:` and `file:` URLs, linked stylesheets, `@page` size and margins, and page break properties.
@@ -64,7 +66,9 @@ own engine. Supported today:
   `border-collapse`/`border-spacing`, `vertical-align`, `<col>` widths, captions, and the legacy
   `border`/`cellpadding`/`cellspacing`/`width` attributes.
 - Flexbox: `flex-direction`, `flex-wrap`, `justify-content`, `align-items`/`align-self` (including `stretch` and
-  `baseline`), `gap`, `order`, `flex`/`flex-grow`/`flex-shrink`/`flex-basis`, `min-`/`max-width` and auto margins.
+  `baseline`), `align-content`, `gap`, `order`, `flex`/`flex-grow`/`flex-shrink`/`flex-basis`, min/max sizes and
+  auto margins. Containers with a height flex their items vertically too, e.g. a full-page cover whose footer sits
+  at the bottom (`margin-top: auto` or `flex: 1` on the content).
   A row too tall for the page is split like browsers do: each item continues on the next page in its own column,
   and stretched items (e.g. a sidebar background) run down to the end of the row.
 
@@ -93,9 +97,8 @@ before rendering, e.g. to set your own page decorator.
 
 Not yet: floats and positioning, grid layout (rendered as blocks), inline box backgrounds and borders,
 `text-decoration`, splitting a single table row across pages, different page margins for `:first`/`:left`/`:right`,
-named pages, and counters other than `page`/`pages`. Flex containers are always as tall as their content (`height`
-on a container is ignored, so `align-content` and `justify-content` in columns have no free space to use), and
-`inline-flex` is laid out like `flex`.
+named pages, counters other than `page`/`pages`, and `calc()`. `inline-flex` is laid out like `flex`. Content taller
+than a fixed `height` overflows the box (`overflow: hidden` is not supported yet).
 
 ### Razor to PDF
 

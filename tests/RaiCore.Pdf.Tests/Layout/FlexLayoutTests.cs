@@ -115,11 +115,12 @@ public class FlexLayoutTests
     [Fact]
     public void Align_self_overrides_align_items_and_explicit_heights_are_not_stretched()
     {
-        var (a, b, c) = (Rect(40, 30), Rect(40, 10), Rect(40, 10));
+        var (a, b) = (Rect(40, 30), Rect(40, 10));
+        var c = new ContainerBlock(new BoxStyle { Width = 40, Height = 15, Background = Gray }, new SpacerBlock(10));
         var placements = Layout(new FlexBlock()
             .Add(a)
             .Add(new FlexItem(b) { AlignSelf = FlexAlignment.FlexEnd })
-            .Add(new FlexItem(c) { Height = 15 }));
+            .Add(c));
 
         Assert.Equal(40, Box(placements, b).Top);
         Assert.Equal((Top, 35.0), (Box(placements, c).Top, Box(placements, c).Bottom));

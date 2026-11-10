@@ -30,6 +30,12 @@ internal sealed partial class BoxBuilder
     private readonly Paged.PagedMedia? _paged;
     private double _pageContentWidth;
 
+    /// <summary>
+    /// The content height of the nearest ancestor with a definite height, which percentage heights resolve against;
+    /// <c>null</c> when it is auto (then percentage heights are auto too, as in CSS). The root's is the page area.
+    /// </summary>
+    private double? _containingHeight;
+
     public BoxBuilder(IDocument document, HtmlConverterOptions options, FontCollection fonts, Uri? baseUri, Paged.PagedMedia? paged = null)
     {
         _paged = paged;
@@ -47,9 +53,10 @@ internal sealed partial class BoxBuilder
 
     public IDocument Document { get; }
 
-    public List<Block> Build(double contentWidth)
+    public List<Block> Build(double contentWidth, double? contentHeight = null)
     {
         _pageContentWidth = contentWidth;
+        _containingHeight = contentHeight;
         var root = Document.DocumentElement;
         if (root is null || Style(root).Display == CssDisplay.None)
         {
@@ -94,7 +101,7 @@ internal sealed partial class BoxBuilder
             return BuildFlex(element, style, containingWidth, flexItem);
         }
 
-        var (box, contentWidth) = BoxStyleFor(style, containingWidth, flexItem);
+        var (box, contentWidth) = BoxStyleFor(style, containingWidth, flexItem, _containingHeight);
         var children = new List<Block>();
         var collector = new InlineCollector(this, style, contentWidth);
         if (marker is not null)
@@ -102,18 +109,10 @@ internal sealed partial class BoxBuilder
             collector.SetMarker(marker);
         }
 
+        var outerHeight = EnterBox(box);
         AddChildren(element, style, contentWidth, children, collector);
         Flush(collector, children);
-
-        // An empty block with a fixed height keeps that height (e.g. spacers made of empty divs).
-        if (children.Count == 0 && style.Height.Kind != CssLengthKind.Auto)
-        {
-            var height = style.Height.Resolve(0) - (style.BorderBox ? box.Padding.Vertical + box.Border.Widths.Vertical : 0);
-            if (height > 0)
-            {
-                children.Add(new SpacerBlock(height));
-            }
-        }
+        _containingHeight = outerHeight;
 
         // A block whose only content is one anonymous paragraph becomes a paragraph block with the element's box.
         // Elements with string-set carry a marker, so running headers know which page they start on.
@@ -148,7 +147,7 @@ internal sealed partial class BoxBuilder
                     {
                         // A running element leaves the flow; an empty marker block keeps its place for element().
                         Flush(collector, children);
-                        var content = BuildBlock(child, RunningStyle(childStyle), _pageContentWidth, marker: null);
+                        var content = BuildRunning(child, childStyle);
                         children.Add(new ContainerBlock { Marker = new Paged.RunningMarker(runningName, content is null ? [] : [content]) });
                         break;
                     }
@@ -196,8 +195,25 @@ internal sealed partial class BoxBuilder
     }
 
     /// <summary>A running element is laid out as a block (or a flex container) in a page margin box.</summary>
-    private static ComputedStyle RunningStyle(ComputedStyle style) =>
-        style.Display == CssDisplay.Flex ? style : style with { Display = CssDisplay.Block };
+    private Block? BuildRunning(IElement element, ComputedStyle style)
+    {
+        var outerHeight = _containingHeight;
+        _containingHeight = null; // Margin boxes have no definite height.
+        var block = BuildBlock(element, style.Display == CssDisplay.Flex ? style : style with { Display = CssDisplay.Block }, _pageContentWidth, marker: null);
+        _containingHeight = outerHeight;
+        return block;
+    }
+
+    /// <summary>
+    /// Makes a box's content height the containing height of its descendants (or auto when the box has none).
+    /// Returns the previous value, to restore when the box is done.
+    /// </summary>
+    private double? EnterBox(BoxStyle box)
+    {
+        var outer = _containingHeight;
+        _containingHeight = box.Height is { } height ? Math.Max(0, height - box.Padding.Vertical - box.Border.Widths.Vertical) : null;
+        return outer;
+    }
 
     /// <summary>The marker text of a list item, advancing the list's counter (honoring value and reversed).</summary>
     private static string? NextListMarker(IElement list, IElement item, ComputedStyle style, ref int listIndex)
@@ -247,7 +263,7 @@ internal sealed partial class BoxBuilder
         }
 
         Flush(collector, children);
-        var (box, _) = BoxStyleFor(style with { Width = CssLength.Auto }, containingWidth);
+        var (box, _) = BoxStyleFor(style with { Width = CssLength.Auto, Height = CssLength.Auto, MinHeight = CssLength.Auto, MaxHeight = CssLength.Auto }, containingWidth);
         var alignment = (style.Margin[3].IsAuto, style.Margin[1].IsAuto) switch
         {
             (true, true) => TextAlignment.Center,
@@ -313,7 +329,7 @@ internal sealed partial class BoxBuilder
     /// For a flex item, auto margins are left at 0 (the flex layout distributes free space to them) and max-width only
     /// caps a fixed width (the flex layout clamps the rest).
     /// </remarks>
-    private static (BoxStyle Box, double ContentWidth) BoxStyleFor(ComputedStyle style, double containingWidth, bool flexItem = false)
+    private static (BoxStyle Box, double ContentWidth) BoxStyleFor(ComputedStyle style, double containingWidth, bool flexItem = false, double? containingHeight = null)
     {
         var padding = new Thickness(
             style.Padding[0].Resolve(containingWidth), style.Padding[1].Resolve(containingWidth),
@@ -372,6 +388,9 @@ internal sealed partial class BoxBuilder
             Border = borders,
             Background = style.Background,
             Width = borderBoxWidth,
+            Height = BorderBoxHeight(style.Height),
+            MinHeight = BorderBoxHeight(style.MinHeight),
+            MaxHeight = BorderBoxHeight(style.MaxHeight),
             BreakBefore = style.BreakBefore,
             BreakAfter = style.BreakAfter,
             BreakInside = style.BreakInside,
@@ -380,6 +399,19 @@ internal sealed partial class BoxBuilder
         };
         var content = (borderBoxWidth ?? (containingWidth - box.Margin.Horizontal)) - decoration;
         return (box, Math.Max(1, content));
+
+        // Heights are content-box unless box-sizing: border-box; a percentage needs a definite containing height.
+        double? BorderBoxHeight(CssLength length)
+        {
+            double? value = length.Kind switch
+            {
+                CssLengthKind.Points => length.Value,
+                CssLengthKind.Percent when containingHeight is { } reference => length.Value / 100 * reference,
+                _ => null,
+            };
+            var vertical = padding.Vertical + borders.Widths.Vertical;
+            return value is { } v ? Math.Max(style.BorderBox ? Math.Max(v, vertical) : v + vertical, 0) : null;
+        }
     }
 
     private IReadOnlyList<PdfFont> FontsFor(ComputedStyle style)

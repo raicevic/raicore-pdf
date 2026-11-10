@@ -10,7 +10,22 @@ namespace RaiCore.Pdf.Html.Boxes;
 /// <summary>HTML tables: thead/tbody/tfoot, captions, col widths, spans and the legacy presentational attributes.</summary>
 internal sealed partial class BoxBuilder
 {
-    private IEnumerable<Block> BuildTable(IElement element, ComputedStyle style, double containingWidth)
+    private List<Block> BuildTable(IElement element, ComputedStyle style, double containingWidth)
+    {
+        // Table cells have no definite height, so percentage heights inside them are auto.
+        var outerHeight = _containingHeight;
+        _containingHeight = null;
+        try
+        {
+            return [.. BuildTableBlocks(element, style, containingWidth)];
+        }
+        finally
+        {
+            _containingHeight = outerHeight;
+        }
+    }
+
+    private IEnumerable<Block> BuildTableBlocks(IElement element, ComputedStyle style, double containingWidth)
     {
         // Legacy attributes still common in invoices and e-mail templates.
         var borderAttribute = Pixels(element.GetAttribute("border"));
