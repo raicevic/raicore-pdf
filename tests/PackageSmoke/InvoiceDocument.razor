@@ -1,0 +1,19 @@
+<html>
+<head>
+    <title>Invoice @Invoice.Number</title>
+    <style>
+        @@page { size: A4; margin: 20mm; @@bottom-right { content: counter(page) " / " counter(pages); } }
+        body { font-family: Arial, sans-serif; }
+    </style>
+</head>
+<body>
+    <h1>Invoice @Invoice.Number</h1>
+    <ul>
+        @foreach (var line in Invoice.Lines) { <li>@line</li> }
+    </ul>
+</body>
+</html>
+
+@code {
+    [Parameter] public Invoice Invoice { get; set; } = default!;
+}

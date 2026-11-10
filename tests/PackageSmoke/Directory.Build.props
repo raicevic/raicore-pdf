@@ -1,0 +1,6 @@
+<Project>
+  <!--
+    Deliberately does not import the repository's Directory.Build.props or central package versions: this app consumes
+    the packed .nupkg files from ../../artifacts exactly like a customer's project would.
+  -->
+</Project>

@@ -1,0 +1,38 @@
+# RaiCore.Pdf
+
+Create PDF documents from .NET: the PDF object model, writer, embedded fonts, images and a drawing API. This is the
+core of RaiCore.Pdf. Most applications use it through
+[RaiCore.Pdf.Html](https://www.nuget.org/packages/RaiCore.Pdf.Html) or
+[RaiCore.Pdf.Razor](https://www.nuget.org/packages/RaiCore.Pdf.Razor).
+
+```sh
+dotnet add package RaiCore.Pdf --prerelease
+```
+
+```csharp
+using RaiCore.Pdf;
+
+var doc = new PdfDocument();
+var page = doc.AddPage(PdfPageSize.A4);
+var font = PdfFont.Load("NotoSans-Regular.ttf");   // TrueType, OpenType, TTC, WOFF, WOFF2
+
+page.Canvas
+    .SetFillColor(PdfColor.FromRgb(220, 30, 30))
+    .Rectangle(72, 600, 200, 100)
+    .Fill()
+    .SetFillColor(PdfColor.Black)
+    .DrawText("Hello from RaiCore.Pdf", font, 24, 72, page.Height - 80)
+    .DrawImage(PdfImage.Load("logo.png"), x: 400, y: 760, width: 120, height: 40);
+
+doc.Save("hello.pdf");
+```
+
+- Fonts are subset to the glyphs used and stay searchable and copyable in every script.
+- JPEG (embedded as is), PNG (every color type, transparency) and GIF images, each stored once per document.
+- Coordinates are PDF points (1/72 inch) with the origin at the bottom-left of the page.
+
+## More
+
+- [Documentation and all packages](https://github.com/raicevic/raicore-pdf#readme)
+- [Changelog](https://github.com/raicevic/raicore-pdf/blob/main/CHANGELOG.md) · [Issues](https://github.com/raicevic/raicore-pdf/issues)
+- License: [Apache-2.0](https://github.com/raicevic/raicore-pdf/blob/main/LICENSE)

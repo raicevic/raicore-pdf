@@ -1,0 +1,16 @@
+@inject ICustomerDirectory Customers
+
+<html>
+<head><title>Customer invoice</title></head>
+<body>
+    <h1>Invoice for @customer</h1>
+</body>
+</html>
+
+@code {
+    [Parameter] public int CustomerId { get; set; }
+
+    private string? customer;
+
+    protected override async Task OnInitializedAsync() => customer = await Customers.GetNameAsync(CustomerId);
+}

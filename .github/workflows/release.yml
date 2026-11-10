@@ -1,0 +1,78 @@
+name: Release
+
+# Push a tag such as v0.1.0 or v0.1.0-alpha.1 to build, test and publish every package with that version.
+# One-time setup (see CONTRIBUTING.md): a nuget.org trusted publishing policy for this repository and the workflow
+# file "release.yml" in environment "nuget", and the repository secret NUGET_USER (the nuget.org profile name).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: nuget # Add required reviewers to this environment to approve each release by hand.
+    permissions:
+      contents: write # Create the GitHub release.
+      id-token: write # Exchange a GitHub OIDC token for a short-lived nuget.org API key.
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Version from tag
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME is not v<major>.<minor>.<patch>[-prerelease]"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == *-* ]]; then echo "prerelease=true" >> "$GITHUB_OUTPUT"; else echo "prerelease=false" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Install PDF validators
+        run: sudo apt-get update && sudo apt-get install -y qpdf poppler-utils
+
+      - name: Build
+        run: dotnet build --configuration Release -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release
+
+      - name: Pack
+        run: dotnet pack --no-build --configuration Release -p:Version=${{ steps.version.outputs.version }} --output artifacts
+
+      - name: Package smoke test
+        run: dotnet run --project tests/PackageSmoke --configuration Release -p:RaiCoreVersion=${{ steps.version.outputs.version }} -- smoke-output
+
+      - name: NuGet login (OIDC to temporary API key)
+        uses: NuGet/login@v1
+        id: nuget
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      # Pushing a .nupkg also pushes the .snupkg next to it to the symbol server.
+      - name: Publish to nuget.org
+        run: >
+          dotnet nuget push "artifacts/*.nupkg"
+          --api-key ${{ steps.nuget.outputs.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME" artifacts/*.nupkg artifacts/*.snupkg
+          --title "$GITHUB_REF_NAME"
+          --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md). Packages: https://www.nuget.org/packages?q=RaiCore.Pdf"
+          ${{ steps.version.outputs.prerelease == 'true' && '--prerelease' || '' }}

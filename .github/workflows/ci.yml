@@ -46,11 +46,23 @@ jobs:
         run: dotnet test --no-build --configuration Release
 
       - name: Pack
-        if: runner.os == 'Linux'
         run: dotnet pack --no-build --configuration Release --output artifacts
+
+      # Installs the .nupkg files into a standalone app (no project references) and runs the README samples,
+      # catching missing dependencies, native assets and packaging mistakes that the unit tests cannot see.
+      - name: Package smoke test
+        run: dotnet run --project tests/PackageSmoke --configuration Release -- smoke-output
 
       - uses: actions/upload-artifact@v4
         if: runner.os == 'Linux'
         with:
           name: packages
-          path: artifacts/*.nupkg
+          path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: smoke-test-pdfs
+          path: smoke-output/*.pdf

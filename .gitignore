@@ -480,3 +480,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Package smoke test (tests/PackageSmoke)
+.packages/
+smoke-output/

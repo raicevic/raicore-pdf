@@ -2,18 +2,33 @@
 
 An open-source .NET library for creating PDF documents and converting HTML, Razor and office documents to PDF, built on its own layout engine with no headless browser.
 
-> **Status:** early development (0.1.0-alpha). The PDF writer, HTML and Razor conversion work; APIs will change.
+> **Status:** preparing the first release (0.1.0). HTML and Razor conversion work; APIs may still change before 1.0.
+> See the [changelog](CHANGELOG.md) for what is supported.
 
 ## Packages
 
 | Package | Purpose | Status |
 |---|---|---|
-| `RaiCore.Pdf` | PDF object model, writer, fonts and drawing API | 🟡 In progress |
-| `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | 🟢 Usable |
-| `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables | 🟡 In progress |
-| `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | 🟡 In progress |
-| `RaiCore.Pdf.Razor` | Razor components → PDF | 🟡 In progress |
+| `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | 🟢 0.1 |
+| `RaiCore.Pdf.Razor` | Razor components → PDF | 🟢 0.1 |
+| `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables | 🟢 0.1 |
+| `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | 🟢 0.1 |
+| `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | 🟢 0.1 |
 | `RaiCore.Pdf.Docx`, `.Xlsx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ Later |
+
+All packages target .NET 10 and run on Windows, Linux and macOS (x64 and Arm64) with no native dependencies beyond
+HarfBuzz, which ships in the packages.
+
+## Installation
+
+Install the package for your input format; the others come as dependencies:
+
+```sh
+dotnet add package RaiCore.Pdf.Html --prerelease    # HTML and CSS
+dotnet add package RaiCore.Pdf.Razor --prerelease   # Razor components (includes RaiCore.Pdf.Html)
+```
+
+Symbols and SourceLink are published, so you can step into the library code while debugging.
 
 ## Quick start
 
@@ -283,7 +298,7 @@ Every input format is mapped to one shared document model and laid out by one en
 1. **PDF writer:** objects, compression, standard fonts ✅, embedded TrueType/OpenType/WOFF fonts with subsetting ✅, JPEG/PNG/GIF images ✅, then links and bookmarks.
 2. **Layout engine:** HarfBuzz text shaping and font fallback ✅, line breaking (UAX #14) and paragraphs ✅, block layout and pagination ✅.
 3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine ✅, tables ✅, headers and footers (margin boxes, counters, running strings and elements) ✅.
-4. **0.1 release:** the Razor adapter ✅, then packaging and documentation.
+4. **0.1 release:** the Razor adapter ✅, packaging, symbols and a release pipeline ✅.
 5. **0.2:** flexbox, inline SVG, text decoration, tagged PDF and PDF/A.
 6. **Later:** DOCX, PDF editing, XSL-FO, XLSX and PPTX.
 
@@ -299,8 +314,9 @@ dotnet test
 ```
 
 Install [qpdf](https://github.com/qpdf/qpdf) and poppler's `pdftotext` to run the PDF structure and text
-extraction tests locally; otherwise they are skipped (CI always runs them). See [tools/README.md](tools/README.md)
-for the font cross-checks against fontTools.
+extraction tests locally; otherwise they are skipped (CI always runs them). See [CONTRIBUTING.md](CONTRIBUTING.md)
+for the package smoke test and the release process, and [tools/README.md](tools/README.md) for the maintainer
+scripts.
 
 ## License
 
