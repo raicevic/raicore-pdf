@@ -1,4 +1,15 @@
+using RaiCore.Pdf.Layout.Blocks;
+
 namespace RaiCore.Pdf.Layout;
+
+/// <summary>
+/// A block placed in a line of text as one unbreakable item (CSS <c>inline-block</c>, <c>inline-flex</c>,
+/// <c>inline-table</c>): a badge, a button, a small table. It is as wide as its
+/// <see cref="BoxStyle.Width"/>, or shrinks to fit its content within the paragraph's width; its last line of text
+/// sits on the line's baseline (or its bottom margin edge, when it has no text). Its margins add space around it.
+/// </summary>
+/// <param name="Content">The box and its content. Its children's margins stay inside it.</param>
+public sealed record InlineBox(Block Content);
 
 /// <summary>An image placed in a line of text, with its bottom on the baseline (like an HTML <c>img</c> in a <c>p</c>).</summary>
 /// <param name="Image">The image.</param>
@@ -6,11 +17,12 @@ namespace RaiCore.Pdf.Layout;
 /// <param name="Height">Height in points.</param>
 public sealed record InlineImage(PdfImage Image, double Width, double Height);
 
-/// <summary>A run of text in one style, or an inline image.</summary>
-/// <param name="Text">The text; U+FFFC for an image.</param>
-/// <param name="Style">The style (for an image, the paragraph style).</param>
-/// <param name="Image">The image, or <c>null</c> for text.</param>
-public sealed record ParagraphSpan(string Text, TextStyle Style, InlineImage? Image = null);
+/// <summary>A run of text in one style, an inline image or an inline box.</summary>
+/// <param name="Text">The text; U+FFFC for an image or a box.</param>
+/// <param name="Style">The style (for an image or a box, the paragraph style).</param>
+/// <param name="Image">The image, or <c>null</c>.</param>
+/// <param name="Box">The inline box, or <c>null</c>.</param>
+public sealed record ParagraphSpan(string Text, TextStyle Style, InlineImage? Image = null, InlineBox? Box = null);
 
 /// <summary>
 /// A paragraph of styled text, laid out into lines with <see cref="Layout(double)"/>.
@@ -83,6 +95,17 @@ public sealed class Paragraph
         ArgumentOutOfRangeException.ThrowIfNegative(width);
         ArgumentOutOfRangeException.ThrowIfNegative(height);
         _spans.Add(new ParagraphSpan("\uFFFC", Style, new InlineImage(image, width, height)));
+        return this;
+    }
+
+    /// <summary>
+    /// Appends a block that flows with the text as one unbreakable item (see <see cref="InlineBox"/>): lines may break
+    /// before and after it, and it makes its line taller if needed.
+    /// </summary>
+    public Paragraph AddBox(Block content)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        _spans.Add(new ParagraphSpan("\uFFFC", Style, Box: new InlineBox(content)));
         return this;
     }
 

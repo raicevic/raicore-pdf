@@ -25,7 +25,8 @@ change at any time, and this section lists what the packages can do so far.
 - HarfBuzz text shaping (kerning, ligatures, Arabic joining, Indic reordering, mark positioning) with per-character
   font fallback.
 - Unicode line breaking (UAX #14, passing the full conformance test) and paragraphs with alignment, justification,
-  line heights, indents, soft hyphens and hard breaks.
+  line heights, indents, soft hyphens and hard breaks; inline images and inline boxes (`Paragraph.AddBox`: any block
+  as one item of a line, shrink-to-fit, aligned on its last baseline).
 - Block layout and pagination: the box model, margin collapsing, orphans and widows, forced and avoided page breaks,
   boxes sliced across pages, page decorators for headers and footers. A paragraph whose orphans and widows leave no
   possible break needs all its lines at the bottom of a page before it starts there.
@@ -50,7 +51,10 @@ change at any time, and this section lists what the packages can do so far.
 - Block and inline formatting, white-space handling, the box model, fonts, colors, text alignment and transforms,
   list markers, images, linked stylesheets and tables (including the legacy table attributes, `thead`, `tfoot` and
   `tr { break-inside: avoid }`).
-- `display: flex` and `inline-flex`, with all the flex properties above.
+- `display: flex`, with all the flex properties above.
+- `inline-block`, `inline-flex` and `inline-table` as atomic inline boxes: one unbreakable item of the line with its
+  own padding, border, background and width (or shrink-to-fit), aligned on the baseline of its last line of text (the
+  first row for tables, the first baseline for flex containers, the bottom margin edge without text).
 - `height`, `min-height` and `max-height`; percentage heights resolve against definite ancestor heights, starting
   with the page area, and `vh` units are the page area (to within a pixel).
 - CSS Paged Media: `@page` size and margins, `:first`/`:left`/`:right`, margin boxes for headers and footers,
@@ -67,9 +71,8 @@ change at any time, and this section lists what the packages can do so far.
 
 ### Known limitations
 The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these.
-- No `::before`/`::after`, links, bookmarks, `text-decoration`, `sub`/`sup` offsets or
-  inline box backgrounds and borders. `inline-block` is flattened into its text, and `inline-flex` is laid out like
-  `flex`.
+- No `::before`/`::after`, links, bookmarks, `text-decoration`, `vertical-align` (inline boxes, images and
+  `sub`/`sup` sit on the baseline) or backgrounds and borders on inline elements.
 - Floats, positioning and grid (rendered as blocks); `calc()`, `overflow: hidden`, transparency (blended with white),
   border styles other than solid, rounded corners and background images.
 - Mixed left-to-right and right-to-left text on one line (the Unicode bidi algorithm); no hyphenation.

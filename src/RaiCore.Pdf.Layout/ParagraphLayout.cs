@@ -65,6 +65,20 @@ public sealed class ParagraphLayout
             {
                 canvas.DrawImage(image.Image.Image, x + line.X + image.X, baseline, image.Image.Width, image.Image.Height);
             }
+
+            foreach (var box in line.Boxes)
+            {
+                // The box's content was laid out at x = 0; move it to its place on the line.
+                var left = x + line.X + box.X + box.Box.Content.Style.Margin.Left;
+                canvas.SaveState().Transform(1, 0, 0, 1, left, 0);
+                foreach (var draw in box.Content)
+                {
+                    draw(canvas, baseline + box.Baseline);
+                }
+
+                canvas.RestoreState();
+                current = null; // The box may have changed the fill color.
+            }
         }
     }
 }
@@ -74,9 +88,10 @@ public sealed class LineLayout
 {
     internal LineLayout(
         int start, int end, double top, double height, double baseline, double x, double width,
-        IReadOnlyList<LineFragment> fragments, IReadOnlyList<InlineImageFragment> images)
+        IReadOnlyList<LineFragment> fragments, IReadOnlyList<InlineImageFragment> images, IReadOnlyList<InlineBoxFragment>? boxes = null)
     {
         Images = images;
+        Boxes = boxes ?? [];
         Start = start;
         End = end;
         Top = top;
@@ -113,6 +128,44 @@ public sealed class LineLayout
 
     /// <summary>Inline images on this line.</summary>
     public IReadOnlyList<InlineImageFragment> Images { get; }
+
+    /// <summary>Inline boxes on this line.</summary>
+    public IReadOnlyList<InlineBoxFragment> Boxes { get; }
+}
+
+/// <summary>An inline box on a line.</summary>
+public sealed class InlineBoxFragment
+{
+    internal InlineBoxFragment(InlineBox box, double x, double width, double height, double baseline, IReadOnlyList<Blocks.DrawOperation> content)
+    {
+        Box = box;
+        X = x;
+        Width = width;
+        Height = height;
+        Baseline = baseline;
+        Content = content;
+    }
+
+    /// <summary>The inline box.</summary>
+    public InlineBox Box { get; }
+
+    /// <summary>Offset of the box's margin edge from the start of the line's content.</summary>
+    public double X { get; }
+
+    /// <summary>Width of the border box.</summary>
+    public double Width { get; }
+
+    /// <summary>Height of the border box.</summary>
+    public double Height { get; }
+
+    /// <summary>Distance from the top of the border box to the baseline it is aligned on.</summary>
+    public double Baseline { get; }
+
+    /// <summary>Width including the horizontal margins: the space it takes on the line.</summary>
+    public double OuterWidth => Box.Content.Style.Margin.Horizontal + Width;
+
+    /// <summary>Drawing operations with the border box's top-left corner at x = 0 and y = the top passed in.</summary>
+    internal IReadOnlyList<Blocks.DrawOperation> Content { get; }
 }
 
 /// <summary>An inline image on a line.</summary>

@@ -39,9 +39,15 @@ public class HtmlFlexTests
     }
 
     [Fact]
-    public void Inline_flex_is_a_flex_container()
+    public void Inline_flex_is_a_flex_container_inside_the_line()
     {
-        Assert.Single(Flex("<p>Before</p><span style='display: inline-flex'><b>a</b><i>b</i></span>").Items.Skip(1));
+        var flow = HtmlToPdf.CreateFlowDocument(
+            "<p>Before <span style='display: inline-flex'><b>a</b><i>b</i></span> after</p>", new HtmlConverterOptions { Page = Page });
+        var paragraph = Flatten(flow.Blocks).OfType<ParagraphBlock>().Single();
+
+        var box = Assert.Single(paragraph.Paragraph.Spans, s => s.Box is not null).Box!;
+        Assert.Equal(2, Assert.IsType<FlexBlock>(box.Content).Items.Count);
+        Assert.Equal("Before \uFFFC after", string.Concat(paragraph.Paragraph.Spans.Select(s => s.Text)));
     }
 
     [Fact]
