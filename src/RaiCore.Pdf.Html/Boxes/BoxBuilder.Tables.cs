@@ -165,7 +165,7 @@ internal sealed partial class BoxBuilder
             };
         }
 
-        if (td.GetAttribute("align") is { } align && style.TextAlign == TextAlignment.Left)
+        if (td.GetAttribute("align") is { } align && style.TextAlign == TextAlignment.Start)
         {
             style = style with { TextAlign = align.ToUpperInvariant() switch { "CENTER" => TextAlignment.Center, "RIGHT" => TextAlignment.Right, "JUSTIFY" => TextAlignment.Justify, _ => TextAlignment.Left } };
         }

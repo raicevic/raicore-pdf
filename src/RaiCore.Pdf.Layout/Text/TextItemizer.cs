@@ -11,11 +11,12 @@ internal readonly record struct TextItem(int Start, int Length, OpenTypePdfFont 
 /// <summary>
 /// Splits text into runs that can each be shaped in one go: per grapheme cluster it picks the first font
 /// that covers it, and it resolves each character's Unicode script (characters such as spaces and digits,
-/// which belong to no script, join the surrounding run).
+/// which belong to no script, join the surrounding run). The direction is the script's unless one is given
+/// (as the bidi algorithm resolves it for the text).
 /// </summary>
 internal static class TextItemizer
 {
-    public static IReadOnlyList<TextItem> Itemize(string text, IReadOnlyList<OpenTypePdfFont> fonts)
+    public static IReadOnlyList<TextItem> Itemize(string text, IReadOnlyList<OpenTypePdfFont> fonts, TextDirection? direction = null)
     {
         var items = new List<TextItem>();
         if (text.Length == 0)
@@ -36,7 +37,7 @@ internal static class TextItemizer
             var font = ChooseFont(text.AsSpan(start, length), fonts, previousFont, neutral[c]);
             if (runFont is not null && (!ReferenceEquals(font, runFont) || scripts[c] != runScript))
             {
-                items.Add(new TextItem(runStart, start - runStart, runFont, runScript, DirectionOf(runScript)));
+                items.Add(new TextItem(runStart, start - runStart, runFont, runScript, direction ?? DirectionOf(runScript)));
                 runStart = start;
             }
 
@@ -45,7 +46,7 @@ internal static class TextItemizer
             previousFont = font;
         }
 
-        items.Add(new TextItem(runStart, text.Length - runStart, runFont!, runScript, DirectionOf(runScript)));
+        items.Add(new TextItem(runStart, text.Length - runStart, runFont!, runScript, direction ?? DirectionOf(runScript)));
         return items;
     }
 

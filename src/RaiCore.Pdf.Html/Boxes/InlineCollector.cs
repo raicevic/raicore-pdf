@@ -20,7 +20,10 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
     private string? _marker;
 
     /// <summary>Inline elements with a box that are open, outer first (they continue in the next paragraph after a block).</summary>
-    private readonly List<(BoxStyle Box, TextStyle Style)> _openInlines = [];
+    private readonly List<(BoxStyle Box, TextStyle Style, TextDirection Direction)> _openInlines = [];
+
+    /// <summary>Bidi controls of open inline elements, outer first, as (opening, closing, style) (re-opened after a block).</summary>
+    private readonly List<(string Open, string Close, TextStyle Style)> _openBidi = [];
 
     /// <summary>Links that are open, outer first (they continue in the next paragraph after a block).</summary>
     private readonly List<LinkTarget> _openLinks = [];
@@ -79,10 +82,29 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
     }
 
     /// <summary>Starts an inline element with a background, border, padding or horizontal margins.</summary>
-    public void BeginInline(BoxStyle box, TextStyle style)
+    public void BeginInline(BoxStyle box, TextStyle style, TextDirection direction)
     {
-        Paragraph().BeginInline(box, style);
-        _openInlines.Add((box, style));
+        Paragraph().BeginInline(box, style, direction: direction);
+        _openInlines.Add((box, style, direction));
+    }
+
+    /// <summary>
+    /// Starts an inline element's bidi embedding, override or isolate: adds its opening controls, which are not drawn
+    /// and do not affect white-space collapsing.
+    /// </summary>
+    public void BeginBidi(string open, string close, ComputedStyle style)
+    {
+        var textStyle = builder.TextStyleFor(style);
+        Paragraph().Add(open, textStyle);
+        _openBidi.Add((open, close, textStyle));
+    }
+
+    /// <summary>Ends the innermost bidi embedding started with <see cref="BeginBidi"/>.</summary>
+    public void EndBidi()
+    {
+        var (_, close, style) = _openBidi[^1];
+        _openBidi.RemoveAt(_openBidi.Count - 1);
+        _paragraph?.Add(close, style);
     }
 
     /// <summary>Ends the innermost inline element started with <see cref="BeginInline"/>.</summary>
@@ -161,9 +183,18 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         _paragraph = new Paragraph(baseStyle)
         {
             Alignment = blockStyle.TextAlign,
+            Direction = blockStyle.DirectionAuto || blockStyle.UnicodeBidi == CssUnicodeBidi.Plaintext ? ParagraphDirection.Auto
+                : blockStyle.Rtl ? ParagraphDirection.RightToLeft
+                : ParagraphDirection.LeftToRight,
             FirstLineIndent = indent,
             BreakLongWords = false,
         };
+
+        // An override on the block applies to all of its inline content.
+        if (blockStyle.UnicodeBidi is CssUnicodeBidi.BidiOverride or CssUnicodeBidi.IsolateOverride)
+        {
+            _paragraph.Add(blockStyle.Rtl ? "\u202E" : "\u202D", baseStyle);
+        }
 
         if (_marker is { } marker)
         {
@@ -178,9 +209,14 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
             _marker = null;
         }
 
-        foreach (var (box, style) in _openInlines)
+        foreach (var (box, style, direction) in _openInlines)
         {
-            _paragraph.BeginInline(box, style, startEdge: false);
+            _paragraph.BeginInline(box, style, startEdge: false, direction: direction);
+        }
+
+        foreach (var (open, _, style) in _openBidi)
+        {
+            _paragraph.Add(open, style);
         }
 
         foreach (var link in _openLinks)

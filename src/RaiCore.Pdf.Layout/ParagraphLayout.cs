@@ -365,8 +365,8 @@ public sealed record InlineLinkFragment(InlineLink Link, double X0, double X1);
 /// <param name="X1">Right edge of the border box.</param>
 /// <param name="Above">Top of the border box above the line's baseline.</param>
 /// <param name="Below">Bottom of the border box below the line's baseline.</param>
-/// <param name="StartEdge">The element starts on this line: its left border is drawn.</param>
-/// <param name="EndEdge">The element ends on this line: its right border is drawn.</param>
+/// <param name="StartEdge">Its left border is drawn: a left-to-right element starts (a right-to-left one ends) here.</param>
+/// <param name="EndEdge">Its right border is drawn: a left-to-right element ends (a right-to-left one starts) here.</param>
 public sealed record InlineDecorationFragment(InlineDecoration Decoration, double X0, double X1, double Above, double Below, bool StartEdge, bool EndEdge);
 
 /// <summary>An inline box on a line.</summary>

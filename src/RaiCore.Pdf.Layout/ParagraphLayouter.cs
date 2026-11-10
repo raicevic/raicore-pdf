@@ -92,6 +92,14 @@ internal static class ParagraphLayouter
 
         var lineRanges = BreakIntoLines(paragraph, text, width, Measure, spans, spanStarts);
 
+        // The bidi levels of the whole paragraph; lines are broken in logical order and reordered one by one.
+        var bidi = BidiAlgorithm.Resolve(text, paragraph.Direction switch
+        {
+            ParagraphDirection.RightToLeft => 1,
+            ParagraphDirection.Auto => null,
+            _ => 0,
+        });
+
         var lines = new List<LineLayout>(lineRanges.Count);
         var top = 0.0;
         for (var i = 0; i < lineRanges.Count; i++)
@@ -100,7 +108,7 @@ internal static class ParagraphLayouter
             var available = width - (i == 0 ? paragraph.FirstLineIndent : 0);
             var isLast = i == lineRanges.Count - 1;
             var line = BuildLine(paragraph, text, spans, spanStarts, start, end, hyphenate, available, top, i == 0,
-                justify: paragraph.Alignment == TextAlignment.Justify && !isLast && !hard, boxes);
+                justify: paragraph.Alignment == TextAlignment.Justify && !isLast && !hard, boxes, bidi);
             lines.Add(line);
             top += line.Height;
         }
@@ -248,17 +256,48 @@ internal static class ParagraphLayouter
         return lines;
     }
 
+    /// <summary>
+    /// A piece of a line in logical order: shaped text of one span, style and bidi level (its glyphs in visual order),
+    /// or an inline image or box. Start and End are its range in the paragraph text.
+    /// </summary>
+    private readonly record struct Piece(
+        ShapedRun? Run, IReadOnlyList<PositionedGlyph> Glyphs, TextStyle Style, InlineImage? Image, InlineBoxFragment? Box, int Start, int End, byte Level)
+    {
+        public bool Overlaps(int start, int end) => Start < end && End > start;
+    }
+
+    /// <summary>One visually contiguous part of an inline element's box on a line, and which of its sides have edges.</summary>
+    private sealed class DecorationPart(InlineDecoration decoration, bool left, bool right)
+    {
+        public InlineDecoration Decoration { get; } = decoration;
+
+        public bool Left { get; } = left;
+
+        public bool Right { get; } = right;
+
+        public double X0 { get; set; }
+    }
+
+    /// <summary>One visually contiguous part of a link on a line.</summary>
+    private sealed class LinkPart(InlineLink link)
+    {
+        public InlineLink Link { get; } = link;
+
+        public double X0 { get; set; }
+    }
+
     private static LineLayout BuildLine(
         Paragraph paragraph, string text, IReadOnlyList<ParagraphSpan> spans, int[] spanStarts,
         int start, int end, bool hyphenate, double available, double top, bool firstLine, bool justify,
-        Dictionary<InlineBox, InlineBoxFragment> boxes)
+        Dictionary<InlineBox, InlineBoxFragment> boxes, BidiText bidi)
     {
         var contentEnd = TrimEnd(text, start, end);
+        var lineLevels = bidi.LineLevels(start, contentEnd);
+        var paragraphLevel = bidi.ParagraphLevelAt(start);
 
-        // Shape each span's part of the line again, so kerning and contextual forms are exact at line edges.
-        // Image and box spans become pieces without a run.
-        // From and To are the piece's text range where it starts or ends its span's part of the line, else -1.
-        var pieces = new List<(ShapedRun? Run, IReadOnlyList<PositionedGlyph> Glyphs, TextStyle Style, InlineImage? Image, InlineBoxFragment? Box, int From, int To)>();
+        // Shape each span's part of the line again, so kerning and contextual forms are exact at line edges: in runs
+        // of one bidi level, each in the direction its level gives. Explicit bidi controls are not drawn.
+        var pieces = new List<Piece>();
         for (var s = 0; s < spans.Count; s++)
         {
             var from = Math.Max(start, spanStarts[s]);
@@ -274,7 +313,7 @@ internal static class ParagraphLayouter
             var style = spans[s].Style;
             if (spans[s].Image is not null || spans[s].Box is not null)
             {
-                pieces.Add((null, [], style, spans[s].Image, spans[s].Box is { } box ? boxes[box] : null, from, to));
+                pieces.Add(new Piece(null, [], style, spans[s].Image, spans[s].Box is { } box ? boxes[box] : null, from, to, lineLevels[from - start]));
                 if (isLastPiece)
                 {
                     break;
@@ -283,21 +322,24 @@ internal static class ParagraphLayouter
                 continue;
             }
 
-            var piece = text[from..to];
-            if (hyphenate && isLastPiece)
+            var segments = LevelRuns(bidi.Types, lineLevels, start, from, to);
+            for (var k = 0; k < segments.Count; k++)
             {
-                piece += style.Fonts[0].HasGlyph(0x2010) ? "\u2010" : "-";
-            }
+                var (a, b, level) = segments[k];
+                var piece = text[a..b];
+                if (hyphenate && isLastPiece && k == segments.Count - 1)
+                {
+                    piece += style.Fonts[0].HasGlyph(0x2010) ? "\u2010" : "-";
+                }
 
-            if (piece.Length == 0)
-            {
-                continue;
-            }
-
-            var runs = TextShaper.Shape(piece, style.Fonts, ShapingFor(style)).VisualRuns.ToList();
-            for (var r = 0; r < runs.Count; r++)
-            {
-                pieces.Add((runs[r], Spaced(runs[r], style), style, null, null, r == 0 ? from : -1, r == runs.Count - 1 ? to : -1));
+                var direction = (level & 1) == 1 ? TextDirection.RightToLeft : TextDirection.LeftToRight;
+                foreach (var run in TextShaper.Shape(piece, style.Fonts, ShapingFor(style), direction).Runs)
+                {
+                    // A run of only the added hyphen counts as the last character, so inline boxes and links cover it.
+                    var runStart = Math.Min(a + run.Start, b - 1);
+                    var runEnd = Math.Max(runStart + 1, Math.Min(b, a + run.Start + run.Length));
+                    pieces.Add(new Piece(run, Spaced(run, style), style, null, null, runStart, runEnd, level));
+                }
             }
 
             if (isLastPiece)
@@ -306,9 +348,13 @@ internal static class ParagraphLayouter
             }
         }
 
+        // Rule L2: the pieces from left to right.
+        var order = BidiAlgorithm.VisualOrder(pieces.Select(p => p.Level).ToArray());
+
         // Justification: widen spaces so the line fills the available width.
         // Inline elements that start or end on this line add their edges.
-        var decorations = paragraph.Decorations.Where(d => d.Start < contentEnd && d.End > start).ToList();
+        var decorations = paragraph.Decorations.Where(d => d.Start < contentEnd && d.End > start)
+            .OrderBy(d => d.Start).ThenByDescending(d => d.End).ToList(); // Outer elements first.
         var edges = decorations.Sum(d =>
             (d.HasStartEdge && d.Start >= start ? StartEdge(d.Box) : 0) + (d.HasEndEdge && d.End <= contentEnd ? EndEdge(d.Box) : 0));
         var naturalWidth = edges + pieces.Sum(p => p.Run is not null ? p.Glyphs.Sum(g => g.Advance) * p.Style.FontSize : p.Image?.Width ?? p.Box!.OuterWidth);
@@ -327,42 +373,72 @@ internal static class ParagraphLayouter
             }
         }
 
+        // Inline elements' boxes and links cover runs of adjacent pieces: one part per run, opened at its first
+        // piece from the left and closed at its last.
+        var opening = new List<DecorationPart>[pieces.Count];
+        var closing = new List<DecorationPart>[pieces.Count];
+        var linkOpening = new List<LinkPart>[pieces.Count];
+        var linkClosing = new List<LinkPart>[pieces.Count];
+        for (var v = 0; v < pieces.Count; v++)
+        {
+            (opening[v], closing[v], linkOpening[v], linkClosing[v]) = ([], [], [], []);
+        }
+
+        foreach (var decoration in decorations)
+        {
+            // Its first and last pieces in logical order carry its start and end edges, if it starts or ends here.
+            var covered = Enumerable.Range(0, pieces.Count).Where(p => pieces[p].Overlaps(decoration.Start, decoration.End)).ToList();
+            if (covered.Count == 0)
+            {
+                continue;
+            }
+
+            var (first, last) = (covered.MinBy(p => pieces[p].Start), covered.MaxBy(p => pieces[p].End));
+            var startsHere = decoration.HasStartEdge && decoration.Start >= start;
+            var endsHere = decoration.HasEndEdge && decoration.End <= contentEnd;
+            var rtlElement = decoration.Direction == TextDirection.RightToLeft;
+            foreach (var (v0, v1) in VisualParts(order, p => pieces[p].Overlaps(decoration.Start, decoration.End)))
+            {
+                bool Contains(int piece) => Enumerable.Range(v0, v1 - v0 + 1).Any(v => order[v] == piece);
+                var (hasFirst, hasLast) = (Contains(first) && startsHere, Contains(last) && endsHere);
+                var part = new DecorationPart(decoration, left: rtlElement ? hasLast : hasFirst, right: rtlElement ? hasFirst : hasLast);
+                opening[v0].Add(part);
+                closing[v1].Insert(0, part); // Inner elements close first.
+            }
+        }
+
+        foreach (var link in paragraph.Links.Where(l => l.Start < contentEnd && l.End > start))
+        {
+            foreach (var (v0, v1) in VisualParts(order, p => pieces[p].Overlaps(link.Start, link.End)))
+            {
+                var part = new LinkPart(link);
+                linkOpening[v0].Add(part);
+                linkClosing[v1].Add(part);
+            }
+        }
+
         // Each piece's extent above and below its own baseline, its alignment, and its x position.
         var items = new (double Above, double Below, InlineAlignment Align, double X)[pieces.Count];
-        var openDecorations = new Dictionary<InlineDecoration, (double X0, bool StartEdge)>(ReferenceEqualityComparer.Instance);
         var decorationPieces = new List<(InlineDecoration Decoration, double X0, double X1, bool StartEdge, bool EndEdge)>();
-        foreach (var decoration in decorations.Where(d => d.Start < start))
-        {
-            openDecorations[decoration] = (0, false); // Continued from the previous line.
-        }
-
-        // Links on this line: each covers its pieces, from where its first piece's element boxes start to where its
-        // last piece's end (a link continued from the previous line, or continuing on the next, runs to the line's edge).
-        var links = paragraph.Links.Where(l => l.Start < contentEnd && l.End > start).ToList();
-        var openLinks = new Dictionary<InlineLink, double>(ReferenceEqualityComparer.Instance);
-        foreach (var link in links.Where(l => l.Start < start))
-        {
-            openLinks[link] = 0; // Continued from the previous line.
-        }
-
         var linkPieces = new List<InlineLinkFragment>();
 
         var x = 0.0;
-        for (var p = 0; p < pieces.Count; p++)
+        for (var v = 0; v < pieces.Count; v++)
         {
-            var (run, _, style, image, box, from, to) = pieces[p];
-            foreach (var link in links.Where(l => l.Start == from))
+            var p = order[v];
+            var (run, _, style, image, box, _, _, _) = pieces[p];
+            foreach (var link in linkOpening[v])
             {
-                openLinks[link] = x;
+                link.X0 = x;
             }
 
-            // Elements starting here, outer ones (ending later) first: margin, then the border box starts.
-            foreach (var decoration in decorations.Where(d => d.Start == from).OrderByDescending(d => d.End))
+            // Element parts starting here, outer ones first: margin, then the border box starts.
+            foreach (var part in opening[v])
             {
-                var edge = decoration.HasStartEdge;
-                x += edge ? decoration.Box.Margin.Left : 0;
-                openDecorations[decoration] = (x, edge);
-                x += edge ? decoration.Box.Border.Left.Width + decoration.Box.Padding.Left : 0;
+                var box0 = part.Decoration.Box;
+                x += part.Left ? box0.Margin.Left : 0;
+                part.X0 = x;
+                x += part.Left ? box0.Border.Left.Width + box0.Padding.Left : 0;
             }
 
             if (image is not null)
@@ -383,37 +459,19 @@ internal static class ParagraphLayouter
                 x += glyphLists[p].Sum(g => g.Advance) * style.FontSize;
             }
 
-            // Elements ending here, inner ones (starting later) first: the border box ends, then the margin.
-            foreach (var decoration in decorations.Where(d => d.End == to).OrderByDescending(d => d.Start))
+            // Element parts ending here, inner ones first: the border box ends, then the margin.
+            foreach (var part in closing[v])
             {
-                var edge = decoration.HasEndEdge;
-                x += edge ? decoration.Box.Padding.Right + decoration.Box.Border.Right.Width : 0;
-                if (openDecorations.Remove(decoration, out var open))
-                {
-                    decorationPieces.Add((decoration, open.X0, x, open.StartEdge, edge));
-                }
-
-                x += edge ? decoration.Box.Margin.Right : 0;
+                var box1 = part.Decoration.Box;
+                x += part.Right ? box1.Padding.Right + box1.Border.Right.Width : 0;
+                decorationPieces.Add((part.Decoration, part.X0, x, part.Left, part.Right));
+                x += part.Right ? box1.Margin.Right : 0;
             }
 
-            foreach (var link in links.Where(l => l.End == to))
+            foreach (var link in linkClosing[v])
             {
-                if (openLinks.Remove(link, out var linkX0))
-                {
-                    linkPieces.Add(new InlineLinkFragment(link, linkX0, x));
-                }
+                linkPieces.Add(new InlineLinkFragment(link.Link, link.X0, x));
             }
-        }
-
-        foreach (var (link, linkX0) in openLinks)
-        {
-            linkPieces.Add(new InlineLinkFragment(link, linkX0, x));
-        }
-
-        // Elements continuing on the next line end at the line's end, without their right edge.
-        foreach (var (decoration, open) in openDecorations)
-        {
-            decorationPieces.Add((decoration, open.X0, x, open.StartEdge, false));
         }
 
         // Line box (CSS 2.1 section 10.8): the strut and every item contribute their extent above and below the
@@ -460,7 +518,7 @@ internal static class ParagraphLayouter
         var lineBoxes = new List<InlineBoxFragment>();
         for (var p = 0; p < pieces.Count; p++)
         {
-            var (run, _, style, image, box, _, _) = pieces[p];
+            var (run, _, style, image, box, _, _, _) = pieces[p];
             var itemX = items[p].X;
             if (image is not null)
             {
@@ -476,8 +534,18 @@ internal static class ParagraphLayouter
             }
         }
 
-        var indent = firstLine ? paragraph.FirstLineIndent : 0;
-        var offset = paragraph.Alignment switch
+        // Start and end, and the unjustified lines of justified text, follow the paragraph's direction. The first line's
+        // indent is at the start: on the left of a left-to-right line, on the right (outside the available width) of a
+        // right-to-left one.
+        var rtl = (paragraphLevel & 1) == 1;
+        var alignment = paragraph.Alignment switch
+        {
+            TextAlignment.Start or TextAlignment.Justify => rtl ? TextAlignment.Right : TextAlignment.Left,
+            TextAlignment.End => rtl ? TextAlignment.Left : TextAlignment.Right,
+            var other => other,
+        };
+        var indent = firstLine && !rtl ? paragraph.FirstLineIndent : 0;
+        var offset = alignment switch
         {
             TextAlignment.Right => Math.Max(0, available - x),
             TextAlignment.Center => Math.Max(0, (available - x) / 2),
@@ -486,7 +554,7 @@ internal static class ParagraphLayouter
 
         // Each element's piece covers its font's content area (raised with its text) plus its padding and border.
         var decorationFragments = decorationPieces
-            .OrderBy(d => d.Decoration.Start).ThenByDescending(d => d.Decoration.End)
+            .OrderBy(d => d.Decoration.Start).ThenByDescending(d => d.Decoration.End).ThenBy(d => d.X0)
             .Select(d =>
             {
                 var (style, box) = (d.Decoration.Style, d.Decoration.Box);
@@ -502,6 +570,59 @@ internal static class ParagraphLayouter
         {
             Links = linkPieces,
         };
+    }
+
+    /// <summary>
+    /// The runs of one bidi level in [from, to) of a line starting at <paramref name="lineStart"/>, leaving out explicit
+    /// bidi controls (which are not drawn).
+    /// </summary>
+    private static List<(int Start, int End, byte Level)> LevelRuns(BidiClass[] types, byte[] lineLevels, int lineStart, int from, int to)
+    {
+        var runs = new List<(int, int, byte)>();
+        for (var i = from; i < to;)
+        {
+            if (BidiAlgorithm.IsExplicitControl(types[i]))
+            {
+                i++;
+                continue;
+            }
+
+            var level = lineLevels[i - lineStart];
+            var j = i + 1;
+            while (j < to && !BidiAlgorithm.IsExplicitControl(types[j]) && lineLevels[j - lineStart] == level)
+            {
+                j++;
+            }
+
+            runs.Add((i, j, level));
+            i = j;
+        }
+
+        return runs;
+    }
+
+    /// <summary>The runs of adjacent visual positions (first and last, inclusive) whose pieces match.</summary>
+    private static List<(int First, int Last)> VisualParts(int[] order, Func<int, bool> covers)
+    {
+        var parts = new List<(int, int)>();
+        for (var v = 0; v < order.Length; v++)
+        {
+            if (!covers(order[v]))
+            {
+                continue;
+            }
+
+            var last = v;
+            while (last + 1 < order.Length && covers(order[last + 1]))
+            {
+                last++;
+            }
+
+            parts.Add((v, last));
+            v = last;
+        }
+
+        return parts;
     }
 
     private static double StartEdge(BoxStyle box) => box.Margin.Left + box.Border.Left.Width + box.Padding.Left;

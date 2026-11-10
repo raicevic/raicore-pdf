@@ -1,4 +1,5 @@
 using RaiCore.Pdf.Layout.Blocks;
+using RaiCore.Pdf.Layout.Text;
 
 namespace RaiCore.Pdf.Layout;
 
@@ -34,9 +35,16 @@ public sealed record InlineImage(PdfImage Image, double Width, double Height, In
 /// <param name="End">Index where it ends (exclusive).</param>
 /// <param name="Box">Its padding, border, background and margins (vertical margins are ignored, as in CSS).</param>
 /// <param name="Style">Its text style: the font's ascent and descent, raised by its vertical shift, make the content area.</param>
-/// <param name="HasStartEdge">False when the element started in an earlier paragraph (its left edge is there).</param>
+/// <param name="HasStartEdge">False when the element started in an earlier paragraph (its start edge is there).</param>
 /// <param name="HasEndEdge">False when it continues in a later paragraph.</param>
-public sealed record InlineDecoration(int Start, int End, BoxStyle Box, TextStyle Style, bool HasStartEdge = true, bool HasEndEdge = true);
+public sealed record InlineDecoration(int Start, int End, BoxStyle Box, TextStyle Style, bool HasStartEdge = true, bool HasEndEdge = true)
+{
+    /// <summary>
+    /// The element's direction: its start edge (where its margin, border and padding begin) is its left side when left
+    /// to right, its right side when right to left.
+    /// </summary>
+    public TextDirection Direction { get; init; }
+}
 
 /// <summary>A link around part of a paragraph's text (see <see cref="Paragraph.BeginLink"/>).</summary>
 /// <param name="Start">Index in the paragraph text where the link starts.</param>
@@ -76,7 +84,7 @@ public sealed class Paragraph
 {
     private readonly List<ParagraphSpan> _spans = [];
     private readonly List<InlineDecoration> _decorations = [];
-    private readonly Stack<(int Start, BoxStyle Box, TextStyle Style, bool StartEdge)> _open = new();
+    private readonly Stack<(int Start, BoxStyle Box, TextStyle Style, bool StartEdge, TextDirection Direction)> _open = new();
     private readonly List<InlineLink> _links = [];
     private readonly Stack<(int Start, LinkTarget Target)> _openLinks = new();
     private readonly List<InlineAnchor> _anchors = [];
@@ -92,8 +100,15 @@ public sealed class Paragraph
     /// <summary>The paragraph's base style.</summary>
     public TextStyle Style { get; }
 
-    /// <summary>Horizontal alignment.</summary>
-    public TextAlignment Alignment { get; set; } = TextAlignment.Left;
+    /// <summary>Horizontal alignment; <see cref="TextAlignment.Start"/> (the default) follows the direction.</summary>
+    public TextAlignment Alignment { get; set; } = TextAlignment.Start;
+
+    /// <summary>
+    /// The base direction, for the Unicode bidi algorithm (UAX #9) that orders mixed left-to-right and right-to-left
+    /// text on each line, and for <see cref="TextAlignment.Start"/> and <see cref="TextAlignment.End"/>. Embedding,
+    /// override and isolate controls in the text (U+202A-U+202E, U+2066-U+2069) are honored and not drawn.
+    /// </summary>
+    public ParagraphDirection Direction { get; set; }
 
     /// <summary>Indent of the first line in points (CSS <c>text-indent</c>; may be negative for hanging indents).</summary>
     public double FirstLineIndent { get; set; }
@@ -169,11 +184,15 @@ public sealed class Paragraph
     /// </summary>
     /// <param name="box">Padding, border, background and horizontal margins.</param>
     /// <param name="style">Its text style (for the height of its content area); defaults to the paragraph's.</param>
-    /// <param name="startEdge">False if the element began in an earlier paragraph: no left edge here.</param>
-    public Paragraph BeginInline(BoxStyle box, TextStyle? style = null, bool startEdge = true)
+    /// <param name="startEdge">False if the element began in an earlier paragraph: no start edge here.</param>
+    /// <param name="direction">
+    /// The element's direction, which decides where its edges go when bidi reordering splits it (CSS 2.1 section 8.6):
+    /// a left-to-right element's left edge is at its start, a right-to-left element's right edge.
+    /// </param>
+    public Paragraph BeginInline(BoxStyle box, TextStyle? style = null, bool startEdge = true, TextDirection direction = TextDirection.LeftToRight)
     {
         ArgumentNullException.ThrowIfNull(box);
-        _open.Push((_length, box, style ?? Style, startEdge));
+        _open.Push((_length, box, style ?? Style, startEdge, direction));
         return this;
     }
 
@@ -186,10 +205,10 @@ public sealed class Paragraph
             throw new InvalidOperationException("EndInline without a matching BeginInline.");
         }
 
-        var (start, box, style, startEdge) = _open.Pop();
+        var (start, box, style, startEdge, direction) = _open.Pop();
         if (_length > start)
         {
-            _decorations.Add(new InlineDecoration(start, _length, box, style, startEdge, endEdge));
+            _decorations.Add(new InlineDecoration(start, _length, box, style, startEdge, endEdge) { Direction = direction });
         }
 
         return this;

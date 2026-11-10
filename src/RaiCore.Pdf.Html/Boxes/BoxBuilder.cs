@@ -86,6 +86,18 @@ internal sealed partial class BoxBuilder
         if (!_styles.TryGetValue(element, out var style))
         {
             style = ComputedStyle.From(_window.GetComputedStyle(element), _rootFontSize, _viewport);
+            var dir = element.GetAttribute("dir")?.Trim().ToLowerInvariant();
+            if (dir == "auto" || (element.LocalName == "bdi" && dir is not ("ltr" or "rtl")))
+            {
+                style = style with { DirectionAuto = true };
+            }
+
+            // HTML gives bdo unicode-bidi: isolate-override, a value AngleSharp does not keep.
+            if (element.LocalName == "bdo" && style.UnicodeBidi == CssUnicodeBidi.BidiOverride)
+            {
+                style = style with { UnicodeBidi = CssUnicodeBidi.IsolateOverride };
+            }
+
             _styles[element] = style;
         }
 
@@ -210,7 +222,7 @@ internal sealed partial class BoxBuilder
                         AddAnchors(child, collector);
                         if (box is not null)
                         {
-                            collector.BeginInline(box, TextStyleFor(childStyle) with { VerticalAlign = align });
+                            collector.BeginInline(box, TextStyleFor(childStyle) with { VerticalAlign = align }, childStyle.Rtl ? TextDirection.RightToLeft : TextDirection.LeftToRight);
                         }
 
                         if (link is not null)
@@ -218,9 +230,21 @@ internal sealed partial class BoxBuilder
                             collector.BeginLink(link);
                         }
 
+                        // unicode-bidi becomes the Unicode controls it stands for (CSS Writing Modes 3 section 2.4.2).
+                        var (bidiOpen, bidiClose) = BidiControls(childStyle);
+                        if (bidiOpen.Length > 0)
+                        {
+                            collector.BeginBidi(bidiOpen, bidiClose, childStyle);
+                        }
+
                         var outerDecorations = EnterDecoration(childStyle, align.Kind == InlineAlignmentKind.Baseline ? align.Shift : 0);
                         AddChildren(child, childStyle, contentWidth, children, collector, align);
                         _decorations = outerDecorations;
+                        if (bidiOpen.Length > 0)
+                        {
+                            collector.EndBidi();
+                        }
+
                         if (link is not null)
                         {
                             collector.EndLink();
@@ -353,6 +377,24 @@ internal sealed partial class BoxBuilder
         var outer = _containingHeight;
         _containingHeight = box.Height is { } height ? Math.Max(0, height - box.Padding.Vertical - box.Border.Widths.Vertical) : null;
         return outer;
+    }
+
+    /// <summary>
+    /// The bidi controls an inline element's <c>unicode-bidi</c> stands for, to put around its content: embeddings and
+    /// overrides end with PDF, isolates with PDI; <c>plaintext</c> and an automatic direction isolate with FSI.
+    /// </summary>
+    private static (string Open, string Close) BidiControls(ComputedStyle style)
+    {
+        var (embed, overrides, isolate) = style.Rtl ? ("\u202B", "\u202E", "\u2067") : ("\u202A", "\u202D", "\u2066");
+        return style.UnicodeBidi switch
+        {
+            CssUnicodeBidi.Embed => (embed, "\u202C"),
+            CssUnicodeBidi.Isolate => (style.DirectionAuto ? "\u2068" : isolate, "\u2069"),
+            CssUnicodeBidi.BidiOverride => (overrides, "\u202C"),
+            CssUnicodeBidi.IsolateOverride => (isolate + overrides, "\u202C\u2069"),
+            CssUnicodeBidi.Plaintext => ("\u2068", "\u2069"),
+            _ => (string.Empty, string.Empty),
+        };
     }
 
     /// <summary>

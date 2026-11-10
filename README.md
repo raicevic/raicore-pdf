@@ -67,6 +67,9 @@ own engine. Supported today:
 - `text-decoration`: underline, overline and line-through in every style (solid, double, dotted, dashed, wavy), with
   color, thickness and `text-underline-offset`, propagated to descendants and placed with the font's own metrics.
 - `letter-spacing` and `word-spacing`, also with justified text.
+- Bidirectional text (the Unicode bidi algorithm, UAX #9): `direction`, `unicode-bidi`, the `dir` attribute (also
+  `auto`), `<bdi>` and `<bdo>`; right-to-left paragraphs start on the right, and `text-align: start`/`end` follow the
+  direction. Right-to-left tables and flex rows still run left to right.
 - Generated content: `::before` and `::after` (also `:before`/`:after`) with their own styles, inline, `inline-block`
   or block-level, in any element, list item, table cell or flex container. `content` takes strings with CSS escapes
   (`"\201C"`, `"\A"` with `white-space: pre`), `attr()`, `open-quote`/`close-quote` (following `quotes`, nested
@@ -348,8 +351,9 @@ page.Canvas.DrawText(shaped, 14, 72, 700);
 double width = shaped.GetWidth(14); // includes kerning
 ```
 
-Shaped runs are tagged so text extraction returns the logical text, even for Arabic. Mixed left-to-right and
-right-to-left text on one line needs the Unicode bidi algorithm, which is planned.
+Shaped runs are tagged so text extraction returns the logical text, even for Arabic. Paragraphs order mixed
+left-to-right and right-to-left text with the Unicode bidi algorithm (UAX #9); `Paragraph.Direction` sets the base
+direction, or detects it from the text.
 
 ### Paragraphs
 

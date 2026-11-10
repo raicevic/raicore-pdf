@@ -24,6 +24,17 @@ internal enum CssDisplay
     InlineTable,
 }
 
+/// <summary>CSS <c>unicode-bidi</c>: how an element takes part in the bidi algorithm.</summary>
+internal enum CssUnicodeBidi
+{
+    Normal,
+    Embed,
+    Isolate,
+    BidiOverride,
+    IsolateOverride,
+    Plaintext,
+}
+
 internal enum CssWhiteSpace
 {
     Normal,
@@ -53,11 +64,23 @@ internal sealed record ComputedStyle
 
     public LineHeight LineHeight { get; init; } = LineHeight.Normal;
 
-    public TextAlignment TextAlign { get; init; } = TextAlignment.Left;
+    public TextAlignment TextAlign { get; init; } = TextAlignment.Start;
 
     public CssLength TextIndent { get; init; } = CssLength.Zero;
 
     public CssWhiteSpace WhiteSpace { get; init; }
+
+    /// <summary>CSS <c>direction: rtl</c> (inherited).</summary>
+    public bool Rtl { get; init; }
+
+    /// <summary>CSS <c>unicode-bidi</c> (not inherited).</summary>
+    public CssUnicodeBidi UnicodeBidi { get; init; }
+
+    /// <summary>
+    /// The element's direction comes from its content (HTML <c>dir="auto"</c>, and <c>bdi</c> without a <c>dir</c>):
+    /// the first strong character of its text decides.
+    /// </summary>
+    public bool DirectionAuto { get; init; }
 
     public string TextTransform { get; init; } = "none";
 
@@ -221,10 +244,22 @@ internal sealed record ComputedStyle
             LineHeight = ParseLineHeight(Get("line-height"), fontSize, rootFontSize, viewport),
             TextAlign = Get("text-align") switch
             {
-                "right" or "end" => TextAlignment.Right,
+                "left" or "-webkit-left" => TextAlignment.Left,
+                "right" or "-webkit-right" => TextAlignment.Right,
+                "end" => TextAlignment.End,
                 "center" or "-webkit-center" => TextAlignment.Center,
                 "justify" => TextAlignment.Justify,
-                _ => TextAlignment.Left,
+                _ => TextAlignment.Start, // The initial value: follows the direction.
+            },
+            Rtl = Get("direction") == "rtl",
+            UnicodeBidi = Get("unicode-bidi") switch
+            {
+                "embed" => CssUnicodeBidi.Embed,
+                "isolate" or "-webkit-isolate" => CssUnicodeBidi.Isolate,
+                "bidi-override" => CssUnicodeBidi.BidiOverride,
+                "isolate-override" or "-webkit-isolate-override" => CssUnicodeBidi.IsolateOverride,
+                "plaintext" or "-webkit-plaintext" => CssUnicodeBidi.Plaintext,
+                _ => CssUnicodeBidi.Normal,
             },
             TextIndent = Length("text-indent"),
             LetterSpacing = Length("letter-spacing").Resolve(fontSize),
