@@ -43,6 +43,12 @@ internal sealed partial class Paginator
     private readonly List<(int Page, object Marker)> _markers = [];
     private int _pageIndex = -1;
 
+    /// <summary>Where content starts on pages that begin with repeated content (a table's header rows).</summary>
+    private readonly Dictionary<int, double> _pageTops = [];
+
+    /// <summary>Called on every page created while they are registered, e.g. to repeat a table's header rows.</summary>
+    private readonly List<Action> _pageStartHooks = [];
+
     private Paginator(PageSetup setup, bool isStatic = false)
     {
         _setup = setup;
@@ -60,7 +66,10 @@ internal sealed partial class Paginator
     private double Y { get; set; }
 
     /// <summary>Nothing has been placed on the current page yet.</summary>
-    private bool AtPageTop => Y <= ContentTop + Epsilon;
+    private bool AtPageTop => Y <= PageTop(PageIndex) + Epsilon;
+
+    /// <summary>Where a page's flowing content starts: below repeated table headers, if any.</summary>
+    private double PageTop(int page) => _pageTops.TryGetValue(page, out var top) ? top : ContentTop;
 
     /// <summary>The current page started after an automatic break, so margins at its top are truncated.</summary>
     private bool TruncateMargins { get; set; }
@@ -147,13 +156,27 @@ internal sealed partial class Paginator
     private void NewPage(bool forced = false)
     {
         _pageIndex++;
-        if (_pageIndex == _pages.Count)
+        var created = _pageIndex == _pages.Count;
+        if (created)
         {
             _pages.Add([]);
         }
 
         Y = ContentTop;
         TruncateMargins = !forced;
+        if (created && _pageStartHooks.Count > 0)
+        {
+            foreach (var hook in _pageStartHooks.ToList())
+            {
+                hook();
+            }
+
+            _pageTops[_pageIndex] = Y;
+        }
+        else
+        {
+            Y = PageTop(_pageIndex);
+        }
     }
 
     /// <summary>
@@ -355,7 +378,7 @@ internal sealed partial class Paginator
         else
         {
             // A box split across pages: its fragments add up to the height; only growing it is possible here.
-            var total = ContentBottom - startY + ((PageIndex - startPage - 1) * _setup.ContentHeight) + (Y - ContentTop);
+            var total = ContentBottom - startY + ((PageIndex - startPage - 1) * _setup.ContentHeight) + (Y - PageTop(PageIndex));
             var target = Math.Max(Math.Min(fixedHeight ?? total, maxHeight), minHeight);
             if (target > total)
             {
@@ -384,7 +407,7 @@ internal sealed partial class Paginator
             {
                 var first = page == startPage;
                 var last = page == endPage;
-                var top = first ? startY : ContentTop;
+                var top = first ? startY : PageTop(page);
                 var bottom = last ? endY : ContentBottom;
                 var index = first ? insertAt : 0; // Pages created inside the box: under everything on them.
                 _pages[page].Insert(index, (canvas, pageHeight) => DrawBox(canvas, pageHeight, style, x, top, width, bottom - top, first, last));
@@ -569,31 +592,57 @@ internal sealed partial class Paginator
             Y += layout.SpacingY;
         }
 
-        Y += layout.SpacingY;
-        if (headerEnd > 0)
+        // The table's spacing and header rows start it, and every page it continues on (also pages that a split row's
+        // cells create).
+        void StartPage()
         {
-            Place(0, headerEnd);
+            Y += layout.SpacingY;
+            if (headerEnd > 0)
+            {
+                Place(0, headerEnd);
+            }
         }
 
-        var bodyOnPage = 0;
-        foreach (var (start, end) in layout.Groups.Where(g => g.End > headerEnd))
+        StartPage();
+        _pageStartHooks.Add(StartPage);
+        try
         {
-            var groupStart = Math.Max(start, headerEnd);
-            var height = layout.Height(groupStart, end);
-            if (Y + height > ContentBottom + Epsilon && bodyOnPage > 0)
+            foreach (var (start, end) in layout.Groups.Where(g => g.End > headerEnd))
             {
-                NewPage();
-                Y += layout.SpacingY;
-                if (headerEnd > 0)
+                var groupStart = Math.Max(start, headerEnd);
+                var height = layout.Height(groupStart, end);
+                if (Y + height <= ContentBottom + Epsilon)
                 {
-                    Place(0, headerEnd);
+                    Place(groupStart, end);
+                    continue;
                 }
 
-                bodyOnPage = 0;
-            }
+                // A row that does not fit is split here if the start of its cells fits, as in browsers.
+                if (!_static && CanSplit(layout, groupStart, end) && MinimumRowStart(layout, groupStart) <= Remaining + Epsilon)
+                {
+                    SplitRow(layout, groupStart, x, width);
+                    continue;
+                }
 
-            Place(groupStart, end); // A group taller than a page overflows rather than looping.
-            bodyOnPage++;
+                if (!AtPageTop)
+                {
+                    NewPage(); // Repeats the header rows.
+                }
+
+                // Taller than a whole page: split even a row that asked to stay whole. Rows joined by row spans overflow.
+                if (Y + height <= ContentBottom + Epsilon || _static || !CanSplit(layout, groupStart, end, ignoreAvoid: true))
+                {
+                    Place(groupStart, end);
+                }
+                else
+                {
+                    SplitRow(layout, groupStart, x, width);
+                }
+            }
+        }
+        finally
+        {
+            _pageStartHooks.Remove(StartPage);
         }
     }
 
@@ -762,8 +811,10 @@ internal sealed partial class Paginator
         switch (block)
         {
             case ParagraphBlock paragraph:
+                // The first lines it may not be split from (orphans); all of them if orphans and widows leave no break.
                 var lines = paragraph.Paragraph.Layout(contentWidth).Lines;
-                var count = Math.Min(lines.Count, Math.Max(1, style.Orphans));
+                var orphans = Math.Max(1, style.Orphans);
+                var count = lines.Count < orphans + Math.Max(1, style.Widows) ? lines.Count : orphans;
                 var linesHeight = lines.Take(count).Sum(l => l.Height);
                 return top + (count == lines.Count ? linesHeight + style.Padding.Bottom + style.Border.Bottom.Width : linesHeight);
             case ImageBlock image:
@@ -771,9 +822,18 @@ internal sealed partial class Paginator
             case FlexBlock flex when flex.Items.Count > 0:
                 return top + MinimumFlexStart(flex, contentWidth);
             case TableBlock table when table.Rows.Count > 0:
-                // The header rows and the first group of rows that must stay together.
+                // The header rows and the first group of rows that must stay together (or the start of a splittable row).
                 var tableLayout = TableLayouter.Layout(table, 0, contentWidth);
-                var firstEnd = tableLayout.Groups.FirstOrDefault(g => g.End > tableLayout.HeaderRows, tableLayout.Groups[^1]).End;
+                var firstGroup = tableLayout.Groups.FirstOrDefault(g => g.End > tableLayout.HeaderRows, tableLayout.Groups[^1]);
+                var firstEnd = firstGroup.End;
+                var firstBody = Math.Max(firstGroup.Start, tableLayout.HeaderRows);
+                if (firstBody < firstEnd && CanSplit(tableLayout, firstBody, firstEnd))
+                {
+                    var header = tableLayout.HeaderRows > 0 ? tableLayout.Height(0, tableLayout.HeaderRows) + tableLayout.SpacingY : 0;
+                    var splitStart = top + tableLayout.SpacingY + header + MinimumRowStart(tableLayout, firstBody);
+                    return Math.Min(splitStart, top + tableLayout.SpacingY + tableLayout.Height(0, firstEnd));
+                }
+
                 return top + tableLayout.SpacingY + tableLayout.Height(0, firstEnd) + (firstEnd == table.Rows.Count ? tableLayout.SpacingY + style.Padding.Bottom + style.Border.Bottom.Width : 0);
             case ContainerBlock container when container.Children.Count > 0:
                 var firstChild = container.Children[0];

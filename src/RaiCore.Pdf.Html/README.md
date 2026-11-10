@@ -26,8 +26,8 @@ Supported: the CSS cascade and print media queries, the box model, fonts and tex
 borders), flexbox and CSS Paged Media: `@page` size and margins, headers and footers in margin boxes, page
 counters, `string-set` and running elements.
 
-Not yet: floats, positioning, grid (rendered as blocks), `text-decoration` and splitting a single table row across
-pages.
+Not yet: floats, positioning, grid (rendered as blocks), `text-decoration` and splitting rows joined by `rowspan`
+across pages.
 
 Fonts default to the bundled Liberation fonts (metric-compatible with Arial, Times New Roman and Courier New), so
 output is identical on every machine. Network access is off unless you supply a `ResourceLoader`.

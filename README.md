@@ -64,7 +64,9 @@ own engine. Supported today:
 - Images from `data:` and `file:` URLs, linked stylesheets, `@page` size and margins, and page break properties.
 - Tables: automatic and fixed column widths, `colspan`/`rowspan`, `thead` rows repeated on every page,
   `border-collapse`/`border-spacing`, `vertical-align`, `<col>` widths, captions, and the legacy
-  `border`/`cellpadding`/`cellspacing`/`width` attributes.
+  `border`/`cellpadding`/`cellspacing`/`width` attributes. A row that does not fit is split like browsers do: each
+  cell continues on the next page below the repeated header (paragraph orphans and widows still apply, so rows of a
+  few lines move whole); `tr { break-inside: avoid }` keeps rows whole.
 - Flexbox: `flex-direction`, `flex-wrap`, `justify-content`, `align-items`/`align-self` (including `stretch` and
   `baseline`), `align-content`, `gap`, `order`, `flex`/`flex-grow`/`flex-shrink`/`flex-basis`, min/max sizes and
   auto margins. Containers with a height flex their items vertically too, e.g. a full-page cover whose footer sits
@@ -96,8 +98,8 @@ Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowD
 before rendering, e.g. to set your own page decorator.
 
 Not yet: floats and positioning, grid layout (rendered as blocks), inline box backgrounds and borders,
-`text-decoration`, splitting a single table row across pages, different page margins for `:first`/`:left`/`:right`,
-named pages, counters other than `page`/`pages`, and `calc()`. `inline-flex` is laid out like `flex`. Content taller
+`text-decoration`, splitting rows joined by `rowspan`, different page margins for `:first`/`:left`/`:right`, named
+pages, counters other than `page`/`pages`, and `calc()`. `inline-flex` is laid out like `flex`. Content taller
 than a fixed `height` overflows the box (`overflow: hidden` is not supported yet).
 
 ### Razor to PDF
@@ -289,7 +291,8 @@ flow.Render().Save("report.pdf");
 - Page breaks: forced (`break-before`/`break-after: page`), avoided (`break-after: avoid` keeps headings with their text,
   `break-inside: avoid`).
 - Boxes split across pages are sliced: the top border on the first page, the bottom border on the last.
-- Tables (`TableBlock`) use the CSS automatic or fixed table layout. Header rows repeat on every page, rows that
+- Tables (`TableBlock`) use the CSS automatic or fixed table layout. Header rows repeat on every page, rows that do
+  not fit are split with each cell continuing on the next page (unless `TableRow.BreakInside` is `Avoid`), rows that
   rowspans join stay together, and borders can be separate or collapsed.
 
 ## Architecture

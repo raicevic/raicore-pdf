@@ -7,7 +7,13 @@ internal sealed record GridCell(TableCell Cell, int Row, int Column, int RowSpan
 internal readonly record struct GridLine(double Width, PdfColor Color);
 
 /// <summary>A laid-out cell: where its box is and how to draw its content.</summary>
-internal sealed record CellLayout(GridCell Grid, double X, double Width, double ContentHeight, double InsetTop, double InsetBottom, IReadOnlyList<DrawOperation> Content);
+internal sealed record CellLayout(
+    GridCell Grid, double X, double Width, double ContentHeight, double InsetTop, double InsetBottom, IReadOnlyList<DrawOperation> Content,
+    double InsetLeft = 0, double InsetRight = 0)
+{
+    /// <summary>The width of the cell's content box.</summary>
+    public double InnerWidth => Math.Max(1, Width - InsetLeft - InsetRight);
+}
 
 /// <summary>A table laid out at a width, independent of pages: column positions, row heights and cell content.</summary>
 internal sealed class TableLayout
@@ -31,7 +37,7 @@ internal sealed class TableLayout
 
     public required int HeaderRows { get; init; }
 
-    /// <summary>Row ranges that must stay on one page because rowspans join them.</summary>
+    /// <summary>Row ranges that are placed together because rowspans join them (single rows may be split).</summary>
     public required IReadOnlyList<(int Start, int End)> Groups { get; init; }
 
     public double SpacingX => Table.BorderCollapse == BorderCollapse.Separate ? Table.HorizontalSpacing : 0;
@@ -142,7 +148,7 @@ internal static class TableLayouter
             var innerX = x + cellX + left;
             var innerWidth = Math.Max(1, cellWidth - left - right);
             var (height, content) = Paginator.LayoutStatic(cell.Cell.Content, innerX, innerWidth);
-            layouts.Add(new CellLayout(cell, cellX, cellWidth, height, top, bottom, content));
+            layouts.Add(new CellLayout(cell, cellX, cellWidth, height, top, bottom, content, left, right));
         }
 
         // Row heights: the tallest single-row cell; cells spanning rows stretch their last row if needed.
