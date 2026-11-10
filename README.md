@@ -60,6 +60,8 @@ own engine. Supported today:
 - Browser default styles for headings, paragraphs and lists.
 - Block and inline formatting with white-space handling; `inline-block`, `inline-flex` and `inline-table` boxes flow
   in the text as one item (shrink-to-fit, aligned on their last line of text, or first row for tables).
+- Backgrounds, borders, padding and horizontal margins on inline elements (highlighted text, tags), sliced where they
+  break across lines or around a block inside them.
 - `vertical-align` on inline text, images and inline boxes: `sub`, `super` (also for `<sub>`/`<sup>`), lengths,
   percentages, `middle`, `text-top`, `text-bottom`, `top` and `bottom`; nested shifts add up.
 - The box model: margin, border, padding, background, width, max-width, `height`, `min-height`, `max-height`, auto
@@ -107,7 +109,7 @@ h1 { string-set: chapter content(); }
 Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowDocument` returns the laid-out document
 before rendering, e.g. to set your own page decorator.
 
-Not yet: floats and positioning, grid layout (rendered as blocks), inline box backgrounds and borders,
+Not yet: floats and positioning, grid layout (rendered as blocks),
 `text-decoration`, different page margins for `:first`/`:left`/`:right`, named pages, counters other than
 `page`/`pages`, and `calc()`. Content taller than a fixed `height` overflows
 the box (`overflow: hidden` is not supported yet).

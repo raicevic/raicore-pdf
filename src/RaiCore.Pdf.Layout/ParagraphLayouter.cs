@@ -29,8 +29,8 @@ internal static class ParagraphLayouter
         }
 
         // Inline boxes contribute their min-content width to unbreakable pieces and their max-content width to lines.
-        var minPrefix = MeasurePrefix(text, paragraph.Spans, spanStarts, box => Paginator.InlineBoxIntrinsic(box.Content).Min);
-        var prefix = MeasurePrefix(text, paragraph.Spans, spanStarts, box => Paginator.InlineBoxIntrinsic(box.Content).Max);
+        var minPrefix = MeasurePrefix(text, paragraph, spanStarts, box => Paginator.InlineBoxIntrinsic(box.Content).Min);
+        var prefix = MeasurePrefix(text, paragraph, spanStarts, box => Paginator.InlineBoxIntrinsic(box.Content).Max);
         var indent = paragraph.FirstLineIndent;
         double min = 0, max = 0;
         int segmentStart = 0, lineStart = 0;
@@ -82,7 +82,7 @@ internal static class ParagraphLayouter
             boxes[box] = new InlineBoxFragment(box, 0, borderWidth, height, baseline, content);
         }
 
-        var prefix = MeasurePrefix(text, spans, spanStarts, box => boxes[box].OuterWidth);
+        var prefix = MeasurePrefix(text, paragraph, spanStarts, box => boxes[box].OuterWidth);
         double Measure(int from, int to) => prefix[to] - prefix[from];
 
         var lineRanges = BreakIntoLines(paragraph, text, width, Measure, spans, spanStarts);
@@ -104,8 +104,9 @@ internal static class ParagraphLayouter
     }
 
     /// <summary>prefix[i] = width in points of text[0..i), measured by shaping each span.</summary>
-    private static double[] MeasurePrefix(string text, IReadOnlyList<ParagraphSpan> spans, int[] spanStarts, Func<InlineBox, double> boxWidth)
+    private static double[] MeasurePrefix(string text, Paragraph paragraph, int[] spanStarts, Func<InlineBox, double> boxWidth)
     {
+        var spans = paragraph.Spans;
         var advance = new double[text.Length];
         for (var s = 0; s < spans.Count; s++)
         {
@@ -128,6 +129,20 @@ internal static class ParagraphLayouter
                 {
                     advance[spanStarts[s] + run.Clusters[g]] += run.Glyphs[g].Advance * style.FontSize;
                 }
+            }
+        }
+
+        // Inline elements' horizontal margins, borders and padding take space where they start and end.
+        foreach (var decoration in paragraph.Decorations)
+        {
+            if (decoration.HasStartEdge)
+            {
+                advance[decoration.Start] += StartEdge(decoration.Box);
+            }
+
+            if (decoration.HasEndEdge)
+            {
+                advance[decoration.End - 1] += EndEdge(decoration.Box);
             }
         }
 
@@ -236,7 +251,8 @@ internal static class ParagraphLayouter
 
         // Shape each span's part of the line again, so kerning and contextual forms are exact at line edges.
         // Image and box spans become pieces without a run.
-        var pieces = new List<(ShapedRun? Run, TextStyle Style, InlineImage? Image, InlineBoxFragment? Box)>();
+        // From and To are the piece's text range where it starts or ends its span's part of the line, else -1.
+        var pieces = new List<(ShapedRun? Run, TextStyle Style, InlineImage? Image, InlineBoxFragment? Box, int From, int To)>();
         for (var s = 0; s < spans.Count; s++)
         {
             var from = Math.Max(start, spanStarts[s]);
@@ -252,7 +268,7 @@ internal static class ParagraphLayouter
             var style = spans[s].Style;
             if (spans[s].Image is not null || spans[s].Box is not null)
             {
-                pieces.Add((null, style, spans[s].Image, spans[s].Box is { } box ? boxes[box] : null));
+                pieces.Add((null, style, spans[s].Image, spans[s].Box is { } box ? boxes[box] : null, from, to));
                 if (isLastPiece)
                 {
                     break;
@@ -272,9 +288,10 @@ internal static class ParagraphLayouter
                 continue;
             }
 
-            foreach (var run in TextShaper.Shape(piece, style.Fonts, style.Shaping).VisualRuns)
+            var runs = TextShaper.Shape(piece, style.Fonts, style.Shaping).VisualRuns.ToList();
+            for (var r = 0; r < runs.Count; r++)
             {
-                pieces.Add((run, style, null, null));
+                pieces.Add((runs[r], style, null, null, r == 0 ? from : -1, r == runs.Count - 1 ? to : -1));
             }
 
             if (isLastPiece)
@@ -284,7 +301,11 @@ internal static class ParagraphLayouter
         }
 
         // Justification: widen spaces so the line fills the available width.
-        var naturalWidth = pieces.Sum(p => p.Run is { } run ? run.Advance * p.Style.FontSize : p.Image?.Width ?? p.Box!.OuterWidth);
+        // Inline elements that start or end on this line add their edges.
+        var decorations = paragraph.Decorations.Where(d => d.Start < contentEnd && d.End > start).ToList();
+        var edges = decorations.Sum(d =>
+            (d.HasStartEdge && d.Start >= start ? StartEdge(d.Box) : 0) + (d.HasEndEdge && d.End <= contentEnd ? EndEdge(d.Box) : 0));
+        var naturalWidth = edges + pieces.Sum(p => p.Run is { } run ? run.Advance * p.Style.FontSize : p.Image?.Width ?? p.Box!.OuterWidth);
         var glyphLists = pieces.Select(p => p.Run?.Glyphs ?? []).ToList();
         if (justify && naturalWidth < available)
         {
@@ -302,10 +323,27 @@ internal static class ParagraphLayouter
 
         // Each piece's extent above and below its own baseline, its alignment, and its x position.
         var items = new (double Above, double Below, InlineAlignment Align, double X)[pieces.Count];
+        var openDecorations = new Dictionary<InlineDecoration, (double X0, bool StartEdge)>(ReferenceEqualityComparer.Instance);
+        var decorationPieces = new List<(InlineDecoration Decoration, double X0, double X1, bool StartEdge, bool EndEdge)>();
+        foreach (var decoration in decorations.Where(d => d.Start < start))
+        {
+            openDecorations[decoration] = (0, false); // Continued from the previous line.
+        }
+
         var x = 0.0;
         for (var p = 0; p < pieces.Count; p++)
         {
-            var (run, style, image, box) = pieces[p];
+            var (run, style, image, box, from, to) = pieces[p];
+
+            // Elements starting here, outer ones (ending later) first: margin, then the border box starts.
+            foreach (var decoration in decorations.Where(d => d.Start == from).OrderByDescending(d => d.End))
+            {
+                var edge = decoration.HasStartEdge;
+                x += edge ? decoration.Box.Margin.Left : 0;
+                openDecorations[decoration] = (x, edge);
+                x += edge ? decoration.Box.Border.Left.Width + decoration.Box.Padding.Left : 0;
+            }
+
             if (image is not null)
             {
                 items[p] = (image.Height, 0, image.Alignment, x); // An image's bottom is its baseline.
@@ -323,6 +361,25 @@ internal static class ParagraphLayouter
                 items[p] = (a, d, style.VerticalAlign, x);
                 x += glyphLists[p].Sum(g => g.Advance) * style.FontSize;
             }
+
+            // Elements ending here, inner ones (starting later) first: the border box ends, then the margin.
+            foreach (var decoration in decorations.Where(d => d.End == to).OrderByDescending(d => d.Start))
+            {
+                var edge = decoration.HasEndEdge;
+                x += edge ? decoration.Box.Padding.Right + decoration.Box.Border.Right.Width : 0;
+                if (openDecorations.Remove(decoration, out var open))
+                {
+                    decorationPieces.Add((decoration, open.X0, x, open.StartEdge, edge));
+                }
+
+                x += edge ? decoration.Box.Margin.Right : 0;
+            }
+        }
+
+        // Elements continuing on the next line end at the line's end, without their right edge.
+        foreach (var (decoration, open) in openDecorations)
+        {
+            decorationPieces.Add((decoration, open.X0, x, open.StartEdge, false));
         }
 
         // Line box (CSS 2.1 section 10.8): the strut and every item contribute their extent above and below the
@@ -369,7 +426,7 @@ internal static class ParagraphLayouter
         var lineBoxes = new List<InlineBoxFragment>();
         for (var p = 0; p < pieces.Count; p++)
         {
-            var (run, style, image, box) = pieces[p];
+            var (run, style, image, box, _, _) = pieces[p];
             var itemX = items[p].X;
             if (image is not null)
             {
@@ -393,8 +450,26 @@ internal static class ParagraphLayouter
             _ => 0,
         };
 
-        return new LineLayout(start, end, top, above + below, above, indent + offset, x, fragments, images, lineBoxes);
+        // Each element's piece covers its font's content area (raised with its text) plus its padding and border.
+        var decorationFragments = decorationPieces
+            .OrderBy(d => d.Decoration.Start).ThenByDescending(d => d.Decoration.End)
+            .Select(d =>
+            {
+                var (style, box) = (d.Decoration.Style, d.Decoration.Box);
+                var font = style.Fonts[0];
+                var shift = style.VerticalAlign.Kind == InlineAlignmentKind.Baseline ? style.VerticalAlign.Shift : 0;
+                var above = (font.Ascent * style.FontSize) + box.Padding.Top + box.Border.Top.Width + shift;
+                var below = (-font.Descent * style.FontSize) + box.Padding.Bottom + box.Border.Bottom.Width - shift;
+                return new InlineDecorationFragment(d.Decoration, d.X0, d.X1, above, below, d.StartEdge, d.EndEdge);
+            })
+            .ToList();
+
+        return new LineLayout(start, end, top, above + below, above, indent + offset, x, fragments, images, lineBoxes, decorationFragments);
     }
+
+    private static double StartEdge(BoxStyle box) => box.Margin.Left + box.Border.Left.Width + box.Padding.Left;
+
+    private static double EndEdge(BoxStyle box) => box.Padding.Right + box.Border.Right.Width + box.Margin.Right;
 
     private static (double Above, double Below) InlineBox(PdfFont font, TextStyle style)
     {

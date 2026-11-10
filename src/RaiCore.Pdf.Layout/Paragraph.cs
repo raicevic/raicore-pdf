@@ -19,6 +19,18 @@ public sealed record InlineBox(Block Content, InlineAlignment Alignment = defaul
 /// <param name="Alignment">Its vertical position in the line (CSS <c>vertical-align</c>).</param>
 public sealed record InlineImage(PdfImage Image, double Width, double Height, InlineAlignment Alignment = default);
 
+/// <summary>
+/// The box of an inline element around part of a paragraph's text (CSS backgrounds, borders, padding and horizontal
+/// margins on a <c>span</c>): drawn behind the text of each line it covers, sliced at line breaks.
+/// </summary>
+/// <param name="Start">Index in the paragraph text where the element starts.</param>
+/// <param name="End">Index where it ends (exclusive).</param>
+/// <param name="Box">Its padding, border, background and margins (vertical margins are ignored, as in CSS).</param>
+/// <param name="Style">Its text style: the font's ascent and descent, raised by its vertical shift, make the content area.</param>
+/// <param name="HasStartEdge">False when the element started in an earlier paragraph (its left edge is there).</param>
+/// <param name="HasEndEdge">False when it continues in a later paragraph.</param>
+public sealed record InlineDecoration(int Start, int End, BoxStyle Box, TextStyle Style, bool HasStartEdge = true, bool HasEndEdge = true);
+
 /// <summary>A run of text in one style, an inline image or an inline box.</summary>
 /// <param name="Text">The text; U+FFFC for an image or a box.</param>
 /// <param name="Style">The style (for an image or a box, the paragraph style).</param>
@@ -45,6 +57,9 @@ public sealed record ParagraphSpan(string Text, TextStyle Style, InlineImage? Im
 public sealed class Paragraph
 {
     private readonly List<ParagraphSpan> _spans = [];
+    private readonly List<InlineDecoration> _decorations = [];
+    private readonly Stack<(int Start, BoxStyle Box, TextStyle Style, bool StartEdge)> _open = new();
+    private int _length;
 
     /// <summary>Creates a paragraph. <paramref name="style"/> is the default for spans and sets the minimum line height (the CSS "strut").</summary>
     public Paragraph(TextStyle style)
@@ -71,6 +86,50 @@ public sealed class Paragraph
     /// <summary>The spans, in order.</summary>
     public IReadOnlyList<ParagraphSpan> Spans => _spans;
 
+    /// <summary>The boxes of inline elements (see <see cref="BeginInline"/>), in the order they end.</summary>
+    public IReadOnlyList<InlineDecoration> Decorations => _decorations;
+
+    /// <summary>
+    /// Starts an inline element with a box: the text added until the matching <see cref="EndInline"/> gets its
+    /// background, border and padding, and its left padding, border and margin take space before it.
+    /// </summary>
+    /// <param name="box">Padding, border, background and horizontal margins.</param>
+    /// <param name="style">Its text style (for the height of its content area); defaults to the paragraph's.</param>
+    /// <param name="startEdge">False if the element began in an earlier paragraph: no left edge here.</param>
+    public Paragraph BeginInline(BoxStyle box, TextStyle? style = null, bool startEdge = true)
+    {
+        ArgumentNullException.ThrowIfNull(box);
+        _open.Push((_length, box, style ?? Style, startEdge));
+        return this;
+    }
+
+    /// <summary>Ends the innermost inline element started with <see cref="BeginInline"/>. An empty one is dropped.</summary>
+    /// <param name="endEdge">False if the element continues in a later paragraph: no right edge here.</param>
+    public Paragraph EndInline(bool endEdge = true)
+    {
+        if (_open.Count == 0)
+        {
+            throw new InvalidOperationException("EndInline without a matching BeginInline.");
+        }
+
+        var (start, box, style, startEdge) = _open.Pop();
+        if (_length > start)
+        {
+            _decorations.Add(new InlineDecoration(start, _length, box, style, startEdge, endEdge));
+        }
+
+        return this;
+    }
+
+    /// <summary>Adds content inside an inline element's box (see <see cref="BeginInline"/>).</summary>
+    public Paragraph AddInline(BoxStyle box, Action<Paragraph> content, TextStyle? style = null)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        BeginInline(box, style);
+        content(this);
+        return EndInline();
+    }
+
     /// <summary>Appends text in the paragraph's style.</summary>
     public Paragraph Add(string text) => Add(text, Style);
 
@@ -82,6 +141,7 @@ public sealed class Paragraph
         if (text.Length > 0)
         {
             _spans.Add(new ParagraphSpan(text, style));
+            _length += text.Length;
         }
 
         return this;
@@ -97,6 +157,7 @@ public sealed class Paragraph
         ArgumentOutOfRangeException.ThrowIfNegative(width);
         ArgumentOutOfRangeException.ThrowIfNegative(height);
         _spans.Add(new ParagraphSpan("\uFFFC", Style, new InlineImage(image, width, height, alignment)));
+        _length++;
         return this;
     }
 
@@ -108,6 +169,7 @@ public sealed class Paragraph
     {
         ArgumentNullException.ThrowIfNull(content);
         _spans.Add(new ParagraphSpan("\uFFFC", Style, Box: new InlineBox(content, alignment)));
+        _length++;
         return this;
     }
 
