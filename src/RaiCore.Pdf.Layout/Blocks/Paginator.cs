@@ -49,6 +49,9 @@ internal sealed partial class Paginator
     /// <summary>Called on every page created while they are registered, e.g. to repeat a table's header rows.</summary>
     private readonly List<Action> _pageStartHooks = [];
 
+    /// <summary>Space kept free at the bottom of pages from a page on, e.g. for a table's repeated footer rows.</summary>
+    private readonly List<(int FromPage, double Height)> _bottomReserves = [];
+
     private Paginator(PageSetup setup, bool isStatic = false)
     {
         _setup = setup;
@@ -58,7 +61,22 @@ internal sealed partial class Paginator
 
     private double ContentTop => _setup.Margins.Top;
 
-    private double ContentBottom => _setup.Size.Height - _setup.Margins.Bottom;
+    private double ContentBottom => PageBottom(PageIndex);
+
+    /// <summary>Where a page's flowing content ends: above space reserved for repeated table footers, if any.</summary>
+    private double PageBottom(int page)
+    {
+        var bottom = _setup.Size.Height - _setup.Margins.Bottom;
+        foreach (var (fromPage, height) in _bottomReserves)
+        {
+            if (page >= fromPage)
+            {
+                bottom -= height;
+            }
+        }
+
+        return bottom;
+    }
 
     /// <summary>The current page. Flex items laid out side by side revisit pages, so this is not always the last one.</summary>
     private int PageIndex => _pageIndex;
@@ -408,7 +426,7 @@ internal sealed partial class Paginator
                 var first = page == startPage;
                 var last = page == endPage;
                 var top = first ? startY : PageTop(page);
-                var bottom = last ? endY : ContentBottom;
+                var bottom = last ? endY : PageBottom(page);
                 var index = first ? insertAt : 0; // Pages created inside the box: under everything on them.
                 _pages[page].Insert(index, (canvas, pageHeight) => DrawBox(canvas, pageHeight, style, x, top, width, bottom - top, first, last));
                 _placements.Add(new Placement(page, block, top, bottom, -1, -1, x, width));
@@ -582,6 +600,7 @@ internal sealed partial class Paginator
 
         var layout = TableLayouter.Layout(table, x, width);
         var headerEnd = layout.HeaderRows;
+        var footerStart = table.Rows.Count - layout.FooterRows;
 
         void Place(int start, int end)
         {
@@ -603,13 +622,27 @@ internal sealed partial class Paginator
             }
         }
 
+        // Footer rows repeat below the body on every page the table continues from: their space is kept free at the
+        // bottom of each of its pages, and they are drawn there once the body is placed.
+        var startPage = PageIndex;
+        var placementsBefore = _placements.Count;
+        var footerHeight = layout.FooterRows > 0 ? layout.Height(footerStart, table.Rows.Count) : 0;
+        var repeatFooter = !_static && layout.FooterRows > 0 && footerHeight <= _setup.ContentHeight / 4;
+        var reserve = (startPage, footerHeight + (2 * layout.SpacingY));
+
         StartPage();
         _pageStartHooks.Add(StartPage);
+        if (repeatFooter)
+        {
+            _bottomReserves.Add(reserve);
+        }
+
         try
         {
-            foreach (var (start, end) in layout.Groups.Where(g => g.End > headerEnd))
+            foreach (var (start, groupEnd) in layout.Groups.Where(g => g.End > headerEnd && g.Start < footerStart))
             {
                 var groupStart = Math.Max(start, headerEnd);
+                var end = Math.Min(groupEnd, footerStart);
                 var height = layout.Height(groupStart, end);
                 if (Y + height <= ContentBottom + Epsilon)
                 {
@@ -643,7 +676,30 @@ internal sealed partial class Paginator
         finally
         {
             _pageStartHooks.Remove(StartPage);
+            _bottomReserves.Remove(reserve);
         }
+
+        if (layout.FooterRows == 0)
+        {
+            return;
+        }
+
+        // On the pages the table continues from, the footer goes right below the last body row (or row piece).
+        if (repeatFooter)
+        {
+            var bodyEnds = _placements.Skip(placementsBefore)
+                .Where(p => p.Block == table && p.FirstLine >= headerEnd && p.FirstLine < footerStart && p.Page < PageIndex)
+                .GroupBy(p => p.Page)
+                .Select(g => (Page: g.Key, Bottom: g.Max(p => p.Bottom)));
+            foreach (var (page, bottom) in bodyEnds)
+            {
+                var top = bottom + layout.SpacingY;
+                _pages[page].Add((canvas, pageHeight) => DrawRows(canvas, pageHeight, layout, x, top, footerStart, table.Rows.Count));
+                _placements.Add(new Placement(page, table, top, top + footerHeight, footerStart, table.Rows.Count, x, width));
+            }
+        }
+
+        Place(footerStart, table.Rows.Count);
     }
 
     private static void DrawRows(PdfCanvas canvas, double pageHeight, TableLayout layout, double x, double top, int start, int end)
@@ -822,19 +878,29 @@ internal sealed partial class Paginator
             case FlexBlock flex when flex.Items.Count > 0:
                 return top + MinimumFlexStart(flex, contentWidth);
             case TableBlock table when table.Rows.Count > 0:
-                // The header rows and the first group of rows that must stay together (or the start of a splittable row).
+                // The header rows and the first group of rows that must stay together (or the start of a splittable row),
+                // plus the footer rows that will repeat below them.
                 var tableLayout = TableLayouter.Layout(table, 0, contentWidth);
+                var footerStart = table.Rows.Count - tableLayout.FooterRows;
+                var footerHeight = tableLayout.FooterRows > 0 ? tableLayout.Height(footerStart, table.Rows.Count) : 0;
+                var footer = footerHeight > 0 && footerHeight <= _setup.ContentHeight / 4 ? footerHeight + tableLayout.SpacingY : 0;
                 var firstGroup = tableLayout.Groups.FirstOrDefault(g => g.End > tableLayout.HeaderRows, tableLayout.Groups[^1]);
-                var firstEnd = firstGroup.End;
+                var firstEnd = Math.Max(Math.Min(firstGroup.End, footerStart), tableLayout.HeaderRows);
                 var firstBody = Math.Max(firstGroup.Start, tableLayout.HeaderRows);
                 if (firstBody < firstEnd && CanSplit(tableLayout, firstBody, firstEnd))
                 {
                     var header = tableLayout.HeaderRows > 0 ? tableLayout.Height(0, tableLayout.HeaderRows) + tableLayout.SpacingY : 0;
-                    var splitStart = top + tableLayout.SpacingY + header + MinimumRowStart(tableLayout, firstBody);
-                    return Math.Min(splitStart, top + tableLayout.SpacingY + tableLayout.Height(0, firstEnd));
+                    var splitStart = top + tableLayout.SpacingY + header + MinimumRowStart(tableLayout, firstBody) + footer;
+                    return Math.Min(splitStart, top + tableLayout.SpacingY + tableLayout.Height(0, firstEnd) + footer);
                 }
 
-                return top + tableLayout.SpacingY + tableLayout.Height(0, firstEnd) + (firstEnd == table.Rows.Count ? tableLayout.SpacingY + style.Padding.Bottom + style.Border.Bottom.Width : 0);
+                if (firstEnd >= footerStart)
+                {
+                    footer = 0; // The whole table is its first group: its footer is part of it.
+                    firstEnd = table.Rows.Count;
+                }
+
+                return top + tableLayout.SpacingY + tableLayout.Height(0, firstEnd) + footer + (firstEnd == table.Rows.Count ? tableLayout.SpacingY + style.Padding.Bottom + style.Border.Bottom.Width : 0);
             case ContainerBlock container when container.Children.Count > 0:
                 var firstChild = container.Children[0];
                 return top + firstChild.Style.Margin.Top + MinimumStartHeight(firstChild, contentWidth);

@@ -54,6 +54,29 @@ public class HtmlTableSplitTests
         Assert.Equal([1], flow.Paginate().Placements.Where(p => p.Block == table).Select(p => p.Page));
     }
 
+    [Fact]
+    public void Tfoot_rows_come_last_and_repeat_on_every_page()
+    {
+        var rows = string.Concat(Enumerable.Range(1, 60).Select(i => $"<tr><td>Line item {i}</td><td>{i},00</td></tr>"));
+        var html = $"""
+            <table>
+              <thead><tr><th>Item</th><th>Amount</th></tr></thead>
+              <tfoot><tr><td>Carried forward</td><td>-</td></tr></tfoot>
+              <tbody>{rows}</tbody>
+            </table>
+            """;
+        var table = Table(html);
+        Assert.True(table.Rows[^1].IsFooter);
+        Assert.False(table.Rows[^2].IsFooter);
+        Assert.True(table.Rows[0].IsHeader);
+
+        var pdf = HtmlToPdf.Convert(html, new HtmlConverterOptions { Page = Page });
+        Assert.True(pdf.Pages.Count >= 2, $"Expected several pages, got {pdf.Pages.Count}.");
+        var pages = ExternalTools.ExtractText(pdf.ToArray()).Split('\f');
+        Assert.All(pages.Take(pdf.Pages.Count), page => Assert.Contains("Carried forward", page, StringComparison.Ordinal));
+        Assert.Contains("Line item 60", pages[pdf.Pages.Count - 1], StringComparison.Ordinal);
+    }
+
     private static TableBlock Table(string html) =>
         HtmlToPdf.CreateFlowDocument(html, new HtmlConverterOptions { Page = Page }).Blocks.SelectMany(Flatten).OfType<TableBlock>().Single();
 
