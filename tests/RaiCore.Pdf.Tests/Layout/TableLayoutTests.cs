@@ -162,7 +162,24 @@ public class TableLayoutTests
     }
 
     [Fact]
-    public void Rows_joined_by_a_row_span_move_to_the_next_page_together()
+    public void Rows_joined_by_a_row_span_may_break_between_rows()
+    {
+        // Rows 20-22 are joined; after 20 rows of 12 pt on a 260 pt page, only row 20 fits.
+        var placements = Flow(SpanningTable(avoid: false)).Paginate().Placements.Where(p => p.FirstLine >= 20).ToList();
+
+        Assert.Equal([(0, 20), (1, 21), (1, 22)], placements.Where(p => p.EndLine == p.FirstLine + 1).Select(p => (p.Page, p.FirstLine)));
+    }
+
+    [Fact]
+    public void Rows_joined_by_a_row_span_that_avoid_breaks_move_together()
+    {
+        var placements = Flow(SpanningTable(avoid: true)).Paginate().Placements.Where(p => p.FirstLine >= 20).ToList();
+
+        var group = Assert.Single(placements);
+        Assert.Equal((1, 20, 23), (group.Page, group.FirstLine, group.EndLine));
+    }
+
+    private static TableBlock SpanningTable(bool avoid)
     {
         var table = new TableBlock(new BoxStyle { Width = 260 });
         for (var i = 0; i < 20; i++)
@@ -170,15 +187,11 @@ public class TableLayoutTests
             table.Add(new TableRow(Cell($"Row {i}"), Cell("x")));
         }
 
-        // Rows 18-20 are joined; they do not all fit after 18 rows of 12 pt on a 260 pt page.
-        table.Add(new TableRow(new TableCell(Para("span")) { RowSpan = 3 }, Cell("a")));
-        table.Add(new TableRow(Cell("b")));
-        table.Add(new TableRow(Cell("c")));
-        var placements = Flow(table).Paginate().Placements.Where(p => p.Block == table && p.FirstLine >= 0).ToList();
-
-        var group = Assert.Single(placements, p => p.FirstLine == 20);
-        Assert.Equal(23, group.EndLine);
-        Assert.Equal(1, group.Page);
+        var keep = avoid ? PageBreakInside.Avoid : PageBreakInside.Auto;
+        table.Add(new TableRow(new TableCell(Para("span")) { RowSpan = 3 }, Cell("a")) { BreakInside = keep });
+        table.Add(new TableRow(Cell("b")) { BreakInside = keep });
+        table.Add(new TableRow(Cell("c")) { BreakInside = keep });
+        return table;
     }
 
     [Fact]

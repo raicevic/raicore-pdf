@@ -49,8 +49,9 @@ public enum VerticalAlignment
 /// A table: rows of cells laid out on a grid, with column widths computed from the content (CSS automatic table
 /// layout) or fixed. Header rows repeat at the top of every page the table continues on. A row that does not fit on
 /// the page is split, as browsers do: each cell's content continues on the next page (paragraph orphans and widows
-/// still apply, so rows of a few lines move whole). Rows joined by row spans, and rows with
-/// <see cref="TableRow.BreakInside"/> set to <see cref="PageBreakInside.Avoid"/>, move to the next page whole instead.
+/// still apply, so rows of a few lines move whole). Rows joined by row spans may also break between them; a cell
+/// spanning rows then continues alongside the rows on the next page. Rows with <see cref="TableRow.BreakInside"/> set
+/// to <see cref="PageBreakInside.Avoid"/> (and, for joined rows, all rows of the group) move to the next page whole.
 /// </summary>
 /// <remarks>
 /// With <see cref="BorderCollapse.Collapse"/>, the table's own <see cref="BoxStyle.Border"/> takes part in border

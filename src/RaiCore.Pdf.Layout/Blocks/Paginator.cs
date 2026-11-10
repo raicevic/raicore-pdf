@@ -620,7 +620,7 @@ internal sealed partial class Paginator
                 // A row that does not fit is split here if the start of its cells fits, as in browsers.
                 if (!_static && CanSplit(layout, groupStart, end) && MinimumRowStart(layout, groupStart) <= Remaining + Epsilon)
                 {
-                    SplitRow(layout, groupStart, x, width);
+                    SplitRows(layout, groupStart, end, x, width);
                     continue;
                 }
 
@@ -636,7 +636,7 @@ internal sealed partial class Paginator
                 }
                 else
                 {
-                    SplitRow(layout, groupStart, x, width);
+                    SplitRows(layout, groupStart, end, x, width);
                 }
             }
         }

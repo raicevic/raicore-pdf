@@ -98,8 +98,7 @@ Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowD
 before rendering, e.g. to set your own page decorator.
 
 Not yet: floats and positioning, grid layout (rendered as blocks), inline box backgrounds and borders,
-`text-decoration`, splitting rows joined by `rowspan`, different page margins for `:first`/`:left`/`:right`, named
-pages, counters other than `page`/`pages`, and `calc()`. `inline-flex` is laid out like `flex`. Content taller
+`text-decoration`, repeating `tfoot` rows, different page margins for `:first`/`:left`/`:right`, named pages, counters other than `page`/`pages`, and `calc()`. `inline-flex` is laid out like `flex`. Content taller
 than a fixed `height` overflows the box (`overflow: hidden` is not supported yet).
 
 ### Razor to PDF
@@ -293,7 +292,8 @@ flow.Render().Save("report.pdf");
 - Boxes split across pages are sliced: the top border on the first page, the bottom border on the last.
 - Tables (`TableBlock`) use the CSS automatic or fixed table layout. Header rows repeat on every page, rows that do
   not fit are split with each cell continuing on the next page (unless `TableRow.BreakInside` is `Avoid`), rows that
-  rowspans join stay together, and borders can be separate or collapsed.
+  rowspans join may also break between them with the spanning cell continuing alongside, and borders can be separate
+  or collapsed.
 
 ## Architecture
 

@@ -96,15 +96,76 @@ public class TableSplitTests
     }
 
     [Fact]
-    public void Rows_joined_by_a_row_span_move_together()
+    public void Rows_joined_by_a_row_span_split_between_and_inside_rows()
     {
+        // 30 pt are left: the first row's two lines fit, the spanning cell continues while the second row moves on.
         var spanning = Para(4);
         var table = new TableBlock()
             .Add(new TableRow(new TableCell(spanning) { RowSpan = 2 }, new TableCell(Para(2))))
             .Add(new TableRow(new TableCell(Para(2))));
         var placements = Layout(Para(13), table);
 
-        Assert.Equal([(1, 20.0, 60.0)], Fragments(placements, table));
+        Assert.Equal([(0, 150.0, 170.0), (1, 20.0, 40.0)], Fragments(placements, table));
+        Assert.Equal([(0, 0, 2), (1, 2, 4)], Lines(placements, spanning));
+    }
+
+    [Fact]
+    public void A_spanning_cell_taller_than_a_page_runs_alongside_its_rows()
+    {
+        var spanning = Para(30);
+        var (first, second) = (Para(1), Para(1));
+        var table = new TableBlock()
+            .Add(new TableRow(new TableCell(spanning) { RowSpan = 2 }, new TableCell(first)))
+            .Add(new TableRow(new TableCell(second)));
+        var after = Para(1);
+        var placements = Layout(table, after);
+
+        Assert.Equal([(0, 0, 16), (1, 16, 30)], Lines(placements, spanning));
+        Assert.Equal((0, 30.0), placements.Where(p => p.Block == second).Select(p => (p.Page, p.Top)).Single());
+
+        // The second row ends where the spanning cell does: its pieces are 30-180 and 20-160.
+        Assert.Equal([(0, 20.0, 30.0), (0, 30.0, 180.0), (1, 20.0, 160.0)], Fragments(placements, table).Order());
+        Assert.Equal((1, 160.0), placements.Where(p => p.Block == after).Select(p => (p.Page, p.Top)).Single());
+    }
+
+    [Fact]
+    public void A_spanning_cells_background_continues_on_the_next_page()
+    {
+        var red = PdfColor.FromRgb(255, 0, 0);
+        var table = new TableBlock(new BoxStyle { Width = 160 }) { BorderCollapse = BorderCollapse.Collapse }
+            .Add(new TableRow(new TableCell(Para(1)) { RowSpan = 2, Style = new BoxStyle { Background = red } }, new TableCell(Para(1))))
+            .Add(new TableRow(new TableCell(Para(25))));
+        var pdf = new FlowDocument(Small).Add(table).Render().ToArray();
+
+        using var first = Conversion.ToImage(pdf, page: 0, options: new RenderOptions(Dpi: 72));
+        using var second = Conversion.ToImage(pdf, page: 1, options: new RenderOptions(Dpi: 72));
+        var redPixel = new SKColor(255, 0, 0);
+
+        // The spanning cell is the left column; its rows end with the 25-line cell on the second page.
+        Assert.Equal(redPixel, first.GetPixel(25, 100));
+        Assert.Equal(redPixel, second.GetPixel(25, 30));
+        Assert.NotEqual(redPixel, second.GetPixel(25, 150)); // Below the table.
+    }
+
+    [Fact]
+    public void A_spanning_cell_broken_between_rows_ends_with_its_last_row_on_the_page()
+    {
+        // After two lines, six two-line rows (120 pt) fill the page to 160. The seventh row's three lines cannot be
+        // split, so it moves on, and the spanning cell's first piece must end at 160, not at the page's bottom (180).
+        var red = PdfColor.FromRgb(255, 0, 0);
+        var table = new TableBlock(new BoxStyle { Width = 160 })
+            .Add(new TableRow(new TableCell(Para(1)) { RowSpan = 7, Style = new BoxStyle { Background = red } }, new TableCell(Para(2))));
+        for (var i = 1; i < 7; i++)
+        {
+            table.Add(new TableRow(new TableCell(Para(i == 6 ? 3 : 2))));
+        }
+
+        var pdf = new FlowDocument(Small).Add(Para(2)).Add(table).Render().ToArray();
+        using var first = Conversion.ToImage(pdf, page: 0, options: new RenderOptions(Dpi: 72));
+        var redPixel = new SKColor(255, 0, 0);
+
+        Assert.Equal(redPixel, first.GetPixel(25, 155));
+        Assert.NotEqual(redPixel, first.GetPixel(25, 170));
     }
 
     [Fact]
