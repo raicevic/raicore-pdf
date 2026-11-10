@@ -87,9 +87,14 @@ internal sealed partial class BoxBuilder
         return textStyle;
     }
 
-    private Block? BuildBlock(IElement element, ComputedStyle style, double containingWidth, string? marker)
+    private Block? BuildBlock(IElement element, ComputedStyle style, double containingWidth, string? marker, bool flexItem = false)
     {
-        var (box, contentWidth) = BoxStyleFor(style, containingWidth);
+        if (style.Display == CssDisplay.Flex)
+        {
+            return BuildFlex(element, style, containingWidth, flexItem);
+        }
+
+        var (box, contentWidth) = BoxStyleFor(style, containingWidth, flexItem);
         var children = new List<Block>();
         var collector = new InlineCollector(this, style, contentWidth);
         if (marker is not null)
@@ -143,7 +148,7 @@ internal sealed partial class BoxBuilder
                     {
                         // A running element leaves the flow; an empty marker block keeps its place for element().
                         Flush(collector, children);
-                        var content = BuildBlock(child, childStyle with { Display = CssDisplay.Block }, _pageContentWidth, marker: null);
+                        var content = BuildBlock(child, RunningStyle(childStyle), _pageContentWidth, marker: null);
                         children.Add(new ContainerBlock { Marker = new Paged.RunningMarker(runningName, content is null ? [] : [content]) });
                         break;
                     }
@@ -177,9 +182,7 @@ internal sealed partial class BoxBuilder
                     string? marker = null;
                     if (childStyle.Display == CssDisplay.ListItem)
                     {
-                        listIndex = child.GetAttribute("value") is { } value && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : listIndex;
-                        marker = ListMarkers.Format(childStyle.ListStyleType, listIndex);
-                        listIndex += IsReversed(element) ? -1 : 1;
+                        marker = NextListMarker(element, child, childStyle, ref listIndex);
                     }
 
                     if (BuildBlock(child, childStyle, contentWidth, marker) is { } block)
@@ -190,6 +193,19 @@ internal sealed partial class BoxBuilder
                     break;
             }
         }
+    }
+
+    /// <summary>A running element is laid out as a block (or a flex container) in a page margin box.</summary>
+    private static ComputedStyle RunningStyle(ComputedStyle style) =>
+        style.Display == CssDisplay.Flex ? style : style with { Display = CssDisplay.Block };
+
+    /// <summary>The marker text of a list item, advancing the list's counter (honoring value and reversed).</summary>
+    private static string? NextListMarker(IElement list, IElement item, ComputedStyle style, ref int listIndex)
+    {
+        listIndex = item.GetAttribute("value") is { } value && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : listIndex;
+        var marker = ListMarkers.Format(style.ListStyleType, listIndex);
+        listIndex += IsReversed(list) ? -1 : 1;
+        return marker;
     }
 
     private void Flush(InlineCollector collector, List<Block> children)
@@ -293,7 +309,11 @@ internal sealed partial class BoxBuilder
     }
 
     /// <summary>The box style and the content width, with percentages, auto margins and width/max-width resolved.</summary>
-    private static (BoxStyle Box, double ContentWidth) BoxStyleFor(ComputedStyle style, double containingWidth)
+    /// <remarks>
+    /// For a flex item, auto margins are left at 0 (the flex layout distributes free space to them) and max-width only
+    /// caps a fixed width (the flex layout clamps the rest).
+    /// </remarks>
+    private static (BoxStyle Box, double ContentWidth) BoxStyleFor(ComputedStyle style, double containingWidth, bool flexItem = false)
     {
         var padding = new Thickness(
             style.Padding[0].Resolve(containingWidth), style.Padding[1].Resolve(containingWidth),
@@ -310,7 +330,7 @@ internal sealed partial class BoxBuilder
             borderBoxWidth = style.BorderBox ? Math.Max(width, decoration) : width + decoration;
         }
 
-        if (!style.MaxWidth.IsAuto)
+        if (!style.MaxWidth.IsAuto && !(flexItem && borderBoxWidth is null))
         {
             var max = style.MaxWidth.Resolve(containingWidth);
             var maxBorderBox = style.BorderBox ? max : max + decoration;
@@ -331,7 +351,7 @@ internal sealed partial class BoxBuilder
 
         var left = style.Margin[3].Resolve(containingWidth);
         var right = style.Margin[1].Resolve(containingWidth);
-        if (borderBoxWidth is { } fixedWidth)
+        if (borderBoxWidth is { } fixedWidth && !flexItem)
         {
             // Auto horizontal margins share the free space (CSS 2.1 section 10.3.3), e.g. margin: 0 auto centers.
             var free = containingWidth - fixedWidth - (style.Margin[3].IsAuto ? 0 : left) - (style.Margin[1].IsAuto ? 0 : right);

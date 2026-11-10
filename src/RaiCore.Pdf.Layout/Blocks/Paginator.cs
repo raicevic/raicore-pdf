@@ -10,7 +10,9 @@ internal delegate void DrawOperation(PdfCanvas canvas, double pageHeight);
 /// <param name="Bottom">Bottom of the placed piece.</param>
 /// <param name="FirstLine">For paragraphs: first line on this page; -1 for box fragments.</param>
 /// <param name="EndLine">For paragraphs: the line after the last one on this page; -1 for box fragments.</param>
-internal sealed record Placement(int Page, Block Block, double Top, double Bottom, int FirstLine, int EndLine);
+/// <param name="Left">Left edge of the placed piece (the border box for boxes, the content box for paragraphs).</param>
+/// <param name="Width">Width of the placed piece.</param>
+internal sealed record Placement(int Page, Block Block, double Top, double Bottom, int FirstLine, int EndLine, double Left = 0, double Width = 0);
 
 /// <summary>The result of pagination: drawing operations per page, and where everything went.</summary>
 internal sealed record PaginationResult(
@@ -24,7 +26,7 @@ internal sealed record PaginationResult(
 /// the first fragment, bottom ones on the last).
 /// </summary>
 /// <remarks>All y values here are distances from the top of the page.</remarks>
-internal sealed class Paginator
+internal sealed partial class Paginator
 {
     private const double Epsilon = 1e-6;
 
@@ -39,6 +41,7 @@ internal sealed class Paginator
     private readonly List<List<DrawOperation>> _pages = [];
     private readonly List<Placement> _placements = [];
     private readonly List<(int Page, object Marker)> _markers = [];
+    private int _pageIndex = -1;
 
     private Paginator(PageSetup setup, bool isStatic = false)
     {
@@ -51,7 +54,8 @@ internal sealed class Paginator
 
     private double ContentBottom => _setup.Size.Height - _setup.Margins.Bottom;
 
-    private int PageIndex => _pages.Count - 1;
+    /// <summary>The current page. Flex items laid out side by side revisit pages, so this is not always the last one.</summary>
+    private int PageIndex => _pageIndex;
 
     private double Y { get; set; }
 
@@ -93,14 +97,13 @@ internal sealed class Paginator
         return (min + style.Margin.Horizontal, max + style.Margin.Horizontal);
     }
 
-    private static (double Min, double Max) IntrinsicBorderBox(Block block)
+    private static (double Min, double Max) IntrinsicBorderBox(Block block) =>
+        block.Style.Width is { } fixedWidth ? (fixedWidth, fixedWidth) : IntrinsicContentBorderBox(block);
+
+    /// <summary>The border-box min-content and max-content widths from the content, ignoring a fixed width.</summary>
+    private static (double Min, double Max) IntrinsicContentBorderBox(Block block)
     {
         var style = block.Style;
-        if (style.Width is { } fixedWidth)
-        {
-            return (fixedWidth, fixedWidth);
-        }
-
         var decoration = style.Border.Widths.Horizontal + style.Padding.Horizontal;
         var (min, max) = block switch
         {
@@ -108,6 +111,7 @@ internal sealed class Paginator
             ImageBlock image => (image.GetSize(double.MaxValue, double.MaxValue).Width, image.GetSize(double.MaxValue, double.MaxValue).Width),
             ContainerBlock container => container.Children.Select(MeasureIntrinsic).Aggregate((Min: 0.0, Max: 0.0), (a, b) => (Math.Max(a.Min, b.Min), Math.Max(a.Max, b.Max))),
             TableBlock table => TableLayouter.MeasureIntrinsic(table),
+            FlexBlock flex => FlexIntrinsic(flex),
             _ => (0, 0),
         };
         return (min + decoration, max + decoration);
@@ -139,9 +143,15 @@ internal sealed class Paginator
         }
     }
 
+    /// <summary>Moves to the next page, creating it unless a side-by-side flex item already did.</summary>
     private void NewPage(bool forced = false)
     {
-        _pages.Add([]);
+        _pageIndex++;
+        if (_pageIndex == _pages.Count)
+        {
+            _pages.Add([]);
+        }
+
         Y = ContentTop;
         TruncateMargins = !forced;
     }
@@ -267,7 +277,7 @@ internal sealed class Paginator
     private static bool HasBottomEdge(BoxStyle style) => style.Border.Bottom.Width > 0 || style.Padding.Bottom > 0;
 
     /// <summary>Lays out one block; returns the bottom margin that collapses out of it (from its last child).</summary>
-    private CollapsedMargin LayoutBlock(Block block, double x, double width)
+    private CollapsedMargin LayoutBlock(Block block, double x, double width, BoxSizing sizing = default)
     {
         var trailing = default(CollapsedMargin);
         switch (block)
@@ -280,22 +290,27 @@ internal sealed class Paginator
 
                 break;
             case ParagraphBlock paragraph:
-                LayoutBox(block, x, width, (contentX, contentWidth) => LayoutParagraph(paragraph, contentX, contentWidth));
+                LayoutBox(block, x, width, (contentX, contentWidth) => LayoutParagraph(paragraph, contentX, contentWidth), sizing);
                 break;
             case ImageBlock image:
-                LayoutBox(block, x, width, (contentX, contentWidth) => LayoutImage(image, contentX, contentWidth));
+                LayoutBox(block, x, width, (contentX, contentWidth) => LayoutImage(image, contentX, contentWidth), sizing);
                 break;
             case TableBlock table:
                 // With collapsed borders, the table's border takes part in the grid lines instead of framing the table.
                 var tableStyle = table.BorderCollapse == BorderCollapse.Collapse ? table.Style with { Border = Borders.None } : table.Style;
-                LayoutBox(block, x, width, (contentX, contentWidth) => LayoutTable(table, contentX, contentWidth), tableStyle);
+                LayoutBox(block, x, width, (contentX, contentWidth) => LayoutTable(table, contentX, contentWidth), sizing, tableStyle);
+                break;
+            case FlexBlock flex:
+                LayoutBox(block, x, width, (contentX, contentWidth) => LayoutFlex(flex, contentX, contentWidth), sizing);
                 break;
             case ContainerBlock container:
+                // A flex item is an independent formatting context: its children's margins stay inside it.
+                var isolated = sizing.Isolated;
                 LayoutBox(block, x, width, (contentX, contentWidth) =>
                 {
                     var pending = default(CollapsedMargin);
-                    LayoutChildren(container.Children, contentX, contentWidth, ref pending, firstTopMarginApplied: !HasTopEdge(block.Style));
-                    if (HasBottomEdge(block.Style))
+                    LayoutChildren(container.Children, contentX, contentWidth, ref pending, firstTopMarginApplied: !HasTopEdge(block.Style) && !isolated);
+                    if (HasBottomEdge(block.Style) || isolated)
                     {
                         Y = Math.Min(Y + pending.Value, Math.Max(Y, ContentBottom)); // Stays inside the box.
                     }
@@ -303,7 +318,7 @@ internal sealed class Paginator
                     {
                         trailing = pending; // Collapses through the container's bottom.
                     }
-                });
+                }, sizing);
                 break;
             default:
                 throw new NotSupportedException($"Unknown block type {block.GetType().Name}.");
@@ -316,7 +331,7 @@ internal sealed class Paginator
     /// Lays out a box's content between its top and bottom border and padding, then draws the background and
     /// borders of each page fragment underneath the content.
     /// </summary>
-    private void LayoutBox(Block block, double x, double width, Action<double, double> layoutContent, BoxStyle? styleOverride = null)
+    private void LayoutBox(Block block, double x, double width, Action<double, double> layoutContent, BoxSizing sizing = default, BoxStyle? styleOverride = null)
     {
         var style = styleOverride ?? block.Style;
         var border = style.Border.Widths;
@@ -330,22 +345,44 @@ internal sealed class Paginator
         layoutContent(x + border.Left + style.Padding.Left, Math.Max(MinimumContentWidth, width - border.Horizontal - style.Padding.Horizontal));
         Y += style.Padding.Bottom + border.Bottom;
 
-        if (!decorated)
+        // A flex item's height may be fixed, or stretched to its line (which can end on a later page).
+        if (PageIndex == startPage && sizing.Height is { } height)
         {
+            Y = startY + height;
+        }
+        else if (PageIndex == startPage && sizing.MinHeight is { } minHeight)
+        {
+            Y = Math.Max(Y, startY + minHeight);
+        }
+
+        if (sizing.StretchTo is { } line)
+        {
+            if (decorated)
+            {
+                line.Pending.Add(() => Decorate(line.Page, line.Y - sizing.StretchInset));
+            }
+
             return;
         }
 
-        for (var page = startPage; page <= PageIndex; page++)
+        if (decorated)
         {
-            var first = page == startPage;
-            var last = page == PageIndex;
-            var top = first ? startY : ContentTop;
-            var bottom = last ? Y : ContentBottom;
-            var index = first ? insertAt : 0; // Pages created inside the box: under everything on them.
-            _pages[page].Insert(index, (canvas, pageHeight) => DrawBox(canvas, pageHeight, style, x, top, width, bottom - top, first, last));
-            _placements.Add(new Placement(page, block, top, bottom, -1, -1));
+            Decorate(PageIndex, Y);
         }
 
+        void Decorate(int endPage, double endY)
+        {
+            for (var page = startPage; page <= endPage; page++)
+            {
+                var first = page == startPage;
+                var last = page == endPage;
+                var top = first ? startY : ContentTop;
+                var bottom = last ? endY : ContentBottom;
+                var index = first ? insertAt : 0; // Pages created inside the box: under everything on them.
+                _pages[page].Insert(index, (canvas, pageHeight) => DrawBox(canvas, pageHeight, style, x, top, width, bottom - top, first, last));
+                _placements.Add(new Placement(page, block, top, bottom, -1, -1, x, width));
+            }
+        }
     }
 
     private static void DrawBox(PdfCanvas canvas, double pageHeight, BoxStyle style, double x, double top, double width, double height, bool first, bool last)
@@ -396,7 +433,7 @@ internal sealed class Paginator
         var top = Y;
         _pages[PageIndex].Add((canvas, pageHeight) => canvas.DrawImage(block.Image, left, pageHeight - top - h, w, h));
         Y += h;
-        _placements.Add(new Placement(PageIndex, block, top, Y, -1, -1));
+        _placements.Add(new Placement(PageIndex, block, top, Y, -1, -1, left, w));
     }
 
     /// <summary>An image is scaled down to fit on one page together with its own border and padding.</summary>
@@ -454,7 +491,7 @@ internal sealed class Paginator
         var top = Y;
         _pages[PageIndex].Add((canvas, pageHeight) => layout.Draw(canvas, x, pageHeight - top, first, end));
         Y += layout.Lines[end - 1].Top + layout.Lines[end - 1].Height - layout.Lines[first].Top;
-        _placements.Add(new Placement(PageIndex, block, top, Y, first, end));
+        _placements.Add(new Placement(PageIndex, block, top, Y, first, end, x, layout.AvailableWidth));
     }
 
     private static int CountFittingLines(IReadOnlyList<LineLayout> lines, int start, double available)
@@ -494,7 +531,7 @@ internal sealed class Paginator
             var top = Y;
             _pages[PageIndex].Add((canvas, pageHeight) => DrawRows(canvas, pageHeight, layout, x, top, start, end));
             Y += layout.Height(start, end);
-            _placements.Add(new Placement(PageIndex, table, top, Y, start, end));
+            _placements.Add(new Placement(PageIndex, table, top, Y, start, end, x, width));
             Y += layout.SpacingY;
         }
 
@@ -630,10 +667,12 @@ internal sealed class Paginator
     }
 
     /// <summary>Height of a block's border box if it were laid out without page breaks.</summary>
-    private double MeasureHeight(Block block, double width)
+    private double MeasureHeight(Block block, double width) => MeasureBox(block, BoxWidth(block, width));
+
+    /// <summary>Height of a block's border box at a given border-box width, if laid out without page breaks.</summary>
+    private double MeasureBox(Block block, double boxWidth)
     {
         var style = block.Style;
-        var boxWidth = BoxWidth(block, width);
         var decoration = style.Border.Widths.Vertical + style.Padding.Vertical;
         var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
         switch (block)
@@ -647,6 +686,8 @@ internal sealed class Paginator
             case TableBlock table:
                 var tableLayout = TableLayouter.Layout(table, 0, contentWidth);
                 return decoration + tableLayout.Height(0, table.Rows.Count) + (2 * tableLayout.SpacingY);
+            case FlexBlock flex:
+                return decoration + MeasureFlex(flex, contentWidth);
             case ContainerBlock container:
                 var height = 0.0;
                 var margin = new CollapsedMargin();
@@ -668,10 +709,12 @@ internal sealed class Paginator
     /// The smallest height a block needs at the bottom of a page before it is worth starting there:
     /// its top border and padding plus the first lines a paragraph may not be split from (orphans).
     /// </summary>
-    private double MinimumStartHeight(Block block, double width)
+    private double MinimumStartHeight(Block block, double width) => MinimumStartBox(block, BoxWidth(block, width));
+
+    /// <summary>The smallest height a block of a given border-box width needs at the bottom of a page.</summary>
+    private double MinimumStartBox(Block block, double boxWidth)
     {
         var style = block.Style;
-        var boxWidth = BoxWidth(block, width);
         var top = style.Border.Top.Width + style.Padding.Top;
         var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
         switch (block)
@@ -682,7 +725,9 @@ internal sealed class Paginator
                 var linesHeight = lines.Take(count).Sum(l => l.Height);
                 return top + (count == lines.Count ? linesHeight + style.Padding.Bottom + style.Border.Bottom.Width : linesHeight);
             case ImageBlock image:
-                return MeasureHeight(image, width); // Images are never split.
+                return MeasureBox(image, boxWidth); // Images are never split.
+            case FlexBlock flex when flex.Items.Count > 0:
+                return top + MinimumFlexStart(flex, contentWidth);
             case TableBlock table when table.Rows.Count > 0:
                 // The header rows and the first group of rows that must stay together.
                 var tableLayout = TableLayouter.Layout(table, 0, contentWidth);
