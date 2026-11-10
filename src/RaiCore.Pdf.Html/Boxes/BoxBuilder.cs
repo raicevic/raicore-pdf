@@ -175,7 +175,7 @@ internal sealed partial class BoxBuilder
                         break;
                     }
 
-                    if (child.LocalName == "img")
+                    if (child.LocalName is "img" or "svg")
                     {
                         AddImage(child, childStyle, contentWidth, children, collector, VerticalAlign(inherited, childStyle, style));
                         break;
@@ -343,10 +343,14 @@ internal sealed partial class BoxBuilder
         }
     }
 
+    /// <summary>Adds an <c>img</c> or an inline <c>svg</c> element, which is sized and placed like an image.</summary>
     private void AddImage(IElement element, ComputedStyle style, double containingWidth, List<Block> children, InlineCollector collector, InlineAlignment verticalAlign = default)
     {
         var src = element.GetAttribute("src");
-        if (string.IsNullOrWhiteSpace(src) || LoadImage(src) is not { } image)
+        var image = element.LocalName == "svg" ? LoadInlineSvg(element, style)
+            : string.IsNullOrWhiteSpace(src) ? null
+            : LoadImage(src);
+        if (image is null)
         {
             if (element.GetAttribute("alt") is { Length: > 0 } alt)
             {
@@ -360,13 +364,12 @@ internal sealed partial class BoxBuilder
         var height = ImageDimension(style.Height, element.GetAttribute("height"), 0);
         if (style.Display is CssDisplay.Inline or CssDisplay.InlineBlock)
         {
-            var natural = (Width: image.PixelWidth * CssValues.PointsPerPixel, Height: image.PixelHeight * CssValues.PointsPerPixel);
             var (w, h) = (width, height) switch
             {
                 ({ } fw, { } fh) => (fw, fh),
-                ({ } fw, null) => (fw, fw * image.PixelHeight / image.PixelWidth),
-                (null, { } fh) => (fh * image.PixelWidth / image.PixelHeight, fh),
-                _ => natural,
+                ({ } fw, null) => (fw, fw * image.NaturalHeight / image.NaturalWidth),
+                (null, { } fh) => (fh * image.NaturalWidth / image.NaturalHeight, fh),
+                _ => (image.NaturalWidth, image.NaturalHeight),
             };
             collector.AddImage(image, w, h, verticalAlign);
             return;
