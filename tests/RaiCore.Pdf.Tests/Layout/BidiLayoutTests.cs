@@ -245,10 +245,12 @@ public class BidiLayoutTests
         var doc = new PdfDocument();
         new Paragraph(Text).Add($"Total {Alef}{Bet}{Gimel} due").Layout(280).Draw(doc.AddPage(new PdfPageSize(300, 100)).Canvas, 10, 90);
 
+        // Poppler writes right-to-left text in visual order between direction marks, and may move a space next to it
+        // into the marks, so compare without marks and spaces: the Latin must keep its place around the Hebrew.
         var text = ExternalTools.ExtractText(doc.ToArray());
-        var withoutMarks = new string([.. text.Where(c => c is not ('\u202A' or '\u202B' or '\u202C' or '\u200E' or '\u200F'))]);
+        var letters = new string([.. text.Where(c => !char.IsWhiteSpace(c) && c is not ('\u202A' or '\u202B' or '\u202C' or '\u200E' or '\u200F'))]);
         Assert.True(
-            withoutMarks.Contains($"Total {Alef}{Bet}{Gimel} due", StringComparison.Ordinal) || withoutMarks.Contains($"Total {Gimel}{Bet}{Alef} due", StringComparison.Ordinal),
+            letters.Contains($"Total{Alef}{Bet}{Gimel}due", StringComparison.Ordinal) || letters.Contains($"Total{Gimel}{Bet}{Alef}due", StringComparison.Ordinal),
             $"Unexpected extraction:\n{text}");
     }
 
