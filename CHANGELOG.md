@@ -60,6 +60,15 @@ change at any time, and this section lists what the packages can do so far.
   as one item of a line, shrink-to-fit, aligned on its last baseline); `InlineAlignment` positions inline text, images
   and boxes vertically (CSS 2.1 section 10.8); `Paragraph.BeginInline`/`EndInline`/`AddInline` give part of the text an
   inline element's box (`InlineDecoration`).
+- Bidirectional text: the Unicode Bidirectional Algorithm (UAX #9, passing the full `BidiTest.txt` and
+  `BidiCharacterTest.txt` conformance tests) orders mixed left-to-right and right-to-left text on every line, after
+  lines are broken in logical order. `Paragraph.Direction` sets the base direction (left to right, right to left, or
+  automatic from the first strong character); `TextAlignment.Start` (now the default) and `End` follow it, and the
+  first-line indent and the last line of justified text are on the start side. Embedding, override and isolate
+  controls in the text are honored and not drawn; right-to-left runs are shaped right to left (mirroring brackets),
+  numbers keep their order. An inline element's box or a link split by reordering gets one part per visual piece,
+  with the element's edges where CSS 2.1 section 8.6 puts them (`BeginInline`'s `direction`). Text is still drawn in
+  logical order, so extraction reads it as written. `TextShaper.Shape` takes an optional direction.
 - Block layout and pagination: the box model, margin collapsing, orphans and widows, forced and avoided page breaks,
   boxes sliced across pages, page decorators for headers and footers. A paragraph whose orphans and widows leave no
   possible break needs all its lines at the bottom of a page before it starts there.
@@ -151,6 +160,9 @@ change at any time, and this section lists what the packages can do so far.
   shrink-to-fit boxes (`inline-block`, tables, flex items) and the content inside them; a block narrowed by
   `max-width` is centered by auto margins. Images scale to them, and a declared `width` or `height` (even `auto`, as
   in `img { max-width: 100%; height: auto }`) overrides the `width`/`height` attributes, as in browsers.
+- `direction`, `unicode-bidi` (`embed`, `isolate`, `bidi-override`, `isolate-override`, `plaintext`) and the `dir`
+  attribute (`ltr`, `rtl`, `auto`), `<bdi>` and `<bdo>`: right-to-left paragraphs start on the right, inline elements
+  become the matching bidi embeddings, overrides and isolates, and `text-align: start`/`end` follow the direction.
 - `height`, `min-height` and `max-height`; percentage heights resolve against definite ancestor heights, starting
   with the page area, and `vh` units are the page area (to within a pixel).
 - `calc()`, `min()`, `max()` and `clamp()` in every length (sizes, margins, padding, `flex-basis`, gaps, `font-size`,
@@ -191,13 +203,14 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   as an element.
 - Ids on table rows and cells are not link destinations (ids inside cells are), and neither are ids inside inline
   boxes (`inline-block`) or in running elements; links inside them work. A link's clickable area is the line box
-  (rectangles, not rotated with transforms), and in a line mixing right-to-left and left-to-right text it may cover
-  the wrong part.
+  (rectangles, not rotated with transforms).
 - Floats, positioning and grid (rendered as blocks); `overflow: hidden` and background images.
 - `opacity` on inline elements (other than images and inline boxes) and on table rows and cells is ignored; where
   translucent collapsed table borders cross, they are painted twice. PDF/A-1 forbids transparency (PDF/A is not
   written yet).
-- Mixed left-to-right and right-to-left text on one line (the Unicode bidi algorithm); no hyphenation.
+- Right-to-left tables, flex rows and list indents (columns and items still run left to right, and list padding stays
+  on the left); `unicode-bidi: isolate-override` in author styles (AngleSharp drops it; `<bdo>` works). No
+  hyphenation.
 - No synthetic bold or italic: a family without a bold or italic face uses its closest face as is.
 - `:first`/`:left`/`:right` cannot change page margins; no named pages. Bookmark labels cannot use counters, and inline
   elements cannot be bookmarks.

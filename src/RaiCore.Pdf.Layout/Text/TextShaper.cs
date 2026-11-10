@@ -26,9 +26,20 @@ public static class TextShaper
     /// <summary>
     /// Shapes <paramref name="text"/>, using for each character cluster the first font in <paramref name="fonts"/>
     /// that has all of its glyphs (like a CSS <c>font-family</c> list). Characters no font has are drawn with
-    /// the first font's "missing glyph".
+    /// the first font's "missing glyph". Each run gets the direction of its script.
     /// </summary>
-    public static ShapedText Shape(string text, IReadOnlyList<PdfFont> fonts, ShapingOptions? options = null)
+    public static ShapedText Shape(string text, IReadOnlyList<PdfFont> fonts, ShapingOptions? options = null) =>
+        Shape(text, fonts, options, direction: null);
+
+    /// <summary>
+    /// Shapes <paramref name="text"/> like <see cref="Shape(string, IReadOnlyList{PdfFont}, ShapingOptions?)"/>, but in
+    /// one direction whatever the scripts, as for text whose direction the bidi algorithm resolved (a right-to-left
+    /// direction also mirrors characters such as parentheses). The runs stay in logical order.
+    /// </summary>
+    public static ShapedText Shape(string text, IReadOnlyList<PdfFont> fonts, ShapingOptions? options, TextDirection direction) =>
+        Shape(text, fonts, options, (TextDirection?)direction);
+
+    private static ShapedText Shape(string text, IReadOnlyList<PdfFont> fonts, ShapingOptions? options, TextDirection? direction)
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(fonts);
@@ -49,7 +60,7 @@ public static class TextShaper
         options ??= ShapingOptions.Default;
         var features = options.Features.Select(Feature.Parse).ToArray();
         var runs = new List<ShapedRun>();
-        foreach (var item in TextItemizer.Itemize(text, openTypeFonts))
+        foreach (var item in TextItemizer.Itemize(text, openTypeFonts, direction))
         {
             runs.Add(ShapeRun(text, item, features, options.Language));
         }

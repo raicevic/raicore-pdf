@@ -13,6 +13,10 @@ internal static class UserAgentStyleSheet
         dl, dt, dd, ol, ul, menu, body, details, summary, fieldset { display: block; }
         head, script, style, template, title, meta, link, base, noscript, datalist, param, area, map { display: none; }
         [hidden] { display: none; }
+        [dir="ltr"] { direction: ltr; }
+        [dir="rtl"] { direction: rtl; }
+        [dir], bdi { unicode-bidi: isolate; }
+        bdo, bdo[dir] { unicode-bidi: bidi-override; }
         li { display: list-item; }
         table { display: table; border-collapse: separate; border-spacing: 2px; box-sizing: border-box; }
         caption { display: table-caption; text-align: center; }

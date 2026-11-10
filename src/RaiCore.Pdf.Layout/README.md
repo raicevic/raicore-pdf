@@ -2,7 +2,7 @@
 
 The format-neutral layout engine behind [RaiCore.Pdf.Html](https://www.nuget.org/packages/RaiCore.Pdf.Html):
 text shaping with HarfBuzz (kerning, ligatures, Arabic, Indic) and per-character font fallback, Unicode line breaking
-(UAX #14), paragraphs, CSS-like block layout, pagination and tables. Use it directly to build documents in code.
+(UAX #14) and bidirectional text (UAX #9), paragraphs, CSS-like block layout, pagination and tables. Use it directly to build documents in code.
 
 ```csharp
 using RaiCore.Pdf;

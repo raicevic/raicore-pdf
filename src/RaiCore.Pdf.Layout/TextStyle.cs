@@ -67,8 +67,33 @@ public enum TextAlignment
     /// <summary>Lines are centered.</summary>
     Center,
 
-    /// <summary>Lines fill the width by widening spaces, except the last line and lines ending in a hard break.</summary>
+    /// <summary>
+    /// Lines fill the width by widening spaces, except the last line and lines ending in a hard break, which are aligned
+    /// to the start.
+    /// </summary>
     Justify,
+
+    /// <summary>Lines start at the start edge: the left in a left-to-right paragraph, the right in a right-to-left one.</summary>
+    Start,
+
+    /// <summary>Lines end at the end edge: the right in a left-to-right paragraph, the left in a right-to-left one.</summary>
+    End,
+}
+
+/// <summary>The base direction of a paragraph (CSS <c>direction</c>, HTML <c>dir</c>).</summary>
+public enum ParagraphDirection
+{
+    /// <summary>Left to right.</summary>
+    LeftToRight,
+
+    /// <summary>Right to left.</summary>
+    RightToLeft,
+
+    /// <summary>
+    /// From the first strong character (Unicode bidi rules P2 and P3, like HTML <c>dir="auto"</c>), left to right when
+    /// there is none. Each part of the text after a hard paragraph break (a line feed) decides on its own.
+    /// </summary>
+    Auto,
 }
 
 /// <summary>The appearance of a run of text. Immutable; use <c>with</c> to derive variations.</summary>

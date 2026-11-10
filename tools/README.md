@@ -39,6 +39,22 @@ python3 tools/generate_line_break_data.py /tmp/ucd
 gzip -9 -c /tmp/ucd/LineBreakTest.txt > tests/RaiCore.Pdf.Tests/Fixtures/Unicode/LineBreakTest.txt.gz
 ```
 
+## `generate_bidi_data.py`
+
+Regenerates `src/RaiCore.Pdf.Layout/Text/BidiData.g.cs` (Bidi_Class ranges, with the `@missing` defaults for
+unassigned code points, and the paired brackets) from the Unicode Character Database. When updating the Unicode
+version, also replace `BidiTest.txt.gz` and `BidiCharacterTest.txt.gz` in `tests/RaiCore.Pdf.Tests/Fixtures/Unicode`
+with the matching files (gzipped); the conformance tests check that the versions agree.
+
+```sh
+base=https://www.unicode.org/Public/UCD/latest/ucd
+mkdir -p /tmp/ucd && for f in extracted/DerivedBidiClass.txt BidiBrackets.txt BidiTest.txt BidiCharacterTest.txt; do
+  curl -sSfL -o /tmp/ucd/$(basename $f) $base/$f; done
+python3 tools/generate_bidi_data.py /tmp/ucd
+gzip -9 -c /tmp/ucd/BidiTest.txt > tests/RaiCore.Pdf.Tests/Fixtures/Unicode/BidiTest.txt.gz
+gzip -9 -c /tmp/ucd/BidiCharacterTest.txt > tests/RaiCore.Pdf.Tests/Fixtures/Unicode/BidiCharacterTest.txt.gz
+```
+
 ## `generate_test_images.py`
 
 Regenerates the JPEG and GIF fixtures in `tests/RaiCore.Pdf.Tests/Fixtures/Images` (needs Pillow): images with four

@@ -54,8 +54,9 @@ public sealed class ShapedText
     public double GetWidth(double fontSize) => Advance * fontSize;
 
     /// <summary>
-    /// Runs in the order they appear on the line, left to right. Text that is entirely right-to-left is
-    /// reversed; mixed-direction text keeps logical order until the bidi algorithm lands.
+    /// Runs in the order they appear on the line, left to right, for text of one direction: text that is entirely
+    /// right-to-left is reversed. Mixed-direction text keeps logical order; <see cref="Paragraph"/> layout reorders
+    /// it with the Unicode bidi algorithm.
     /// </summary>
     public IEnumerable<ShapedRun> VisualRuns =>
         Runs.Count > 1 && Runs.All(r => r.Direction == TextDirection.RightToLeft) ? Runs.Reverse() : Runs;
