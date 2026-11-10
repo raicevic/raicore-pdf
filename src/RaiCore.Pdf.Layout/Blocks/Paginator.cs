@@ -14,9 +14,24 @@ internal delegate void DrawOperation(PdfCanvas canvas, double pageHeight);
 /// <param name="Width">Width of the placed piece.</param>
 internal sealed record Placement(int Page, Block Block, double Top, double Bottom, int FirstLine, int EndLine, double Left = 0, double Width = 0);
 
+/// <summary>
+/// Where a block that can be navigated to (one with a <see cref="Block.Bookmark"/>) starts: the top of its border box,
+/// or of its content when that moved to a later page. Y values are from the top of the page.
+/// </summary>
+/// <param name="Block">The block.</param>
+/// <param name="Page">0-based page index.</param>
+/// <param name="Top">Top of the block.</param>
+/// <param name="Left">Left edge of the block's border box.</param>
+internal sealed record Anchor(Block Block, int Page, double Top, double Left);
+
 /// <summary>The result of pagination: drawing operations per page, and where everything went.</summary>
+/// <param name="Pages">Drawing operations per page.</param>
+/// <param name="Placements">Where each piece of each block went.</param>
+/// <param name="Markers">The markers of the blocks starting on each page.</param>
+/// <param name="Anchors">Where the blocks with bookmarks start, in document order.</param>
 internal sealed record PaginationResult(
-    IReadOnlyList<IReadOnlyList<DrawOperation>> Pages, IReadOnlyList<Placement> Placements, IReadOnlyList<(int Page, object Marker)> Markers);
+    IReadOnlyList<IReadOnlyList<DrawOperation>> Pages, IReadOnlyList<Placement> Placements, IReadOnlyList<(int Page, object Marker)> Markers,
+    IReadOnlyList<Anchor> Anchors);
 
 /// <summary>
 /// Lays blocks out top to bottom and splits them across pages, following CSS block layout and fragmentation:
@@ -41,6 +56,7 @@ internal sealed partial class Paginator
     private readonly List<List<DrawOperation>> _pages = [];
     private readonly List<Placement> _placements = [];
     private readonly List<(int Page, object Marker)> _markers = [];
+    private readonly List<Anchor> _anchors = [];
     private int _pageIndex = -1;
 
     /// <summary>Where content starts on pages that begin with repeated content (a table's header rows).</summary>
@@ -99,21 +115,21 @@ internal sealed partial class Paginator
         var paginator = new Paginator(document.Setup);
         var pendingMargin = new CollapsedMargin();
         paginator.LayoutChildren(document.Blocks, document.Setup.Margins.Left, document.Setup.ContentWidth, ref pendingMargin, firstTopMarginApplied: false);
-        return new PaginationResult(paginator._pages, paginator._placements, paginator._markers);
+        return new PaginationResult(paginator._pages, paginator._placements, paginator._markers, paginator._anchors);
     }
 
     /// <summary>
-    /// Lays out blocks in one unbroken column (no pages), e.g. the content of a table cell. Returns the height and
-    /// drawing operations; they draw with y = 0 at the top when called with a page height of "distance from the top of
-    /// the column to the bottom of the page".
+    /// Lays out blocks in one unbroken column (no pages), e.g. the content of a table cell. Returns the height, the
+    /// drawing operations, and the anchors (with tops relative to the top of the column); the operations draw with
+    /// y = 0 at the top when called with a page height of "distance from the top of the column to the bottom of the page".
     /// </summary>
-    public static (double Height, IReadOnlyList<DrawOperation> Content) LayoutStatic(IReadOnlyList<Block> blocks, double x, double width)
+    public static (double Height, IReadOnlyList<DrawOperation> Content, IReadOnlyList<Anchor> Anchors) LayoutStatic(IReadOnlyList<Block> blocks, double x, double width)
     {
         var setup = new PageSetup(new PdfPageSize(x + width + 1, StaticHeight), new Thickness(0, 1, 0, x));
         var paginator = new Paginator(setup, isStatic: true);
         var pending = default(CollapsedMargin);
         paginator.LayoutChildren(blocks, x, width, ref pending, firstTopMarginApplied: false);
-        return (paginator.Y + pending.Value, paginator._pages[0]);
+        return (paginator.Y + pending.Value, paginator._pages[0], paginator._anchors);
     }
 
     /// <summary>A block's min-content and max-content widths, including its margins (CSS intrinsic sizes).</summary>
@@ -222,6 +238,11 @@ internal sealed partial class Paginator
                     _markers.Add((PageIndex, emptyMarker));
                 }
 
+                if (block.Bookmark is not null)
+                {
+                    _anchors.Add(new Anchor(block, PageIndex, Y, x + style.Margin.Left));
+                }
+
                 continue;
             }
 
@@ -322,6 +343,8 @@ internal sealed partial class Paginator
     private CollapsedMargin LayoutBlock(Block block, double x, double width, BoxSizing sizing = default)
     {
         var trailing = default(CollapsedMargin);
+        var anchor = BeginAnchor(block, x);
+        var placementsBefore = _placements.Count;
         switch (block)
         {
             case SpacerBlock spacer:
@@ -366,7 +389,53 @@ internal sealed partial class Paginator
                 throw new NotSupportedException($"Unknown block type {block.GetType().Name}.");
         }
 
+        EndAnchor(anchor, placementsBefore);
         return trailing;
+    }
+
+    /// <summary>
+    /// Records where a block with a bookmark starts (its border box at the current position), before its content is
+    /// laid out so that anchors stay in document order. Returns the anchor's index, or -1 when it has none.
+    /// </summary>
+    private int BeginAnchor(Block block, double x)
+    {
+        if (block.Bookmark is null)
+        {
+            return -1;
+        }
+
+        _anchors.Add(new Anchor(block, PageIndex, Y, x));
+        return _anchors.Count - 1;
+    }
+
+    /// <summary>
+    /// Moves an anchor to where the block's content starts if that is on a later page than its box (e.g. a paragraph
+    /// whose first lines did not fit below its top border), so that the destination shows the content.
+    /// </summary>
+    private void EndAnchor(int index, int placementsBefore)
+    {
+        if (index < 0)
+        {
+            return;
+        }
+
+        var anchor = _anchors[index];
+        Placement? first = null;
+        for (var i = placementsBefore; i < _placements.Count; i++)
+        {
+            // Lines of text, table rows and images (box fragments have no lines, and start where the box does).
+            var placement = _placements[i];
+            if ((placement.FirstLine >= 0 || placement.Block is ImageBlock)
+                && (first is null || placement.Page < first.Page || (placement.Page == first.Page && placement.Top < first.Top)))
+            {
+                first = placement;
+            }
+        }
+
+        if (first is not null && first.Page > anchor.Page)
+        {
+            _anchors[index] = anchor with { Page = first.Page, Top = first.Top };
+        }
     }
 
     /// <summary>
@@ -581,11 +650,13 @@ internal sealed partial class Paginator
         var layout = TableLayouter.Layout(table, x, width);
         var headerEnd = layout.HeaderRows;
         var footerStart = table.Rows.Count - layout.FooterRows;
+        var anchoredCells = new HashSet<CellLayout>(ReferenceEqualityComparer.Instance);
 
         void Place(int start, int end)
         {
             var top = Y;
             _pages[PageIndex].Add((canvas, pageHeight) => DrawRows(canvas, pageHeight, layout, x, top, start, end));
+            AddCellAnchors(layout, top, start, end, anchoredCells);
             Y += layout.Height(start, end);
             _placements.Add(new Placement(PageIndex, table, top, Y, start, end, x, width));
             Y += layout.SpacingY;
@@ -722,14 +793,7 @@ internal sealed partial class Paginator
                 DrawBox(canvas, pageHeight, style, x + cell.X, cellTop, cell.Width, cellHeight, first: true, last: true);
             }
 
-            var free = cellHeight - cell.InsetTop - cell.InsetBottom - cell.ContentHeight;
-            var offset = cell.Grid.Cell.VerticalAlignment switch
-            {
-                VerticalAlignment.Middle => Math.Max(0, free / 2),
-                VerticalAlignment.Bottom => Math.Max(0, free),
-                _ => 0,
-            };
-            var contentTop = cellTop + cell.InsetTop + offset;
+            var contentTop = cellTop + cell.InsetTop + ContentOffset(cell, cellHeight);
             foreach (var draw in cell.Content)
             {
                 draw(canvas, pageHeight - contentTop);
@@ -739,6 +803,41 @@ internal sealed partial class Paginator
         if (collapse && layout.Horizontal is { } horizontal && layout.Vertical is { } vertical)
         {
             DrawCollapsedLines(canvas, pageHeight, layout, horizontal, vertical, x, start, end, TopOf);
+        }
+    }
+
+    /// <summary>How far a cell's content sits below the top of its content box (CSS <c>vertical-align</c>).</summary>
+    private static double ContentOffset(CellLayout cell, double cellHeight)
+    {
+        var free = cellHeight - cell.InsetTop - cell.InsetBottom - cell.ContentHeight;
+        return cell.Grid.Cell.VerticalAlignment switch
+        {
+            VerticalAlignment.Middle => Math.Max(0, free / 2),
+            VerticalAlignment.Bottom => Math.Max(0, free),
+            _ => 0,
+        };
+    }
+
+    /// <summary>
+    /// Records the anchors in the cells beginning in rows [start, end), placed from <paramref name="top"/> on the current
+    /// page. Cell content is laid out without pages, so its anchors are offsets from the cell's content box. Rows placed
+    /// more than once (header rows repeated on every page) keep the anchors of their first placement.
+    /// </summary>
+    private void AddCellAnchors(TableLayout layout, double top, int start, int end, HashSet<CellLayout> anchored)
+    {
+        foreach (var cell in layout.Cells)
+        {
+            if (cell.Anchors.Count == 0 || cell.Grid.Row < start || cell.Grid.Row >= end || !anchored.Add(cell))
+            {
+                continue;
+            }
+
+            var cellTop = top + layout.Height(start, cell.Grid.Row) + (cell.Grid.Row > start ? layout.SpacingY : 0);
+            var contentTop = cellTop + cell.InsetTop + ContentOffset(cell, layout.Height(cell.Grid.Row, cell.Grid.Row + cell.Grid.RowSpan));
+            foreach (var anchor in cell.Anchors)
+            {
+                _anchors.Add(anchor with { Page = PageIndex, Top = contentTop + anchor.Top });
+            }
         }
     }
 

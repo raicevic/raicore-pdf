@@ -16,6 +16,9 @@ change at any time, and this section lists what the packages can do so far.
 - JPEG (embedded without re-encoding, EXIF orientation applied), PNG (all color types and bit depths, interlacing,
   transparency; verified against PngSuite) and GIF images, each stored once per document.
 - Drawing API: paths, fills, strokes, colors, text and images.
+- Document outline (bookmarks): `PdfDocument.Outline` with nested `PdfOutlineItem`s (Unicode titles, a page and
+  position to jump to, open or closed), and `PdfDocument.PageMode`, which by default opens the outline panel when
+  the document has an outline.
 
 ### RaiCore.Pdf.Fonts
 - Bundled Liberation Sans, Serif and Mono (SIL OFL 1.1), metric-compatible with Arial, Times New Roman and Courier New.
@@ -49,6 +52,8 @@ change at any time, and this section lists what the packages can do so far.
 - Border styles (`BorderStyle` on `BorderSide`): solid, dashed, dotted, double, groove, ridge, inset and outset, drawn
   like browsers draw them, with sides of different colors or styles meeting on the corner diagonals. Collapsed table
   borders resolve conflicts as in CSS 2.1 (`hidden` wins, then the wider border, then the style) and keep their style.
+- Bookmarks: `Block.Bookmark` makes a block an entry in the PDF outline. Entries nest by level and point at where
+  the block starts (where its content starts, if that moved to a later page), also inside flex items and table cells.
 
 ### RaiCore.Pdf.Html
 - HTML and CSS to PDF via AngleSharp: the cascade, inheritance, `!important`, custom properties and print media
@@ -76,6 +81,9 @@ change at any time, and this section lists what the packages can do so far.
   downloaded), weight ranges, `font-style` and `unicode-range`, matched like CSS Fonts 4 and loaded on first use. A
   declared family hides installed fonts of the same name; a family that fails to load falls back to the next one.
   `PdfFont.WithUnicodeRanges` restricts a font to code point ranges, embedding it once however many views use it.
+- PDF bookmarks from `h1`-`h6`, nested by level, customized with the CSS GCPM properties `bookmark-level`,
+  `bookmark-label` (strings, `content()`, `content(first-letter)` and `attr()`) and `bookmark-state`, cascaded by
+  specificity. `HtmlConverterOptions.CreateBookmarks = false` turns them off.
 - Network access is off unless you supply a `ResourceLoader`.
 
 ### RaiCore.Pdf.Razor
@@ -84,10 +92,11 @@ change at any time, and this section lists what the packages can do so far.
 
 ### Known limitations
 The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these.
-- No `::before`/`::after`, links, bookmarks or `text-decoration`. Borders on inline elements are drawn solid.
+- No `::before`/`::after`, links or `text-decoration`. Borders on inline elements are drawn solid.
 - Floats, positioning and grid (rendered as blocks); `calc()`, `overflow: hidden`, transparency (blended with white),
   rounded corners and background images.
 - Mixed left-to-right and right-to-left text on one line (the Unicode bidi algorithm); no hyphenation.
 - No synthetic bold or italic: a family without a bold or italic face uses its closest face as is.
-- `:first`/`:left`/`:right` cannot change page margins; no named pages.
+- `:first`/`:left`/`:right` cannot change page margins; no named pages. Bookmark labels cannot use counters or
+  `content(before)`/`content(after)` (they give empty text), and inline elements cannot be bookmarks.
 - No tagged PDF, PDF/A or encryption. WebP, SVG and BMP images are not supported.

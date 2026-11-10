@@ -39,6 +39,8 @@ internal static class UserAgentStyleSheet
         h5 { font-size: 0.83em; margin-top: 1.67em; margin-bottom: 1.67em; }
         h6 { font-size: 0.67em; margin-top: 2.33em; margin-bottom: 2.33em; }
         h1, h2, h3, h4, h5, h6 { font-weight: bold; break-after: avoid; }
+        h1 { bookmark-level: 1; } h2 { bookmark-level: 2; } h3 { bookmark-level: 3; }
+        h4 { bookmark-level: 4; } h5 { bookmark-level: 5; } h6 { bookmark-level: 6; }
 
         b, strong { font-weight: bold; }
         i, em, cite, var, dfn, address { font-style: italic; }

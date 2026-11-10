@@ -29,6 +29,7 @@ doc.Save("hello.pdf");
 
 - Fonts are subset to the glyphs used and stay searchable and copyable in every script.
 - JPEG (embedded as is), PNG (every color type, transparency) and GIF images, each stored once per document.
+- Bookmarks: `PdfDocument.Outline` holds nested `PdfOutlineItem`s with Unicode titles.
 - Coordinates are PDF points (1/72 inch) with the origin at the bottom-left of the page.
 
 ## More

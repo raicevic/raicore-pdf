@@ -84,15 +84,20 @@ public sealed class FlowDocument
         return document;
     }
 
-    /// <summary>Lays out the blocks and appends the pages to <paramref name="document"/>.</summary>
+    /// <summary>
+    /// Lays out the blocks and appends the pages to <paramref name="document"/>. Blocks with a
+    /// <see cref="Block.Bookmark"/> are appended to its <see cref="PdfDocument.Outline"/>, nested by level.
+    /// </summary>
     public void RenderTo(PdfDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
         var result = Paginator.Paginate(this);
         var pages = result.Pages;
+        var rendered = new List<PdfPage>(pages.Count);
         for (var i = 0; i < pages.Count; i++)
         {
             var page = document.AddPage(Setup.Size);
+            rendered.Add(page);
             foreach (var draw in pages[i])
             {
                 draw(page.Canvas, page.Height);
@@ -100,6 +105,34 @@ public sealed class FlowDocument
 
             var markers = result.Markers.Where(m => m.Page == i).Select(m => m.Marker).ToList();
             PageDecorator?.Invoke(page.Canvas, new PageInfo(i + 1, pages.Count, Setup, markers));
+        }
+
+        AddOutline(document.Outline, result.Anchors, rendered);
+    }
+
+    /// <summary>
+    /// Turns the bookmarks into outline items in document order. Each item nests under the nearest preceding item with
+    /// a lower level (so an h3 after an h1 is the h1's child), or goes at the top when there is none.
+    /// </summary>
+    private static void AddOutline(IList<PdfOutlineItem> outline, IReadOnlyList<Anchor> anchors, List<PdfPage> pages)
+    {
+        var open = new List<(int Level, PdfOutlineItem Item)>(); // The current item at each nesting depth.
+        foreach (var anchor in anchors)
+        {
+            if (anchor.Block.Bookmark is not { } bookmark)
+            {
+                continue;
+            }
+
+            var page = pages[anchor.Page];
+            var item = new PdfOutlineItem(bookmark.Title, page, page.Height - anchor.Top) { IsOpen = bookmark.IsOpen };
+            while (open.Count > 0 && open[^1].Level >= bookmark.Level)
+            {
+                open.RemoveAt(open.Count - 1);
+            }
+
+            (open.Count > 0 ? open[^1].Item.Children : outline).Add(item);
+            open.Add((bookmark.Level, item));
         }
     }
 
@@ -119,7 +152,7 @@ public sealed class FlowDocument
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(blocks);
-        var (height, content) = Paginator.LayoutStatic(blocks, x, Math.Max(1, width));
+        var (height, content, _) = Paginator.LayoutStatic(blocks, x, Math.Max(1, width));
         foreach (var draw in content)
         {
             draw(canvas, pageHeight - top);

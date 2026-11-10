@@ -18,10 +18,13 @@ internal sealed record StringItem(string Name, string Policy) : ContentItem;
 /// <summary><c>element(name[, policy])</c>: a running element (<c>position: running(name)</c>).</summary>
 internal sealed record ElementItem(string Name, string Policy) : ContentItem;
 
-/// <summary><c>content()</c> in <c>string-set</c>: the element's text.</summary>
-internal sealed record ElementTextItem : ContentItem;
+/// <summary>
+/// <c>content(part)</c> in <c>string-set</c> and <c>bookmark-label</c>: the element's text (<c>text</c>, the default),
+/// or another part such as <c>first-letter</c>.
+/// </summary>
+internal sealed record ElementTextItem(string Part = "text") : ContentItem;
 
-/// <summary><c>attr(name)</c>: an attribute of the element (in <c>string-set</c>).</summary>
+/// <summary><c>attr(name)</c>: an attribute of the element (in <c>string-set</c> and <c>bookmark-label</c>).</summary>
 internal sealed record AttributeItem(string Name) : ContentItem;
 
 /// <summary>Parses CSS content values: strings (with CSS escapes) and the functions used in paged media.</summary>
@@ -65,7 +68,7 @@ internal static class ContentValue
                     "counter" => new CounterItem(Arg(0, "page").ToLowerInvariant(), Arg(1, "decimal").ToLowerInvariant()),
                     "string" => new StringItem(Arg(0, string.Empty), Arg(1, "first").ToLowerInvariant()),
                     "element" => new ElementItem(Arg(0, string.Empty), Arg(1, "first").ToLowerInvariant()),
-                    "content" => new ElementTextItem(),
+                    "content" => new ElementTextItem(Arg(0, "text").ToLowerInvariant()),
                     "attr" => new AttributeItem(Arg(0, string.Empty)),
                     _ => null,
                 };

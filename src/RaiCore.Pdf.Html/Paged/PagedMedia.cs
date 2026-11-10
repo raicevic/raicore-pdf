@@ -15,8 +15,8 @@ internal sealed record RunningMarker(string Name, IReadOnlyList<Block> Blocks);
 
 /// <summary>
 /// CSS Paged Media and Generated Content for Paged Media: <c>@page</c> margin boxes (headers and footers) for all,
-/// first, left and right pages, page counters, running strings (<c>string-set</c>/<c>string()</c>) and running
-/// elements (<c>position: running()</c>/<c>element()</c>).
+/// first, left and right pages, page counters, running strings (<c>string-set</c>/<c>string()</c>), running
+/// elements (<c>position: running()</c>/<c>element()</c>) and bookmarks (<c>bookmark-level</c> and friends).
 /// </summary>
 internal sealed partial class PagedMedia
 {
@@ -34,7 +34,7 @@ internal sealed partial class PagedMedia
 
     public bool HasMarginBoxes => _pageRules.Any(r => r.MarginBoxes.Count > 0);
 
-    /// <summary>Reads @page rules, string-set and running declarations from the document's CSS.</summary>
+    /// <summary>Reads @page rules, string-set, running and bookmark declarations from the document's CSS.</summary>
     public static PagedMedia Load(IDocument document, IEnumerable<string> styleSheets)
     {
         var pageRules = new List<CssPageRule>();
@@ -47,8 +47,10 @@ internal sealed partial class PagedMedia
         }
 
         var media = new PagedMedia(pageRules);
+        var selectorParser = new AngleSharp.Css.Parser.CssSelectorParser();
         foreach (var rule in styleRules)
         {
+            media.AddBookmarkRule(document, selectorParser, rule.Selector, rule.Declarations);
             foreach (var declaration in rule.Declarations)
             {
                 if (declaration.Property == "string-set")
@@ -70,7 +72,9 @@ internal sealed partial class PagedMedia
 
         foreach (var element in document.QuerySelectorAll("[style]"))
         {
-            foreach (var declaration in CssRuleScanner.ParseDeclarations(element.GetAttribute("style")!))
+            var inline = CssRuleScanner.ParseDeclarations(element.GetAttribute("style")!);
+            media.SetBookmarkProperties(element, AngleSharp.Css.Priority.Inline, media.BookmarkDeclarations(inline));
+            foreach (var declaration in inline)
             {
                 if (declaration.Property == "string-set")
                 {

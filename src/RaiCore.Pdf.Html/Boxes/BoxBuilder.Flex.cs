@@ -69,6 +69,7 @@ internal sealed partial class BoxBuilder
             RowGap = Math.Max(0, style.RowGap.Kind == CssLengthKind.Percent ? (innerHeight is { } h ? style.RowGap.Resolve(h) : 0) : style.RowGap.Resolve(0)),
             ColumnGap = Math.Max(0, style.ColumnGap.Resolve(contentWidth)),
             Marker = _paged?.MarkerFor(element),
+            Bookmark = BookmarkFor(element),
         };
     }
 

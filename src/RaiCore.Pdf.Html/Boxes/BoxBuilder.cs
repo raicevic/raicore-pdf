@@ -121,11 +121,17 @@ internal sealed partial class BoxBuilder
         var pageMarker = _paged?.MarkerFor(element);
         if (children is [ParagraphBlock only] && _anonymous.Contains(only))
         {
-            return new ParagraphBlock(only.Paragraph, box) { Marker = pageMarker };
+            return new ParagraphBlock(only.Paragraph, box) { Marker = pageMarker, Bookmark = BookmarkFor(element) };
         }
 
-        return new ContainerBlock(box, children) { Marker = pageMarker };
+        return new ContainerBlock(box, children) { Marker = pageMarker, Bookmark = BookmarkFor(element) };
     }
+
+    /// <summary>
+    /// The PDF bookmark for an element's block (headings by default), unless bookmarks are off. Running elements may
+    /// get one too, but it has no effect: margin boxes are drawn outside the flow, which is what the outline is made of.
+    /// </summary>
+    private Bookmark? BookmarkFor(IElement element) => _options.CreateBookmarks ? _paged?.BookmarkFor(element) : null;
 
     /// <summary>Adds the element's children: inline content goes to the collector, block-level children become blocks.</summary>
     /// <param name="element">The element whose children are added.</param>
