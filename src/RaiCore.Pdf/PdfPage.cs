@@ -50,6 +50,7 @@ public sealed class PdfPage
     /// <summary>Returns the page-local resource name (e.g. <c>F1</c>) for a font and the record of glyphs used from it.</summary>
     internal (string Name, FontUsage Usage) UseFont(PdfFont font)
     {
+        font = font.EmbeddedFont; // Views of a font share its embedding.
         foreach (var entry in _fonts)
         {
             if (ReferenceEquals(entry.Font, font))

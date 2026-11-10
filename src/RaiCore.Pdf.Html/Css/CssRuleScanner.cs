@@ -13,7 +13,8 @@ internal sealed record CssPageRule(string Selector, IReadOnlyList<CssDeclaration
 
 /// <summary>
 /// A small CSS scanner for what AngleSharp.Css does not keep: <c>@page</c> rules with margin boxes and the
-/// <c>size</c> descriptor, and declarations it drops such as <c>string-set</c> and <c>position: running()</c>.
+/// <c>size</c> descriptor, <c>@font-face</c> rules, and declarations it drops such as <c>string-set</c> and
+/// <c>position: running()</c>.
 /// Handles comments, strings, escapes and nesting; rules inside <c>@media</c> are kept only for print/all media.
 /// </summary>
 internal static class CssRuleScanner
@@ -22,11 +23,19 @@ internal static class CssRuleScanner
     {
         var styles = new List<CssStyleRule>();
         var pages = new List<CssPageRule>();
-        ScanBlock(StripComments(css), styles, pages);
+        ScanBlock(StripComments(css), styles, pages, fontFaces: null);
         return (styles, pages);
     }
 
-    private static void ScanBlock(string css, List<CssStyleRule> styles, List<CssPageRule> pages)
+    /// <summary>The descriptors of every <c>@font-face</c> rule (including those inside print media rules).</summary>
+    public static List<IReadOnlyList<CssDeclaration>> ScanFontFaces(string css)
+    {
+        var fontFaces = new List<IReadOnlyList<CssDeclaration>>();
+        ScanBlock(StripComments(css), [], [], fontFaces);
+        return fontFaces;
+    }
+
+    private static void ScanBlock(string css, List<CssStyleRule> styles, List<CssPageRule> pages, List<IReadOnlyList<CssDeclaration>>? fontFaces)
     {
         var pos = 0;
         while (pos < css.Length)
@@ -58,12 +67,16 @@ internal static class CssRuleScanner
                 var media = prelude[6..].ToUpperInvariant();
                 if (media.Contains("PRINT", StringComparison.Ordinal) || media.Contains("ALL", StringComparison.Ordinal) || media.Trim().Length == 0)
                 {
-                    ScanBlock(body, styles, pages);
+                    ScanBlock(body, styles, pages, fontFaces);
                 }
             }
             else if (prelude.StartsWith("@supports", StringComparison.OrdinalIgnoreCase))
             {
-                ScanBlock(body, styles, pages);
+                ScanBlock(body, styles, pages, fontFaces);
+            }
+            else if (prelude.Equals("@font-face", StringComparison.OrdinalIgnoreCase))
+            {
+                fontFaces?.Add(ParseDeclarations(body));
             }
             else if (!prelude.StartsWith('@') && prelude.Length > 0)
             {

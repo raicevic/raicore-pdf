@@ -29,7 +29,9 @@ counters, `string-set` and running elements.
 Not yet: floats, positioning, grid (rendered as blocks) and `text-decoration`.
 
 Fonts default to the bundled Liberation fonts (metric-compatible with Arial, Times New Roman and Courier New), so
-output is identical on every machine. Network access is off unless you supply a `ResourceLoader`.
+output is identical on every machine. Brand fonts come from `@font-face` rules (TTF, OTF, WOFF, WOFF2, `data:` URIs,
+`unicode-range`) or from your own `FontCollection`. Network access is off unless you supply a `ResourceLoader`, so
+fonts from a CDN such as Google Fonts need a loader that downloads them.
 
 For Razor components, see [RaiCore.Pdf.Razor](https://www.nuget.org/packages/RaiCore.Pdf.Razor).
 

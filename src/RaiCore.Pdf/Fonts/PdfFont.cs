@@ -79,6 +79,18 @@ public abstract class PdfFont
     /// <summary>Whether the font has a glyph for the Unicode code point.</summary>
     public abstract bool HasGlyph(int codePoint);
 
+    /// <summary>
+    /// A view of this font that only covers the code points in <paramref name="ranges"/>, like a CSS
+    /// <c>@font-face</c> rule with <c>unicode-range</c>: <see cref="HasGlyph"/> is false outside them, so text
+    /// shaping falls back to the next font for those characters. Both are embedded as one font.
+    /// </summary>
+    /// <exception cref="NotSupportedException">This is one of the standard fonts.</exception>
+    public virtual PdfFont WithUnicodeRanges(params IEnumerable<UnicodeRange> ranges) =>
+        throw new NotSupportedException($"{PostScriptName} is a standard font; only embedded fonts can be restricted to Unicode ranges.");
+
+    /// <summary>The font that is embedded when this one is drawn (itself, or the font a view was made from).</summary>
+    internal virtual PdfFont EmbeddedFont => this;
+
     /// <summary>Whether the font has glyphs for every character in <paramref name="text"/>.</summary>
     public bool HasGlyphs(string text)
     {
@@ -219,9 +231,22 @@ internal sealed class StandardPdfFont(StandardFont font) : PdfFont
 }
 
 /// <summary>A TrueType/OpenType font embedded as a CIDFont with Identity-H encoding.</summary>
-internal sealed class OpenTypePdfFont(OpenTypeFont font) : PdfFont
+/// <param name="font">The parsed font.</param>
+/// <param name="ranges">For a view made by <see cref="WithUnicodeRanges"/>: the code points it covers.</param>
+/// <param name="original">For a view: the font it was made from, which is the one embedded.</param>
+internal sealed class OpenTypePdfFont(OpenTypeFont font, UnicodeRange[]? ranges = null, PdfFont? original = null) : PdfFont
 {
     public OpenTypeFont Font { get; } = font;
+
+    internal override PdfFont EmbeddedFont => original ?? this;
+
+    public override PdfFont WithUnicodeRanges(params IEnumerable<UnicodeRange> ranges)
+    {
+        ArgumentNullException.ThrowIfNull(ranges);
+        return new OpenTypePdfFont(Font, [.. ranges], EmbeddedFont);
+    }
+
+    private bool Covers(int codePoint) => ranges is null || Array.Exists(ranges, r => r.Contains(codePoint));
 
     public override string FamilyName => Font.FamilyName;
 
@@ -243,7 +268,7 @@ internal sealed class OpenTypePdfFont(OpenTypeFont font) : PdfFont
 
     public override double XHeight => Font.XHeight / (double)Font.UnitsPerEm;
 
-    public override bool HasGlyph(int codePoint) => Font.GetGlyphId(codePoint) != 0;
+    public override bool HasGlyph(int codePoint) => Covers(codePoint) && Font.GetGlyphId(codePoint) != 0;
 
     internal override double GetAdvance(int codePoint) =>
         Font.GetAdvanceWidth(Font.GetGlyphId(codePoint)) / (double)Font.UnitsPerEm;
@@ -282,4 +307,13 @@ internal sealed class OpenTypePdfFont(OpenTypeFont font) : PdfFont
 
     internal override PdfReference WriteTo(PdfFileWriter writer, FontUsage usage) =>
         CidFontWriter.Write(writer, Font, usage);
+}
+
+/// <summary>An inclusive range of Unicode code points, e.g. <c>U+0000-00FF</c>.</summary>
+/// <param name="First">The first code point.</param>
+/// <param name="Last">The last code point (at least <paramref name="First"/>).</param>
+public readonly record struct UnicodeRange(int First, int Last)
+{
+    /// <summary>Whether the range contains <paramref name="codePoint"/>.</summary>
+    public bool Contains(int codePoint) => codePoint >= First && codePoint <= Last;
 }
