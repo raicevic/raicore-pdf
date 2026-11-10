@@ -1,46 +1,13 @@
 # Changelog
 
 All notable changes to RaiCore.Pdf are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
-and versions follow [Semantic Versioning](https://semver.org/). Before 1.0, minor versions may change the public API.
+and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Added
-- Flexbox in `RaiCore.Pdf.Layout` (`FlexBlock`, `FlexItem`) and `RaiCore.Pdf.Html` (`display: flex` and
-  `inline-flex`): all flex directions, `flex-wrap` (including `wrap-reverse`), `justify-content`,
-  `align-items`/`align-self` (`stretch`, `flex-start`, `flex-end`, `center`, `baseline`), `gap`, `order`,
-  `flex`/`flex-grow`/`flex-shrink`/`flex-basis`, min/max sizes with the automatic minimum size, and auto margins.
-- Flex rows taller than the space left on a page are split like browsers do: every item continues on the next
-  page in its own column, and stretched items run down to the end of the row.
-- Running elements (`position: running()`) can be flex containers, e.g. a header with a logo and an address.
-- `height`, `min-height` and `max-height` on every block (`BoxStyle.Height`, `MinHeight`, `MaxHeight`). Content
-  taller than a fixed height overflows, as with `overflow: visible`; a fixed-height box that fits on a page is not
-  split. Percentage heights resolve against definite ancestor heights, starting with the page area, and `vh` units
-  are the page area (to within a pixel).
-- Flex containers with a definite or minimum height: columns grow, shrink and justify vertically (with vertical auto
-  margins), wrap into side-by-side columns, and support `column-reverse`; wrapped rows share extra height with
-  `align-content`, and a single line fills the container. A flex item's flexed or stretched size is definite for a
-  flex container inside it.
-
-- Table rows that do not fit on a page are split like browsers do: each cell's content continues on the next page
-  in its own column, below the repeated header rows, and cell backgrounds and borders (separate or collapsed) are
-  sliced with the top edge on the first page and the bottom edge on the last. `tr { break-inside: avoid }`
-  (`TableRow.BreakInside`) keeps a row whole when it fits on a page.
-- Rows joined by `rowspan` split across pages too: between rows, where a row's start does not fit, and inside rows.
-  A spanning cell's content continues alongside its rows on the next page, and its background and borders end with
-  the rows it covers on each page.
-- `tfoot` rows (`TableRow.IsFooter`) end the table and repeat right below the last body row, or row piece, on
-  every page the table continues from; their space is kept free at the bottom of those pages. Like Chrome, footers
-  taller than a quarter of the page are not repeated. A table starts on a page only if its footer fits there too.
-- A paragraph whose orphans and widows leave no possible break needs all its lines at the bottom of a page before it
-  starts there, so it no longer leaves its box's top edge or a split table row's first piece behind.
-
-### Known limitations
-- `inline-flex` is laid out like `flex`. `calc()` is not evaluated.
-
-## [0.1.0] - Unreleased
-
-The first release: HTML and Razor to PDF with RaiCore.Pdf's own layout engine.
+Nothing has been released yet: the first release will be 1.0.0, once the
+[roadmap milestones](https://github.com/raicevic/raicore-pdf/milestones) are done. Until then, the public API may
+change at any time, and this section lists what the packages can do so far.
 
 ### RaiCore.Pdf
 - PDF writer with compressed streams, document information and the 14 standard fonts.
@@ -60,17 +27,34 @@ The first release: HTML and Razor to PDF with RaiCore.Pdf's own layout engine.
 - Unicode line breaking (UAX #14, passing the full conformance test) and paragraphs with alignment, justification,
   line heights, indents, soft hyphens and hard breaks.
 - Block layout and pagination: the box model, margin collapsing, orphans and widows, forced and avoided page breaks,
-  boxes sliced across pages, page decorators for headers and footers.
-- Tables: automatic and fixed layout, `colspan`/`rowspan`, header rows repeated on every page, separate and collapsed
-  borders.
+  boxes sliced across pages, page decorators for headers and footers. A paragraph whose orphans and widows leave no
+  possible break needs all its lines at the bottom of a page before it starts there.
+- `height`, `min-height` and `max-height` on every block (`BoxStyle.Height`, `MinHeight`, `MaxHeight`). Content
+  taller than a fixed height overflows, as with `overflow: visible`; a fixed-height box that fits on a page is not
+  split.
+- Tables: automatic and fixed layout, `colspan`/`rowspan`, separate and collapsed borders. Header rows repeat at the
+  top of every page and footer rows (`TableRow.IsFooter`) right below the body; footers taller than a quarter of the
+  page are not repeated, as in Chrome. Rows that do not fit are split like browsers do, each cell continuing on the
+  next page in its own column with backgrounds and borders sliced; rows joined by row spans may also break between
+  them, with the spanning cell continuing alongside. `TableRow.BreakInside` keeps a row whole when it fits on a page.
+- Flexbox (`FlexBlock`, `FlexItem`): all directions, wrapping (including `wrap-reverse`), `justify-content`,
+  `align-items`/`align-self` (`stretch`, `flex-start`, `flex-end`, `center`, `baseline`), `align-content`, gaps,
+  `order`, grow/shrink/basis with min/max sizes and the automatic minimum size, and auto margins. Containers with a
+  definite or minimum height flex their columns vertically and wrap into side-by-side columns; a flex item's flexed or
+  stretched size is definite for a flex container inside it. Rows taller than the space left on a page are split like
+  browsers do, each item continuing in its own column and stretched items running down to the end of the row.
 
 ### RaiCore.Pdf.Html
 - HTML and CSS to PDF via AngleSharp: the cascade, inheritance, `!important`, custom properties and print media
   queries, with browser default styles.
 - Block and inline formatting, white-space handling, the box model, fonts, colors, text alignment and transforms,
-  list markers, images, linked stylesheets and tables (including the legacy table attributes).
+  list markers, images, linked stylesheets and tables (including the legacy table attributes, `thead`, `tfoot` and
+  `tr { break-inside: avoid }`).
+- `display: flex` and `inline-flex`, with all the flex properties above.
+- `height`, `min-height` and `max-height`; percentage heights resolve against definite ancestor heights, starting
+  with the page area, and `vh` units are the page area (to within a pixel).
 - CSS Paged Media: `@page` size and margins, `:first`/`:left`/`:right`, margin boxes for headers and footers,
-  `counter(page)`/`counter(pages)`, `string-set` and running elements.
+  `counter(page)`/`counter(pages)`, `string-set` and running elements (which can be flex containers).
 - Network access is off unless you supply a `ResourceLoader`.
 
 ### RaiCore.Pdf.Razor
@@ -78,10 +62,12 @@ The first release: HTML and Razor to PDF with RaiCore.Pdf's own layout engine.
   for components that inject services, and `AddRazorPdf()` to register it per scope.
 
 ### Known limitations
-- Floats, positioning, flexbox and grid (rendered as blocks), `text-decoration`, inline box backgrounds and borders.
-- A single table row is never split across pages; `:first`/`:left`/`:right` cannot change page margins.
-- Mixed left-to-right and right-to-left text on one line (the Unicode bidi algorithm).
-- No links, bookmarks, tagged PDF or PDF/A yet. WebP, SVG and BMP images are not supported.
-
-[Unreleased]: https://github.com/raicevic/raicore-pdf/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/raicevic/raicore-pdf/releases/tag/v0.1.0
+The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these.
+- No web fonts (`@font-face`), `::before`/`::after`, links, bookmarks, `text-decoration`, `sub`/`sup` offsets or
+  inline box backgrounds and borders. `inline-block` is flattened into its text, and `inline-flex` is laid out like
+  `flex`.
+- Floats, positioning and grid (rendered as blocks); `calc()`, `overflow: hidden`, transparency (blended with white),
+  border styles other than solid, rounded corners and background images.
+- Mixed left-to-right and right-to-left text on one line (the Unicode bidi algorithm); no hyphenation.
+- `:first`/`:left`/`:right` cannot change page margins; no named pages.
+- No tagged PDF, PDF/A or encryption. WebP, SVG and BMP images are not supported.

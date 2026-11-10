@@ -4,7 +4,7 @@ Convert HTML and CSS to PDF in .NET with RaiCore.Pdf's own layout engine. There 
 Chromium and no JavaScript, so it is fast, deterministic and runs anywhere .NET runs.
 
 ```sh
-dotnet add package RaiCore.Pdf.Html --prerelease
+dotnet add package RaiCore.Pdf.Html
 ```
 
 ```csharp

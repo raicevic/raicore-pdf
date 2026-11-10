@@ -41,6 +41,9 @@ It restores into its own cache (`tests/PackageSmoke/.packages`). Delete that fol
 
 ## Releasing
 
+**Nothing is released before 1.0.** The 0.x milestones are internal stages; the release workflow refuses tags below
+`v1.0.0` (including `v1.0.0-rc.1` and other 1.0.0 prereleases).
+
 Releases are published by [.github/workflows/release.yml](.github/workflows/release.yml) when a version tag is pushed.
 The tag sets the version of every package; `VersionPrefix`/`VersionSuffix` in `Directory.Build.props` apply only to
 local and CI builds.
@@ -58,11 +61,11 @@ For each release:
 2. Tag the merge commit and push the tag:
 
    ```sh
-   git tag v0.1.0
-   git push origin v0.1.0
+   git tag v1.0.0
+   git push origin v1.0.0
    ```
 
-   A tag with a suffix (`v0.2.0-alpha.1`) publishes a prerelease.
+   After 1.0, a tag with a suffix (`v1.1.0-rc.1`) publishes a prerelease.
 3. The workflow builds, tests, packs and smoke-tests the packages, pushes them and their symbols to nuget.org and
    creates a GitHub release with the packages attached.
 

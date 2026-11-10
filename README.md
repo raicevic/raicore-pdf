@@ -2,33 +2,36 @@
 
 An open-source .NET library for creating PDF documents and converting HTML, Razor and office documents to PDF, built on its own layout engine with no headless browser.
 
-> **Status:** preparing the first release (0.1.0). HTML and Razor conversion work; APIs may still change before 1.0.
+> **Status:** in development toward 1.0, the first release. HTML and Razor conversion work, but nothing is published
+> to NuGet yet and the API may change at any time. See the [roadmap](#roadmap).
 > See the [changelog](CHANGELOG.md) for what is supported.
 
 ## Packages
 
 | Package | Purpose | Status |
 |---|---|---|
-| `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | 🟢 0.1 |
-| `RaiCore.Pdf.Razor` | Razor components → PDF | 🟢 0.1 |
-| `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables | 🟢 0.1 |
-| `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | 🟢 0.1 |
-| `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | 🟢 0.1 |
-| `RaiCore.Pdf.Docx`, `.Xlsx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ Later |
+| `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | 🟡 Toward 1.0 |
+| `RaiCore.Pdf.Razor` | Razor components → PDF | 🟡 Toward 1.0 |
+| `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables, flexbox | 🟡 Toward 1.0 |
+| `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | 🟡 Toward 1.0 |
+| `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | 🟡 Toward 1.0 |
+| `RaiCore.Pdf.Docx`, `.Xlsx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ After 1.0 |
 
 All packages target .NET 10 and run on Windows, Linux and macOS (x64 and Arm64) with no native dependencies beyond
 HarfBuzz, which ships in the packages.
 
 ## Installation
 
-Install the package for your input format; the others come as dependencies:
+The packages will be on NuGet from 1.0. Then you install the package for your input format, and the others come as
+dependencies:
 
 ```sh
-dotnet add package RaiCore.Pdf.Html --prerelease    # HTML and CSS
-dotnet add package RaiCore.Pdf.Razor --prerelease   # Razor components (includes RaiCore.Pdf.Html)
+dotnet add package RaiCore.Pdf.Html     # HTML and CSS
+dotnet add package RaiCore.Pdf.Razor    # Razor components (includes RaiCore.Pdf.Html)
 ```
 
-Symbols and SourceLink are published, so you can step into the library code while debugging.
+Symbols and SourceLink will be published too, so you can step into the library code while debugging. Until 1.0,
+reference the projects from a clone of this repository, or build packages locally with `dotnet pack`.
 
 ## Quick start
 
@@ -309,12 +312,22 @@ Every input format is mapped to one shared document model and laid out by one en
 
 ## Roadmap
 
-1. **PDF writer:** objects, compression, standard fonts ✅, embedded TrueType/OpenType/WOFF fonts with subsetting ✅, JPEG/PNG/GIF images ✅, then links and bookmarks.
-2. **Layout engine:** HarfBuzz text shaping and font fallback ✅, line breaking (UAX #14) and paragraphs ✅, block layout and pagination ✅.
-3. **HTML/CSS core:** parsing (AngleSharp), the cascade and mapping HTML to the layout engine ✅, tables ✅, headers and footers (margin boxes, counters, running strings and elements) ✅.
-4. **0.1 release:** the Razor adapter ✅, packaging, symbols and a release pipeline ✅.
-5. **0.2:** flexbox ✅, inline SVG, text decoration, tagged PDF and PDF/A.
-6. **Later:** DOCX, PDF editing, XSL-FO, XLSX and PPTX.
+1.0 is the first release: a stable, production-ready HTML/Razor to PDF library with its PDF writer and layout engine.
+Nothing is published before it. The way there is tracked in
+[GitHub milestones](https://github.com/raicevic/raicore-pdf/milestones):
+
+1. **Done:** the PDF writer, fonts, images, text shaping, line breaking, block layout and pagination, HTML/CSS with
+   tables, flexbox and CSS Paged Media, Razor, and packaging with a release pipeline.
+2. **0.2 Template fidelity:** web fonts, `inline-block`, `::before`/`::after`, links and bookmarks, text decoration,
+   border styles, SVG.
+3. **0.3 Layout and painting:** floats, positioning, transparency, backgrounds, rounded corners, `overflow`, `calc()`,
+   bidi, hyphenation, counters, named pages.
+4. **0.4 PDF standards:** PDF/A-3 and e-invoices, tagged PDF/PDF/UA, metadata, encryption, a PDF reader for merging.
+5. **0.5 Hardening:** visual comparison with browsers, fuzzing, resource limits, performance, deployment targets.
+6. **1.0:** API review and freeze, documentation, then the release.
+7. **After 1.0:** DOCX, XLSX, PPTX and XSL-FO as their own packages, PDF editing, grid layout.
+
+The 0.x milestones are internal stages, not releases.
 
 JavaScript is not executed, by design: the target is print documents such as invoices and reports.
 
