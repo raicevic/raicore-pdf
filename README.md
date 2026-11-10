@@ -107,6 +107,20 @@ h1 { string-set: chapter content(); }
 - Content values: `counter(page)` and `counter(pages)` in any counter style, `string()` with
   `first`/`start`/`last`/`first-except`, `element()` for running elements, and strings with CSS escapes.
 
+Headings become PDF bookmarks (the outline in a viewer's navigation panel), nested by level. The GCPM properties
+customize them, and `HtmlConverterOptions.CreateBookmarks = false` turns them off:
+
+```css
+h1.subtitle { bookmark-level: none; }                        /* not in the outline */
+.chapter    { bookmark-level: 1; bookmark-label: "Chapter: " attr(data-title); }
+h2          { bookmark-state: closed; }                       /* collapsed until opened */
+```
+
+- `bookmark-level`: `none` or a level (`h1`-`h6` default to 1-6; a skipped level nests under the nearest shallower
+  entry).
+- `bookmark-label`: strings, `content()` (the element's text, the default), `content(first-letter)` and `attr()`.
+- `bookmark-state`: `open` (the default) or `closed`.
+
 Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowDocument` returns the laid-out document
 before rendering, e.g. to set your own page decorator.
 
@@ -204,6 +218,14 @@ doc.Save("hello.pdf");
 ```
 
 Coordinates are in PDF points (1/72 inch) with the origin at the bottom-left of the page.
+
+Bookmarks (the document outline) jump to a page and position, nest, and take any Unicode title:
+
+```csharp
+var chapter = new PdfOutlineItem("Chapter 1", page, top: page.Height - 72);
+chapter.Children.Add(new PdfOutlineItem("Section 1.1", page, top: 400) { IsOpen = false });
+doc.Outline.Add(chapter);   // viewers open the outline panel (see PdfDocument.PageMode)
+```
 
 ### Fonts
 
@@ -306,6 +328,8 @@ flow.Render().Save("report.pdf");
 - Page breaks: forced (`break-before`/`break-after: page`), avoided (`break-after: avoid` keeps headings with their text,
   `break-inside: avoid`).
 - Boxes split across pages are sliced: the top border on the first page, the bottom border on the last.
+- Bookmarks: a block with `Bookmark = new Bookmark("Results", level: 2)` becomes an entry in the PDF outline, nested
+  by level and pointing at where the block starts (also inside flex items and table cells).
 - Tables (`TableBlock`) use the CSS automatic or fixed table layout. Header rows repeat at the top of every page and
   footer rows (`TableRow.IsFooter`) below the body on every page, rows that do
   not fit are split with each cell continuing on the next page (unless `TableRow.BreakInside` is `Avoid`), rows that
