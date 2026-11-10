@@ -120,35 +120,26 @@ public sealed class PdfDocument
             }
         }
 
+        // Each extended graphics state (a pair of fill and stroke alphas) is written once, when first used.
+        var extGStateRefs = new Dictionary<(double Fill, double Stroke), PdfReference>();
+        PdfReference ExtGState((double Fill, double Stroke) alpha)
+        {
+            if (!extGStateRefs.TryGetValue(alpha, out var reference))
+            {
+                reference = writer.Add(PdfPage.ExtGState(alpha));
+                extGStateRefs[alpha] = reference;
+            }
+
+            return reference;
+        }
+
         var kids = new PdfArray();
         var pageRefs = new Dictionary<PdfPage, PdfReference>(ReferenceEqualityComparer.Instance);
         var pageDictionaries = new List<PdfDictionary>(_pages.Count);
         foreach (var page in _pages)
         {
-            var fontResources = new PdfDictionary();
-            foreach (var (font, name, _) in page.Fonts)
-            {
-                fontResources[name] = fontRefs[font];
-            }
-
-            var resources = new PdfDictionary();
-            if (fontResources.Count > 0)
-            {
-                resources["Font"] = fontResources;
-            }
-
-            if (page.Images.Count > 0)
-            {
-                var xobjects = new PdfDictionary();
-                foreach (var (image, name) in page.Images)
-                {
-                    xobjects[name] = imageRefs[image];
-                }
-
-                resources["XObject"] = xobjects;
-            }
-
             var content = page.Canvas.ToBytes();
+            var resources = page.WriteResources(writer, CompressContent, (font, _) => fontRefs[font], image => imageRefs[image], ExtGState);
             var contentStream = CompressContent ? PdfStreamObject.CreateCompressed(content) : new PdfStreamObject(content);
 
             var pageDictionary = new PdfDictionary
@@ -159,6 +150,13 @@ public sealed class PdfDocument
                 ["Resources"] = resources,
                 ["Contents"] = writer.Add(contentStream),
             };
+
+            // A page with transparency blends in RGB, so that viewers agree on how translucent colors mix.
+            if (page.UsesTransparency)
+            {
+                pageDictionary["Group"] = PdfPage.TransparencyGroup(isolated: false);
+            }
+
             var pageRef = writer.Add(pageDictionary);
             kids.Items.Add(pageRef);
             pageRefs[page] = pageRef;

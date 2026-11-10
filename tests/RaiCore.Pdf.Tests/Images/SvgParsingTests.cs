@@ -274,10 +274,15 @@ public class SvgParsingTests
     [InlineData("rgb(255, 128, 0)", "#ff8000")]
     [InlineData("rgb(100%,0%,50%)", "#ff0080")]
     [InlineData("hsl(120, 100%, 25%)", "#008000")]
-    [InlineData("rgba(255,0,0,0.5)", "#ff8080")]  // Translucent: blended with white.
-    [InlineData("#ff000080", "#ff7f7f")]
-    public void Colors_are_parsed(string text, string expected) =>
-        Assert.Equal(expected, Color(SvgColor.Parse(text)!.Value.OnWhite(1)!.Value));
+    [InlineData("rgba(255,0,0,0.5)", "#ff0000 0.5")]  // Translucent: the alpha is kept.
+    [InlineData("#ff000080", "#ff0000 0.502")]
+    [InlineData("hsla(240, 100%, 50%, 25%)", "#0000ff 0.25")]
+    [InlineData("transparent", "#000000 0")]
+    public void Colors_are_parsed(string text, string expected)
+    {
+        var color = SvgColor.Parse(text)!.Value;
+        Assert.Equal(expected, color.Alpha < 1 ? FormattableString.Invariant($"{Color(color)} {Math.Round(color.Alpha, 3)}") : Color(color));
+    }
 
     [Theory]
     [InlineData("nonsense")]
@@ -422,7 +427,7 @@ public class SvgParsingTests
 
     private static string Color(SvgPaint paint) => Color(paint.Color);
 
-    private static string Color(SvgColor color) => Color(color.OnWhite(1)!.Value);
+    private static string Color(SvgColor color) => Color(new PdfColor(color.R, color.G, color.B));
 
     private static string Color(PdfColor color) =>
         $"#{(int)Math.Round(color.Red * 255):x2}{(int)Math.Round(color.Green * 255):x2}{(int)Math.Round(color.Blue * 255):x2}";

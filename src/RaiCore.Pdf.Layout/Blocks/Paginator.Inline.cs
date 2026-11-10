@@ -42,7 +42,7 @@ internal sealed partial class Paginator
             _ => paginator.LastLineBaseline(),
         };
 
-        return (height, baseline ?? height + block.Style.Margin.Bottom, paginator._pages[0]);
+        return (height, baseline ?? height + block.Style.Margin.Bottom, paginator._pages[0].Grouped());
     }
 
     /// <summary>

@@ -140,9 +140,24 @@ internal static class BorderPainter
             canvas.Fill();
         }
 
-        foreach (var edge in strokes)
+        // Dashes of adjacent sides may overlap in a corner; a translucent color is painted once there, as a group.
+        foreach (var group in strokes.GroupBy(edge => edge.Border.Color))
         {
-            StrokeDashes(canvas, edge);
+            var translucent = !group.Key.IsOpaque;
+            if (translucent)
+            {
+                canvas.BeginGroup(group.Key.Alpha);
+            }
+
+            foreach (var edge in group)
+            {
+                StrokeDashes(canvas, translucent ? edge with { Border = edge.Border with { Color = group.Key.WithAlpha(1) } } : edge);
+            }
+
+            if (translucent)
+            {
+                canvas.EndGroup();
+            }
         }
     }
 
@@ -177,11 +192,11 @@ internal static class BorderPainter
         var max = Math.Max(color.Red, Math.Max(color.Green, color.Blue));
         if (max < 1.0 / 3)
         {
-            return darker ? color : new PdfColor(Lighten(color.Red), Lighten(color.Green), Lighten(color.Blue));
+            return darker ? color : new PdfColor(Lighten(color.Red), Lighten(color.Green), Lighten(color.Blue), color.Alpha);
         }
 
         var scale = (max - (1.0 / 3)) / max;
-        return darker ? new PdfColor(color.Red * scale, color.Green * scale, color.Blue * scale) : color;
+        return darker ? new PdfColor(color.Red * scale, color.Green * scale, color.Blue * scale, color.Alpha) : color;
 
         static double Lighten(double channel) => channel + ((1 - channel) / 3);
     }

@@ -38,30 +38,51 @@ public enum LineJoin
 /// <remarks>Partial: feature areas may add drawing operations in their own files (<c>PdfCanvas.*.cs</c>).</remarks>
 public sealed partial class PdfCanvas
 {
-    private readonly StringBuilder _ops = new();
     private readonly PdfPage _page;
 
-    internal PdfCanvas(PdfPage page) => _page = page;
+    /// <summary>The content being drawn: the page's content stream, or the innermost open transparency group's.</summary>
+    private StringBuilder _ops = new();
 
-    /// <summary>Saves the graphics state (<c>q</c>). Pair with <see cref="RestoreState"/>.</summary>
+    internal PdfCanvas(PdfPage page)
+    {
+        _page = page;
+        _resources = _pageResources;
+    }
+
+    /// <summary>Saves the graphics state (<c>q</c>), including the transformation, clip, colors and alpha. Pair with <see cref="RestoreState"/>.</summary>
     public PdfCanvas SaveState()
     {
-        PushTransform();
+        PushState();
         return Op("q");
     }
 
     /// <summary>Restores the graphics state (<c>Q</c>).</summary>
     public PdfCanvas RestoreState()
     {
-        PopTransform();
+        PopState();
         return Op("Q");
     }
 
-    /// <summary>Sets the color used by fill operations and text.</summary>
-    public PdfCanvas SetFillColor(PdfColor color) => Op($"{N(color.Red)} {N(color.Green)} {N(color.Blue)} rg");
+    /// <summary>
+    /// Sets the color used by fill operations and text. Its <see cref="PdfColor.Alpha"/> becomes the fill alpha
+    /// (an extended graphics state with <c>/ca</c>, written only when the alpha changes), so translucent colors let
+    /// what is underneath show through.
+    /// </summary>
+    public PdfCanvas SetFillColor(PdfColor color)
+    {
+        Op($"{N(color.Red)} {N(color.Green)} {N(color.Blue)} rg");
+        return SetAlpha(color.Alpha, _strokeAlpha);
+    }
 
-    /// <summary>Sets the color used by stroke operations.</summary>
-    public PdfCanvas SetStrokeColor(PdfColor color) => Op($"{N(color.Red)} {N(color.Green)} {N(color.Blue)} RG");
+    /// <summary>
+    /// Sets the color used by stroke operations. Its <see cref="PdfColor.Alpha"/> becomes the stroke alpha (an
+    /// extended graphics state with <c>/CA</c>, written only when the alpha changes).
+    /// </summary>
+    public PdfCanvas SetStrokeColor(PdfColor color)
+    {
+        Op($"{N(color.Red)} {N(color.Green)} {N(color.Blue)} RG");
+        return SetAlpha(_fillAlpha, color.Alpha);
+    }
 
     /// <summary>Sets the stroke line width in points.</summary>
     public PdfCanvas SetLineWidth(double width) => Op($"{N(width)} w");
@@ -147,13 +168,14 @@ public sealed partial class PdfCanvas
 
     /// <summary>
     /// Draws a single line of text with its baseline starting at (<paramref name="x"/>, <paramref name="y"/>),
-    /// using the current fill color. Characters the font lacks are drawn as its "missing glyph" box.
+    /// using the current fill color (and its alpha). Characters the font lacks are drawn as its "missing glyph" box.
     /// </summary>
     public PdfCanvas DrawText(string text, PdfFont font, double size, double x, double y)
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(font);
         var (resourceName, usage) = _page.UseFont(font);
+        UseResource(resourceName);
         var operand = font.EncodeText(text, usage).ToString();
         return Op($"BT /{resourceName} {N(size)} Tf {N(x)} {N(y)} Td {operand} Tj ET");
     }
@@ -164,14 +186,16 @@ public sealed partial class PdfCanvas
 
     /// <summary>
     /// Draws an image scaled to fill the rectangle with its bottom-left corner at (<paramref name="x"/>, <paramref name="y"/>).
-    /// The EXIF orientation of JPEG photos is applied, so the image appears upright.
+    /// The EXIF orientation of JPEG photos is applied, so the image appears upright. The image is drawn opaque (with
+    /// its own transparency, if any), whatever the alpha of the fill color; draw it inside
+    /// <see cref="BeginGroup"/>/<see cref="EndGroup"/> to make it translucent.
     /// </summary>
     public PdfCanvas DrawImage(PdfImage image, double x, double y, double width, double height)
     {
         ArgumentNullException.ThrowIfNull(image);
-        var name = _page.UseImage(image);
+        var name = UseResource(_page.UseImage(image));
         var (a, b, c, d, e, f) = image.GetMatrix(x, y, width, height);
-        return Op($"q {N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} cm /{name} Do Q");
+        return Op($"q {OpaqueImagePrefix()}{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} cm /{name} Do Q");
     }
 
     /// <summary>
@@ -197,6 +221,7 @@ public sealed partial class PdfCanvas
 
         openType.EnsureEmbeddable();
         var (resourceName, usage) = _page.UseFont(font);
+        UseResource(resourceName);
         var op = new StringBuilder();
         if (actualText is not null)
         {
@@ -252,7 +277,13 @@ public sealed partial class PdfCanvas
         return Op(op.ToString());
     }
 
-    internal byte[] ToBytes() => Encoding.Latin1.GetBytes(_ops.ToString());
+    /// <summary>The page's content stream.</summary>
+    /// <exception cref="InvalidOperationException">A transparency group is still open.</exception>
+    internal byte[] ToBytes()
+    {
+        EnsureGroupsClosed();
+        return Encoding.Latin1.GetBytes(_ops.ToString());
+    }
 
     private PdfCanvas Op(string op)
     {

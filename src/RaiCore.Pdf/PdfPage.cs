@@ -1,5 +1,7 @@
 using System.Globalization;
 using RaiCore.Pdf.Fonts;
+using RaiCore.Pdf.IO;
+using RaiCore.Pdf.Objects;
 
 namespace RaiCore.Pdf;
 
@@ -9,6 +11,8 @@ public sealed class PdfPage
     private readonly List<(PdfFont Font, string Name, FontUsage Usage)> _fonts = [];
     private readonly List<(PdfImage Image, string Name)> _images = [];
     private readonly List<PdfLink> _links = [];
+    private readonly List<((double Fill, double Stroke) Alpha, string Name)> _extGStates = [];
+    private readonly List<GroupForm> _groups = [];
 
     internal PdfPage(PdfPageSize size)
     {
@@ -34,6 +38,15 @@ public sealed class PdfPage
     internal IReadOnlyList<(PdfFont Font, string Name, FontUsage Usage)> Fonts => _fonts;
 
     internal IReadOnlyList<(PdfImage Image, string Name)> Images => _images;
+
+    /// <summary>The extended graphics states (fill and stroke alpha) the page's content uses.</summary>
+    internal IReadOnlyList<((double Fill, double Stroke) Alpha, string Name)> ExtGStates => _extGStates;
+
+    /// <summary>The transparency groups drawn on the page (form XObjects), including nested ones.</summary>
+    internal IReadOnlyList<GroupForm> Groups => _groups;
+
+    /// <summary>Whether the page uses transparency: alpha, groups, or an SVG image that does.</summary>
+    internal bool UsesTransparency => _extGStates.Count > 0 || _images.Any(entry => entry.Image.UsesTransparency);
 
     /// <summary>
     /// Makes a rectangle of the page a link that opens <paramref name="uri"/> (a URI action), e.g. a web page or a
@@ -107,6 +120,150 @@ public sealed class PdfPage
         return name;
     }
 
+    /// <summary>Returns the page-local resource name (e.g. <c>GS1</c>) for an extended graphics state with these alphas.</summary>
+    internal string UseExtGState(double fill, double stroke)
+    {
+        foreach (var entry in _extGStates)
+        {
+            if (entry.Alpha == (fill, stroke))
+            {
+                return entry.Name;
+            }
+        }
+
+        var name = string.Create(CultureInfo.InvariantCulture, $"GS{_extGStates.Count + 1}");
+        _extGStates.Add(((fill, stroke), name));
+        return name;
+    }
+
+    /// <summary>Registers a transparency group's content and returns its page-local resource name (e.g. <c>Fm1</c>).</summary>
+    /// <param name="content">The group's content stream.</param>
+    /// <param name="resources">The names of the resources its content uses.</param>
+    /// <param name="matrix">The form matrix, which maps the group's space (the page's) to the space it is drawn in.</param>
+    internal string AddGroup(byte[] content, IReadOnlySet<string> resources, Svg.SvgMatrix matrix)
+    {
+        var name = string.Create(CultureInfo.InvariantCulture, $"Fm{_groups.Count + 1}");
+        _groups.Add(new GroupForm(name, content, resources, matrix));
+        return name;
+    }
+
+    /// <summary>
+    /// Writes the transparency groups and returns the resource dictionary of the page's content stream. Each content
+    /// stream (the page's and every group's) gets only the resources it uses; the callbacks supply the references of
+    /// resources written elsewhere, and are called at most once per resource.
+    /// </summary>
+    internal PdfDictionary WriteResources(
+        PdfFileWriter writer, bool compress, Func<PdfFont, FontUsage, PdfReference> font, Func<PdfImage, PdfReference> image,
+        Func<(double Fill, double Stroke), PdfReference> extGState)
+    {
+        var references = new Dictionary<string, PdfReference>(StringComparer.Ordinal);
+        PdfReference Resolve(string name, Func<PdfReference> write)
+        {
+            if (!references.TryGetValue(name, out var reference))
+            {
+                reference = write();
+                references[name] = reference;
+            }
+
+            return reference;
+        }
+
+        // Group forms are added first, so that any content (also another group's) can refer to them.
+        var forms = new List<PdfStreamObject>(_groups.Count);
+        foreach (var group in _groups)
+        {
+            var form = compress ? PdfStreamObject.CreateCompressed(group.Content) : new PdfStreamObject(group.Content);
+            var dictionary = form.Dictionary;
+            dictionary["Type"] = new PdfName("XObject");
+            dictionary["Subtype"] = new PdfName("Form");
+            dictionary["BBox"] = PdfArray.OfNumbers(0, 0, Width, Height);
+            if (!group.Matrix.IsIdentity)
+            {
+                var m = group.Matrix;
+                dictionary["Matrix"] = PdfArray.OfNumbers(m.A, m.B, m.C, m.D, m.E, m.F);
+            }
+
+            dictionary["Group"] = TransparencyGroup(isolated: true);
+            references[group.Name] = writer.Add(form);
+            forms.Add(form);
+        }
+
+        PdfDictionary Build(IReadOnlySet<string> used)
+        {
+            var resources = new PdfDictionary();
+            var fonts = new PdfDictionary();
+            foreach (var (f, name, usage) in _fonts.Where(entry => used.Contains(entry.Name)))
+            {
+                fonts[name] = Resolve(name, () => font(f, usage));
+            }
+
+            var xobjects = new PdfDictionary();
+            foreach (var (i, name) in _images.Where(entry => used.Contains(entry.Name)))
+            {
+                xobjects[name] = Resolve(name, () => image(i));
+            }
+
+            foreach (var group in _groups.Where(group => used.Contains(group.Name)))
+            {
+                xobjects[group.Name] = references[group.Name];
+            }
+
+            var states = new PdfDictionary();
+            foreach (var (alpha, name) in _extGStates.Where(entry => used.Contains(entry.Name)))
+            {
+                states[name] = Resolve(name, () => extGState(alpha));
+            }
+
+            var patterns = new PdfDictionary();
+            foreach (var (pattern, name) in Canvas.Patterns.Where(entry => used.Contains(entry.Name)))
+            {
+                patterns[name] = Resolve(name, () => writer.Add(pattern));
+            }
+
+            foreach (var (key, dictionary) in new[] { ("Font", fonts), ("XObject", xobjects), ("ExtGState", states), ("Pattern", patterns) })
+            {
+                if (dictionary.Count > 0)
+                {
+                    resources[key] = dictionary;
+                }
+            }
+
+            return resources;
+        }
+
+        for (var i = 0; i < _groups.Count; i++)
+        {
+            forms[i].Dictionary["Resources"] = Build(_groups[i].Resources);
+        }
+
+        return Build(Canvas.PageResources);
+    }
+
+    /// <summary>A transparency group dictionary in the RGB blending space (for pages, and for groups when isolated).</summary>
+    internal static PdfDictionary TransparencyGroup(bool isolated)
+    {
+        var group = new PdfDictionary
+        {
+            ["Type"] = new PdfName("Group"),
+            ["S"] = new PdfName("Transparency"),
+            ["CS"] = new PdfName("DeviceRGB"),
+        };
+        if (isolated)
+        {
+            group["I"] = PdfBoolean.True;
+        }
+
+        return group;
+    }
+
+    /// <summary>An extended graphics state that sets the fill (<c>/ca</c>) and stroke (<c>/CA</c>) alpha.</summary>
+    internal static PdfDictionary ExtGState((double Fill, double Stroke) alpha) => new()
+    {
+        ["Type"] = new PdfName("ExtGState"),
+        ["CA"] = new PdfReal(alpha.Stroke),
+        ["ca"] = new PdfReal(alpha.Fill),
+    };
+
     /// <summary>Returns the page-local resource name (e.g. <c>F1</c>) for a font and the record of glyphs used from it.</summary>
     internal (string Name, FontUsage Usage) UseFont(PdfFont font)
     {
@@ -159,3 +316,6 @@ public readonly record struct PdfPageSize(double Width, double Height)
         return true;
     }
 }
+
+/// <summary>A transparency group drawn on a page: a form XObject's content, the resources it uses and its matrix.</summary>
+internal sealed record GroupForm(string Name, byte[] Content, IReadOnlySet<string> Resources, Svg.SvgMatrix Matrix);

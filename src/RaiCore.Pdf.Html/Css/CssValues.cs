@@ -146,7 +146,10 @@ internal static partial class CssValues
         return parts;
     }
 
-    /// <summary>Parses rgb()/rgba()/#hex/basic names. Returns null for transparent; translucent colors are blended with white.</summary>
+    /// <summary>
+    /// Parses rgb()/rgba()/#hex/basic names (AngleSharp computes every color as <c>rgba(r, g, b, a)</c>), keeping the
+    /// alpha: <c>transparent</c> is a color with alpha 0. Returns null for <c>none</c> and invalid values.
+    /// </summary>
     public static PdfColor? ParseColor(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -155,9 +158,14 @@ internal static partial class CssValues
         }
 
         value = value.Trim().ToUpperInvariant();
-        if (value is "TRANSPARENT" or "NONE")
+        if (value == "NONE")
         {
             return null;
+        }
+
+        if (value == "TRANSPARENT")
+        {
+            return new PdfColor(0, 0, 0, 0);
         }
 
         if (value.StartsWith('#'))
@@ -176,7 +184,7 @@ internal static partial class CssValues
                     rgb >>= 8;
                 }
 
-                return Blend((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb, alpha);
+                return PdfColor.FromRgba((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb, alpha);
             }
 
             return null;
@@ -203,7 +211,7 @@ internal static partial class CssValues
             var a = parts.Length > 3
                 ? parts[3].EndsWith('%') ? double.Parse(parts[3].TrimEnd('%'), CultureInfo.InvariantCulture) / 100 : double.Parse(parts[3], CultureInfo.InvariantCulture)
                 : 1;
-            return Blend(ClampByte(Channel(parts[0])), ClampByte(Channel(parts[1])), ClampByte(Channel(parts[2])), a);
+            return PdfColor.FromRgba(ClampByte(Channel(parts[0])), ClampByte(Channel(parts[1])), ClampByte(Channel(parts[2])), a);
         }
 
         return value switch
@@ -286,21 +294,6 @@ internal static partial class CssValues
 
     [System.Text.RegularExpressions.GeneratedRegex(@"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*([a-zA-Z%]*)$")]
     private static partial System.Text.RegularExpressions.Regex LengthRegex();
-
-    /// <summary>Translucent colors are blended with white (PDF transparency comes later); fully transparent is null.</summary>
-    private static PdfColor? Blend(byte r, byte g, byte b, double alpha)
-    {
-        alpha = Math.Clamp(alpha, 0, 1);
-        if (alpha <= 0)
-        {
-            return null;
-        }
-
-        return new PdfColor(
-            ((r / 255.0) * alpha) + (1 - alpha),
-            ((g / 255.0) * alpha) + (1 - alpha),
-            ((b / 255.0) * alpha) + (1 - alpha));
-    }
 
     private static byte ClampByte(double value) => (byte)Math.Clamp(Math.Round(value), 0, 255);
 }

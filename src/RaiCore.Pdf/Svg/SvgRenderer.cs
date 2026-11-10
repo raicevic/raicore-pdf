@@ -7,8 +7,13 @@ namespace RaiCore.Pdf.Svg;
 /// markers, patterns, scripts, animation, <c>foreignObject</c>) are skipped.
 /// </summary>
 /// <remarks>
+/// Translucent colors, <c>fill-opacity</c> and <c>stroke-opacity</c> are painted with PDF alpha. An element's
+/// <c>opacity</c> makes it a transparency group, so that overlapping parts (children, or a shape's fill and stroke)
+/// do not show through each other; a shape that only fills or only strokes gets the opacity in its paint instead.
+/// <para>
 /// The canvas is in the SVG's user space when <see cref="Render"/> starts; the renderer also tracks that space's
 /// matrix relative to the form, which gradient patterns need.
+/// </para>
 /// </remarks>
 internal sealed partial class SvgRenderer
 {
@@ -45,12 +50,14 @@ internal sealed partial class SvgRenderer
             return;
         }
 
-        var state = new RenderState(ctm, viewport, style.Opacity, 0);
+        var state = new RenderState(ctm, viewport, 1, 0);
         _active.Add(root);
         _canvas.SaveState();
         if (ApplyClip(root, style, state))
         {
+            BeginOpacity(style.Opacity);
             RenderChildren(root, style, state);
+            EndOpacity(style.Opacity);
         }
 
         _canvas.RestoreState();
@@ -58,6 +65,32 @@ internal sealed partial class SvgRenderer
 
     private static bool IsRenderable(string name) =>
         Shapes.Contains(name) || name is "g" or "a" or "switch" or "svg" or "use" or "text" or "image";
+
+    /// <summary>
+    /// Whether an element paints at most once: a shape without both a fill and a stroke. Its opacity can then go into
+    /// its paint's alpha; anything else needs a transparency group for opacity.
+    /// </summary>
+    private static bool PaintsOnce(SvgElement element, SvgStyle style) =>
+        Shapes.Contains(element.Name)
+        && (element.Name == "line" || style.Fill.Kind == SvgPaintKind.None || style.StrokeWidth <= 0 || style.Stroke.Kind == SvgPaintKind.None);
+
+    /// <summary>Starts a transparency group for an opacity below 1.</summary>
+    private void BeginOpacity(double opacity)
+    {
+        if (opacity < 1)
+        {
+            _canvas.BeginGroup(opacity);
+        }
+    }
+
+    /// <summary>Ends the transparency group <see cref="BeginOpacity"/> started, if any.</summary>
+    private void EndOpacity(double opacity)
+    {
+        if (opacity < 1)
+        {
+            _canvas.EndGroup();
+        }
+    }
 
     private void RenderChildren(SvgElement element, SvgStyle style, RenderState state)
     {
@@ -96,8 +129,11 @@ internal sealed partial class SvgRenderer
                 transform = SvgMatrix.Translate(x, y).Then(transform);
             }
 
-            var state = new RenderState(transform.Then(parent.Ctm), parent.Viewport, parent.Opacity * style.Opacity, parent.Depth + 1);
-            if (!state.Ctm.IsFinite || state.Ctm.IsSingular || state.Opacity <= 0)
+            // Opacity goes into the paint of a shape that paints once, and is a transparency group otherwise.
+            var folded = PaintsOnce(element, style);
+            var groupOpacity = folded ? 1 : style.Opacity;
+            var state = new RenderState(transform.Then(parent.Ctm), parent.Viewport, folded ? parent.Opacity * style.Opacity : parent.Opacity, parent.Depth + 1);
+            if (!state.Ctm.IsFinite || state.Ctm.IsSingular || style.Opacity <= 0)
             {
                 return; // Nothing visible (e.g. scale(0)).
             }
@@ -110,6 +146,7 @@ internal sealed partial class SvgRenderer
 
             if (ApplyClip(element, style, state))
             {
+                BeginOpacity(groupOpacity);
                 switch (element.Name)
                 {
                     case "g" or "a" or "switch":
@@ -131,6 +168,8 @@ internal sealed partial class SvgRenderer
                         RenderShape(element, style, state);
                         break;
                 }
+
+                EndOpacity(groupOpacity);
             }
 
             _canvas.RestoreState();
@@ -160,13 +199,14 @@ internal sealed partial class SvgRenderer
             try
             {
                 var targetStyle = SvgStyle.Compute(style, target, state.Viewport);
-                if (targetStyle.Displayed && state.Opacity * targetStyle.Opacity > 0)
+                if (targetStyle.Displayed && targetStyle.Opacity > 0)
                 {
-                    var inner = state with { Opacity = state.Opacity * targetStyle.Opacity };
                     _canvas.SaveState();
-                    if (ApplyClip(target, targetStyle, inner))
+                    if (ApplyClip(target, targetStyle, state))
                     {
-                        RenderViewport(target, use, targetStyle, inner, use["width"], use["height"]);
+                        BeginOpacity(targetStyle.Opacity);
+                        RenderViewport(target, use, targetStyle, state, use["width"], use["height"]);
+                        EndOpacity(targetStyle.Opacity);
                     }
 
                     _canvas.RestoreState();
@@ -266,12 +306,12 @@ internal sealed partial class SvgRenderer
     {
         if (fill is { } f)
         {
-            _ = f.Pattern is { } pattern ? _canvas.SetFillPattern(pattern) : _canvas.SetFillColor(f.Color!.Value);
+            _ = f.Pattern is { } pattern ? _canvas.SetFillPattern(pattern, f.PatternAlpha) : _canvas.SetFillColor(f.Color!.Value);
         }
 
         if (stroke is { } s)
         {
-            _ = s.Pattern is { } pattern ? _canvas.SetStrokePattern(pattern) : _canvas.SetStrokeColor(s.Color!.Value);
+            _ = s.Pattern is { } pattern ? _canvas.SetStrokePattern(pattern, s.PatternAlpha) : _canvas.SetStrokeColor(s.Color!.Value);
             _canvas.SetLineWidth(style.StrokeWidth).SetLineCap(style.LineCap).SetLineJoin(style.LineJoin).SetMiterLimit(style.MiterLimit);
             if (style.DashArray.Count > 0)
             {
@@ -289,9 +329,9 @@ internal sealed partial class SvgRenderer
         switch (paint.Kind)
         {
             case SvgPaintKind.Color:
-                return paint.Color.OnWhite(opacity) is { } color ? new SvgResolvedPaint(color, null) : null;
+                return paint.Color.ToPdf(opacity) is { } color ? new SvgResolvedPaint(color, null) : null;
             case SvgPaintKind.CurrentColor:
-                return style.Color.OnWhite(opacity) is { } current ? new SvgResolvedPaint(current, null) : null;
+                return style.Color.ToPdf(opacity) is { } current ? new SvgResolvedPaint(current, null) : null;
             case SvgPaintKind.Server:
                 if (_document.GetElementById(paint.ServerId) is { Name: "linearGradient" or "radialGradient" } gradient)
                 {
@@ -550,6 +590,9 @@ internal sealed partial class SvgRenderer
         return result;
     }
 
-    /// <summary>The current transformation (user space to form space), viewport, group opacity and nesting depth.</summary>
+    /// <summary>
+    /// The current transformation (user space to form space), viewport, the opacity that goes into paints (of a shape
+    /// that paints once; groups have their own) and nesting depth.
+    /// </summary>
     private readonly record struct RenderState(SvgMatrix Ctm, (double Width, double Height) Viewport, double Opacity, int Depth);
 }

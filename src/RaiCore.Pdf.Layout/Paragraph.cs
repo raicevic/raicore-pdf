@@ -17,7 +17,11 @@ public sealed record InlineBox(Block Content, InlineAlignment Alignment = defaul
 /// <param name="Width">Width in points.</param>
 /// <param name="Height">Height in points.</param>
 /// <param name="Alignment">Its vertical position in the line (CSS <c>vertical-align</c>).</param>
-public sealed record InlineImage(PdfImage Image, double Width, double Height, InlineAlignment Alignment = default);
+public sealed record InlineImage(PdfImage Image, double Width, double Height, InlineAlignment Alignment = default)
+{
+    /// <summary>The image's opacity, from 0 (invisible) to 1 (opaque, the default), as CSS <c>opacity</c>.</summary>
+    public double Opacity { get; init; } = 1;
+}
 
 /// <summary>
 /// The box of an inline element around part of a paragraph's text (CSS backgrounds, borders, padding and horizontal
@@ -218,12 +222,17 @@ public sealed class Paragraph
     /// Appends an image that flows with the text: it sits on the baseline, makes its line taller if needed,
     /// and lines may break before and after it.
     /// </summary>
-    public Paragraph AddImage(PdfImage image, double width, double height, InlineAlignment alignment = default)
+    /// <param name="image">The image.</param>
+    /// <param name="width">Width in points.</param>
+    /// <param name="height">Height in points.</param>
+    /// <param name="alignment">Its vertical position in the line (CSS <c>vertical-align</c>).</param>
+    /// <param name="opacity">Its opacity, from 0 (invisible) to 1 (opaque).</param>
+    public Paragraph AddImage(PdfImage image, double width, double height, InlineAlignment alignment = default, double opacity = 1)
     {
         ArgumentNullException.ThrowIfNull(image);
         ArgumentOutOfRangeException.ThrowIfNegative(width);
         ArgumentOutOfRangeException.ThrowIfNegative(height);
-        _spans.Add(new ParagraphSpan("\uFFFC", Style, new InlineImage(image, width, height, alignment)));
+        _spans.Add(new ParagraphSpan("\uFFFC", Style, new InlineImage(image, width, height, alignment) { Opacity = Math.Clamp(double.IsNaN(opacity) ? 1 : opacity, 0, 1) }));
         _length++;
         return this;
     }

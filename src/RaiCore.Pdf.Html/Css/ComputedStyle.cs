@@ -172,6 +172,9 @@ internal sealed record ComputedStyle
 
     public CssLength ColumnGap { get; init; } = CssLength.Zero;
 
+    /// <summary>CSS <c>opacity</c>, clamped to 0 to 1 (not inherited: it applies to the element's box as a whole).</summary>
+    public double Opacity { get; init; } = 1;
+
     /// <summary>
     /// Reads an element's computed style (AngleSharp has already applied the cascade, inheritance and em units, and
     /// evaluated math functions without percentages). Invalid values fall back to the property's initial value.
@@ -233,7 +236,7 @@ internal sealed record ComputedStyle
             BorderWidth = borderWidth,
             BorderColor = borderColor,
             BorderStyle = borderStyle,
-            Background = CssValues.ParseColor(Get("background-color")),
+            Background = CssValues.ParseColor(Get("background-color")) is { Alpha: > 0 } background ? background : null, // Transparent is none.
             Width = Size("width"),
             WidthDeclared = Get("width").Length > 0,
             HeightDeclared = Get("height").Length > 0,
@@ -305,6 +308,7 @@ internal sealed record ComputedStyle
             TextUnderlineOffset = Parse(Get("text-underline-offset")) ?? CssLength.Auto,
             RowGap = Gap("row-gap"),
             ColumnGap = Gap("column-gap"),
+            Opacity = ParseNumber(Get("opacity"), 1) is var opacity && double.IsFinite(opacity) ? Math.Clamp(opacity, 0, 1) : 1, // AngleSharp computes percentages as numbers.
         };
 
         // Gaps are normal (0 outside grids and multi-column) when unset or invalid.

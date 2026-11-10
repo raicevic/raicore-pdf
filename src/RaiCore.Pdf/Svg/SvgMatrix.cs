@@ -41,6 +41,21 @@ internal readonly record struct SvgMatrix(double A, double B, double C, double D
 
     public (double X, double Y) Apply(double x, double y) => ((A * x) + (C * y) + E, (B * x) + (D * y) + F);
 
+    /// <summary>The inverse transformation, or null when this one is singular or not finite.</summary>
+    public SvgMatrix? Invert()
+    {
+        var determinant = (A * D) - (B * C);
+        if (IsSingular || !IsFinite || determinant == 0)
+        {
+            return null;
+        }
+
+        var inverse = new SvgMatrix(
+            D / determinant, -B / determinant, -C / determinant, A / determinant,
+            ((C * F) - (D * E)) / determinant, ((B * E) - (A * F)) / determinant);
+        return inverse.IsFinite ? inverse : null;
+    }
+
     /// <summary>
     /// Parses an SVG <c>transform</c> list such as <c>translate(10 20) rotate(45, 5, 5)</c>. The rightmost transform
     /// applies first. Returns <c>null</c> when the list is invalid (the attribute is then ignored).

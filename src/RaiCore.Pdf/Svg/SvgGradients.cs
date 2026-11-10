@@ -3,16 +3,20 @@ using RaiCore.Pdf.Objects;
 
 namespace RaiCore.Pdf.Svg;
 
-/// <summary>A resolved paint: a solid color or a pattern (a gradient as a PDF shading pattern).</summary>
-internal readonly record struct SvgResolvedPaint(PdfColor? Color, PdfDictionary? Pattern);
+/// <summary>
+/// A resolved paint: a solid color (with its alpha) or a pattern (a gradient as a PDF shading pattern) painted with
+/// <paramref name="PatternAlpha"/>.
+/// </summary>
+internal readonly record struct SvgResolvedPaint(PdfColor? Color, PdfDictionary? Pattern, double PatternAlpha = 1);
 
 /// <summary>
 /// Turns <c>linearGradient</c> and <c>radialGradient</c> elements into PDF shading patterns: axial (type 2) and
 /// radial (type 3) shadings whose color function stitches one exponential interpolation per pair of stops.
 /// </summary>
 /// <remarks>
-/// <c>spreadMethod</c> <c>reflect</c> and <c>repeat</c> are drawn as <c>pad</c>. Translucent stops are blended with
-/// white, like all SVG transparency until PDF transparency is supported.
+/// <c>spreadMethod</c> <c>reflect</c> and <c>repeat</c> are drawn as <c>pad</c>. PDF shadings have no alpha: the
+/// most opaque stop's alpha (with the fill or stroke opacity) becomes the paint's alpha, which is exact when all stops
+/// are equally opaque; stops less opaque than that are blended with white towards it, which is exact on white only.
 /// </remarks>
 internal static class SvgGradients
 {
@@ -32,16 +36,19 @@ internal static class SvgGradients
         SvgDocument document, SvgElement gradient, Func<SvgBounds?> bounds, SvgMatrix ctm, (double Width, double Height) viewport, double opacity)
     {
         var chain = Chain(document, gradient);
-        var stops = Stops(chain, viewport, opacity);
-        if (stops.Count == 0)
+        var colors = Stops(chain, viewport, opacity);
+        var alpha = colors.Count == 0 ? 0 : colors.Max(stop => stop.Color.Alpha);
+        if (alpha <= 0)
         {
-            return null;
+            return null; // No stops, or only transparent ones.
         }
 
-        if (stops.Count == 1)
+        if (colors.Count == 1)
         {
-            return new SvgResolvedPaint(stops[0].Color, null);
+            return Solid(colors[0].Color);
         }
+
+        var stops = colors.Select(stop => (stop.Offset, stop.Color.OnWhite(stop.Color.Alpha / alpha))).ToList();
 
         var userSpace = Attribute(chain, "gradientUnits") == "userSpaceOnUse";
         var units = SvgMatrix.Identity;
@@ -61,7 +68,7 @@ internal static class SvgGradients
             return userSpace ? length.Resolve(SvgStyle.DefaultFontSize, reference) : length.IsPercent ? length.Value / 100 : length.Value;
         }
 
-        var lastColor = stops[^1].Color;
+        var lastColor = colors[^1].Color;
         PdfDictionary shading;
         if (gradient.Name == "linearGradient")
         {
@@ -71,7 +78,7 @@ internal static class SvgGradients
             var y2 = Coordinate("y2", "0%", viewport.Height);
             if (x1 == x2 && y1 == y2)
             {
-                return new SvgResolvedPaint(lastColor, null); // A zero-length vector paints the last stop color.
+                return Solid(lastColor); // A zero-length vector paints the last stop color.
             }
 
             shading = Shading(2, [x1, y1, x2, y2], stops);
@@ -86,7 +93,7 @@ internal static class SvgGradients
             var fy = Attribute(chain, "fy") is null ? cy : Coordinate("fy", "50%", viewport.Height);
             if (r <= 0)
             {
-                return new SvgResolvedPaint(lastColor, null);
+                return Solid(lastColor);
             }
 
             // SVG 1.1 moves a focal point outside the circle onto its edge.
@@ -104,7 +111,7 @@ internal static class SvgGradients
         var matrix = transform.Then(units).Then(ctm);
         if (!matrix.IsFinite || matrix.IsSingular)
         {
-            return new SvgResolvedPaint(lastColor, null);
+            return Solid(lastColor);
         }
 
         var pattern = new PdfDictionary
@@ -114,8 +121,10 @@ internal static class SvgGradients
             ["Shading"] = shading,
             ["Matrix"] = PdfArray.OfNumbers(matrix.A, matrix.B, matrix.C, matrix.D, matrix.E, matrix.F),
         };
-        return new SvgResolvedPaint(null, pattern);
+        return new SvgResolvedPaint(null, pattern, alpha);
     }
+
+    private static SvgResolvedPaint? Solid(SvgColor color) => color.ToPdf(1) is { } solid ? new SvgResolvedPaint(solid, null) : null;
 
     /// <summary>The gradient and the gradients it inherits from through <c>href</c>, nearest first.</summary>
     private static List<SvgElement> Chain(SvgDocument document, SvgElement gradient)
@@ -136,10 +145,13 @@ internal static class SvgGradients
     private static string? Attribute(List<SvgElement> chain, string name) =>
         chain.Select(g => g[name]).FirstOrDefault(v => v is not null)?.Trim();
 
-    /// <summary>The stops of the first gradient in the chain that has any, with offsets clamped and made non-decreasing.</summary>
-    private static List<(double Offset, PdfColor Color)> Stops(List<SvgElement> chain, (double Width, double Height) viewport, double opacity)
+    /// <summary>
+    /// The stops of the first gradient in the chain that has any, with offsets clamped and made non-decreasing, and
+    /// colors whose alpha includes the stop opacity and <paramref name="opacity"/>.
+    /// </summary>
+    private static List<(double Offset, SvgColor Color)> Stops(List<SvgElement> chain, (double Width, double Height) viewport, double opacity)
     {
-        var result = new List<(double, PdfColor)>();
+        var result = new List<(double, SvgColor)>();
         var owner = chain.FirstOrDefault(g => g.Elements.Any(e => e.Name == "stop"));
         if (owner is null)
         {
@@ -154,8 +166,8 @@ internal static class SvgGradients
             var offset = ParseOffset(stop["offset"]);
             offset = Math.Max(previous, Math.Clamp(offset, 0, 1));
             previous = offset;
-            var color = style.StopColor.OnWhite(style.StopOpacity * opacity) ?? PdfColor.White;
-            result.Add((offset, color));
+            var color = style.StopColor;
+            result.Add((offset, color with { Alpha = Math.Clamp(color.Alpha * style.StopOpacity * opacity, 0, 1) }));
         }
 
         return result;

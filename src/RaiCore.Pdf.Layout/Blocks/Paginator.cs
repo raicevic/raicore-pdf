@@ -61,7 +61,7 @@ internal sealed partial class Paginator
 
     private readonly PageSetup _setup;
     private readonly bool _static;
-    private readonly List<List<DrawOperation>> _pages = [];
+    private readonly List<PageOperations> _pages = [];
     private readonly List<Placement> _placements = [];
     private readonly List<(int Page, object Marker)> _markers = [];
     private readonly List<Anchor> _anchors = [];
@@ -123,7 +123,7 @@ internal sealed partial class Paginator
         var paginator = new Paginator(document.Setup);
         var pendingMargin = new CollapsedMargin();
         paginator.LayoutChildren(document.Blocks, document.Setup.Margins.Left, document.Setup.ContentWidth, ref pendingMargin, firstTopMarginApplied: false);
-        return new PaginationResult(paginator._pages, paginator._placements, paginator._markers, paginator._anchors);
+        return new PaginationResult(paginator.GroupedPages(), paginator._placements, paginator._markers, paginator._anchors);
     }
 
     /// <summary>
@@ -137,7 +137,7 @@ internal sealed partial class Paginator
         var paginator = new Paginator(setup, isStatic: true);
         var pending = default(CollapsedMargin);
         paginator.LayoutChildren(blocks, x, width, ref pending, firstTopMarginApplied: false);
-        return (paginator.Y + pending.Value, paginator._pages[0], paginator._anchors);
+        return (paginator.Y + pending.Value, paginator._pages[0].Grouped(), paginator._anchors);
     }
 
     /// <summary>A block's min-content and max-content widths, including its margins (CSS intrinsic sizes).</summary>
@@ -218,7 +218,7 @@ internal sealed partial class Paginator
         var created = _pageIndex == _pages.Count;
         if (created)
         {
-            _pages.Add([]);
+            _pages.Add(new PageOperations(this));
         }
 
         Y = ContentTop;
@@ -364,8 +364,8 @@ internal sealed partial class Paginator
 
     private static bool HasBottomEdge(BoxStyle style) => style.Border.Bottom.Width > 0 || style.Padding.Bottom > 0;
 
-    /// <summary>Lays out one block; returns the bottom margin that collapses out of it (from its last child).</summary>
-    private CollapsedMargin LayoutBlock(Block block, double x, double width, BoxSizing sizing = default)
+    /// <summary>Lays out one block in its opacity scope (see <see cref="LayoutBlock"/>).</summary>
+    private CollapsedMargin LayoutBlockInScope(Block block, double x, double width, BoxSizing sizing)
     {
         var trailing = default(CollapsedMargin);
         var anchor = BeginAnchor(block, x);
@@ -503,7 +503,7 @@ internal sealed partial class Paginator
         {
             if (decorated || link is not null)
             {
-                line.Pending.Add(() => Decorate(line.Page, line.Y - sizing.StretchInset));
+                line.Pending.Add(InCurrentOpacityScope(() => Decorate(line.Page, line.Y - sizing.StretchInset)));
             }
 
             return;

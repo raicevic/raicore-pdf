@@ -106,44 +106,19 @@ internal sealed class SvgImage
         return (scale, 0, 0, scale, x + dx, y + dy);
     }
 
-    /// <summary>Writes the drawing as a form XObject with its own resources.</summary>
+    /// <summary>Whether the drawing uses transparency (alpha or groups).</summary>
+    public bool UsesTransparency => _sheet.UsesTransparency;
+
+    /// <summary>
+    /// Writes the drawing as a form XObject with its own resources. It is not a transparency group itself: its
+    /// translucent shapes blend with whatever it is drawn over.
+    /// </summary>
     public PdfReference WriteTo(PdfFileWriter writer)
     {
-        var resources = new PdfDictionary();
-        if (_sheet.Fonts.Count > 0)
-        {
-            var fonts = new PdfDictionary();
-            foreach (var (font, name, usage) in _sheet.Fonts)
-            {
-                fonts[name] = font.WriteTo(writer, usage);
-            }
-
-            resources["Font"] = fonts;
-        }
-
-        if (_sheet.Images.Count > 0)
-        {
-            var images = new PdfDictionary();
-            foreach (var (image, name) in _sheet.Images)
-            {
-                images[name] = image.WriteTo(writer);
-            }
-
-            resources["XObject"] = images;
-        }
-
-        if (_sheet.Canvas.Patterns.Count > 0)
-        {
-            var patterns = new PdfDictionary();
-            foreach (var (pattern, name) in _sheet.Canvas.Patterns)
-            {
-                patterns[name] = writer.Add(pattern);
-            }
-
-            resources["Pattern"] = patterns;
-        }
-
-        var form = PdfStreamObject.CreateCompressed(_sheet.Canvas.ToBytes());
+        var content = _sheet.Canvas.ToBytes();
+        var resources = _sheet.WriteResources(
+            writer, compress: true, (font, usage) => font.WriteTo(writer, usage), image => image.WriteTo(writer), alpha => writer.Add(PdfPage.ExtGState(alpha)));
+        var form = PdfStreamObject.CreateCompressed(content);
         form.Dictionary["Type"] = new PdfName("XObject");
         form.Dictionary["Subtype"] = new PdfName("Form");
         form.Dictionary["BBox"] = PdfArray.OfNumbers(0, 0, Width, Height);

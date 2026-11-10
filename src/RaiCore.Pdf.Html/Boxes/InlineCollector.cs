@@ -71,9 +71,9 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         _hasVisibleContent = true;
     }
 
-    public void AddImage(PdfImage image, double width, double height, InlineAlignment alignment = default)
+    public void AddImage(PdfImage image, double width, double height, InlineAlignment alignment = default, double opacity = 1)
     {
-        Paragraph().AddImage(image, width, height, alignment);
+        Paragraph().AddImage(image, width, height, alignment, opacity);
         _afterSpace = false;
         _hasVisibleContent = true;
     }
