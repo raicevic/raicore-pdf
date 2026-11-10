@@ -153,6 +153,12 @@ internal sealed record ComputedStyle
     /// <summary>A length, a percentage of 1em, or auto (the font's).</summary>
     public CssLength TextUnderlineOffset { get; init; } = CssLength.Auto;
 
+    /// <summary><c>letter-spacing</c> in points (<c>normal</c> is 0).</summary>
+    public double LetterSpacing { get; init; }
+
+    /// <summary><c>word-spacing</c> in points (<c>normal</c> is 0).</summary>
+    public double WordSpacing { get; init; }
+
     public CssLength RowGap { get; init; } = CssLength.Zero;
 
     public CssLength ColumnGap { get; init; } = CssLength.Zero;
@@ -194,6 +200,8 @@ internal sealed record ComputedStyle
                 _ => TextAlignment.Left,
             },
             TextIndent = Length("text-indent"),
+            LetterSpacing = Length("letter-spacing").Resolve(fontSize),
+            WordSpacing = Length("word-spacing").Resolve(fontSize),
             WhiteSpace = Get("white-space") switch
             {
                 "nowrap" => CssWhiteSpace.NoWrap,

@@ -63,6 +63,10 @@ change at any time, and this section lists what the packages can do so far.
   wavy, with their own color, thickness and underline offset. Each is drawn with the metrics of the font that declared
   it (the `post` and `OS/2` tables; `PdfFont.UnderlinePosition`, `StrikeoutPosition` and their thicknesses) as one
   continuous line across adjacent text.
+- Letter and word spacing (`TextStyle.LetterSpacing`, `WordSpacing`): added after every character (a character with
+  its marks, or a ligature) and word separator, included in measuring, line breaking and intrinsic widths, and
+  combined with justification. Letter spacing turns optional ligatures off and leaves cursive scripts such as Arabic
+  unspaced, as browsers do.
 - Bookmarks: `Block.Bookmark` makes a block an entry in the PDF outline. Entries nest by level and point at where
   the block starts (where its content starts, if that moved to a later page), also inside flex items and table cells.
 
@@ -89,6 +93,7 @@ change at any time, and this section lists what the packages can do so far.
   `<u>`, `<ins>`, `<s>`, `<del>` and `<strike>` by default. Decorations propagate to all inline content, cannot be
   removed by descendants, skip atomic inline boxes and running elements, and are drawn with the font, size and
   baseline of the element that declared them, as browsers do.
+- `letter-spacing` and `word-spacing` (lengths, including negative ones).
 - `border-style` and `border-{side}-style` (also through the `border` shorthands), including `hidden` in collapsed tables.
 - `height`, `min-height` and `max-height`; percentage heights resolve against definite ancestor heights, starting
   with the page area, and `vh` units are the page area (to within a pixel).

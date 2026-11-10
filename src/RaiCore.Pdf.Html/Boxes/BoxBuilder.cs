@@ -99,6 +99,8 @@ internal sealed partial class BoxBuilder
         {
             Color = style.Color,
             LineHeight = style.LineHeight,
+            LetterSpacing = style.LetterSpacing,
+            WordSpacing = style.WordSpacing,
             Shaping = new ShapingOptions { Features = ParseFeatures(style.FontFeatures) },
         };
         _textStyles[style] = textStyle;

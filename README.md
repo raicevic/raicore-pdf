@@ -66,6 +66,7 @@ own engine. Supported today:
   percentages, `middle`, `text-top`, `text-bottom`, `top` and `bottom`; nested shifts add up.
 - `text-decoration`: underline, overline and line-through in every style (solid, double, dotted, dashed, wavy), with
   color, thickness and `text-underline-offset`, propagated to descendants and placed with the font's own metrics.
+- `letter-spacing` and `word-spacing`, also with justified text.
 - The box model: margin, border (every `border-style`: solid, dashed, dotted, double, groove, ridge, inset and
   outset), padding, background, width, max-width, `height`, `min-height`, `max-height`, auto margins, `box-sizing` and
   percentages. Percentage heights resolve against definite ancestor heights, starting with the page area (so

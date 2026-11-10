@@ -113,6 +113,18 @@ public sealed record TextStyle
     /// <summary>OpenType features and language for shaping.</summary>
     public ShapingOptions Shaping { get; init; } = ShapingOptions.Default;
 
+    /// <summary>
+    /// Extra space in points after every character (CSS <c>letter-spacing</c>); negative values bring characters
+    /// closer. While it is not zero, optional ligatures are off, and cursive scripts such as Arabic are not spaced.
+    /// </summary>
+    public double LetterSpacing { get; init; }
+
+    /// <summary>
+    /// Extra space in points for every word separator, such as a space or no-break space (CSS <c>word-spacing</c>);
+    /// added to the letter spacing. Justification widens spaces further.
+    /// </summary>
+    public double WordSpacing { get; init; }
+
     /// <summary>Vertical position of this text in its line (CSS <c>vertical-align</c>), e.g. raised for superscripts.</summary>
     public InlineAlignment VerticalAlign { get; init; }
 
