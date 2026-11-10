@@ -122,14 +122,13 @@ public sealed class ImageBlock : Block
     /// <summary>The drawn size: the requested or natural size, scaled down (keeping the aspect ratio) to fit.</summary>
     internal (double Width, double Height) GetSize(double maxWidth, double maxHeight)
     {
-        const double PointsPerCssPixel = 0.75;
-        var aspect = Image.PixelHeight / (double)Image.PixelWidth;
+        var aspect = Image.NaturalHeight / Image.NaturalWidth;
         var (w, h) = (Width, Height) switch
         {
             ({ } fw, { } fh) => (fw, fh),
             ({ } fw, null) => (fw, fw * aspect),
             (null, { } fh) => (fh / aspect, fh),
-            _ => (Image.PixelWidth * PointsPerCssPixel, Image.PixelHeight * PointsPerCssPixel),
+            _ => (Image.NaturalWidth, Image.NaturalHeight),
         };
 
         var scale = Math.Min(1, Math.Min(maxWidth / w, maxHeight / h));

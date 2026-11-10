@@ -87,7 +87,7 @@ internal sealed partial class BoxBuilder
     {
         var style = BlockLevel(childStyle);
         Block? block;
-        if (child.LocalName == "img")
+        if (child.LocalName is "img" or "svg")
         {
             var blocks = new List<Block>();
             var collector = new InlineCollector(this, style, containerWidth);

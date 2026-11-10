@@ -74,7 +74,9 @@ own engine. Supported today:
   Google Fonts serves them work as one family). Fonts load through the `ResourceLoader` when text first needs them;
   URLs in linked stylesheets resolve against the stylesheet.
 - List markers: bullets, decimal, alpha and roman numerals, `start`, `reversed` and `value`.
-- Images from `data:` and `file:` URLs, linked stylesheets, `@page` size and margins, and page break properties.
+- Images from `data:` and `file:` URLs (JPEG, PNG, GIF and SVG), inline `<svg>` elements drawn as vectors (sized
+  like images; `currentColor` follows the CSS `color`), linked stylesheets, `@page` size and margins, and page break
+  properties.
 - Tables: automatic and fixed column widths, `colspan`/`rowspan`, `thead` and `tfoot` rows repeated on every page,
   `border-collapse`/`border-spacing`, `vertical-align`, `<col>` widths, captions, and the legacy
   `border`/`cellpadding`/`cellspacing`/`width` attributes. A row that does not fit is split like browsers do: each
@@ -253,10 +255,11 @@ embedding are rejected.
 
 ### Images
 
-JPEG, PNG and GIF images can be drawn directly or placed in the layout. JPEGs are embedded without re-encoding
+JPEG, PNG, GIF and SVG images can be drawn directly or placed in the layout. JPEGs are embedded without re-encoding
 (EXIF orientation is applied); PNGs of every color type and bit depth, including interlaced and transparent ones,
-are decoded and verified against the full [PngSuite](http://www.schaik.com/pngsuite/). Each image is stored once per
-document however often it is drawn.
+are decoded and verified against the full [PngSuite](http://www.schaik.com/pngsuite/). SVG is drawn as PDF vector
+graphics, not rasterized, so logos and icons stay sharp at any zoom. Each image is stored once per document however
+often it is drawn.
 
 ```csharp
 var logo = PdfImage.Load("logo.png");
@@ -265,9 +268,21 @@ page.Canvas.DrawImage(logo, x: 400, y: 760, width: 120, height: 40);
 flow.Add(new ImageBlock(logo, width: 150) { Alignment = TextAlignment.Right });          // a block image
 new Paragraph(body).Add("Status: ").AddImage(checkIcon, 10, 10).Add(" paid");            // an inline image
 new Paragraph(body).Add("Total ").AddBox(badgeBlock).Add(" due");                        // an inline box (any block)
+
+var icon = PdfImage.LoadSvg("""<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1a4f8b"/></svg>""");
 ```
 
-Embedded color profiles are ignored (images are treated as sRGB). WebP, SVG and BMP are not supported yet.
+`PdfImage.Load` detects SVG files by their content; an SVG's natural size comes from its `width` and `height` or its
+`viewBox` (300 x 150 pixels without either), and it keeps its aspect ratio per `preserveAspectRatio` when drawn into
+another shape. The supported subset of SVG 1.1 covers what logos, icons and charts use: paths (all commands,
+including arcs), basic shapes, groups, transforms, nested `svg`, `use` and `symbol`, fills and strokes (dashes, caps,
+joins, fill rules), presentation attributes, `style` attributes and `<style>` sheets (type, class and id selectors),
+`currentColor`, linear and radial gradients, clip paths, basic text (`text`/`tspan` with `text-anchor`, drawn in the
+standard PDF fonts Helvetica, Times or Courier) and embedded `data:` images. Opacity is blended with white until PDF
+transparency is supported. Filters, masks, markers, patterns, gradient `spreadMethod` other than `pad`, text on a
+path, animation, scripts and `foreignObject` are skipped; nothing external is loaded.
+
+Embedded color profiles are ignored (images are treated as sRGB). WebP and BMP are not supported yet.
 
 ### Text shaping
 

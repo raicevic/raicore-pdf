@@ -1,6 +1,7 @@
 using RaiCore.Pdf.Images;
 using RaiCore.Pdf.IO;
 using RaiCore.Pdf.Objects;
+using RaiCore.Pdf.Svg;
 
 namespace RaiCore.Pdf;
 
@@ -15,39 +16,75 @@ public enum ImageFormat
 
     /// <summary>GIF (the first frame).</summary>
     Gif,
+
+    /// <summary>SVG, drawn as vector graphics (a static subset of SVG 1.1).</summary>
+    Svg,
 }
 
 /// <summary>
-/// A raster image that can be drawn on pages with <see cref="PdfCanvas.DrawImage"/>. JPEGs are embedded as they are;
-/// PNG and GIF are decoded and recompressed, with transparency kept. An image drawn several times, on any number of
-/// pages, is stored in the PDF once.
+/// An image that can be drawn on pages with <see cref="PdfCanvas.DrawImage"/>. JPEGs are embedded as they are;
+/// PNG and GIF are decoded and recompressed, with transparency kept. SVG is drawn as vector graphics (a form
+/// XObject), not rasterized. An image drawn several times, on any number of pages, is stored in the PDF once.
 /// </summary>
-/// <remarks>Immutable and thread-safe. Embedded color profiles are ignored; colors are treated as sRGB.</remarks>
+/// <remarks>
+/// Immutable and thread-safe. Embedded color profiles are ignored; colors are treated as sRGB. For the supported
+/// SVG subset, see <see cref="LoadSvg"/>.
+/// </remarks>
 public sealed class PdfImage
 {
+    private const double PointsPerPixel = 0.75;
+
+    private readonly DecodedImage? _raster;
+    private readonly SvgImage? _svg;
+
     private PdfImage(DecodedImage image, ImageFormat format)
     {
-        Image = image;
+        _raster = image;
         Format = format;
+    }
+
+    private PdfImage(SvgImage svg)
+    {
+        _svg = svg;
+        Format = ImageFormat.Svg;
     }
 
     /// <summary>The file format.</summary>
     public ImageFormat Format { get; }
 
-    /// <summary>Width in pixels as displayed (after applying the EXIF orientation of a JPEG).</summary>
-    public int PixelWidth => SwapsAxes ? Image.Height : Image.Width;
+    /// <summary>
+    /// Width in pixels as displayed (after applying the EXIF orientation of a JPEG). For SVG, the intrinsic width in
+    /// CSS pixels, rounded; <see cref="NaturalWidth"/> is exact.
+    /// </summary>
+    public int PixelWidth => _svg is { } svg ? ToPixels(svg.Width) : SwapsAxes ? Image.Height : Image.Width;
 
-    /// <summary>Height in pixels as displayed (after applying the EXIF orientation of a JPEG).</summary>
-    public int PixelHeight => SwapsAxes ? Image.Width : Image.Height;
+    /// <summary>
+    /// Height in pixels as displayed (after applying the EXIF orientation of a JPEG). For SVG, the intrinsic height in
+    /// CSS pixels, rounded; <see cref="NaturalHeight"/> is exact.
+    /// </summary>
+    public int PixelHeight => _svg is { } svg ? ToPixels(svg.Height) : SwapsAxes ? Image.Width : Image.Height;
 
-    /// <summary>Whether the image has transparent or semi-transparent pixels.</summary>
-    public bool HasTransparency => Image.Alpha is not null || Image.ColorKey is not null;
+    /// <summary>
+    /// The natural width in points, as CSS sizes an image: 0.75 points (one CSS pixel) per pixel, or an SVG's own
+    /// width (from its <c>width</c> attribute or <c>viewBox</c>, else 300 pixels).
+    /// </summary>
+    public double NaturalWidth => _svg?.Width ?? PixelWidth * PointsPerPixel;
 
-    internal DecodedImage Image { get; }
+    /// <summary>
+    /// The natural height in points: 0.75 points (one CSS pixel) per pixel, or an SVG's own height (from its
+    /// <c>height</c> attribute or <c>viewBox</c>, else 150 pixels).
+    /// </summary>
+    public double NaturalHeight => _svg?.Height ?? PixelHeight * PointsPerPixel;
+
+    /// <summary>Whether the image has transparent or semi-transparent pixels. Always true for SVG, which has no background.</summary>
+    public bool HasTransparency => _svg is not null || Image.Alpha is not null || Image.ColorKey is not null;
+
+    /// <summary>The decoded raster image. Not available for SVG.</summary>
+    internal DecodedImage Image => _raster ?? throw new InvalidOperationException("An SVG image has no pixels.");
 
     private bool SwapsAxes => Image.Orientation >= 5;
 
-    /// <summary>Loads an image file (JPEG, PNG or GIF; the format is detected from the content).</summary>
+    /// <summary>Loads an image file (JPEG, PNG, GIF or SVG; the format is detected from the content).</summary>
     public static PdfImage Load(string path) => Load(File.ReadAllBytes(path));
 
     /// <summary>Loads an image from a stream. The stream is read to the end and left open.</summary>
@@ -63,6 +100,12 @@ public sealed class PdfImage
     public static PdfImage Load(byte[] data)
     {
         ArgumentNullException.ThrowIfNull(data);
+        if (SvgDocument.IsSvg(data))
+        {
+            using var stream = new MemoryStream(data, writable: false);
+            return new PdfImage(SvgImage.Load(stream));
+        }
+
         if (PngDecoder.IsPng(data))
         {
             return new PdfImage(PngDecoder.Decode(data), ImageFormat.Png);
@@ -78,7 +121,27 @@ public sealed class PdfImage
             return new PdfImage(JpegReader.Read(data), ImageFormat.Jpeg);
         }
 
-        throw new ImageFormatException("Unsupported image format; JPEG, PNG and GIF are supported.");
+        throw new ImageFormatException("Unsupported image format; JPEG, PNG, GIF and SVG are supported.");
+    }
+
+    /// <summary>
+    /// Loads an SVG image from its markup. It is drawn as PDF vector graphics, sized by its <c>width</c> and
+    /// <c>height</c> or its <c>viewBox</c>.
+    /// </summary>
+    /// <remarks>
+    /// Supported: shapes and paths, groups, transforms, nested <c>svg</c>, <c>use</c> with <c>symbol</c>, fills and
+    /// strokes (dashes, caps, joins, fill rules), presentation attributes, the <c>style</c> attribute and
+    /// <c>&lt;style&gt;</c> sheets with type, class and id selectors, linear and radial gradients, clip paths, basic
+    /// text in the standard PDF fonts and <c>data:</c> images. Opacity is blended with white, as PDF transparency is
+    /// not used yet. Filters, masks, markers, patterns, animation, scripts and <c>foreignObject</c> are skipped, and
+    /// nothing external is loaded.
+    /// </remarks>
+    /// <exception cref="ImageFormatException">The markup is not well-formed XML or its root is not <c>svg</c>.</exception>
+    public static PdfImage LoadSvg(string markup)
+    {
+        ArgumentNullException.ThrowIfNull(markup);
+        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(markup), writable: false);
+        return new PdfImage(SvgImage.Load(stream));
     }
 
     /// <summary>
@@ -87,6 +150,11 @@ public sealed class PdfImage
     /// </summary>
     internal (double A, double B, double C, double D, double E, double F) GetMatrix(double x, double y, double width, double height)
     {
+        if (_svg is { } svg)
+        {
+            return svg.GetMatrix(x, y, width, height);
+        }
+
         // Displayed position (X', Y') in [0, 1] for stored (u, v), per EXIF orientation 1-8.
         var (xu, xv, x0, yu, yv, y0) = Image.Orientation switch
         {
@@ -104,9 +172,14 @@ public sealed class PdfImage
         return (width * xu, height * yu, width * xv, height * yv, x + (width * x0), y + (height * y0));
     }
 
-    /// <summary>Writes the image (and its soft mask) as XObjects.</summary>
+    /// <summary>Writes the image (and its soft mask) as XObjects; an SVG becomes a form XObject.</summary>
     internal PdfReference WriteTo(PdfFileWriter writer)
     {
+        if (_svg is { } svg)
+        {
+            return svg.WriteTo(writer);
+        }
+
         var image = Image;
         PdfStreamObject stream;
         if (image.Encoding == ImageEncoding.Jpeg)
@@ -159,4 +232,6 @@ public sealed class PdfImage
 
         return writer.Add(stream);
     }
+
+    private static int ToPixels(double points) => (int)Math.Max(1, Math.Round(points / PointsPerPixel));
 }
