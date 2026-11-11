@@ -196,6 +196,31 @@ public class RazorConversionTests
         Assert.Equal(names.Select(n => $"<p class=\"greeting\">Hello, {n}!</p>"), htmls.Select(h => h.Trim()));
     }
 
+    [Fact]
+    public async Task Language_and_meta_elements_of_the_component_become_the_metadata()
+    {
+        var pdf = await RazorToPdf.ConvertAsync<LocalizedReport>(Params(nameof(LocalizedReport.Author), "Ada"), cancellationToken: Ct);
+
+        Assert.Equal("de-CH", pdf.Language);
+        Assert.Equal("Bericht", pdf.Info.Title);
+        Assert.Equal("Ada", pdf.Info.Author);
+        Assert.Equal("RaiCore.Pdf.Razor", pdf.Info.Creator);
+        Assert.Contains("/Lang (de-CH)", PdfMetadataReader.Catalog(System.Text.Encoding.Latin1.GetString(pdf.ToArray())), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Options_override_the_metadata_of_the_component()
+    {
+        var pdf = await RazorToPdf.ConvertAsync<LocalizedReport>(
+            options: new HtmlConverterOptions { Language = "fr-CH", Creator = "Billing", Title = "Rapport" },
+            cancellationToken: Ct);
+
+        Assert.Equal("fr-CH", pdf.Language);
+        Assert.Equal("Rapport", pdf.Info.Title);
+        Assert.Equal("Billing", pdf.Info.Creator);
+        Assert.Null(pdf.Info.Author);
+    }
+
     internal static Invoice SampleInvoice(int lines) => new(
         "2026-0042",
         "Contoso A/S",

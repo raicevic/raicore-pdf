@@ -119,9 +119,7 @@ public sealed class RazorPdfRenderer
         CancellationToken cancellationToken = default)
     {
         var html = await RenderHtmlAsync(componentType, parameters, cancellationToken).ConfigureAwait(false);
-        var document = await HtmlToPdf.ConvertAsync(html, options, cancellationToken).ConfigureAwait(false);
-        document.Info.Creator = "RaiCore.Pdf.Razor";
-        return document;
+        return await HtmlToPdf.ConvertAsync(html, options, "RaiCore.Pdf.Razor", cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

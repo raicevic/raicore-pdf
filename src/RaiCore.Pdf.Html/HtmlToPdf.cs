@@ -34,12 +34,22 @@ public static class HtmlToPdf
     public static byte[] ConvertToBytes(string html, HtmlConverterOptions? options = null) => Convert(html, options).ToArray();
 
     /// <summary>Converts an HTML document to a PDF document.</summary>
-    public static async Task<PdfDocument> ConvertAsync(string html, HtmlConverterOptions? options = null, CancellationToken cancellationToken = default)
+    /// <remarks>
+    /// The document's metadata comes from the HTML: the title from <c>&lt;title&gt;</c>, the language from
+    /// <c>&lt;html lang&gt;</c> (or <c>xml:lang</c>), and the author, subject, keywords and creator from
+    /// <c>&lt;meta name="author|description|keywords|generator"&gt;</c>. The options' <see cref="HtmlConverterOptions.Title"/>,
+    /// <see cref="HtmlConverterOptions.Language"/> and the like override them.
+    /// </remarks>
+    public static Task<PdfDocument> ConvertAsync(string html, HtmlConverterOptions? options = null, CancellationToken cancellationToken = default) =>
+        ConvertAsync(html, options, HtmlMetadata.DefaultCreator, cancellationToken);
+
+    /// <summary>Converts an HTML document, naming <paramref name="defaultCreator"/> as the creator unless the options or the document name one.</summary>
+    internal static async Task<PdfDocument> ConvertAsync(string html, HtmlConverterOptions? options, string defaultCreator, CancellationToken cancellationToken)
     {
-        var (flow, title) = await LayoutAsync(html, options, cancellationToken).ConfigureAwait(false);
+        options ??= new HtmlConverterOptions();
+        var (flow, metadata) = await LayoutAsync(html, options, cancellationToken).ConfigureAwait(false);
         var document = flow.Render();
-        document.Info.Title = title;
-        document.Info.Creator = "RaiCore.Pdf.Html";
+        metadata.ApplyTo(document, options, defaultCreator);
         return document;
     }
 
@@ -50,7 +60,7 @@ public static class HtmlToPdf
     public static FlowDocument CreateFlowDocument(string html, HtmlConverterOptions? options = null) =>
         LayoutAsync(html, options, CancellationToken.None).GetAwaiter().GetResult().Flow;
 
-    private static async Task<(FlowDocument Flow, string? Title)> LayoutAsync(string html, HtmlConverterOptions? options, CancellationToken cancellationToken)
+    private static async Task<(FlowDocument Flow, HtmlMetadata Metadata)> LayoutAsync(string html, HtmlConverterOptions? options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(html);
         options ??= new HtmlConverterOptions();
@@ -116,8 +126,7 @@ public static class HtmlToPdf
             flow.PageDecorator = paged.CreateDecorator(builder, builder.Style(root));
         }
 
-        var title = document.Title;
-        return (flow, string.IsNullOrWhiteSpace(title) ? null : title.Trim());
+        return (flow, HtmlMetadata.Read(document));
     }
 
     /// <summary>Builds the boxes of the document into a flow with the page setups of the @page rules.</summary>

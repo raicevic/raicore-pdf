@@ -1,0 +1,13 @@
+<html lang="@Language">
+<head>
+    <title>@Title</title>
+    <meta name="author" content="@Author" />
+</head>
+<body><h1>@Title</h1></body>
+</html>
+
+@code {
+    [Parameter] public string Language { get; set; } = "de-CH";
+    [Parameter] public string Title { get; set; } = "Bericht";
+    [Parameter] public string Author { get; set; } = "";
+}

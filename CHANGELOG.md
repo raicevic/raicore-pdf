@@ -47,6 +47,14 @@ change at any time, and this section lists what the packages can do so far.
   fill alpha. Pages that use transparency blend in RGB (a page group). SVG `opacity`, `fill-opacity`,
   `stroke-opacity`, `stop-opacity` and translucent colors use real alpha, and group opacity (`<g opacity>`, or a
   shape with both fill and stroke) is a transparency group.
+- Document metadata in XMP: an uncompressed metadata stream (`/Type /Metadata /Subtype /XML`, in an `xpacket` with
+  padding) kept in sync with the Info dictionary: `dc:title`, `dc:creator`, `dc:description`, `dc:subject` (the
+  keywords split at commas and semicolons), `dc:language`, `xmp:CreateDate`/`ModifyDate`/`MetadataDate` (the same
+  moments as the Info dictionary's dates), `xmp:CreatorTool`, `pdf:Producer` and `pdf:Keywords`.
+  `PdfDocument.IncludeXmpMetadata = false` leaves it out. `PdfDocumentInfo.ModificationDate` (defaults to the creation
+  date) is written as `/ModDate`, and `PdfDocumentInfo.CustomProperties` as custom Info entries (text strings) and in
+  Adobe's `pdfx:` XMP namespace, as Acrobat does.
+- Document language: `PdfDocument.Language` (a BCP 47 tag) is written as the catalog's `/Lang` and as `dc:language`.
 
 ### RaiCore.Pdf.Fonts
 - Bundled Liberation Sans, Serif and Mono (SIL OFL 1.1), metric-compatible with Arial, Times New Roman and Courier New.
@@ -300,10 +308,16 @@ change at any time, and this section lists what the packages can do so far.
   do not float. `display: flow-root` and `overflow` other than `visible`/`clip` start a new formatting context that
   contains its floats, and clearfix rules (`::after { content: ""; display: table; clear: both }`) work.
 - Network access is off unless you supply a `ResourceLoader`.
+- Document metadata from the HTML: `<title>`, the language from `<html lang>` (or `xml:lang`, or a
+  `<meta http-equiv="content-language">` pragma), and `<meta name="author|description|keywords|generator">` as the
+  author, subject, keywords and creator. `HtmlConverterOptions.Title`, `Author`, `Subject`, `Keywords`, `Creator` and
+  `Language` override them.
 
 ### RaiCore.Pdf.Razor
 - Razor components to PDF with Blazor's static `HtmlRenderer`: `RazorToPdf` for the simple case, `RazorPdfRenderer`
   for components that inject services, and `AddRazorPdf()` to register it per scope.
+- The component's `<html lang>`, `<title>` and `<meta>` elements become the document metadata as in RaiCore.Pdf.Html;
+  the creator is `RaiCore.Pdf.Razor` unless the options or a `<meta name="generator">` name another.
 
 ### Known limitations
 The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these.
@@ -361,6 +375,12 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   items, table cells and inline boxes. Page progression is left to right (`recto` is a right page). Inline elements
   cannot be bookmarks.
 - No tagged PDF, PDF/A or encryption.
+- Metadata: the XMP has no PDF/A or PDF/UA identification and no extension schema for the `pdfx:` custom properties
+  yet (PDF/A will add them); custom property names that are not XML names are encoded (`_x0020_` for a space).
+  Keywords and the author are plain text (`dc:creator` holds one entry). Language alternatives are written with
+  `x-default` only, and the language is not checked against BCP 47. `HtmlToPdf.CreateFlowDocument` returns no
+  metadata: set `PdfDocument.Info` and `Language` on the document you render it into. XMP in images and other
+  objects is not written.
 - SVG: no filters, masks, markers, patterns, `spreadMethod` `reflect`/`repeat` (drawn as `pad`), text on a path or
   per-character positions (only the first `x`/`y`/`dx`/`dy`), and no web fonts in SVG text (the standard fonts are
   used). PDF shadings have no alpha: a gradient whose stops differ in opacity takes its most opaque stop's alpha and

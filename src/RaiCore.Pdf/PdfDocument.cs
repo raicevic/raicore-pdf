@@ -1,4 +1,3 @@
-using System.Globalization;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.IO;
 using RaiCore.Pdf.Objects;
@@ -16,14 +15,14 @@ namespace RaiCore.Pdf;
 /// doc.Save("hello.pdf");
 /// </code>
 /// </example>
-public sealed class PdfDocument
+public sealed partial class PdfDocument
 {
     private readonly List<PdfPage> _pages = [];
 
     /// <summary>The pages in order.</summary>
     public IReadOnlyList<PdfPage> Pages => _pages;
 
-    /// <summary>Document metadata written to the Info dictionary.</summary>
+    /// <summary>Document metadata, written to the Info dictionary and the XMP metadata stream.</summary>
     public PdfDocumentInfo Info { get; } = new();
 
     /// <summary>Whether content streams are Flate-compressed. Turn off to inspect output by eye.</summary>
@@ -190,7 +189,7 @@ public sealed class PdfDocument
             catalog["PageMode"] = new PdfName("UseOutlines");
         }
 
-        var infoRef = writer.Add(Info.ToDictionary());
+        var infoRef = WriteMetadata(writer, catalog);
         writer.Write(stream, catalogRef, infoRef);
     }
 
@@ -200,62 +199,5 @@ public sealed class PdfDocument
         using var buffer = new MemoryStream();
         Save(buffer);
         return buffer.ToArray();
-    }
-}
-
-/// <summary>Document metadata (the PDF Info dictionary).</summary>
-public sealed class PdfDocumentInfo
-{
-    /// <summary>Document title.</summary>
-    public string? Title { get; set; }
-
-    /// <summary>Author.</summary>
-    public string? Author { get; set; }
-
-    /// <summary>Subject.</summary>
-    public string? Subject { get; set; }
-
-    /// <summary>Keywords.</summary>
-    public string? Keywords { get; set; }
-
-    /// <summary>The application that created the original content.</summary>
-    public string? Creator { get; set; }
-
-    /// <summary>The library that produced the PDF.</summary>
-    public string Producer { get; set; } = "RaiCore.Pdf";
-
-    /// <summary>Creation date. Defaults to the time the document is saved; set it for reproducible output.</summary>
-    public DateTimeOffset? CreationDate { get; set; }
-
-    internal PdfDictionary ToDictionary()
-    {
-        var dict = new PdfDictionary();
-        AddText(dict, "Title", Title);
-        AddText(dict, "Author", Author);
-        AddText(dict, "Subject", Subject);
-        AddText(dict, "Keywords", Keywords);
-        AddText(dict, "Creator", Creator);
-        AddText(dict, "Producer", Producer);
-        dict["CreationDate"] = new PdfString(System.Text.Encoding.ASCII.GetBytes(FormatDate(CreationDate ?? DateTimeOffset.Now)));
-        return dict;
-    }
-
-    /// <summary>Formats a date as a PDF date string, e.g. <c>D:20261102194100+01'00'</c>.</summary>
-    internal static string FormatDate(DateTimeOffset date)
-    {
-        var offset = date.Offset;
-        var sign = offset < TimeSpan.Zero ? '-' : '+';
-        var abs = offset.Duration();
-        return string.Create(
-            CultureInfo.InvariantCulture,
-            $"D:{date:yyyyMMddHHmmss}{sign}{abs.Hours:D2}'{abs.Minutes:D2}'");
-    }
-
-    private static void AddText(PdfDictionary dict, string key, string? value)
-    {
-        if (!string.IsNullOrEmpty(value))
-        {
-            dict[key] = PdfString.FromText(value);
-        }
     }
 }

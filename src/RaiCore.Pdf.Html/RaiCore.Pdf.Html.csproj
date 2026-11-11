@@ -16,6 +16,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="RaiCore.Pdf.Tests" />
+    <!-- The Razor package names itself as the creator of the PDFs it converts. -->
+    <InternalsVisibleTo Include="RaiCore.Pdf.Razor" />
   </ItemGroup>
 
 </Project>

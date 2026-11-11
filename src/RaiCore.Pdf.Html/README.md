@@ -38,6 +38,9 @@ clips to the padding box, and `text-overflow: ellipsis` ends lines that do not f
 Positioning: `relative`, `absolute` and `fixed` (on every page), with `z-index`. Background images and gradients
 (`linear-gradient`, `radial-gradient`, repeating, several layers) with repeat, position, size, origin and clip.
 
+Metadata: `<title>`, `<html lang>` and `<meta name="author|description|keywords|generator">` become the PDF's title,
+language, author, subject, keywords and creator (Info dictionary and XMP); `HtmlConverterOptions` overrides them.
+
 Not yet: grid (rendered as blocks).
 
 Fonts default to the bundled Liberation fonts (metric-compatible with Arial, Times New Roman and Courier New), so
