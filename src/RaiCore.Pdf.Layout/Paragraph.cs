@@ -98,6 +98,11 @@ public sealed class Paragraph
     private readonly List<InlineTag> _tags = [];
     private readonly Stack<(int Start, StructureTag Tag)> _openTags = new();
     private int _length;
+    private TextAlignment _alignment = TextAlignment.Start;
+    private ParagraphDirection _direction;
+    private double _firstLineIndent;
+    private bool _breakLongWords;
+    private bool _ellipsis;
 
     /// <summary>Creates a paragraph. <paramref name="style"/> is the default for spans and sets the minimum line height (the CSS "strut").</summary>
     public Paragraph(TextStyle style)
@@ -110,29 +115,55 @@ public sealed class Paragraph
     public TextStyle Style { get; }
 
     /// <summary>Horizontal alignment; <see cref="TextAlignment.Start"/> (the default) follows the direction.</summary>
-    public TextAlignment Alignment { get; set; } = TextAlignment.Start;
+    public TextAlignment Alignment
+    {
+        get => _alignment;
+        set => _alignment = Changed(value);
+    }
 
     /// <summary>
     /// The base direction, for the Unicode bidi algorithm (UAX #9) that orders mixed left-to-right and right-to-left
     /// text on each line, and for <see cref="TextAlignment.Start"/> and <see cref="TextAlignment.End"/>. Embedding,
     /// override and isolate controls in the text (U+202A-U+202E, U+2066-U+2069) are honored and not drawn.
     /// </summary>
-    public ParagraphDirection Direction { get; set; }
+    public ParagraphDirection Direction
+    {
+        get => _direction;
+        set => _direction = Changed(value);
+    }
 
     /// <summary>Indent of the first line in points (CSS <c>text-indent</c>; may be negative for hanging indents).</summary>
-    public double FirstLineIndent { get; set; }
+    public double FirstLineIndent
+    {
+        get => _firstLineIndent;
+        set => _firstLineIndent = Changed(value);
+    }
 
     /// <summary>
     /// Break a word that is wider than the line at any character, instead of letting it overflow
     /// (CSS <c>overflow-wrap: break-word</c>). Off by default, as in CSS.
     /// </summary>
-    public bool BreakLongWords { get; set; }
+    public bool BreakLongWords
+    {
+        get => _breakLongWords;
+        set => _breakLongWords = Changed(value);
+    }
 
     /// <summary>
     /// A line too wide for its room is cut before the last character that still fits with an ellipsis ("…"), which ends
     /// it instead (CSS <c>text-overflow: ellipsis</c>, usually with <c>white-space: nowrap</c> in a box that clips).
     /// </summary>
-    public bool Ellipsis { get; set; }
+    public bool Ellipsis
+    {
+        get => _ellipsis;
+        set => _ellipsis = Changed(value);
+    }
+
+    /// <summary>
+    /// Incremented by every change to the paragraph, so that layouts remembered while a document is laid out (see
+    /// <see cref="LayoutCache"/>) are not used once it has changed.
+    /// </summary>
+    internal int Version { get; private set; }
 
     /// <summary>The spans, in order.</summary>
     public IReadOnlyList<ParagraphSpan> Spans => _spans;
@@ -186,6 +217,7 @@ public sealed class Paragraph
     {
         ArgumentNullException.ThrowIfNull(target);
         _openLinks.Push((_length, target));
+        Version++;
         return this;
     }
 
@@ -203,6 +235,7 @@ public sealed class Paragraph
             _links.Add(new InlineLink(start, _length, target));
         }
 
+        Version++;
         return this;
     }
 
@@ -222,6 +255,7 @@ public sealed class Paragraph
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
         _anchors.Add(new InlineAnchor(_length, id));
+        Version++;
         return this;
     }
 
@@ -240,6 +274,7 @@ public sealed class Paragraph
     {
         ArgumentNullException.ThrowIfNull(box);
         _open.Push((_length, box, style ?? Style, startEdge, direction));
+        Version++;
         return this;
     }
 
@@ -258,6 +293,7 @@ public sealed class Paragraph
             _decorations.Add(new InlineDecoration(start, _length, box, style, startEdge, endEdge) { Direction = direction });
         }
 
+        Version++;
         return this;
     }
 
@@ -284,6 +320,7 @@ public sealed class Paragraph
             _length += text.Length;
         }
 
+        Version++;
         return this;
     }
 
@@ -308,6 +345,7 @@ public sealed class Paragraph
             BorderRadius = borderRadius,
         }));
         _length++;
+        Version++;
         return this;
     }
 
@@ -323,6 +361,7 @@ public sealed class Paragraph
         ArgumentException.ThrowIfNullOrEmpty(pattern);
         _spans.Add(new ParagraphSpan(pattern, style ?? Style) { IsLeader = true });
         _length += pattern.Length;
+        Version++;
         return this;
     }
 
@@ -335,6 +374,7 @@ public sealed class Paragraph
         ArgumentNullException.ThrowIfNull(content);
         _spans.Add(new ParagraphSpan("\uFFFC", Style, Box: new InlineBox(content, alignment)));
         _length++;
+        Version++;
         return this;
     }
 
@@ -343,6 +383,13 @@ public sealed class Paragraph
     /// overflowing words, and the width it takes without wrapping. Used to size table columns.
     /// </summary>
     public (double Min, double Max) MeasureIntrinsicWidths() => ParagraphLayouter.MeasureIntrinsic(this);
+
+    /// <summary>Notes a change to the paragraph (see <see cref="Version"/>) and returns <paramref name="value"/>.</summary>
+    private T Changed<T>(T value)
+    {
+        Version++;
+        return value;
+    }
 
     /// <summary>Breaks the paragraph into lines no wider than <paramref name="width"/> points.</summary>
     public ParagraphLayout Layout(double width)

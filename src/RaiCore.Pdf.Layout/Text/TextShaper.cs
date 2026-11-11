@@ -72,6 +72,13 @@ public static class TextShaper
         }
 
         options ??= ShapingOptions.Default;
+        return LayoutCache.Current is { } cache
+            ? cache.Shape(text, fonts, options, direction, () => ShapeUncached(text, openTypeFonts, options, direction))
+            : ShapeUncached(text, openTypeFonts, options, direction);
+    }
+
+    private static ShapedText ShapeUncached(string text, OpenTypePdfFont[] openTypeFonts, ShapingOptions options, TextDirection? direction)
+    {
         var features = options.Features.Select(Feature.Parse).ToArray();
         var runs = new List<ShapedRun>();
         foreach (var item in TextItemizer.Itemize(text, openTypeFonts, direction))
