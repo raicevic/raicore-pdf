@@ -7,12 +7,14 @@
 
   <PropertyGroup>
     <!-- The bundled hyphenation patterns have their own permissive licences: see Text/Hyphenation/Patterns/LICENSES.md. -->
-    <PackageLicenseExpression>Apache-2.0 AND MIT AND BSD-3-Clause AND FSFAP</PackageLicenseExpression>
+    <PackageLicenseExpression>Apache-2.0 AND MIT AND BSD-3-Clause AND FSFAP AND Unicode-3.0</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Text\Hyphenation\Patterns\*.hyph.gz" LogicalName="RaiCore.Pdf.Layout.Hyphenation.%(Filename)%(Extension)" />
     <None Include="Text\Hyphenation\Patterns\LICENSES.md" Pack="true" PackagePath="licenses/hyphenation-patterns.md" />
+    <!-- The bidi and line break tables are generated from the Unicode Character Database. -->
+    <None Include="Text\UNICODE-LICENSE.txt" Pack="true" PackagePath="licenses/unicode.txt" />
   </ItemGroup>
 
   <ItemGroup>
