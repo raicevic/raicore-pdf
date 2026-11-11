@@ -50,6 +50,7 @@ public static class HtmlToPdf
         var (flow, metadata) = await LayoutAsync(html, options, cancellationToken).ConfigureAwait(false);
         var document = flow.Render();
         metadata.ApplyTo(document, options, defaultCreator);
+        document.Encryption = options.Encryption;
         return document;
     }
 

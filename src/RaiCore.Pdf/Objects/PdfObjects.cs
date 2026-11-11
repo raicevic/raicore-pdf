@@ -193,11 +193,16 @@ public sealed class PdfString : PdfObject
 
     internal override void WriteTo(PdfOutput output)
     {
+        // Inside an encrypted indirect object, the string holds the ciphertext (binary, so written in hex).
+        if (output.Encryption is { } encryption)
+        {
+            WriteHex(output, encryption.Encrypt(_bytes, output.ObjectNumber, output.Generation));
+            return;
+        }
+
         if (IsHex)
         {
-            output.WriteByte((byte)'<');
-            output.WriteAscii(Convert.ToHexString(_bytes));
-            output.WriteByte((byte)'>');
+            WriteHex(output, _bytes);
             return;
         }
 
@@ -220,6 +225,13 @@ public sealed class PdfString : PdfObject
         }
 
         output.WriteByte((byte)')');
+    }
+
+    private static void WriteHex(PdfOutput output, byte[] bytes)
+    {
+        output.WriteByte((byte)'<');
+        output.WriteAscii(Convert.ToHexString(bytes));
+        output.WriteByte((byte)'>');
     }
 }
 
@@ -368,10 +380,14 @@ public sealed class PdfStreamObject : PdfObject
 
     internal override void WriteTo(PdfOutput output)
     {
-        Dictionary["Length"] = new PdfInteger(Data.Length);
+        // Encryption applies to the encoded (filtered) data, and /Length is the encrypted length.
+        var data = output.Encryption is { } encryption && encryption.EncryptsStream(Dictionary)
+            ? encryption.Encrypt(Data, output.ObjectNumber, output.Generation)
+            : Data;
+        Dictionary["Length"] = new PdfInteger(data.Length);
         Dictionary.WriteTo(output);
         output.WriteAscii("\nstream\n");
-        output.Write(Data);
+        output.Write(data);
         output.WriteAscii("\nendstream");
     }
 }

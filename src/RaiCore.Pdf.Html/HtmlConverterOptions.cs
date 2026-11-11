@@ -64,6 +64,12 @@ public sealed class HtmlConverterOptions
     /// <c>dc:language</c>. Overrides the document's <c>&lt;html lang&gt;</c> (or <c>xml:lang</c>).
     /// </summary>
     public string? Language { get; init; }
+
+    /// <summary>
+    /// Password protection and permissions for the PDF (see <see cref="PdfEncryption"/>). <c>null</c> (the default)
+    /// writes an unencrypted document. Sets <see cref="PdfDocument.Encryption"/> on the converted document.
+    /// </summary>
+    public PdfEncryption? Encryption { get; init; }
 }
 
 /// <summary>Built-in resource loading.</summary>

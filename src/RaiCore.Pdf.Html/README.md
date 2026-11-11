@@ -40,6 +40,8 @@ Positioning: `relative`, `absolute` and `fixed` (on every page), with `z-index`.
 
 Metadata: `<title>`, `<html lang>` and `<meta name="author|description|keywords|generator">` become the PDF's title,
 language, author, subject, keywords and creator (Info dictionary and XMP); `HtmlConverterOptions` overrides them.
+Password protection and permissions: `new HtmlConverterOptions { Encryption = new PdfEncryption { ... } }`
+(AES-256 by default).
 
 Not yet: grid (rendered as blocks).
 
