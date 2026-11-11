@@ -33,8 +33,9 @@ public sealed class PdfDestination
     public double? Left { get; }
 
     /// <summary>The destination array <c>[page /XYZ left top null]</c> (ISO 32000-2, section 12.3.2.2).</summary>
+    /// <remarks>Positions on an imported page are measured from its media box, and written in its user space.</remarks>
     internal PdfArray ToArray(PdfReference page) =>
-        new(page, new PdfName("XYZ"), Number(Left), Number(Top), PdfNull.Instance);
+        new(page, new PdfName("XYZ"), Number(Left + Page.Origin.X), Number(Top + Page.Origin.Y), PdfNull.Instance);
 
     private static PdfObject Number(double? value) => value is { } v ? new PdfReal(v) : PdfNull.Instance;
 }
@@ -92,11 +93,12 @@ internal static class PdfLinkWriter
         var annotations = new PdfArray();
         foreach (var link in page.Links)
         {
+            var (x, y) = (link.X + page.Origin.X, link.Y + page.Origin.Y); // Imported pages: from the media box's corner.
             var annotation = new PdfDictionary
             {
                 ["Type"] = new PdfName("Annot"),
                 ["Subtype"] = new PdfName("Link"),
-                ["Rect"] = PdfArray.OfNumbers(link.X, link.Y, link.X + link.Width, link.Y + link.Height),
+                ["Rect"] = PdfArray.OfNumbers(x, y, x + link.Width, y + link.Height),
                 ["Border"] = PdfArray.OfNumbers(0, 0, 0), // No border: the link is the content under it.
             };
 

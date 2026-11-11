@@ -66,15 +66,34 @@ public sealed class PdfInteger(long value) : PdfObject
 /// <summary>A PDF real number.</summary>
 public sealed class PdfReal(double value) : PdfObject
 {
+    /// <summary>The number as it was written in a file that was read, kept so that copying it loses no precision.</summary>
+    private string? _text;
+
     /// <summary>The value.</summary>
     public double Value { get; } = value;
 
-    internal override void WriteTo(PdfOutput output) => output.WriteReal(Value);
+    /// <summary>A number read from a file, written back exactly as it was (<paramref name="text"/> must be valid PDF number syntax).</summary>
+    internal static PdfReal FromSource(double value, string text) => new(value) { _text = text };
+
+    internal override void WriteTo(PdfOutput output)
+    {
+        if (_text is not null)
+        {
+            output.WriteAscii(_text);
+        }
+        else
+        {
+            output.WriteReal(Value);
+        }
+    }
 }
 
 /// <summary>A PDF name, such as <c>/Type</c>. The value is stored without the leading slash.</summary>
 public sealed class PdfName : PdfObject, IEquatable<PdfName>
 {
+    /// <summary>The bytes of a name read from a file (after <c>#xx</c> decoding), written back unchanged.</summary>
+    private readonly byte[]? _bytes;
+
     /// <summary>Creates a name. <paramref name="value"/> must not include the leading slash.</summary>
     public PdfName(string value)
     {
@@ -82,8 +101,24 @@ public sealed class PdfName : PdfObject, IEquatable<PdfName>
         Value = value;
     }
 
+    private PdfName(string value, byte[] bytes)
+    {
+        Value = value;
+        _bytes = bytes;
+    }
+
     /// <summary>The name without the leading slash.</summary>
     public string Value { get; }
+
+    /// <summary>
+    /// A name read from a file. Its bytes are kept, so that it is written back exactly (resource names must match the
+    /// content streams that use them); <see cref="Value"/> is the bytes as UTF-8, or Latin-1 when they are not UTF-8.
+    /// </summary>
+    internal static PdfName FromBytes(byte[] bytes) =>
+        new(System.Text.Unicode.Utf8.IsValid(bytes) ? Encoding.UTF8.GetString(bytes) : Encoding.Latin1.GetString(bytes), bytes);
+
+    /// <summary>The bytes the name is written with (without the slash and before <c>#xx</c> escaping).</summary>
+    internal byte[] GetBytes() => _bytes ?? Encoding.UTF8.GetBytes(Value);
 
     /// <summary>Converts a string to a name.</summary>
     public static implicit operator PdfName(string value) => new(value);
@@ -94,7 +129,7 @@ public sealed class PdfName : PdfObject, IEquatable<PdfName>
     internal override void WriteTo(PdfOutput output)
     {
         output.WriteByte((byte)'/');
-        foreach (var b in Encoding.UTF8.GetBytes(Value))
+        foreach (var b in GetBytes())
         {
             if (b is < 0x21 or > 0x7E or (byte)'#' || PdfSyntax.IsDelimiter(b))
             {
@@ -264,6 +299,9 @@ public class PdfDictionary : PdfObject
             }
         }
     }
+
+    /// <summary>Adds an entry without looking for an existing one: the caller guarantees the key is new.</summary>
+    internal void AddUnchecked(PdfName key, PdfObject value) => _entries.Add(new(key, value));
 
     internal override void WriteTo(PdfOutput output)
     {
