@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using System.Globalization;
+using System.Text;
 using RaiCore.Pdf.Fonts.OpenType;
 using RaiCore.Pdf.IO;
 using RaiCore.Pdf.Objects;
@@ -82,7 +84,36 @@ internal static class EmbeddedStandardFontWriter
             ["Widths"] = writer.Add(widths),
             ["FontDescriptor"] = writer.Add(descriptor),
             ["Encoding"] = new PdfName("WinAnsiEncoding"),
+            ["ToUnicode"] = writer.Add(PdfStreamObject.CreateCompressed(ToUnicodeCMap(codes))),
         });
+    }
+
+    /// <summary>
+    /// A ToUnicode CMap from the codes to the characters they were encoded from (a no-break space and soft hyphen stay
+    /// themselves). The encoding already implies most of it, but PDF/UA asks for an explicit map.
+    /// </summary>
+    private static byte[] ToUnicodeCMap(IEnumerable<int> codes)
+    {
+        var cmap = new StringBuilder();
+        cmap.Append("/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n");
+        cmap.Append("/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n");
+        cmap.Append("/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n");
+        cmap.Append("1 begincodespacerange\n<00> <FF>\nendcodespacerange\n");
+        var entries = codes.Select(code => (Code: code, Char: WinAnsiEncoding.Decode((byte)code))).Where(e => e.Char >= ' ').ToList();
+        for (var start = 0; start < entries.Count; start += 100)
+        {
+            var chunk = entries.Skip(start).Take(100).ToList();
+            cmap.Append(chunk.Count).Append(" beginbfchar\n");
+            foreach (var (code, c) in chunk)
+            {
+                cmap.Append(CultureInfo.InvariantCulture, $"<{code:X2}> <{(int)c:X4}>\n");
+            }
+
+            cmap.Append("endbfchar\n");
+        }
+
+        cmap.Append("endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n");
+        return Encoding.ASCII.GetBytes(cmap.ToString());
     }
 
     /// <summary>

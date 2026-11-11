@@ -29,6 +29,75 @@ public class PdfATests
         return doc;
     }
 
+    /// <summary>A tagged PDF/UA-1 document drawn in a standard font (embedded as Liberation) with <paramref name="level"/>.</summary>
+    internal static PdfDocument TaggedPdfUA(PdfAConformance level)
+    {
+        var doc = new PdfDocument { PdfAConformance = level, Tagged = true, PdfUA = true, Language = "en-GB", Info = { Title = "Accessible archive" } }
+            .EmbedStandardFonts();
+        doc.Info.CreationDate = PdfASamples.Created;
+        var page = doc.AddPage();
+        var heading = doc.StructureRoot.AddChild(PdfStructureTypes.Heading1);
+        var paragraph = doc.StructureRoot.AddChild(PdfStructureTypes.Paragraph);
+        var link = paragraph.AddChild(PdfStructureTypes.Link);
+        page.Canvas.BeginTag(heading).DrawText("Accessible archive", StandardFont.HelveticaBold, 20, 72, 760).EndTag()
+            .BeginTag(paragraph).DrawText("Caf\u00E9 \u20AC5, see ", StandardFont.TimesRoman, 12, 72, 720)
+            .BeginTag(link).DrawText("example.com", StandardFont.TimesRoman, 12, 140, 720);
+        page.Canvas.AddLink(140, 716, 70, 14, new Uri("https://example.com/"));
+        page.Canvas.EndTag().EndTag()
+            .BeginArtifact(PdfArtifactKind.Pagination).DrawText("1", StandardFont.Helvetica, 9, 300, 40).EndTag();
+        return doc;
+    }
+
+    [Fact]
+    public void PdfUA_accepts_standard_fonts_that_are_embedded_through_a_substitute()
+    {
+        TaggedPdfUA(PdfAConformance.None).ToArray();
+
+        var unembedded = TaggedPdfUA(PdfAConformance.None);
+        unembedded.StandardFontSubstitute = null;
+        Assert.Contains("StandardFontSubstitute", Assert.Throws<InvalidOperationException>(() => unembedded.ToArray()).Message, StringComparison.Ordinal);
+
+        var declined = TaggedPdfUA(PdfAConformance.None);
+        declined.StandardFontSubstitute = font => font == StandardFont.TimesRoman ? null : StandardFontSubstitutes.Get(font);
+        Assert.Contains("Times-Roman", Assert.Throws<InvalidOperationException>(() => declined.ToArray()).Message, StringComparison.Ordinal);
+
+        var symbol = TaggedPdfUA(PdfAConformance.None);
+        symbol.Pages[0].Canvas.BeginArtifact(PdfArtifactKind.Pagination).DrawText("a", StandardFont.Symbol, 9, 300, 30).EndTag();
+        Assert.Contains("Symbol", Assert.Throws<InvalidOperationException>(() => symbol.ToArray()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Under_PdfA_the_PdfUA_identification_is_described_by_an_extension_schema()
+    {
+        var xmp = PdfMetadataReader.Xmp(TaggedPdfUA(PdfAConformance.PdfA2B).ToArray());
+
+        Assert.Equal("1", xmp.Descendants(XNamespace.Get("http://www.aiim.org/pdfua/ns/id/") + "part").Single().Value);
+        var schema = Assert.Single(xmp.Descendants(PdfASchema + "namespaceURI"), e => e.Value == "http://www.aiim.org/pdfua/ns/id/").Parent!;
+        Assert.Equal("pdfuaid", schema.Element(PdfASchema + "prefix")!.Value);
+        var property = schema.Element(PdfASchema + "property")!.Element(Rdf + "Seq")!.Elements(Rdf + "li").Single();
+        Assert.Equal("part", property.Element(PdfAProperty + "name")!.Value);
+        Assert.Equal("Integer", property.Element(PdfAProperty + "valueType")!.Value);
+        Assert.Equal("internal", property.Element(PdfAProperty + "category")!.Value);
+
+        // PDF/UA alone needs no extension schema.
+        Assert.Empty(PdfMetadataReader.Xmp(TaggedPdfUA(PdfAConformance.None).ToArray()).Descendants(PdfASchema + "namespaceURI"));
+    }
+
+    [Fact]
+    public void Embedded_standard_fonts_have_a_ToUnicode_map()
+    {
+        var doc = Minimal();
+        doc.Pages[0].Canvas.DrawText("\u20AC\u00A0\u00AD", StandardFont.TimesRoman, 12, 72, 700);
+        var reader = PdfReader.Open(doc.ToArray());
+
+        var font = (PdfDictionary)reader.Resolve(((PdfDictionary)reader.Pages[0].Resources["Font"]!)["F2"])!;
+        var cmap = Encoding.ASCII.GetString(StreamDecoder.Decode((PdfStreamObject)reader.Resolve(font["ToUnicode"])!, reader.Resolve));
+        Assert.Contains("<80> <20AC>", cmap, StringComparison.Ordinal);
+        Assert.Contains("<A0> <00A0>", cmap, StringComparison.Ordinal);
+        Assert.Contains("<AD> <00AD>", cmap, StringComparison.Ordinal);
+        Assert.Contains("1 begincodespacerange\n<00> <FF>", cmap, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(PdfAConformance.PdfA2B, "2")]
     [InlineData(PdfAConformance.PdfA3B, "3")]

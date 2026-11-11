@@ -84,8 +84,11 @@ internal static class PdfASamples
         return doc;
     }
 
-    /// <summary>An HTML document that uses most of what the converter writes, converted with <paramref name="level"/>.</summary>
-    public static PdfDocument Html(PdfAConformance level)
+    /// <summary>
+    /// An HTML document that uses most of what the converter writes, converted with <paramref name="level"/> (and as a
+    /// tagged PDF/UA-1 document with <paramref name="pdfUA"/>).
+    /// </summary>
+    public static PdfDocument Html(PdfAConformance level, bool pdfUA = false)
     {
         static string DataUri(string mime, string fixture) => $"data:{mime};base64,{Convert.ToBase64String(Fixtures.Read(fixture))}";
 
@@ -111,9 +114,9 @@ internal static class PdfASamples
               <div class="banner"></div>
               <p>Plain text in Liberation Serif, <b>bold</b>, <i>italic</i> and <code>monospace</code>, with a
                  <a href="https://example.com/terms">link to the terms</a> and a <a href="#totals">link to the totals</a>.</p>
-              <p><img src="{{DataUri("image/png", "PngSuite/basn6a08.png")}}" width="48" height="48">
-                 <img src="{{DataUri("image/jpeg", "Images/rgb.jpg")}}" width="48" height="48"></p>
-              <svg width="200" height="60" viewBox="0 0 200 60">
+              <p><img src="{{DataUri("image/png", "PngSuite/basn6a08.png")}}" width="48" height="48" alt="A color gradient">
+                 <img src="{{DataUri("image/jpeg", "Images/rgb.jpg")}}" width="48" height="48" alt="Four colored squares"></p>
+              <svg width="200" height="60" viewBox="0 0 200 60" aria-label="A label reading Inline SVG text">
                 <rect width="200" height="60" rx="6" fill="#eef"/>
                 <text x="10" y="35" font-size="16">Inline SVG text</text>
               </svg>
@@ -125,7 +128,7 @@ internal static class PdfASamples
             </html>
             """;
 
-        var doc = HtmlToPdf.Convert(html, new HtmlConverterOptions { PdfAConformance = level });
+        var doc = HtmlToPdf.Convert(html, new HtmlConverterOptions { PdfAConformance = level, Tagged = pdfUA, PdfUA = pdfUA });
         doc.Info.CreationDate = Created;
         return doc;
     }

@@ -44,4 +44,22 @@ public class PdfAVeraPdfTests
         Assert.False(report.IsCompliant);
         Assert.Contains(report.FailedRules, rule => rule.Contains("6.6.4-2", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void A_tagged_html_document_is_both_PdfA2b_and_PdfUA1()
+    {
+        var pdf = PdfASamples.Html(PdfAConformance.PdfA2B, pdfUA: true).ToArray();
+
+        ExternalTools.AssertVeraPdfCompliant(pdf, "2b");
+        ExternalTools.AssertVeraPdfCompliant(pdf, "ua1");
+    }
+
+    [Fact]
+    public void A_tagged_canvas_document_with_a_substituted_standard_font_is_both_PdfA2b_and_PdfUA1()
+    {
+        var pdf = PdfATests.TaggedPdfUA(PdfAConformance.PdfA2B).ToArray();
+
+        ExternalTools.AssertVeraPdfCompliant(pdf, "2b");
+        ExternalTools.AssertVeraPdfCompliant(pdf, "ua1");
+    }
 }

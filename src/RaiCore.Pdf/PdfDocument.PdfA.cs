@@ -129,6 +129,16 @@ public sealed partial class PdfDocument
                 custom.Properties.Select(p => new PdfAExtensionProperty(p.Name, "Text", "external", "A custom document information entry")));
         }
 
+        // PDF/A does not predefine PDF/UA's identification either (ISO 14289-1, 5).
+        if (xmp.Schemas.FirstOrDefault(s => s.Namespace.Uri == XmpNamespace.PdfUAIdentification.Uri) is { Properties.Count: > 0 })
+        {
+            PdfAExtensionSchema.Add(
+                xmp,
+                XmpNamespace.PdfUAIdentification,
+                "PDF/UA identification schema",
+                [new PdfAExtensionProperty("part", "Integer", "internal", "Indicates, which part of ISO 14289 standard is followed")]);
+        }
+
         xmp.Schema(XmpNamespace.PdfAId)
             .Set("part", PdfAConformance == PdfAConformance.PdfA2B ? "2" : "3")
             .Set("conformance", "B");

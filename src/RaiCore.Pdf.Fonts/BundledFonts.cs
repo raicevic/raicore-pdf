@@ -55,6 +55,12 @@ public static class BundledFonts
         return collection;
     }
 
+    /// <summary>
+    /// The bundled face at <paramref name="index"/> in the order of <see cref="Faces"/> (Sans, Serif, Mono, each regular,
+    /// bold, italic, bold italic), loaded once and shared.
+    /// </summary>
+    internal static PdfFont Face(int index) => Faces[index].Value;
+
     /// <summary>A collection containing only the bundled fonts: identical output on every machine.</summary>
     public static FontCollection CreateCollection() => new FontCollection().AddBundledFonts();
 
