@@ -149,6 +149,43 @@ public enum ClearSide
     Both,
 }
 
+/// <summary>How a block is positioned (CSS <c>position</c>).</summary>
+public enum Positioning
+{
+    /// <summary>In the normal flow (the default).</summary>
+    Static,
+
+    /// <summary>In the flow, then drawn moved by its <see cref="BoxStyle.Insets"/>; it positions its absolute descendants.</summary>
+    Relative,
+
+    /// <summary>
+    /// Out of the flow, placed by its <see cref="BoxStyle.Insets"/> in its containing block: the padding box of the
+    /// nearest positioned ancestor, or else the page area of the page it is on.
+    /// </summary>
+    Absolute,
+
+    /// <summary>Like <see cref="Absolute"/> in the page area, and repeated on every page (as browsers print it).</summary>
+    Fixed,
+}
+
+/// <summary>A length in points or a percentage of a reference length (an inset of a positioned block).</summary>
+/// <param name="Value">Points, or a percentage.</param>
+/// <param name="IsPercent">Whether <paramref name="Value"/> is a percentage.</param>
+public readonly record struct Inset(double Value, bool IsPercent = false)
+{
+    /// <summary>A length in points.</summary>
+    public static Inset Points(double points) => new(points);
+
+    /// <summary>A percentage of the containing block's width (left, right) or height (top, bottom).</summary>
+    public static Inset Percent(double percent) => new(percent, IsPercent: true);
+
+    /// <summary>The length in points for a reference length.</summary>
+    public double Resolve(double reference) => IsPercent ? Value / 100 * reference : Value;
+}
+
+/// <summary>The offsets of a positioned block from its containing block's edges (CSS <c>top</c>, <c>right</c>, ...); <c>null</c> is auto.</summary>
+public readonly record struct BoxInsets(Inset? Top = null, Inset? Right = null, Inset? Bottom = null, Inset? Left = null);
+
 /// <summary>Page break behavior inside a block (CSS <c>break-inside</c>).</summary>
 public enum PageBreakInside
 {
@@ -272,6 +309,26 @@ public sealed record BoxStyle
     /// itself placed beside earlier floats like a table. Floats, flex items and table cells always do this.
     /// </summary>
     public bool ContainsFloats { get; init; }
+
+    /// <summary>
+    /// How the block is positioned (CSS <c>position</c>). A relative block is drawn moved by its <see cref="Insets"/>
+    /// (<c>left</c> before <c>right</c>, <c>top</c> before <c>bottom</c>; percentages of the containing width, and none
+    /// vertically), leaving its place in the flow. An absolute block leaves the flow: without a <see cref="Width"/> it
+    /// fills the room between a left and a right inset, or shrinks to fit; between a top and a bottom inset it gets that
+    /// height. An auto inset keeps it where it would have been in the flow. It is laid out as one piece, on the page its
+    /// containing block starts on (a top inset) or ends on (a bottom inset only), and does not break across pages.
+    /// </summary>
+    public Positioning Position { get; init; }
+
+    /// <summary>The offsets of a positioned block (CSS <c>top</c>, <c>right</c>, <c>bottom</c>, <c>left</c>).</summary>
+    public BoxInsets Insets { get; init; }
+
+    /// <summary>
+    /// The painting order of a positioned block (CSS <c>z-index</c>); <c>null</c> is auto. Positioned blocks are painted
+    /// over the flow and floats, a higher z-index over a lower one, document order breaking ties; a negative z-index
+    /// goes under the flow. One stacking order per page: z-indexes are not nested.
+    /// </summary>
+    public int? ZIndex { get; init; }
 
     /// <summary>A border-box width limited by <see cref="MaxWidth"/> and then <see cref="MinWidth"/>.</summary>
     internal double ClampWidth(double width) =>

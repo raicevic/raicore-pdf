@@ -146,6 +146,14 @@ change at any time, and this section lists what the packages can do so far.
   transparency group per page it is on, also in flex items, table cells and inline boxes. `InlineImage.Opacity` (and
   the `opacity` argument of `Paragraph.AddImage`) does the same for an image in a line. Translucent dashed and dotted
   borders are painted once where adjacent sides' dashes meet in a corner.
+- Positioning (`BoxStyle.Position`, `Insets`, `ZIndex`): a relative block is laid out in the flow and drawn moved by
+  its insets. An absolute block leaves the flow and is placed in its containing block (the padding box of the nearest
+  positioned ancestor, or the page area of the page it is on) once that is laid out: its width from its own, from a
+  left and a right inset, or shrink-to-fit; its height from its content or from a top and a bottom inset; auto insets
+  keep where it would have been in the flow; percentages are of the containing block. It is laid out as one piece, on
+  the page its containing block starts on (or ends on, for a bottom inset). A fixed block is placed in the page area of
+  every page. Positioned blocks are painted over the flow and floats, ordered by z-index (a negative one goes under
+  the flow), with one stacking order per page.
 - Floats (`BoxStyle.Float`, CSS 2.1 section 9.5): a floated block is taken out of the flow and placed as high as it
   can at its place and as far to its side as earlier floats allow (moving down until it fits), without collapsing
   its margins; without a width it shrinks to fit. Text in the same formatting context flows around it: each line is
@@ -252,6 +260,10 @@ change at any time, and this section lists what the packages can do so far.
   `hyphenate-limit-chars`, with the language from the nearest `lang` (or `xml:lang`) attribute; the language also
   reaches HarfBuzz for localized glyph forms. Text with `white-space: nowrap` or `pre` is not hyphenated, not even at
   soft hyphens.
+- `position` (`relative`, `absolute`, `fixed`; `sticky` is static), `top`/`right`/`bottom`/`left` and `z-index`:
+  absolutely positioned elements are block-level and do not float, also spans and images in the middle of text (they
+  leave the paragraph without splitting it). A relative element's percentages resolve against its containing block's
+  width (and a definite height); an absolute one's against its containing block in layout.
 - `float` (`left`, `right`, `inline-start`, `inline-end`) and `clear`: floated elements are block-level, also images,
   inline tables and spans in the middle of text (they go before their paragraph, without splitting it); flex items
   do not float. `display: flow-root` and `overflow` other than `visible`/`clip` start a new formatting context that
@@ -278,7 +290,12 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
 - Ids on table rows and cells are not link destinations (ids inside cells are), and neither are ids inside inline
   boxes (`inline-block`) or in running elements; links inside them work. The same goes for `target-counter(..., page)`. A link's clickable area is the line box
   (rectangles, not rotated with transforms).
-- Positioning and grid (rendered as blocks); `overflow: hidden` (it contains floats but does not clip yet) and
+- Positioning: z-indexes are not nested (one stacking order per page); absolute blocks do not break across pages; a
+  relative or absolute inline element (a span in text) is not moved, and an absolutely positioned element in text
+  keeps the static position of its paragraph's start; absolutely positioned children of a flex container are laid out
+  as flex items; inside a table cell the containing block of an absolute block without a positioned ancestor in the
+  cell is the cell's content.
+- Grid (rendered as blocks); `overflow: hidden` (it contains floats but does not clip yet) and
   background images.
 - Floats: a float in the middle of a paragraph's text starts at the paragraph's first line, not at the line it is
   on. A line is checked against floats at its strut's height, so a taller line (a large font or image) may overlap a

@@ -73,6 +73,15 @@ internal sealed partial record ComputedStyle
     /// <summary>CSS <c>direction: rtl</c> (inherited).</summary>
     public bool Rtl { get; init; }
 
+    /// <summary>CSS <c>position</c> (<c>sticky</c> is static: it only sticks while scrolling).</summary>
+    public Positioning Position { get; init; }
+
+    /// <summary>CSS <c>top</c>, <c>right</c>, <c>bottom</c> and <c>left</c>; auto when unset.</summary>
+    public CssLength[] Insets { get; init; } = [CssLength.Auto, CssLength.Auto, CssLength.Auto, CssLength.Auto];
+
+    /// <summary>CSS <c>z-index</c>; <c>null</c> for auto.</summary>
+    public int? ZIndex { get; init; }
+
     /// <summary>CSS <c>float</c>; a floated element is block-level (its display is blockified).</summary>
     public FloatSide Float { get; init; }
 
@@ -268,9 +277,16 @@ internal sealed partial record ComputedStyle
         var borderColor = sides.Select(side => CssValues.ParseColor(Get($"border-{side}-color")) ?? color).ToArray();
         var borderStyle = sides.Select(side => ParseBorderStyle(Get($"border-{side}-style"))).ToArray();
 
-        // A float is block-level (CSS 2.1 section 9.7): inline content becomes a block, inline tables and flex boxes their
-        // block forms.
+        // A float or an absolutely positioned element is block-level (CSS 2.1 section 9.7): inline content becomes a
+        // block, inline tables and flex boxes their block forms. An absolutely positioned element does not float.
         var display = ParseDisplay(Get("display"));
+        var position = Get("position") switch
+        {
+            "relative" => Positioning.Relative,
+            "absolute" => Positioning.Absolute,
+            "fixed" => Positioning.Fixed,
+            _ => Positioning.Static,
+        };
         // inline-start and inline-end are the left and right in a left-to-right element, the other way round otherwise.
         var floating = Get("float") switch
         {
@@ -280,7 +296,12 @@ internal sealed partial record ComputedStyle
             "inline-end" => rtl ? FloatSide.Left : FloatSide.Right,
             _ => FloatSide.None,
         };
-        if (floating != FloatSide.None)
+        if (position is Positioning.Absolute or Positioning.Fixed)
+        {
+            floating = FloatSide.None;
+        }
+
+        if (floating != FloatSide.None || position is Positioning.Absolute or Positioning.Fixed)
         {
             display = display switch
             {
@@ -298,6 +319,9 @@ internal sealed partial record ComputedStyle
         return new ComputedStyle
         {
             Display = display,
+            Position = position,
+            Insets = [Parse(Get("top")) ?? CssLength.Auto, Parse(Get("right")) ?? CssLength.Auto, Parse(Get("bottom")) ?? CssLength.Auto, Parse(Get("left")) ?? CssLength.Auto],
+            ZIndex = int.TryParse(Get("z-index"), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var z) ? z : null,
             Float = floating,
             Clear = Get("clear") switch
             {

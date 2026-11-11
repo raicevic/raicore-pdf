@@ -216,6 +216,7 @@ internal sealed partial class Paginator
         var paginator = new Paginator(document.Setup, document);
         var pendingMargin = new CollapsedMargin();
         paginator.LayoutChildren(document.Blocks, document.Setup.Margins.Left, paginator.ContentWidthOf(0), ref pendingMargin, firstTopMarginApplied: false);
+        paginator.PlaceFixed();
         return new PaginationResult(paginator.GroupedPages(), paginator._placements, paginator._markers, paginator._anchors, paginator._frames);
     }
 
@@ -262,7 +263,7 @@ internal sealed partial class Paginator
         {
             ParagraphBlock paragraph => paragraph.Paragraph.MeasureIntrinsicWidths(),
             ImageBlock image => Both(image.GetSize(double.MaxValue, double.MaxValue, ImageWidthLimits(image)).Width),
-            ContainerBlock container => container.Children.Select(MeasureIntrinsic).Aggregate((Min: 0.0, Max: 0.0), (a, b) => (Math.Max(a.Min, b.Min), Math.Max(a.Max, b.Max))),
+            ContainerBlock container => container.Children.Where(c => !IsOutOfFlow(c.Style)).Select(MeasureIntrinsic).Aggregate((Min: 0.0, Max: 0.0), (a, b) => (Math.Max(a.Min, b.Min), Math.Max(a.Max, b.Max))),
             TableBlock table => TableLayouter.MeasureIntrinsic(table),
             FlexBlock flex => FlexIntrinsic(flex),
             _ => (0, 0),
@@ -463,6 +464,13 @@ internal sealed partial class Paginator
             var next = i + 1 < blocks.Count ? blocks[i + 1] : null;
             var style = block.Style;
 
+            if (IsOutOfFlow(style))
+            {
+                // Out of the flow: placed in its containing block, where it would have been in the flow if insets are auto.
+                AddAbsolute(block, x, Y + (AtPageTop && TruncateMargins ? 0 : pending.Value));
+                continue;
+            }
+
             if (style.Float != FloatSide.None)
             {
                 // Out of the flow: placed beside it, at the current position after the pending margin.
@@ -578,6 +586,7 @@ internal sealed partial class Paginator
                 _markers.Add((PageIndex, marker));
             }
 
+            _containingWidth = width;
             var trailing = LayoutBlock(block, boxX, boxWidth);
 
             pending = trailing;
@@ -619,7 +628,9 @@ internal sealed partial class Paginator
         _fluid = outerFluid && inFlow && block.Style is { Width: null, MaxWidth: null };
         try
         {
-            return LayoutBlockContent(block, x, width, sizing);
+            return block.Style.Position == Positioning.Static
+                ? LayoutBlockContent(block, x, width, sizing)
+                : LayoutPositioned(block, x, width, sizing, () => LayoutBlockContent(block, x, width, sizing));
         }
         finally
         {

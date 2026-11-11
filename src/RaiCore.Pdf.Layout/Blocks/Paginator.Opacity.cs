@@ -41,23 +41,32 @@ internal sealed partial class Paginator
     }
 
     /// <summary>
+    /// The paint layer operations are added in: floats go over the flow, positioned boxes over floats (CSS 2.1
+    /// appendix E, simplified to one stacking order per page).
+    /// </summary>
+    private PaintLayer _layer;
+
+    /// <summary>The offset of relatively positioned boxes around the current position, applied to what is drawn.</summary>
+    private (double X, double Y) _shift;
+
+    /// <summary>
     /// Wraps deferred drawing (e.g. a flex item's background, added once the line's height is known) so that it runs
-    /// in the opacity scope current now.
+    /// in the opacity scope, paint layer and offset current now.
     /// </summary>
     private Action InCurrentOpacityScope(Action draw)
     {
-        var scope = _opacity;
+        var (scope, layer, shift) = (_opacity, _layer, _shift);
         return () =>
         {
-            var outer = _opacity;
-            _opacity = scope;
+            var outer = (_opacity, _layer, _shift);
+            (_opacity, _layer, _shift) = (scope, layer, shift);
             try
             {
                 draw();
             }
             finally
             {
-                _opacity = outer;
+                (_opacity, _layer, _shift) = outer;
             }
         };
     }
@@ -80,8 +89,8 @@ internal sealed partial class Paginator
     {
         private readonly List<OpacityScope?> _scopes = [];
 
-        /// <summary>Whether each operation draws a float, which goes over the rest of the page (see <see cref="Ordered"/>).</summary>
-        private readonly List<bool> _floats = [];
+        /// <summary>The paint layer of each operation (see <see cref="Ordered"/>).</summary>
+        private readonly List<PaintLayer> _layers = [];
 
         /// <summary>
         /// The operations, with a group begun before the first operation of each run of operations in a scope and
@@ -131,41 +140,58 @@ internal sealed partial class Paginator
         }
 
         /// <summary>
-        /// The order the operations are drawn in: floats after everything else, as in CSS, where they are painted over
-        /// the backgrounds of the blocks around them (which are added under the content already laid out). Each layer
-        /// keeps its own order.
+        /// The order the operations are drawn in: by paint layer (see <see cref="PaintLayer"/>), each layer in the order
+        /// its operations were added. So floats are painted over the backgrounds of the blocks around them (which are
+        /// added under the content already laid out), and positioned boxes over both, by z-index.
         /// </summary>
         private List<int> Ordered()
         {
             var order = Enumerable.Range(0, Count).ToList();
-            return _floats.Contains(true) ? [.. order.Where(i => !_floats[i]), .. order.Where(i => _floats[i])] : order;
+            return _layers.TrueForAll(layer => layer == default) ? order : [.. order.OrderBy(i => _layers[i])]; // A stable sort.
         }
 
         protected override void InsertItem(int index, DrawOperation item)
         {
             _scopes.Insert(index, owner._opacity);
-            _floats.Insert(index, owner._floatDepth > 0);
-            base.InsertItem(index, item);
+            _layers.Insert(index, owner._layer);
+            base.InsertItem(index, Shifted(item));
         }
 
         protected override void RemoveItem(int index)
         {
             _scopes.RemoveAt(index);
-            _floats.RemoveAt(index);
+            _layers.RemoveAt(index);
             base.RemoveItem(index);
+        }
+
+        /// <summary>The operation moved by the current relative offset, if any.</summary>
+        private DrawOperation Shifted(DrawOperation item)
+        {
+            var (dx, dy) = owner._shift;
+            if (dx == 0 && dy == 0)
+            {
+                return item;
+            }
+
+            return (canvas, pageHeight) =>
+            {
+                canvas.SaveState().Transform(1, 0, 0, 1, dx, -dy);
+                item(canvas, pageHeight);
+                canvas.RestoreState();
+            };
         }
 
         protected override void SetItem(int index, DrawOperation item)
         {
             _scopes[index] = owner._opacity;
-            _floats[index] = owner._floatDepth > 0;
-            base.SetItem(index, item);
+            _layers[index] = owner._layer;
+            base.SetItem(index, Shifted(item));
         }
 
         protected override void ClearItems()
         {
             _scopes.Clear();
-            _floats.Clear();
+            _layers.Clear();
             base.ClearItems();
         }
 
@@ -182,4 +208,26 @@ internal sealed partial class Paginator
             return chain;
         }
     }
+}
+
+/// <summary>
+/// Where an operation goes in a page's painting order (CSS 2.1 appendix E, with one stacking order per page): positioned
+/// boxes with a negative z-index first, then the flow, then floats, then positioned boxes (z-index auto and 0 in
+/// document order, then positive ones in increasing order).
+/// </summary>
+internal readonly record struct PaintLayer(int Group, int Z) : IComparable<PaintLayer>
+{
+    /// <summary>Positioned boxes with a negative z-index.</summary>
+    public const int Below = -1;
+
+    /// <summary>The flow (the default).</summary>
+    public const int Flow = 0;
+
+    /// <summary>Floats.</summary>
+    public const int Floats = 1;
+
+    /// <summary>Positioned boxes with z-index auto or not negative.</summary>
+    public const int Positioned = 2;
+
+    public int CompareTo(PaintLayer other) => Group != other.Group ? Group.CompareTo(other.Group) : Z.CompareTo(other.Z);
 }

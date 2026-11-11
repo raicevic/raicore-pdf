@@ -10,9 +10,6 @@ internal sealed partial class Paginator
     /// <summary>The floats of the current block formatting context.</summary>
     private FloatContext _floatContext = new();
 
-    /// <summary>How many floats are being laid out around the current position (their drawing goes over the page).</summary>
-    private int _floatDepth;
-
     /// <summary>A float's margin box on one page; y from the top of the page, x in layout coordinates.</summary>
     private readonly record struct FloatArea(int Page, double Top, double Bottom, double Left, double Right, FloatSide Side);
 
@@ -129,14 +126,15 @@ internal sealed partial class Paginator
         Y = top + style.Margin.Top;
         TruncateMargins = false; // Out of the flow: nothing in it is truncated at the top of the page.
 
-        _floatDepth++;
+        var outerLayer = _layer;
+        _layer = _layer.Group == PaintLayer.Flow ? new PaintLayer(PaintLayer.Floats, 0) : _layer; // In a positioned box: its layer.
         try
         {
             LayoutBlock(block, left + style.Margin.Left, boxWidth);
         }
         finally
         {
-            _floatDepth--;
+            _layer = outerLayer;
         }
 
         var (endPage, endY) = (PageIndex, Y + style.Margin.Bottom);
