@@ -11,8 +11,14 @@ change at any time, and this section lists what the packages can do so far.
 
 ### RaiCore.Pdf
 - PDF writer with compressed streams, document information and the 14 standard fonts.
-- Embedded TrueType, OpenType (CFF embedded whole), TTC, WOFF and WOFF2 fonts, subset to the glyphs used, with
-  ToUnicode maps so text stays searchable and copyable. Fonts whose license forbids embedding are rejected.
+- Embedded TrueType, OpenType, TTC, WOFF and WOFF2 fonts, subset to the glyphs used, with ToUnicode maps so text
+  stays searchable and copyable. Fonts whose license forbids embedding are rejected.
+- CFF and CFF2 subsetting: OpenType fonts with PostScript outlines are embedded as a CID-keyed CFF
+  (`/FontFile3 /CIDFontType0C`) holding only the used glyphs, which keep their original glyph IDs as CIDs.
+  Name-keyed and CID-keyed fonts (each Font DICT with its own Private DICT and subroutines) are supported;
+  subroutines are inlined, since that compresses smaller than keeping the called ones. CFF2 (variable) fonts are
+  converted to CFF at their default instance. Cross-checked against fontTools on the 137 CFF faces of macOS, Source
+  Sans 3 and Noto Sans JP.
 - JPEG (embedded without re-encoding, EXIF orientation applied), PNG (all color types and bit depths, interlacing,
   transparency; verified against PngSuite) and GIF images, each stored once per document.
 - BMP images: BITMAPCOREHEADER, BITMAPINFOHEADER and V2-V5 headers; 1, 2, 4 and 8-bit palettes (kept indexed),
@@ -423,6 +429,10 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   without its annotations. Decoding is needed only for cross-reference and object streams and for pages drawn with
   several content streams, so the image filters (DCT, JPX, JBIG2, CCITT) are never decoded. Not fuzzed yet beyond a
   seeded smoke test.
+- Variable fonts are embedded at their default instance: CFF2 fonts are not instanced at other axis values (nor are
+  TrueType variable fonts), so `font-weight` or `font-variation-settings` cannot select another instance of one
+  variable font file. CFF glyphs built with `seac` (accented glyphs from old Type 1 conversions) and charstrings using
+  the arithmetic operators make the font embed whole, as do fonts whose license asks not to be subset.
 - SVG: no filters, masks, markers, patterns, `spreadMethod` `reflect`/`repeat` (drawn as `pad`), text on a path or
   per-character positions (only the first `x`/`y`/`dx`/`dy`), and no web fonts in SVG text (the standard fonts are
   used). PDF shadings have no alpha: a gradient whose stops differ in opacity takes its most opaque stop's alpha and

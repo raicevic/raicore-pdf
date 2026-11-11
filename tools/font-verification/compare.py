@@ -1,8 +1,10 @@
-import json, sys, collections
+import io, json, sys, collections
 from fontTools.ttLib import TTFont, TTCollection
+from fontTools.cffLib import CFFFontSet
+from fontTools.pens.recordingPen import RecordingPen
 out = sys.argv[1]
 problems = collections.Counter(); examples = {}
-checked = 0; subsets_ok = 0
+checked = 0; subsets_ok = 0; cff_subsets_ok = 0
 def note(kind, msg):
     problems[kind] += 1
     examples.setdefault(kind, msg)
@@ -49,6 +51,40 @@ for line in open(f"{out}/raicore.jsonl"):
             subsets_ok += 1
         except Exception as e:
             note("subset", f"{tag}: {type(e).__name__}: {e}")
-print(f"faces compared: {checked}, subsets validated: {subsets_ok}")
+    if r.get("cffSubsetError"):
+        note("cff-subset-error", f"{tag}: {r['cffSubsetError']}")
+    if r.get("cffSubset"):
+        # Bare CID-keyed CFF subsets: each kept glyph (CID = original glyph ID) must draw exactly the original's
+        # outline (CFF2 at the default instance) with the original charstring's width (CFF2: the hmtx advance).
+        base, gids = r["cffSubset"].split("|")
+        gids = [int(g) for g in gids.split(",") if g] + [0]
+        glyphset = f.getGlyphSet()
+        source = None if "CFF2" in f else f["CFF "].cff.topDictIndex[0].CharStrings
+        for variant in (".cff", ".subrs.cff"):
+            try:
+                with open(base + variant, "rb") as file:
+                    cffset = CFFFontSet(); cffset.decompile(io.BytesIO(file.read()), None)
+                top = cffset[cffset.fontNames[0]]
+                if not hasattr(top, "ROS"): raise ValueError("not CID-keyed")
+                strings = top.CharStrings
+                kept = set(top.charset)
+                for gid in gids:
+                    name = ".notdef" if gid == 0 else f"cid{gid:05d}"
+                    if name not in kept: raise ValueError(f"gid {gid} missing")
+                    theirs = RecordingPen(); glyphset[order[gid]].draw(theirs)
+                    ours = RecordingPen(); strings[name].draw(ours)
+                    if theirs.value != ours.value: raise ValueError(f"outline differs gid {gid}")
+                    if source is not None:
+                        source[order[gid]].draw(RecordingPen())
+                        width = source[order[gid]].width
+                    else:
+                        width = hmtx[order[gid]][0]
+                    if gid and strings[name].width != width:
+                        raise ValueError(f"width differs gid {gid}: {strings[name].width} instead of {width}")
+                if len(kept) != len(set(gids)): raise ValueError(f"{len(kept)} glyphs kept for {len(set(gids))}")
+                cff_subsets_ok += 1
+            except Exception as e:
+                note("cff-subset" + variant, f"{tag}: {type(e).__name__}: {e}")
+print(f"faces compared: {checked}, subsets validated: {subsets_ok}, CFF subsets validated: {cff_subsets_ok}")
 for k, v in problems.items(): print(f"  {k}: {v}  e.g. {examples[k]}")
 if not problems: print("  no differences")
