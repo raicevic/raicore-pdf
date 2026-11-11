@@ -245,7 +245,7 @@ internal sealed partial class BoxBuilder
                         break;
                     }
 
-                    if (childStyle.Float != FloatSide.None)
+                    if (childStyle.Float != FloatSide.None || childStyle.Position is Positioning.Absolute or Positioning.Fixed)
                     {
                         collector.AddFloat(BuildFloat(child, childStyle, contentWidth));
                         break;
@@ -336,7 +336,41 @@ internal sealed partial class BoxBuilder
         }
     }
 
-    /// <summary>The blocks of a floated element (a block, table, flex container or image), which the layout floats.</summary>
+    /// <summary>
+    /// A positioned element's insets: auto stays null; a relative element's percentages resolve now (left and right
+    /// against the containing width, top and bottom against a definite containing height, otherwise auto); an absolute
+    /// element's are resolved by the layout against its containing block. calc() resolves now.
+    /// </summary>
+    private static BoxInsets InsetsFor(ComputedStyle style, double containingWidth, double? containingHeight)
+    {
+        if (style.Position == Positioning.Static)
+        {
+            return default;
+        }
+
+        Inset? Side(CssLength length, bool vertical)
+        {
+            if (length.IsAuto)
+            {
+                return null;
+            }
+
+            var reference = vertical ? containingHeight : containingWidth;
+            return length.Kind switch
+            {
+                CssLengthKind.Percent when style.Position != Positioning.Relative => Inset.Percent(length.Value),
+                CssLengthKind.Percent or CssLengthKind.Calc when reference is null => null,
+                _ => Inset.Points(length.Resolve(reference ?? 0)),
+            };
+        }
+
+        return new BoxInsets(Side(style.Insets[0], true), Side(style.Insets[1], false), Side(style.Insets[2], true), Side(style.Insets[3], false));
+    }
+
+    /// <summary>
+    /// The blocks of a floated or absolutely positioned element (a block, table, flex container or image), which the
+    /// layout takes out of the flow.
+    /// </summary>
     private List<Block> BuildFloat(IElement element, ComputedStyle style, double containingWidth)
     {
         var blocks = new List<Block>();
@@ -346,8 +380,9 @@ internal sealed partial class BoxBuilder
             var collector = new InlineCollector(this, style, containingWidth);
             AddImage(element, style, containingWidth, blocks, collector);
             Flush(collector, blocks);
-            return [.. blocks.Select(b => b is ParagraphBlock p && p.Style.Float == FloatSide.None
-                ? new ParagraphBlock(p.Paragraph, p.Style with { Float = style.Float })
+            var (box, _) = BoxStyleFor(style, containingWidth);
+            return [.. blocks.Select(b => b is ParagraphBlock p && p.Style.Float == FloatSide.None && p.Style.Position == Positioning.Static
+                ? new ParagraphBlock(p.Paragraph, p.Style with { Float = box.Float, Position = box.Position, Insets = box.Insets, ZIndex = box.ZIndex })
                 : b)];
         }
 
@@ -747,6 +782,9 @@ internal sealed partial class BoxBuilder
             Opacity = style.Opacity,
             Float = style.Float,
             Clear = style.Clear,
+            Position = style.Position,
+            Insets = InsetsFor(style, containingWidth, containingHeight),
+            ZIndex = style.ZIndex,
             ContainsFloats = style.ContainsFloats,
         };
         var content = Clamp(borderBoxWidth ?? (containingWidth - box.Margin.Horizontal)) - decoration;

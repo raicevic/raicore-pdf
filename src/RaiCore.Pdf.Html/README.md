@@ -34,7 +34,9 @@ images, styled inline or as blocks). CSS counters (`counter-reset`/`counter-incr
 
 Floats and `clear`, with text flowing around floats and `display: flow-root`/`overflow` containing them.
 
-Not yet: positioning and grid (rendered as blocks).
+Positioning: `relative`, `absolute` and `fixed` (on every page), with `z-index`.
+
+Not yet: grid (rendered as blocks).
 
 Fonts default to the bundled Liberation fonts (metric-compatible with Arial, Times New Roman and Courier New), so
 output is identical on every machine. Brand fonts come from `@font-face` rules (TTF, OTF, WOFF, WOFF2, `data:` URIs,
