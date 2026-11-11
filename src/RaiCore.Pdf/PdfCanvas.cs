@@ -35,7 +35,10 @@ public enum LineJoin
 /// Draws on a page by building its content stream. Coordinates are in PDF points (1/72 inch)
 /// with the origin in the bottom-left corner of the page.
 /// </summary>
-/// <remarks>Partial: feature areas may add drawing operations in their own files (<c>PdfCanvas.*.cs</c>).</remarks>
+/// <remarks>
+/// Not thread-safe: like the <see cref="PdfDocument"/> it belongs to, draw on a canvas from one thread at a time.
+/// Partial: feature areas may add drawing operations in their own files (<c>PdfCanvas.*.cs</c>).
+/// </remarks>
 public sealed partial class PdfCanvas
 {
     private readonly PdfPage _page;

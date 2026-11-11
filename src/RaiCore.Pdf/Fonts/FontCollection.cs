@@ -7,9 +7,16 @@ namespace RaiCore.Pdf.Fonts;
 /// Fonts are indexed from their headers and only fully loaded when first used.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Output depends on the fonts available: a collection with <see cref="AddSystemFonts"/> renders differently on
 /// different machines. For reproducible output, use only fonts you add explicitly (for example the bundled
-/// Liberation fonts from the RaiCore.Pdf.Fonts package). This type is thread-safe.
+/// Liberation fonts from the RaiCore.Pdf.Fonts package).
+/// </para>
+/// <para>
+/// Thread-safe: fonts can be added and found from any number of threads at once. Create one collection at startup and
+/// share it between all conversions; each face is loaded once, the first time it is found, and the same
+/// <see cref="PdfFont"/> instance is returned from then on, so documents and threads share its data without copies.
+/// </para>
 /// </remarks>
 public sealed class FontCollection
 {
@@ -138,9 +145,11 @@ public sealed class FontCollection
             faces = FontFaceScanner.Scan(stream);
         }
 
+        // The faces of a collection file share one copy of its data, read when the first of them is used.
+        var data = new Lazy<byte[]>(() => File.ReadAllBytes(path), LazyThreadSafetyMode.PublicationOnly);
         foreach (var face in faces)
         {
-            AddFace(face, () => File.ReadAllBytes(path));
+            AddFace(face, () => data.Value);
         }
 
         return this;
@@ -169,7 +178,24 @@ public sealed class FontCollection
         ArgumentException.ThrowIfNullOrEmpty(family);
         lock (_lock)
         {
-            _faces.Add(new Face(family, [family], weight, italic, faceIndex, load));
+            _faces.Add(new Face(family, [family], weight, italic, () => PdfFont.Load(load(), faceIndex)));
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a face that is created on first use by <paramref name="load"/>, which may return a font shared with other
+    /// collections (as the bundled fonts do, so that every collection uses one copy of them).
+    /// The family, weight and style are used for matching instead of reading the font.
+    /// </summary>
+    public FontCollection AddFont(Func<PdfFont> load, string family, int weight = 400, bool italic = false)
+    {
+        ArgumentNullException.ThrowIfNull(load);
+        ArgumentException.ThrowIfNullOrEmpty(family);
+        lock (_lock)
+        {
+            _faces.Add(new Face(family, [family], weight, italic, load));
         }
 
         return this;
@@ -181,7 +207,7 @@ public sealed class FontCollection
         ArgumentNullException.ThrowIfNull(font);
         lock (_lock)
         {
-            _faces.Add(new Face(font.FamilyName, [font.FamilyName], font.Weight, font.IsItalic, 0, () => []) { Loaded = font });
+            _faces.Add(new Face(font.FamilyName, [font.FamilyName], font.Weight, font.IsItalic, () => font) { Loaded = font });
         }
 
         return this;
@@ -263,22 +289,24 @@ public sealed class FontCollection
             : [family, scanned.Names.LegacyFamily];
         lock (_lock)
         {
-            _faces.Add(new Face(family, names, scanned.Weight, scanned.IsItalic, scanned.FaceIndex, load));
+            var faceIndex = scanned.FaceIndex;
+            _faces.Add(new Face(family, names, scanned.Weight, scanned.IsItalic, () => PdfFont.Load(load(), faceIndex)));
         }
     }
 
+    /// <summary>Loads a face the first time it is found. Each face has its own lock, so loading one does not block others.</summary>
     private static PdfFont Load(Face face)
     {
         lock (face)
         {
-            return face.Loaded ??= PdfFont.Load(face.LoadData(), face.FaceIndex);
+            return face.Loaded ??= face.Load() ?? throw new InvalidOperationException($"Loading the font '{face.Family}' returned null.");
         }
     }
 
     private static bool IsFontFile(string path) =>
         Path.GetExtension(path).ToUpperInvariant() is ".TTF" or ".OTF" or ".TTC" or ".OTC" or ".WOFF" or ".WOFF2";
 
-    private sealed record Face(string Family, string[] Names, int Weight, bool Italic, int FaceIndex, Func<byte[]> LoadData)
+    private sealed record Face(string Family, string[] Names, int Weight, bool Italic, Func<PdfFont> Load)
     {
         public PdfFont? Loaded { get; set; }
     }

@@ -7,6 +7,11 @@ namespace RaiCore.Pdf.Html;
 public delegate byte[]? ResourceLoader(Uri uri);
 
 /// <summary>Options for <see cref="HtmlToPdf"/>.</summary>
+/// <remarks>
+/// Options are immutable once created and can be shared by conversions running at the same time. A shared
+/// <see cref="Fonts"/> collection is the way to share font data between them; a <see cref="ResourceLoader"/> passed
+/// here is then called from several threads at once and must be thread-safe.
+/// </remarks>
 public sealed class HtmlConverterOptions
 {
     /// <summary>

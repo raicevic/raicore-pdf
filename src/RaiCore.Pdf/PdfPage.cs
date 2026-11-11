@@ -6,6 +6,7 @@ using RaiCore.Pdf.Objects;
 namespace RaiCore.Pdf;
 
 /// <summary>A page in a <see cref="PdfDocument"/>.</summary>
+/// <remarks>Not thread-safe; see <see cref="PdfDocument"/>.</remarks>
 public sealed class PdfPage
 {
     private readonly List<(PdfFont Font, string Name, FontUsage Usage)> _fonts = [];

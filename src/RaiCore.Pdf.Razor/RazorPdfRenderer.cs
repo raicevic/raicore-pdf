@@ -25,6 +25,12 @@ namespace RaiCore.Pdf.Razor;
 /// so components may load their own data. JavaScript interop and event handlers do nothing in a static render, and
 /// interactive render modes are not supported.
 /// </para>
+/// <para>
+/// Thread-safe: one renderer can run any number of conversions at once. Each call renders with its own Blazor
+/// <see cref="HtmlRenderer"/> and converts independently; the services passed to the constructor are shared by those
+/// calls, so they must be safe to use concurrently if calls overlap (a scoped renderer from
+/// <see cref="RazorPdfServiceCollectionExtensions.AddRazorPdf"/> shares its scope's services).
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>

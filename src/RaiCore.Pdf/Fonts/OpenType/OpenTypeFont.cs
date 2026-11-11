@@ -16,6 +16,11 @@ internal enum OutlineFormat
 /// A parsed OpenType/TrueType font face. Holds the raw SFNT data and the metrics and character
 /// mapping needed for measuring, embedding and subsetting.
 /// </summary>
+/// <remarks>
+/// Immutable font data, shared by every document and thread that uses the font: nothing about a particular document
+/// (the glyphs it uses, its subset, its object numbers) is kept here. The only lazily computed state is the character
+/// map, which is built once and published as a whole, so concurrent readers see either nothing or all of it.
+/// </remarks>
 internal sealed class OpenTypeFont
 {
     private const uint TagTtcf = 0x74746366; // 'ttcf'
@@ -27,7 +32,7 @@ internal sealed class OpenTypeFont
 
     private readonly Dictionary<string, (int Offset, int Length)> _tables;
     private readonly ushort[] _advanceWidths;
-    private Dictionary<int, ushort>? _cmap;
+    private CharacterMap? _cmap;
 
     private OpenTypeFont(byte[] data, int faceOffset, int faceIndex)
     {
@@ -142,7 +147,7 @@ internal sealed class OpenTypeFont
     public string PostScriptName { get; private set; } = string.Empty;
 
     /// <summary>Whether the cmap is a Windows "symbol" table (codes in U+F000–U+F0FF).</summary>
-    public bool IsSymbolCmap { get; private set; }
+    public bool IsSymbolCmap => EnsureCmap().IsSymbol;
 
     /// <summary>Embedding is forbidden: fsType "Restricted License" without any permission bits.</summary>
     public bool EmbeddingRestricted => (FsType & 0x000F) == 0x0002;
@@ -216,14 +221,14 @@ internal sealed class OpenTypeFont
     /// <summary>Returns the glyph for a Unicode code point, or 0 (.notdef) if the font has none.</summary>
     public ushort GetGlyphId(int codePoint)
     {
-        var cmap = EnsureCmap();
-        if (cmap.TryGetValue(codePoint, out var gid))
+        var (map, isSymbol) = EnsureCmap();
+        if (map.TryGetValue(codePoint, out var gid))
         {
             return gid;
         }
 
         // Symbol fonts map their glyphs to U+F000–U+F0FF; accept plain 8-bit codes too.
-        if (IsSymbolCmap && codePoint <= 0xFF && cmap.TryGetValue(0xF000 | codePoint, out gid))
+        if (isSymbol && codePoint <= 0xFF && map.TryGetValue(0xF000 | codePoint, out gid))
         {
             return gid;
         }
@@ -232,17 +237,21 @@ internal sealed class OpenTypeFont
     }
 
     /// <summary>All mapped code points (for diagnostics and tests).</summary>
-    public IReadOnlyCollection<int> GetMappedCodePoints() => EnsureCmap().Keys;
+    public IReadOnlyCollection<int> GetMappedCodePoints() => EnsureCmap().Map.Keys;
 
-    private Dictionary<int, ushort> EnsureCmap()
+    /// <summary>
+    /// The parsed character map. Threads that race here may each parse it, but the map and its symbol flag are
+    /// published together in one object, never one before the other, and the map is not modified afterwards.
+    /// </summary>
+    private CharacterMap EnsureCmap()
     {
-        if (_cmap is null)
+        if (Volatile.Read(ref _cmap) is { } cmap)
         {
-            _cmap = CmapParser.Parse(this, out var isSymbol);
-            IsSymbolCmap = isSymbol;
+            return cmap;
         }
 
-        return _cmap;
+        var created = new CharacterMap(CmapParser.Parse(this, out var isSymbol), isSymbol);
+        return Interlocked.CompareExchange(ref _cmap, created, null) ?? created;
     }
 
     /// <summary>Advance width of a glyph in font units.</summary>
@@ -450,3 +459,6 @@ internal sealed class OpenTypeFont
         return builder.Length > 0 ? builder.ToString() : "Font";
     }
 }
+
+/// <summary>A font's character map: code point → glyph ID, and whether it is a Windows symbol cmap.</summary>
+internal sealed record CharacterMap(Dictionary<int, ushort> Map, bool IsSymbol);

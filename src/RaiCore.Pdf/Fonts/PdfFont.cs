@@ -10,8 +10,18 @@ namespace RaiCore.Pdf.Fonts;
 /// TrueType/OpenType font loaded from a file (TTF, OTF, TTC, WOFF or WOFF2), which is embedded and subset.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Vertical metrics (<see cref="Ascent"/>, <see cref="Descent"/>, ...) are fractions of the font size,
-/// so multiply by the size in points. Instances are immutable and may be shared across documents and threads.
+/// so multiply by the size in points.
+/// </para>
+/// <para>
+/// Instances are immutable and thread-safe: one font can be used by any number of documents at the same time, on any
+/// number of threads, without copying its data. A font holds only the font data (the file's bytes, its parsed tables
+/// and character map, and the HarfBuzz face used for shaping, created once). What depends on a document (which glyphs
+/// it uses and the text they stand for, the subset embedded from them, the PDF objects written) is kept by the
+/// document's pages and built when the document is saved. Load a font once and reuse it (or use a shared
+/// <see cref="FontCollection"/>); loading the same file again makes a second copy of its data.
+/// </para>
 /// </remarks>
 public abstract class PdfFont
 {
@@ -144,7 +154,11 @@ public abstract class PdfFont
     internal abstract PdfReference WriteTo(PdfFileWriter writer, FontUsage usage);
 }
 
-/// <summary>Glyphs used from one font in one document, with the text each glyph represents.</summary>
+/// <summary>
+/// Glyphs used from one font in one document, with the text each glyph represents. This is the per-document state of
+/// a font: each page keeps its own, the document merges them when it is saved, and the shared <see cref="PdfFont"/> is
+/// never written to.
+/// </summary>
 internal sealed class FontUsage
 {
     /// <summary>Glyph ID → the text it represents, or <c>null</c> for glyphs with no own text (e.g. extra glyphs of a cluster).</summary>

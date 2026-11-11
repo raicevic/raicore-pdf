@@ -12,6 +12,12 @@ namespace RaiCore.Pdf.Html;
 /// <summary>
 /// Converts HTML and CSS to PDF with RaiCore.Pdf's own layout engine (no browser, no JavaScript).
 /// </summary>
+/// <remarks>
+/// Thread-safe: conversions can run in parallel, and each one is independent (its own DOM, styles, layout and
+/// document), so the same input and options give the same PDF however many conversions run at once. They share the
+/// fonts of <see cref="HtmlConverterOptions.Fonts"/> (or the bundled fonts, loaded once per process) and the bundled
+/// hyphenation patterns without copying them. Fonts declared with <c>@font-face</c> are loaded per conversion.
+/// </remarks>
 /// <example>
 /// <code>
 /// var pdf = HtmlToPdf.Convert("&lt;h1&gt;Invoice&lt;/h1&gt;&lt;p&gt;Thank you!&lt;/p&gt;");

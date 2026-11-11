@@ -11,10 +11,24 @@ namespace RaiCore.Pdf.Layout.Text;
 /// Shapes text with HarfBuzz: applies kerning, ligatures, contextual forms (Arabic joining, Indic reordering)
 /// and mark positioning, and picks a font per character from a fallback list.
 /// </summary>
-/// <remarks>Thread-safe. Fonts must be embedded fonts loaded with <see cref="PdfFont.Load(string, int)"/>.</remarks>
+/// <remarks>
+/// Thread-safe: any number of threads may shape text at the same time, with the same fonts or different ones. Each
+/// font's HarfBuzz face and font objects are created once, on first use, and shared by all threads (HarfBuzz allows
+/// concurrent shaping with a font that is no longer changed); every call shapes into its own buffer. Fonts must be
+/// embedded fonts loaded with <see cref="PdfFont.Load(string, int)"/>.
+/// </remarks>
 public static class TextShaper
 {
+    /// <summary>The HarfBuzz objects of each font, for as long as the font is alive.</summary>
     private static readonly ConditionalWeakTable<OpenTypeFont, HarfBuzzFace> Faces = [];
+
+    /// <summary>
+    /// The native copy of each font file, shared by the faces of a collection (<c>.ttc</c>) that hold the same data,
+    /// so a file is copied into native memory once however many of its faces are used.
+    /// </summary>
+    private static readonly ConditionalWeakTable<byte[], Blob> Blobs = [];
+
+    private static readonly Lock FacesLock = new();
 
     /// <summary>Shapes <paramref name="text"/> in a single font.</summary>
     public static ShapedText Shape(string text, PdfFont font, ShapingOptions? options = null)
@@ -71,7 +85,7 @@ public static class TextShaper
     private static ShapedRun ShapeRun(string text, TextItem item, Feature[] features, string? language)
     {
         var font = item.Font;
-        var face = Faces.GetValue(font.Font, static f => new HarfBuzzFace(f));
+        var face = GetFace(font.Font);
         var unitsPerEm = (double)font.Font.UnitsPerEm;
 
         using var buffer = new HbBuffer();
@@ -131,17 +145,49 @@ public static class TextShaper
             text, item.Start, item.Length, font, item.Script.ToString(), item.Direction, glyphs, clusters, needsActualText: !oneToOneInOrder);
     }
 
-    /// <summary>HarfBuzz objects for one font, created once and shared (HarfBuzz fonts are safe to shape with concurrently).</summary>
+    /// <summary>
+    /// The HarfBuzz objects of a font. They are created under a lock, so that threads shaping with a new font at the
+    /// same time get the same objects instead of each making (and leaking) a native copy of the font.
+    /// </summary>
+    private static HarfBuzzFace GetFace(OpenTypeFont font)
+    {
+        if (Faces.TryGetValue(font, out var face))
+        {
+            return face;
+        }
+
+        lock (FacesLock)
+        {
+            return Faces.GetValue(font, static f => new HarfBuzzFace(f, Blobs.GetValue(f.Data, CreateBlob)));
+        }
+    }
+
+    /// <summary>
+    /// Copies font data into native memory owned by a HarfBuzz blob. HarfBuzz reads the font data in place for as long
+    /// as the blob lives. Blob.FromStream is not safe for that: it pins a managed array only while constructing the
+    /// blob, so the GC may later move or reuse the memory (HarfBuzzSharp 14.2.1).
+    /// </summary>
+    private static unsafe Blob CreateBlob(byte[] data)
+    {
+        var memory = (IntPtr)System.Runtime.InteropServices.NativeMemory.Alloc((nuint)data.Length);
+        data.CopyTo(new Span<byte>((void*)memory, data.Length));
+        var blob = new Blob(memory, data.Length, MemoryMode.ReadOnly, () => System.Runtime.InteropServices.NativeMemory.Free((void*)memory));
+        blob.MakeImmutable();
+        return blob;
+    }
+
+    /// <summary>
+    /// HarfBuzz objects for one font, created once and shared. They are not changed after construction, so shaping
+    /// with them on several threads at once is safe (HarfBuzz only reads a font while shaping; its lazily loaded
+    /// tables and caches are thread-safe).
+    /// </summary>
     private sealed class HarfBuzzFace
     {
-        public HarfBuzzFace(OpenTypeFont font)
+        public HarfBuzzFace(OpenTypeFont font, Blob blob)
         {
-            // HarfBuzz reads the font data in place for as long as the blob lives. Blob.FromStream is not safe for
-            // that: it pins a managed array only while constructing the blob, so the GC may later move or reuse
-            // the memory (HarfBuzzSharp 14.2.1). Copy into unmanaged memory owned by the blob instead.
-            Blob = CreateBlob(font.Data);
-            Blob.MakeImmutable();
+            Blob = blob;
             Face = new Face(Blob, font.FaceIndex);
+            Face.MakeImmutable();
             Font = new HbFont(Face);
             Font.SetScale(font.UnitsPerEm, font.UnitsPerEm);
             Font.SetFunctionsOpenType();
@@ -152,12 +198,5 @@ public static class TextShaper
         public Face Face { get; }
 
         public HbFont Font { get; }
-
-        private static unsafe Blob CreateBlob(byte[] data)
-        {
-            var memory = (IntPtr)System.Runtime.InteropServices.NativeMemory.Alloc((nuint)data.Length);
-            data.CopyTo(new Span<byte>((void*)memory, data.Length));
-            return new Blob(memory, data.Length, MemoryMode.ReadOnly, () => System.Runtime.InteropServices.NativeMemory.Free((void*)memory));
-        }
     }
 }
