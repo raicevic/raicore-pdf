@@ -35,6 +35,9 @@ doc.Save("hello.pdf");
 - Bookmarks: `PdfDocument.Outline` holds nested `PdfOutlineItem`s with Unicode titles.
 - Links: `PdfPage.AddLink` makes a rectangle open a URI or jump to a place in the document, also through named
   destinations (`PdfDocument.NamedDestinations`).
+- Metadata: `PdfDocument.Info` (title, author, subject, keywords, dates and custom properties) is written to the
+  Info dictionary and to an XMP metadata stream kept in sync with it; `PdfDocument.Language` sets the document
+  language (`/Lang`).
 - Coordinates are PDF points (1/72 inch) with the origin at the bottom-left of the page.
 
 ## More

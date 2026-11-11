@@ -210,6 +210,14 @@ an `<a name>`), on whatever page it ends up. A link that wraps is clickable on e
 `<a>` around blocks (a card, a button with `display: block`) is clickable over their whole box. Links to ids that do
 not exist are left out.
 
+The document metadata comes from the HTML: the title from `<title>`, the language (the PDF's `/Lang`, which screen
+readers use) from `<html lang>` or `xml:lang`, and the author, subject, keywords and creator from
+`<meta name="author|description|keywords|generator">`. Options override them:
+
+```csharp
+var pdf = HtmlToPdf.Convert(html, new HtmlConverterOptions { Title = "Invoice 2026-0042", Language = "da-DK" });
+```
+
 Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowDocument` returns the laid-out document
 before rendering, e.g. to set your own page decorator.
 
@@ -309,6 +317,16 @@ doc.Save("hello.pdf");
 ```
 
 Coordinates are in PDF points (1/72 inch) with the origin at the bottom-left of the page.
+
+Document metadata goes to the Info dictionary and to an XMP metadata stream, which always agree (same values, same
+dates); custom properties too:
+
+```csharp
+doc.Info.Author = "Ada Lovelace";
+doc.Info.Keywords = "invoice, 2026";                      // also XMP dc:subject, split at commas and semicolons
+doc.Info.CustomProperties["Invoice number"] = "2026-0042"; // Info /Invoice#20number and XMP pdfx:Invoice_x0020_number
+doc.Language = "en-GB";                                    // the catalog's /Lang and XMP dc:language
+```
 
 Colors may be translucent: a color's alpha becomes the fill or stroke alpha. A group is composited as a whole with
 one opacity, so its overlapping shapes do not show through each other:

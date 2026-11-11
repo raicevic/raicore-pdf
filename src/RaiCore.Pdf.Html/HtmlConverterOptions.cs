@@ -40,6 +40,30 @@ public sealed class HtmlConverterOptions
     /// CSS properties <c>bookmark-level</c>, <c>bookmark-label</c> and <c>bookmark-state</c>. Defaults to <c>true</c>.
     /// </summary>
     public bool CreateBookmarks { get; init; } = true;
+
+    /// <summary>The PDF's title. Overrides the document's <c>&lt;title&gt;</c>.</summary>
+    public string? Title { get; init; }
+
+    /// <summary>The PDF's author. Overrides the document's <c>&lt;meta name="author"&gt;</c>.</summary>
+    public string? Author { get; init; }
+
+    /// <summary>The PDF's subject. Overrides the document's <c>&lt;meta name="description"&gt;</c>.</summary>
+    public string? Subject { get; init; }
+
+    /// <summary>The PDF's keywords, separated by commas. Override the document's <c>&lt;meta name="keywords"&gt;</c>.</summary>
+    public string? Keywords { get; init; }
+
+    /// <summary>
+    /// The application that created the content. Overrides the document's <c>&lt;meta name="generator"&gt;</c>;
+    /// defaults to the converting package (<c>RaiCore.Pdf.Html</c> or <c>RaiCore.Pdf.Razor</c>).
+    /// </summary>
+    public string? Creator { get; init; }
+
+    /// <summary>
+    /// The document language as a BCP 47 tag, such as <c>en-US</c>, written as the PDF's <c>/Lang</c> and XMP
+    /// <c>dc:language</c>. Overrides the document's <c>&lt;html lang&gt;</c> (or <c>xml:lang</c>).
+    /// </summary>
+    public string? Language { get; init; }
 }
 
 /// <summary>Built-in resource loading.</summary>
