@@ -146,6 +146,16 @@ change at any time, and this section lists what the packages can do so far.
   transparency group per page it is on, also in flex items, table cells and inline boxes. `InlineImage.Opacity` (and
   the `opacity` argument of `Paragraph.AddImage`) does the same for an image in a line. Translucent dashed and dotted
   borders are painted once where adjacent sides' dashes meet in a corner.
+- Floats (`BoxStyle.Float`, CSS 2.1 section 9.5): a floated block is taken out of the flow and placed as high as it
+  can at its place and as far to its side as earlier floats allow (moving down until it fits), without collapsing
+  its margins; without a width it shrinks to fit. Text in the same formatting context flows around it: each line is
+  broken to the room beside the floats where it is, and moves down past them when its first word does not fit.
+  `BoxStyle.Clear` moves a block (also an empty one) below earlier floats, the clearance replacing its top margin.
+  Tables, flex containers, images and blocks with `BoxStyle.ContainsFloats` go beside floats or below them; those
+  blocks, floats, flex items and table cells contain their own floats (they grow to hold them, and their margins do
+  not collapse with their children's). A float that does not fit on the rest of the page moves to the next one with
+  what follows it; one that continues on later pages keeps the text there flowing around it. Floats are painted over
+  the backgrounds of the blocks around them, as in CSS.
 
 ### RaiCore.Pdf.Html
 - HTML and CSS to PDF via AngleSharp: the cascade, inheritance, `!important`, custom properties and print media
@@ -242,6 +252,10 @@ change at any time, and this section lists what the packages can do so far.
   `hyphenate-limit-chars`, with the language from the nearest `lang` (or `xml:lang`) attribute; the language also
   reaches HarfBuzz for localized glyph forms. Text with `white-space: nowrap` or `pre` is not hyphenated, not even at
   soft hyphens.
+- `float` (`left`, `right`, `inline-start`, `inline-end`) and `clear`: floated elements are block-level, also images,
+  inline tables and spans in the middle of text (they go before their paragraph, without splitting it); flex items
+  do not float. `display: flow-root` and `overflow` other than `visible`/`clip` start a new formatting context that
+  contains its floats, and clearfix rules (`::after { content: ""; display: table; clear: both }`) work.
 - Network access is off unless you supply a `ResourceLoader`.
 
 ### RaiCore.Pdf.Razor
@@ -264,7 +278,11 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
 - Ids on table rows and cells are not link destinations (ids inside cells are), and neither are ids inside inline
   boxes (`inline-block`) or in running elements; links inside them work. The same goes for `target-counter(..., page)`. A link's clickable area is the line box
   (rectangles, not rotated with transforms).
-- Floats, positioning and grid (rendered as blocks); `overflow: hidden` and background images.
+- Positioning and grid (rendered as blocks); `overflow: hidden` (it contains floats but does not clip yet) and
+  background images.
+- Floats: a float in the middle of a paragraph's text starts at the paragraph's first line, not at the line it is
+  on. A line is checked against floats at its strut's height, so a taller line (a large font or image) may overlap a
+  float that starts lower down.
 - `opacity` on inline elements (other than images and inline boxes) and on table rows and cells is ignored; where
   translucent collapsed table borders cross, they are painted twice. PDF/A-1 forbids transparency (PDF/A is not
   written yet).

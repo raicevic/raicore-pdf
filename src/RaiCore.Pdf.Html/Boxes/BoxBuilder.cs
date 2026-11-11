@@ -245,6 +245,12 @@ internal sealed partial class BoxBuilder
                         break;
                     }
 
+                    if (childStyle.Float != FloatSide.None)
+                    {
+                        collector.AddFloat(BuildFloat(child, childStyle, contentWidth));
+                        break;
+                    }
+
                     if (child.LocalName is "img" or "svg")
                     {
                         AddImage(child, childStyle, contentWidth, children, collector, VerticalAlign(inherited, childStyle, style));
@@ -328,6 +334,32 @@ internal sealed partial class BoxBuilder
                     break;
             }
         }
+    }
+
+    /// <summary>The blocks of a floated element (a block, table, flex container or image), which the layout floats.</summary>
+    private List<Block> BuildFloat(IElement element, ComputedStyle style, double containingWidth)
+    {
+        var blocks = new List<Block>();
+        if (element.LocalName is "img" or "svg")
+        {
+            // Its own collector: an image that does not load shows its alt text, as a floated paragraph.
+            var collector = new InlineCollector(this, style, containingWidth);
+            AddImage(element, style, containingWidth, blocks, collector);
+            Flush(collector, blocks);
+            return [.. blocks.Select(b => b is ParagraphBlock p && p.Style.Float == FloatSide.None
+                ? new ParagraphBlock(p.Paragraph, p.Style with { Float = style.Float })
+                : b)];
+        }
+
+        if (style.Display == CssDisplay.Table)
+        {
+            // A table with captions floats as one block.
+            var table = BuildInPage(element, containingWidth, width => BuildTable(element, style, width));
+            return table.Count == 1 ? [.. table] : [new ContainerBlock(new BoxStyle { Float = style.Float, Clear = style.Clear }, table)];
+        }
+
+        blocks.AddRange(BuildInPage(element, containingWidth, width => BuildBlock(element, style, width, marker: null) is { } block ? [block] : []));
+        return blocks;
     }
 
     /// <summary>
@@ -498,6 +530,7 @@ internal sealed partial class BoxBuilder
 
     private void Flush(InlineCollector collector, List<Block> children)
     {
+        children.AddRange(collector.TakeFloats());
         if (collector.Flush() is { } paragraph)
         {
             _anonymous.Add(paragraph);
@@ -671,9 +704,9 @@ internal sealed partial class BoxBuilder
 
         // The used width in a containing block of this width: an auto width fills it, within the min and max widths.
         var usedWidth = Clamp(borderBoxWidth ?? (containingWidth - nonAutoMargins));
-        if (!flexItem)
+        if (!flexItem && style.Float == FloatSide.None)
         {
-            // Auto horizontal margins share the free space (CSS 2.1 section 10.3.3), e.g. margin: 0 auto centers. An
+            // Auto horizontal margins share the free space (auto margins of floats are 0) (CSS 2.1 section 10.3.3), e.g. margin: 0 auto centers. An
             // auto width leaves none, unless the max width narrows the box.
             var free = containingWidth - usedWidth - nonAutoMargins;
             if (style.Margin[3].IsAuto && style.Margin[1].IsAuto)
@@ -712,6 +745,9 @@ internal sealed partial class BoxBuilder
             Orphans = style.Orphans,
             Widows = style.Widows,
             Opacity = style.Opacity,
+            Float = style.Float,
+            Clear = style.Clear,
+            ContainsFloats = style.ContainsFloats,
         };
         var content = Clamp(borderBoxWidth ?? (containingWidth - box.Margin.Horizontal)) - decoration;
         return (box, Math.Max(1, content));

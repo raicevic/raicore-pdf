@@ -32,7 +32,9 @@ images, styled inline or as blocks). CSS counters (`counter-reset`/`counter-incr
 `dir` attribute. Headings become PDF bookmarks, customized with `bookmark-level`,
 `bookmark-label` and `bookmark-state`. Links (`<a href>`) are clickable, to URIs and to elements by `#id`.
 
-Not yet: floats, positioning, grid (rendered as blocks) and `text-decoration`.
+Floats and `clear`, with text flowing around floats and `display: flow-root`/`overflow` containing them.
+
+Not yet: positioning and grid (rendered as blocks).
 
 Fonts default to the bundled Liberation fonts (metric-compatible with Arial, Times New Roman and Courier New), so
 output is identical on every machine. Brand fonts come from `@font-face` rules (TTF, OTF, WOFF, WOFF2, `data:` URIs,

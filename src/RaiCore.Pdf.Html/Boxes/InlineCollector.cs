@@ -19,6 +19,9 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
     private int _column; // For tab stops in preserved text.
     private string? _marker;
 
+    /// <summary>Floats met in the inline content, placed before the paragraph they are in.</summary>
+    private readonly List<Block> _floats = [];
+
     /// <summary>Inline elements with a box that are open, outer first (they continue in the next paragraph after a block).</summary>
     private readonly List<(BoxStyle Box, TextStyle Style, TextDirection Direction)> _openInlines = [];
 
@@ -57,6 +60,20 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         Paragraph().AddLeader(pattern, textStyle);
         _afterSpace = pattern.EndsWith(' ');
         _hasVisibleContent = true;
+    }
+
+    /// <summary>
+    /// Adds the blocks of a floated element met in the inline content. They do not end the paragraph: they go before it,
+    /// so the float starts at the paragraph's first line.
+    /// </summary>
+    public void AddFloat(IEnumerable<Block> blocks) => _floats.AddRange(blocks);
+
+    /// <summary>The floats met since the last call, which go before the paragraph <see cref="Flush"/> returns.</summary>
+    public List<Block> TakeFloats()
+    {
+        var floats = new List<Block>(_floats);
+        _floats.Clear();
+        return floats;
     }
 
     /// <summary>A list marker to place before the first content (or alone, if the item is empty).</summary>
