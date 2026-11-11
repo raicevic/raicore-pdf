@@ -39,6 +39,27 @@ public static class HtmlToPdf
     /// <summary>Converts an HTML document to PDF bytes.</summary>
     public static byte[] ConvertToBytes(string html, HtmlConverterOptions? options = null) => Convert(html, options).ToArray();
 
+    /// <summary>
+    /// Converts an HTML document to PDF and writes it to <paramref name="output"/> page by page (see
+    /// <see cref="PdfDocument.BeginSave"/>): each page is written as soon as it is drawn, so long documents need less
+    /// memory than with <see cref="Convert"/>. The stream is left open.
+    /// </summary>
+    public static void ConvertToStream(string html, Stream output, HtmlConverterOptions? options = null) =>
+        ConvertToStreamAsync(html, output, options).GetAwaiter().GetResult();
+
+    /// <summary>Converts an HTML document to PDF and writes it to <paramref name="output"/> page by page (see <see cref="ConvertToStream"/>).</summary>
+    public static async Task ConvertToStreamAsync(string html, Stream output, HtmlConverterOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        options ??= new HtmlConverterOptions();
+        var (flow, metadata) = await LayoutAsync(html, options, cancellationToken).ConfigureAwait(false);
+        var document = new PdfDocument { Encryption = options.Encryption };
+        metadata.ApplyTo(document, options, HtmlMetadata.DefaultCreator);
+        document.BeginSave(output);
+        flow.RenderTo(document);
+        document.EndSave();
+    }
+
     /// <summary>Converts an HTML document to a PDF document.</summary>
     /// <remarks>
     /// The document's metadata comes from the HTML: the title from <c>&lt;title&gt;</c>, the language from

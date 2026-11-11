@@ -54,6 +54,7 @@ public sealed partial class PdfDocument
         ArgumentNullException.ThrowIfNull(pageIndexes);
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _pages.Count);
+        CheckInsertion(index);
         options ??= PdfImportOptions.Default;
 
         var imported = new List<PdfPage>();
@@ -92,6 +93,7 @@ public sealed partial class PdfDocument
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _pages.Count);
+        CheckInsertion(index);
         var page = AddPage(size);
         _pages.RemoveAt(_pages.Count - 1);
         _pages.Insert(index, page);

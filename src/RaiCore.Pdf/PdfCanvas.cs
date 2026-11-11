@@ -46,6 +46,9 @@ public sealed partial class PdfCanvas
     /// <summary>The content being drawn: the page's content stream, or the innermost open transparency group's.</summary>
     private StringBuilder _ops = new();
 
+    /// <summary>The page has been written and its content freed (see <see cref="Release"/>).</summary>
+    private bool _released;
+
     internal PdfCanvas(PdfPage page)
     {
         _page = page;
@@ -291,11 +294,22 @@ public sealed partial class PdfCanvas
     }
 
     /// <summary>
+    /// Frees the content once the page has been written page by page (<see cref="PdfDocument.FlushPages"/>); drawing
+    /// afterwards throws.
+    /// </summary>
+    internal void Release()
+    {
+        _ops = new StringBuilder();
+        _released = true;
+    }
+
+    /// <summary>
     /// Appends a graphics state operator (<c>q</c>, <c>cm</c>, colors, line styles): not content itself, so in a tagged
     /// document it does not open a marked-content sequence and may fall in any.
     /// </summary>
     private PdfCanvas StateOp(string op)
     {
+        ThrowIfReleased();
         _ops.Append(op).Append('\n');
         return this;
     }
@@ -303,6 +317,7 @@ public sealed partial class PdfCanvas
     /// <summary>Appends a path or painting operator: in a tagged document, it is marked with the current tag.</summary>
     private PdfCanvas Op(string op)
     {
+        ThrowIfReleased();
         if (Tagging)
         {
             MarkContent();
@@ -310,6 +325,14 @@ public sealed partial class PdfCanvas
 
         _ops.Append(op).Append('\n');
         return this;
+    }
+
+    private void ThrowIfReleased()
+    {
+        if (_released)
+        {
+            throw new InvalidOperationException("The page has been written (PdfDocument.FlushPages) and cannot be drawn on any more.");
+        }
     }
 
     private static string N(double value) => PdfNumberFormat.Format(value);

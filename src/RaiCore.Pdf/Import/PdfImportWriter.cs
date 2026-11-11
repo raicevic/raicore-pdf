@@ -20,6 +20,9 @@ internal sealed class PdfImportWriter(PdfFileWriter writer, bool compress)
     private readonly Dictionary<PdfReaderPage, PdfReference> _forms = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<PdfReaderPage> _annotated = new(ReferenceEqualityComparer.Instance);
 
+    /// <summary>Whether anything was taken from a read file yet (imported pages or pages drawn as forms).</summary>
+    public bool HasCopied => _copiers.Count > 0;
+
     /// <summary>The copier of a source file, created on first use.</summary>
     internal PdfObjectCopier CopierFor(PdfReader reader)
     {

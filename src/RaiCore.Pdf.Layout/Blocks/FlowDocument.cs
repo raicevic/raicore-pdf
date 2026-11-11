@@ -181,6 +181,20 @@ public sealed class FlowDocument
     /// an <see cref="Block.Id"/> and paragraph anchors (<see cref="Paragraph.AddAnchor"/>) become its
     /// <see cref="PdfDocument.NamedDestinations"/>, which links (<see cref="LinkTarget.ToDestination"/>) jump to.
     /// </summary>
+    /// <remarks>
+    /// When the document is written page by page (<see cref="PdfDocument.BeginSave"/>), each page is written as soon as
+    /// it is drawn (with its <see cref="PageDecorator"/>), so its content is not kept in memory; it cannot be drawn on
+    /// afterwards. The layout of all pages is still done first, as "page X of Y" needs the page count.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// using var file = File.Create("report.pdf");
+    /// var document = new PdfDocument();
+    /// document.BeginSave(file);
+    /// flow.RenderTo(document);
+    /// document.EndSave();
+    /// </code>
+    /// </example>
     public void RenderTo(PdfDocument document)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -220,6 +234,10 @@ public sealed class FlowDocument
             LayoutTagging.BeginArtifact(page.Canvas, PdfArtifactKind.Pagination);
             PageDecorator?.Invoke(page.Canvas, new PageInfo(i + 1, pages.Count, setup, markers) { Name = context.Name, Side = context.Side, IsBlank = context.IsBlank });
             LayoutTagging.End(page.Canvas);
+            if (document.IsSaving)
+            {
+                document.FlushPages(); // Written page by page: the finished page goes to the output now.
+            }
         }
 
         AddOutline(document.Outline, result.Anchors, rendered);

@@ -27,6 +27,15 @@ public sealed partial class PdfDocument
 {
     private readonly List<PdfPage> _pages = [];
 
+    /// <summary>The writer while the document is written page by page (<see cref="BeginSave"/>).</summary>
+    private DocumentWriter? _saving;
+
+    /// <summary>The number of pages <see cref="FlushPages"/> has written.</summary>
+    private int _flushed;
+
+    /// <summary>The document was written page by page and finished (<see cref="EndSave"/>).</summary>
+    private bool _saved;
+
     /// <summary>The pages in order.</summary>
     public IReadOnlyList<PdfPage> Pages => _pages;
 
@@ -63,6 +72,7 @@ public sealed partial class PdfDocument
     public PdfEncryption? Encryption { get; set; }
 
     /// <summary>Appends a new, empty page.</summary>
+    /// <exception cref="InvalidOperationException">The document has been saved with <see cref="EndSave"/>.</exception>
     public PdfPage AddPage(PdfPageSize size)
     {
         if (size.Width <= 0 || size.Height <= 0)
@@ -70,6 +80,7 @@ public sealed partial class PdfDocument
             throw new ArgumentOutOfRangeException(nameof(size), size, "Page dimensions must be positive.");
         }
 
+        ThrowIfSaved();
         var page = new PdfPage(size) { Document = this };
         _pages.Add(page);
         return page;
@@ -85,166 +96,136 @@ public sealed partial class PdfDocument
         Save(file);
     }
 
-    /// <summary>Writes the document to a stream. The stream is left open.</summary>
+    /// <summary>
+    /// Writes the document to a stream. The stream is left open. Each page's content is written as soon as it is
+    /// encoded, so the whole file is never held in memory (unless <paramref name="stream"/> is a memory stream).
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// The document has no pages, or it is written page by page (<see cref="BeginSave"/>).
+    /// </exception>
     public void Save(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
+        if (_saving is not null || _saved)
+        {
+            throw new InvalidOperationException("The document is written page by page (BeginSave); finish it with EndSave.");
+        }
+
         if (_pages.Count == 0)
         {
             throw new InvalidOperationException("A PDF document must contain at least one page.");
         }
 
-        // Checked first, so invalid passwords, permissions or PDF/A settings fail before any work is done.
-        CheckPdfA();
-        CheckAttachments();
-        var security = Encryption is null ? null : StandardSecurityHandler.Create(Encryption);
-        var writer = new PdfFileWriter { PdfA = PdfAConformance, StandardFontSubstitute = StandardFontSubstitute };
-
-        var catalog = new PdfDictionary { ["Type"] = new PdfName("Catalog") };
-        var catalogRef = writer.Add(catalog);
-        var pageTree = new PdfDictionary { ["Type"] = new PdfName("Pages") };
-        var pageTreeRef = writer.Add(pageTree);
-        catalog["Pages"] = pageTreeRef;
-
-        // Each font is written once per document and embeds the union of glyphs used on all pages.
-        var fontUsage = new Dictionary<PdfFont, FontUsage>(ReferenceEqualityComparer.Instance);
-        var fontOrder = new List<PdfFont>();
-        foreach (var (font, _, usage) in _pages.SelectMany(p => p.Fonts))
-        {
-            if (!fontUsage.TryGetValue(font, out var total))
-            {
-                total = new FontUsage();
-                fontUsage[font] = total;
-                fontOrder.Add(font);
-            }
-
-            total.MergeFrom(usage);
-        }
-
-        ValidatePdfUA(fontOrder);
-        var structure = Tagged ? new StructureTreeWriter(writer, StructureRoot) : null;
-
-        var fontRefs = new Dictionary<PdfFont, PdfReference>(ReferenceEqualityComparer.Instance);
-        foreach (var font in fontOrder)
-        {
-            fontRefs[font] = font.WriteTo(writer, fontUsage[font]);
-        }
-
-        // Each image is written once, however many times and pages it is drawn on.
-        var imageRefs = new Dictionary<PdfImage, PdfReference>(ReferenceEqualityComparer.Instance);
-        foreach (var (image, _) in _pages.SelectMany(p => p.Images))
-        {
-            if (!imageRefs.ContainsKey(image))
-            {
-                imageRefs[image] = image.WriteTo(writer);
-            }
-        }
-
-        // Each extended graphics state (a pair of fill and stroke alphas) is written once, when first used.
-        var extGStateRefs = new Dictionary<(double Fill, double Stroke), PdfReference>();
-        PdfReference ExtGState((double Fill, double Stroke) alpha)
-        {
-            if (!extGStateRefs.TryGetValue(alpha, out var reference))
-            {
-                reference = writer.Add(PdfPage.ExtGState(alpha));
-                extGStateRefs[alpha] = reference;
-            }
-
-            return reference;
-        }
-
-        // Imported pages and pages drawn as forms: each object of a read file is written once.
-        var imports = new PdfImportWriter(writer, CompressContent);
-
-        var kids = new PdfArray();
-        var pageRefs = new Dictionary<PdfPage, PdfReference>(ReferenceEqualityComparer.Instance);
-        var pageDictionaries = new List<PdfDictionary>(_pages.Count);
+        using var writer = new DocumentWriter(this, stream);
         foreach (var page in _pages)
         {
-            var content = page.Canvas.ToBytes();
-            var resources = page.WriteResources(
-                writer, CompressContent, (font, _) => fontRefs[font], image => imageRefs[image], ExtGState, imports.WritePageForm, structure is null ? null : structure.RegisterGroup);
-
-            PdfDictionary pageDictionary;
-            if (page.Source is not null)
-            {
-                pageDictionary = imports.WritePage(page, pageTreeRef, content, resources);
-            }
-            else
-            {
-                var contentStream = CompressContent ? PdfStreamObject.CreateCompressed(content) : new PdfStreamObject(content);
-                pageDictionary = new PdfDictionary
-                {
-                    ["Type"] = new PdfName("Page"),
-                    ["Parent"] = pageTreeRef,
-                    ["MediaBox"] = PdfArray.OfNumbers(0, 0, page.Width, page.Height),
-                    ["Resources"] = resources,
-                    ["Contents"] = writer.Add(contentStream),
-                };
-
-                // A page with transparency blends in RGB, so that viewers agree on how translucent colors mix.
-                if (page.UsesTransparency)
-                {
-                    pageDictionary["Group"] = PdfPage.TransparencyGroup(isolated: false);
-                }
-            }
-
-            structure?.RegisterPage(page, pageDictionary);
-            var pageRef = writer.Add(pageDictionary);
-            kids.Items.Add(pageRef);
-            pageRefs[page] = pageRef;
-            pageDictionaries.Add(pageDictionary);
-            imports.RegisterPage(page, pageRef);
+            writer.WritePage(page, release: false);
+            writer.Flush();
         }
 
-        // Links may point at any page, so they are written once every page has its object number.
-        for (var i = 0; i < _pages.Count; i++)
+        writer.Finish();
+    }
+
+    /// <summary>
+    /// Starts writing the document to <paramref name="stream"/> page by page, to keep memory low for long documents:
+    /// <see cref="FlushPages"/> writes the pages added so far and frees their content, and <see cref="EndSave"/> writes
+    /// the rest. Everything that refers across pages is written at the end, so links, named destinations and the
+    /// outline may still point at any page, and fonts embed the glyphs of all pages. The stream is left open.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="CompressContent"/> and <see cref="Encryption"/> are read here and cannot be changed afterwards; the
+    /// metadata, outline and named destinations are read by <see cref="EndSave"/>. A flushed page cannot be drawn on
+    /// any more. Pages imported from other files, and pages that draw pages of other files, keep everything they take
+    /// from those files until <see cref="EndSave"/>.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// using var file = File.Create("report.pdf");
+    /// var document = new PdfDocument();
+    /// document.BeginSave(file);
+    /// foreach (var chapter in chapters)
+    /// {
+    ///     DrawChapter(document, chapter); // Adds and draws pages.
+    ///     document.FlushPages();
+    /// }
+    /// document.EndSave();
+    /// </code>
+    /// </example>
+    /// <exception cref="InvalidOperationException">The document is already being written or has been saved.</exception>
+    public void BeginSave(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        if (_saving is not null)
         {
-            var annotations = PdfLinkWriter.WriteAnnotations(writer, _pages[i], pageRefs, NamedDestinations, structure is null ? null : structure.RegisterAnnotation);
-            if (imports.WriteAnnotations(_pages[i], annotations) is { } all)
-            {
-                pageDictionaries[i]["Annots"] = all;
-            }
+            throw new InvalidOperationException("The document is already being written.");
         }
 
-        pageTree["Kids"] = kids;
-        pageTree["Count"] = new PdfInteger(_pages.Count);
+        ThrowIfSaved();
+        _saving = new DocumentWriter(this, stream);
+        _flushed = 0;
+    }
 
-        if (Outline.Count > 0)
+    /// <summary>Whether the document is being written page by page: <see cref="BeginSave"/> was called and <see cref="EndSave"/> was not.</summary>
+    public bool IsSaving => _saving is not null;
+
+    /// <summary>
+    /// Writes the pages added since <see cref="BeginSave"/> or the last flush (their content, images and other
+    /// resources) and frees their content. The pages stay in <see cref="Pages"/>; links may still be added to them
+    /// and refer to them, but drawing on them throws.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The document is not being written page by page.</exception>
+    public void FlushPages()
+    {
+        var writer = _saving ?? throw new InvalidOperationException("The document is not being written page by page (see BeginSave).");
+        for (; _flushed < _pages.Count; _flushed++)
         {
-            catalog["Outlines"] = PdfOutlineWriter.Write(writer, Outline, pageRefs);
+            writer.WritePage(_pages[_flushed], release: true);
+            writer.Flush(); // As Save does, so that both write the same file.
         }
+    }
 
-        var names = new PdfDictionary();
-        if (NamedDestinations.Count > 0)
+    /// <summary>
+    /// Writes the pages that are left, then the fonts, links, outline, named destinations, metadata and the file's
+    /// cross-reference table, and ends writing. The stream is left open. The document cannot be changed or saved again.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The document is not being written page by page, or it has no pages.</exception>
+    public void EndSave()
+    {
+        var writer = _saving ?? throw new InvalidOperationException("The document is not being written page by page (see BeginSave).");
+        if (_pages.Count == 0)
         {
-            names["Dests"] = PdfLinkWriter.WriteNames(writer, NamedDestinations, pageRefs);
+            throw new InvalidOperationException("A PDF document must contain at least one page.");
         }
 
-        WriteAttachments(writer, catalog, names);
-        if (names.Count > 0)
+        FlushPages();
+        _saving = null;
+        _saved = true;
+        using (writer)
         {
-            catalog["Names"] = names;
+            writer.Finish();
         }
+    }
 
-        if (PageMode == PdfPageMode.UseOutlines || (PageMode == PdfPageMode.Automatic && Outline.Count > 0))
+    /// <summary>Pages cannot be inserted before pages already written page by page (<see cref="FlushPages"/>), nor after <see cref="EndSave"/>.</summary>
+    private void CheckInsertion(int index)
+    {
+        ThrowIfSaved();
+        if (index < _flushed)
         {
-            catalog["PageMode"] = new PdfName("UseOutlines");
+            throw new InvalidOperationException($"Page {index} has been written (FlushPages); pages can only be inserted after page {_flushed - 1}.");
         }
+    }
 
-        WriteOutputIntent(writer, catalog);
-        structure?.Write(catalog, pageRefs);
-        if (PdfUA)
+    private void ThrowIfSaved()
+    {
+        if (_saved)
         {
-            catalog["ViewerPreferences"] = new PdfDictionary { ["DisplayDocTitle"] = PdfBoolean.True };
+            throw new InvalidOperationException("The document has been saved page by page (EndSave) and cannot be changed.");
         }
-
-        security?.AddCatalogEntries(catalog);
-        var infoRef = WriteMetadata(writer, catalog);
-        writer.Write(stream, catalogRef, infoRef, security: security);
     }
 
     /// <summary>Returns the document as a byte array.</summary>
+    /// <exception cref="InvalidOperationException">The document has no pages, or it is written page by page (<see cref="BeginSave"/>).</exception>
     public byte[] ToArray()
     {
         using var buffer = new MemoryStream();
