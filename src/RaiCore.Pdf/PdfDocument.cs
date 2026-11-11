@@ -64,7 +64,7 @@ public sealed partial class PdfDocument
             throw new ArgumentOutOfRangeException(nameof(size), size, "Page dimensions must be positive.");
         }
 
-        var page = new PdfPage(size);
+        var page = new PdfPage(size) { Document = this };
         _pages.Add(page);
         return page;
     }
@@ -113,6 +113,9 @@ public sealed partial class PdfDocument
             total.MergeFrom(usage);
         }
 
+        ValidatePdfUA(fontOrder);
+        var structure = Tagged ? new StructureTreeWriter(writer, StructureRoot) : null;
+
         var fontRefs = new Dictionary<PdfFont, PdfReference>(ReferenceEqualityComparer.Instance);
         foreach (var font in fontOrder)
         {
@@ -152,7 +155,7 @@ public sealed partial class PdfDocument
         {
             var content = page.Canvas.ToBytes();
             var resources = page.WriteResources(
-                writer, CompressContent, (font, _) => fontRefs[font], image => imageRefs[image], ExtGState, imports.WritePageForm);
+                writer, CompressContent, (font, _) => fontRefs[font], image => imageRefs[image], ExtGState, imports.WritePageForm, structure is null ? null : structure.RegisterGroup);
 
             PdfDictionary pageDictionary;
             if (page.Source is not null)
@@ -178,6 +181,7 @@ public sealed partial class PdfDocument
                 }
             }
 
+            structure?.RegisterPage(page, pageDictionary);
             var pageRef = writer.Add(pageDictionary);
             kids.Items.Add(pageRef);
             pageRefs[page] = pageRef;
@@ -188,7 +192,7 @@ public sealed partial class PdfDocument
         // Links may point at any page, so they are written once every page has its object number.
         for (var i = 0; i < _pages.Count; i++)
         {
-            var annotations = PdfLinkWriter.WriteAnnotations(writer, _pages[i], pageRefs, NamedDestinations);
+            var annotations = PdfLinkWriter.WriteAnnotations(writer, _pages[i], pageRefs, NamedDestinations, structure is null ? null : structure.RegisterAnnotation);
             if (imports.WriteAnnotations(_pages[i], annotations) is { } all)
             {
                 pageDictionaries[i]["Annots"] = all;
@@ -211,6 +215,12 @@ public sealed partial class PdfDocument
         if (PageMode == PdfPageMode.UseOutlines || (PageMode == PdfPageMode.Automatic && Outline.Count > 0))
         {
             catalog["PageMode"] = new PdfName("UseOutlines");
+        }
+
+        structure?.Write(catalog, pageRefs);
+        if (PdfUA)
+        {
+            catalog["ViewerPreferences"] = new PdfDictionary { ["DisplayDocTitle"] = PdfBoolean.True };
         }
 
         security?.AddCatalogEntries(catalog);

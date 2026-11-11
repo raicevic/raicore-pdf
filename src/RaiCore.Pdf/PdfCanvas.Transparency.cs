@@ -49,8 +49,12 @@ public sealed partial class PdfCanvas
             throw new ArgumentOutOfRangeException(nameof(opacity), opacity, "The opacity must be a number from 0 to 1.");
         }
 
-        _groups.Push(new GroupFrame(_ops, _resources, RoundAlpha(opacity), _savedTransforms.Count, _fillAlpha, _strokeAlpha, _transform));
+        // The group's form numbers its marked content on its own; the page's open sequence ends before the form is
+        // painted, so that the form's content is not also inside it.
+        CloseMarkedContent();
+        _groups.Push(new GroupFrame(_ops, _resources, RoundAlpha(opacity), _savedTransforms.Count, _fillAlpha, _strokeAlpha, _transform, _marks));
         _ops = new StringBuilder();
+        _marks = new MarkedContentStream();
         _resources = new HashSet<string>(StringComparer.Ordinal);
         _fillAlpha = _strokeAlpha = 1; // A transparency group starts with full alpha.
 
@@ -80,19 +84,24 @@ public sealed partial class PdfCanvas
         }
 
         _groups.Pop();
+        CloseMarkedContent();
         var content = Encoding.Latin1.GetBytes(_ops.ToString());
-        var resources = _resources;
+        var (resources, marks) = (_resources, _marks);
 
         // Transformations and clips inside the group end with it, like the alpha it started with.
-        (_ops, _resources, _fillAlpha, _strokeAlpha, _transform) = (frame.Ops, frame.Resources, frame.FillAlpha, frame.StrokeAlpha, frame.Transform);
+        (_ops, _resources, _fillAlpha, _strokeAlpha, _transform, _marks) =
+            (frame.Ops, frame.Resources, frame.FillAlpha, frame.StrokeAlpha, frame.Transform, frame.Marks);
         if (frame.Transform.Invert() is not { } inverse)
         {
             return this; // A singular transformation: nothing drawn would be visible.
         }
 
-        var name = UseResource(_page.AddGroup(content, resources, inverse));
+        var name = UseResource(_page.AddGroup(content, resources, inverse, marks));
         var state = UseResource(_page.UseExtGState(frame.Opacity, frame.Opacity));
-        return Op($"q /{state} gs /{name} Do Q");
+
+        // Not marked itself: the form's content carries its own marks (or is an artifact).
+        _ops.Append(CultureInfo.InvariantCulture, $"q /{state} gs /{name} Do Q\n");
+        return this;
     }
 
     /// <summary>
@@ -155,5 +164,6 @@ public sealed partial class PdfCanvas
 
     /// <summary>What <see cref="BeginGroup"/> set aside: the enclosing content and its state, restored by <see cref="EndGroup"/>.</summary>
     private sealed record GroupFrame(
-        StringBuilder Ops, HashSet<string> Resources, double Opacity, int SavedStates, double FillAlpha, double StrokeAlpha, SvgMatrix Transform);
+        StringBuilder Ops, HashSet<string> Resources, double Opacity, int SavedStates, double FillAlpha, double StrokeAlpha, SvgMatrix Transform,
+        MarkedContentStream Marks);
 }

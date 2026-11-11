@@ -47,6 +47,7 @@ public sealed partial class PdfCanvas
     {
         _page = page;
         _resources = _pageResources;
+        PageMarks = _marks;
     }
 
     /// <summary>Saves the graphics state (<c>q</c>), including the transformation, clip, colors and alpha. Pair with <see cref="RestoreState"/>.</summary>
@@ -282,11 +283,17 @@ public sealed partial class PdfCanvas
     internal byte[] ToBytes()
     {
         EnsureGroupsClosed();
+        CloseMarkedContent();
         return Encoding.Latin1.GetBytes(_ops.ToString());
     }
 
     private PdfCanvas Op(string op)
     {
+        if (Tagging)
+        {
+            MarkContent();
+        }
+
         _ops.Append(op).Append('\n');
         return this;
     }

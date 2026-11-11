@@ -67,7 +67,7 @@ public sealed partial class PdfDocument
             }
 
             var sourcePage = source.Pages[pageIndex];
-            var page = new PdfPage(sourcePage, options);
+            var page = new PdfPage(sourcePage, options) { Document = this };
             imported.Add(page);
             bySource.TryAdd(sourcePage, page);
         }

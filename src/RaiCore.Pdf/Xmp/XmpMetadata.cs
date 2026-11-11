@@ -33,6 +33,9 @@ internal sealed record XmpNamespace
     /// </summary>
     public static readonly XmpNamespace PdfExtension = new("pdfx", "http://ns.adobe.com/pdfx/1.3/");
 
+    /// <summary>PDF/UA identification: <c>pdfuaid:part</c>, the part of ISO 14289 the document conforms to.</summary>
+    public static readonly XmpNamespace PdfUAIdentification = new("pdfuaid", "http://www.aiim.org/pdfua/ns/id/");
+
     /// <summary>The <c>rdf:</c> namespace; reserved for the packet's own structure.</summary>
     public static readonly XmpNamespace Rdf = new("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
 }
