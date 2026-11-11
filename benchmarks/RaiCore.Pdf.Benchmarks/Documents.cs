@@ -206,7 +206,7 @@ public static class Documents
     /// A long report built with the layout API (about 100 pages): bookmarked headings, justified paragraphs and a
     /// "page X of Y" footer.
     /// </summary>
-    public static FlowDocument ReportFlow(FontCollection fonts, int chapters = 25)
+    public static FlowDocument ReportFlow(FontCollection fonts, int chapters = 34)
     {
         var serif = fonts.Find("Liberation Serif")!;
         var sans = fonts.Find("Liberation Sans", 700)!;
