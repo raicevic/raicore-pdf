@@ -1448,9 +1448,9 @@ internal sealed partial class Paginator
     /// </summary>
     private void AddCellAnchors(TableLayout layout, double top, int start, int end, HashSet<CellLayout> anchored)
     {
-        foreach (var cell in layout.Cells)
+        foreach (var cell in layout.AnchoredCells) // Not every cell: this runs for every page a table is on.
         {
-            if (cell.Anchors.Count == 0 || cell.Grid.Row < start || cell.Grid.Row >= end || !anchored.Add(cell))
+            if (cell.Grid.Row < start || cell.Grid.Row >= end || !anchored.Add(cell))
             {
                 continue;
             }
