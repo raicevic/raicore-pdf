@@ -371,6 +371,11 @@ change at any time, and this section lists what the packages can do so far.
 - The component's `<html lang>`, `<title>` and `<meta>` elements become the document metadata as in RaiCore.Pdf.Html;
   the creator is `RaiCore.Pdf.Razor` unless the options or a `<meta name="generator">` name another.
 
+### Trimming and Native AOT
+- CI publishes the package smoke test trimmed and with Native AOT on Windows, Linux and macOS, runs it
+  (`tests/PackageSmoke/publish-and-run.sh`) and fails on trim or AOT warnings other than the known ones in
+  `Microsoft.AspNetCore.Components`. HarfBuzz's native library is published for the target runtime.
+
 ### Known limitations
 The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these.
 - Borders on inline elements are drawn solid, unless they have rounded corners.
@@ -420,6 +425,9 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   language, so it is not hyphenated automatically. Patterns for languages under the LPPL alone (such as Swedish) or
   the GPL (Czech) are not bundled, and decomposed (NFD) text may miss hyphenation points.
 - No synthetic bold or italic: a family without a bold or italic face uses its closest face as is.
+- Razor components under trimming and Native AOT: `Microsoft.AspNetCore.Components` reports four IL2072 warnings and
+  Microsoft does not support it with Native AOT; the smoke test's components work, but components found only by
+  name at run time can be trimmed away.
 - Pages: no `@page :nth()`. Percentages, `vw`/`vh` and auto margins resolve against the content width of the
   element's named page (that of a right page that is not the first; unnamed pages use the plain `@page` rules), so
   `:first`/`:left`/`:right` pages with another content width do not change them. Content continuing onto a page with

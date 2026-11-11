@@ -18,7 +18,8 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf.Docx`, `.Xlsx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ After 1.0 |
 
 All packages target .NET 10 and run on Windows, Linux and macOS (x64 and Arm64) with no native dependencies beyond
-HarfBuzz, which ships in the packages.
+HarfBuzz, which ships in the packages. Apps using them can be trimmed and published with Native AOT (see
+[below](#trimming-and-native-aot)).
 
 ## Installation
 
@@ -32,6 +33,24 @@ dotnet add package RaiCore.Pdf.Razor    # Razor components (includes RaiCore.Pdf
 
 Symbols and SourceLink will be published too, so you can step into the library code while debugging. Until 1.0,
 reference the projects from a clone of this repository, or build packages locally with `dotnet pack`.
+
+### Trimming and Native AOT
+
+The libraries are trim- and AOT-compatible (`IsAotCompatible`). CI publishes an app that uses every package with
+`PublishTrimmed` and with `PublishAot` on Windows, Linux and macOS, runs it and fails on unexpected trim warnings.
+Drawing, layout, HTML conversion (AngleSharp and AngleSharp.Css are AOT-annotated too), reading and importing PDFs
+and encryption publish without warnings, and HarfBuzz's native library is copied next to the executable.
+
+Razor components work as well (parameters, child components, cascading values, `@inject` and
+`OnInitializedAsync`), but Microsoft does not support Razor components with Native AOT, and
+`Microsoft.AspNetCore.Components` itself reports four trim warnings (IL2072, in `ComponentProperties.SetProperties`,
+`ComponentFactory.PerformPropertyInjection` and `CascadingParameterState.FindCascadingParameters`): it reflects over
+the component's runtime type. The component types are kept, because `RazorToPdf` and `RazorPdfRenderer` take the root
+component as an annotated (`[DynamicallyAccessedMembers]`) type and child components compile to annotated
+`OpenComponent<T>` calls; a component that is only found by name at run time (with `Type.GetType`) can be trimmed
+away. Test your components in the published app. If you build with `TreatWarningsAsErrors`, set
+`ILLinkTreatWarningsAsErrors` (trimming) or `IlcTreatWarningsAsErrors` (Native AOT) to `false` to keep these
+warnings from failing the publish.
 
 ## Quick start
 

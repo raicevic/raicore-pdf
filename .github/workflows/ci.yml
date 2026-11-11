@@ -75,3 +75,39 @@ jobs:
         with:
           name: smoke-test-pdfs
           path: smoke-output/*.pdf
+
+  # Publishes the package smoke test trimmed and with Native AOT and runs the binaries (README: "Trimming and Native
+  # AOT"). Not a required check; it takes a few minutes, so it runs on pull requests too.
+  aot:
+    name: aot (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      # Native AOT links with clang on Linux (Windows and macOS runners have Visual Studio and Xcode).
+      - name: Install the Native AOT prerequisites
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+      - name: Pack
+        run: dotnet pack --configuration Release --output artifacts
+
+      - name: Publish and run the package smoke test (trimmed and Native AOT)
+        shell: bash
+        run: tests/PackageSmoke/publish-and-run.sh
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aot-${{ matrix.os }}
+          path: |
+            smoke-publish/*.log
+            smoke-publish/*-pdfs/*.pdf
