@@ -107,11 +107,12 @@ public static class HtmlToPdf
     private static List<StyleSheetText> PrepareStyles(IDocument document, HtmlConverterOptions options)
     {
         var head = document.Head ?? document.DocumentElement.AppendElement(document.CreateElement("head"));
-        var cssTexts = new List<StyleSheetText> { new(UserAgentStyleSheet.Css, null) };
+        var userAgentCss = RewriteCss(UserAgentStyleSheet.Css);
+        var cssTexts = new List<StyleSheetText> { new(userAgentCss, null) };
         var linkedBases = new Dictionary<IElement, Uri?>();
 
         var userAgent = document.CreateElement("style");
-        userAgent.TextContent = UserAgentStyleSheet.Css;
+        userAgent.TextContent = userAgentCss;
         head.Prepend(userAgent);
 
         foreach (var link in document.QuerySelectorAll("link[rel~=stylesheet][href]").ToList())
@@ -150,7 +151,7 @@ public static class HtmlToPdf
 
         foreach (var style in document.QuerySelectorAll("style").Skip(1))
         {
-            if (style.TextContent is var text && LegacyBreaks.Rewrite(text) is var rewritten && rewritten != text)
+            if (style.TextContent is var text && RewriteCss(text) is var rewritten && rewritten != text)
             {
                 style.TextContent = rewritten;
             }
@@ -165,7 +166,7 @@ public static class HtmlToPdf
         foreach (var element in document.QuerySelectorAll("[style]"))
         {
             var inline = element.GetAttribute("style")!;
-            if (LegacyBreaks.Rewrite(inline) is var rewritten && rewritten != inline)
+            if (RewriteCss(inline) is var rewritten && rewritten != inline)
             {
                 element.SetAttribute("style", rewritten);
             }
@@ -174,13 +175,16 @@ public static class HtmlToPdf
         if (!string.IsNullOrWhiteSpace(options.UserStyleSheet))
         {
             var user = document.CreateElement("style");
-            user.TextContent = LegacyBreaks.Rewrite(options.UserStyleSheet);
+            user.TextContent = RewriteCss(options.UserStyleSheet);
             head.AppendChild(user);
             cssTexts.Add(new(options.UserStyleSheet, options.BaseUri));
         }
 
         return cssTexts;
     }
+
+    /// <summary>Rewrites CSS that AngleSharp would misread before it is parsed (see LegacyBreaks and LogicalSides).</summary>
+    private static string RewriteCss(string css) => LogicalSides.Rewrite(LegacyBreaks.Rewrite(css));
 
     private static Uri? ResolveUri(Uri? baseUri, string reference) =>
         Uri.TryCreate(reference, UriKind.Absolute, out var absolute) ? absolute

@@ -86,6 +86,7 @@ internal sealed partial class BoxBuilder
         if (!_styles.TryGetValue(element, out var style))
         {
             style = ComputedStyle.From(_window.GetComputedStyle(element), _rootFontSize, _viewport);
+            style = style with { ContainerRtl = element.ParentElement is { } parent ? Style(parent).Rtl : style.Rtl };
             var dir = element.GetAttribute("dir")?.Trim().ToLowerInvariant();
             if (dir == "auto" || (element.LocalName == "bdi" && dir is not ("ltr" or "rtl")))
             {
@@ -525,14 +526,8 @@ internal sealed partial class BoxBuilder
 
         Flush(collector, children);
         var (box, _) = BoxStyleFor(style with { Width = CssLength.Auto, Height = CssLength.Auto, MinHeight = CssLength.Auto, MaxHeight = CssLength.Auto }, containingWidth);
-        var alignment = (style.Margin[3].IsAuto, style.Margin[1].IsAuto) switch
-        {
-            (true, true) => TextAlignment.Center,
-            (true, false) => TextAlignment.Right,
-            _ => TextAlignment.Left,
-        };
         var blockStart = children.Count;
-        children.Add(new ImageBlock(image, width, height, box) { Alignment = alignment, Id = IdFor(element) });
+        children.Add(new ImageBlock(image, width, height, box) { Alignment = ShrinkToFitAlignment(style), Id = IdFor(element) });
         LinkBlocks(children, blockStart, collector.CurrentLink);
     }
 
@@ -588,6 +583,19 @@ internal sealed partial class BoxBuilder
     }
 
     /// <summary>
+    /// Where a block that shrinks to its content (a table, an image) goes in a wider containing block: auto margins
+    /// share the free space (<c>margin: 0 auto</c> centers it); otherwise it is on the containing block's start side,
+    /// the right when that is right to left (CSS 2.1 section 10.3.3).
+    /// </summary>
+    private static TextAlignment ShrinkToFitAlignment(ComputedStyle style) => (style.Margin[3].IsAuto, style.Margin[1].IsAuto) switch
+    {
+        (true, true) => TextAlignment.Center,
+        (true, false) => TextAlignment.Right,
+        (false, true) => TextAlignment.Left,
+        _ => style.ContainerRtl ? TextAlignment.Right : TextAlignment.Left,
+    };
+
+    /// <summary>
     /// The box style and the content width its children are built for, with percentages and auto margins resolved and
     /// the widths made border-box widths.
     /// </summary>
@@ -638,6 +646,12 @@ internal sealed partial class BoxBuilder
             else if (style.Margin[3].IsAuto)
             {
                 left = Math.Max(0, free);
+            }
+            else if (style.ContainerRtl && !style.Margin[1].IsAuto)
+            {
+                // Over-constrained: the end margin gives way, which in a right-to-left block is the left one. A box
+                // narrower than its containing block then sits on the right.
+                left += free;
             }
         }
 

@@ -73,6 +73,12 @@ internal sealed record ComputedStyle
     /// <summary>CSS <c>direction: rtl</c> (inherited).</summary>
     public bool Rtl { get; init; }
 
+    /// <summary>
+    /// The parent's <c>direction</c> is rtl (the root's own): the containing block's direction, which decides which side
+    /// a box narrower than it goes to.
+    /// </summary>
+    public bool ContainerRtl { get; init; }
+
     /// <summary>CSS <c>unicode-bidi</c> (not inherited).</summary>
     public CssUnicodeBidi UnicodeBidi { get; init; }
 
@@ -226,6 +232,14 @@ internal sealed record ComputedStyle
         CssLength[] Sides(string prefix, string suffix = "") =>
             [Length($"{prefix}-top{suffix}"), Length($"{prefix}-right{suffix}"), Length($"{prefix}-bottom{suffix}"), Length($"{prefix}-left{suffix}")];
 
+        // AngleSharp puts the logical sides of every element where they go when left to right; a right-to-left element
+        // takes its left and right sides from the cascade of the properties LogicalSides adds instead.
+        var rtl = Get("direction") == "rtl";
+        CssLength[] Horizontal(CssLength[] sides, string box) => rtl
+            ? [sides[0], RtlSide(box, "right"), sides[2], RtlSide(box, "left")]
+            : sides;
+        CssLength RtlSide(string box, string side) => Parse(Get(LogicalSides.Property(box, side)).Trim()) ?? CssLength.Zero;
+
         var color = CssValues.ParseColor(Get("color")) ?? PdfColor.Black;
         string[] sides = ["top", "right", "bottom", "left"];
         var borderWidth = sides.Select(side =>
@@ -251,7 +265,7 @@ internal sealed record ComputedStyle
                 "justify" => TextAlignment.Justify,
                 _ => TextAlignment.Start, // The initial value: follows the direction.
             },
-            Rtl = Get("direction") == "rtl",
+            Rtl = rtl,
             UnicodeBidi = Get("unicode-bidi") switch
             {
                 "embed" => CssUnicodeBidi.Embed,
@@ -274,8 +288,8 @@ internal sealed record ComputedStyle
             },
             TextTransform = Get("text-transform") is { Length: > 0 } transform ? transform : "none",
             FontFeatures = Get("font-feature-settings") is { Length: > 0 } features ? features : "normal",
-            Margin = Sides("margin"),
-            Padding = [.. Sides("padding").Select(p => p.NonNegative())],
+            Margin = Horizontal(Sides("margin"), "margin"),
+            Padding = [.. Horizontal(Sides("padding"), "padding").Select(p => p.NonNegative())],
             BorderWidth = borderWidth,
             BorderColor = borderColor,
             BorderStyle = borderStyle,

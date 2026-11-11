@@ -95,6 +95,16 @@ internal static class TableLayouter
         }
 
         columns = Math.Max(columns, table.ColumnWidths.Count);
+        if (table.RightToLeft)
+        {
+            // A right-to-left table's first column is on the right (CSS 2.1 section 17.5): the grid is mirrored, so
+            // the column widths, collapsed borders and placement all work on it unchanged.
+            for (var i = 0; i < cells.Count; i++)
+            {
+                cells[i] = cells[i] with { Column = columns - cells[i].Column - cells[i].ColumnSpan };
+            }
+        }
+
         var slots = new GridCell?[rows, Math.Max(1, columns)];
         foreach (var cell in cells)
         {
@@ -209,6 +219,13 @@ internal static class TableLayouter
             padding.Bottom + (MaxH(cell.Row + cell.RowSpan) / 2));
     }
 
+    /// <summary>The width specification of a grid column, which counts from the right in a right-to-left table.</summary>
+    private static TableWidth? ColumnWidth(TableBlock table, int columns, int column)
+    {
+        var index = table.RightToLeft ? columns - 1 - column : column;
+        return index < table.ColumnWidths.Count ? table.ColumnWidths[index] : null;
+    }
+
     /// <summary>Per-column min-content and max-content widths (cell borders and padding included).</summary>
     private static (double[] Min, double[] Max, double?[] Percent, bool[] Fixed) ColumnIntrinsics(
         TableBlock table, List<GridCell> cells, int columns, (GridLine[,] H, GridLine[,] V)? collapsed)
@@ -217,9 +234,9 @@ internal static class TableLayouter
         var max = new double[columns];
         var percent = new double?[columns];
         var isFixed = new bool[columns];
-        for (var c = 0; c < Math.Min(columns, table.ColumnWidths.Count); c++)
+        for (var c = 0; c < columns; c++)
         {
-            switch (table.ColumnWidths[c])
+            switch (ColumnWidth(table, columns, c))
             {
                 case { IsPercent: true } p:
                     percent[c] = p.Value;
@@ -357,9 +374,9 @@ internal static class TableLayouter
     private static double[] FixedWidths(TableBlock table, List<GridCell> cells, int columns, double available)
     {
         var widths = new double?[columns];
-        for (var c = 0; c < Math.Min(columns, table.ColumnWidths.Count); c++)
+        for (var c = 0; c < columns; c++)
         {
-            widths[c] = table.ColumnWidths[c]?.Resolve(available);
+            widths[c] = ColumnWidth(table, columns, c)?.Resolve(available);
         }
 
         foreach (var cell in cells.Where(c => c.Row == 0 && c.Cell.Width is not null))

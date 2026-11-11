@@ -69,6 +69,11 @@ change at any time, and this section lists what the packages can do so far.
   numbers keep their order. An inline element's box or a link split by reordering gets one part per visual piece,
   with the element's edges where CSS 2.1 section 8.6 puts them (`BeginInline`'s `direction`). Text is still drawn in
   logical order, so extraction reads it as written. `TextShaper.Shape` takes an optional direction.
+- Right-to-left tables and flex containers: `TableBlock.RightToLeft` puts the first column (of the cells, spans and
+  `ColumnWidths`) on the right, mirroring the grid so collapsed borders and splitting work unchanged;
+  `FlexBlock.RightToLeft` starts rows on the right (`RowReverse` then runs left to right) and the cross axis of
+  columns on the right (alignment and wrapped lines). In a reversed or right-to-left row, the item margin on the
+  main-start side (the right one) now comes first.
 - Block layout and pagination: the box model, margin collapsing, orphans and widows, forced and avoided page breaks,
   boxes sliced across pages, page decorators for headers and footers. A paragraph whose orphans and widows leave no
   possible break needs all its lines at the bottom of a page before it starts there.
@@ -163,6 +168,12 @@ change at any time, and this section lists what the packages can do so far.
 - `direction`, `unicode-bidi` (`embed`, `isolate`, `bidi-override`, `isolate-override`, `plaintext`) and the `dir`
   attribute (`ltr`, `rtl`, `auto`), `<bdi>` and `<bdo>`: right-to-left paragraphs start on the right, inline elements
   become the matching bidi embeddings, overrides and isolates, and `text-align: start`/`end` follow the direction.
+  Right-to-left tables and flex containers run right to left; a box narrower than its containing block (a table or
+  image that shrinks to fit, or a block with a `width`) goes to the containing block's start side, the right when
+  that is right to left (CSS 2.1 section 10.3.3). `margin-inline-start`/`-end`, `margin-inline`,
+  `padding-inline-start`/`-end` and `padding-inline` follow each element's direction, through the cascade (AngleSharp
+  maps them as if everything were left to right, so they are carried in custom properties); lists and `<dd>` are
+  indented with them, so right-to-left lists are indented on the right with their markers there.
 - `height`, `min-height` and `max-height`; percentage heights resolve against definite ancestor heights, starting
   with the page area, and `vh` units are the page area (to within a pixel).
 - `calc()`, `min()`, `max()` and `clamp()` in every length (sizes, margins, padding, `flex-basis`, gaps, `font-size`,
@@ -208,9 +219,9 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
 - `opacity` on inline elements (other than images and inline boxes) and on table rows and cells is ignored; where
   translucent collapsed table borders cross, they are painted twice. PDF/A-1 forbids transparency (PDF/A is not
   written yet).
-- Right-to-left tables, flex rows and list indents (columns and items still run left to right, and list padding stays
-  on the left); `unicode-bidi: isolate-override` in author styles (AngleSharp drops it; `<bdo>` works). No
-  hyphenation.
+- `unicode-bidi: isolate-override` in author styles (AngleSharp drops it; `<bdo>` works). The logical border
+  properties (`border-inline-start` and the like) and `inset-inline` are left to right; in a right-to-left element a
+  logical margin or padding written with `var()` is 0. No hyphenation.
 - No synthetic bold or italic: a family without a bold or italic face uses its closest face as is.
 - `:first`/`:left`/`:right` cannot change page margins; no named pages. Bookmark labels cannot use counters, and inline
   elements cannot be bookmarks.

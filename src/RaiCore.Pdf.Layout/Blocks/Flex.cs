@@ -237,6 +237,14 @@ public sealed class FlexBlock : Block
     /// <summary>The main axis.</summary>
     public FlexDirection Direction { get; init; }
 
+    /// <summary>
+    /// The container's inline direction is right to left (CSS <c>direction: rtl</c>): a row starts on the right (so
+    /// <see cref="FlexDirection.Row"/> runs right to left and <see cref="FlexDirection.RowReverse"/> left to right), and
+    /// the cross axis of a column starts on the right (<see cref="FlexAlignment.FlexStart"/> aligns items to the right,
+    /// and wrapped columns are placed from right to left).
+    /// </summary>
+    public bool RightToLeft { get; init; }
+
     /// <summary>Line wrapping.</summary>
     public FlexWrap Wrap { get; init; }
 

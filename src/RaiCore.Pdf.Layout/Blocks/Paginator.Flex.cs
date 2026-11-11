@@ -138,6 +138,7 @@ internal sealed partial class Paginator
         var inputs = items.Select(item => RowInput(item, width)).ToList();
         var lines = new List<RowLine>();
         var gap = flex.ColumnGap;
+        var mirrored = (flex.Direction == FlexDirection.RowReverse) != flex.RightToLeft;
         foreach (var (start, end) in FlexAlgorithm.BreakLines(inputs, width, gap, flex.Wrap != FlexWrap.NoWrap))
         {
             var count = end - start;
@@ -162,9 +163,12 @@ internal sealed partial class Paginator
                 var item = items[start + i];
                 var content = item.Content;
                 var margin = content.Style.Margin;
-                var leftMargin = (Auto(item) & AutoMargins.Left) != 0 ? autoMargin : margin.Left;
-                var x = starts[i] + leftMargin;
-                if (flex.Direction == FlexDirection.RowReverse)
+                // Items are placed from the main-start edge, which is on the right of a reversed row or of a row in a
+                // right-to-left container; the margin on that side comes first.
+                var startSide = mirrored ? AutoMargins.Right : AutoMargins.Left;
+                var startMargin = (Auto(item) & startSide) != 0 ? autoMargin : mirrored ? margin.Right : margin.Left;
+                var x = starts[i] + startMargin;
+                if (mirrored)
                 {
                     x = width - x - sizes[i];
                 }
@@ -403,7 +407,9 @@ internal sealed partial class Paginator
 
         boxWidth = style.ClampWidth(boxWidth);
         var free = available - boxWidth;
-        var reverse = flex.Wrap == FlexWrap.WrapReverse;
+
+        // The cross axis starts on the right in a right-to-left container, and wrap-reverse swaps its start and end.
+        var reverse = (flex.Wrap == FlexWrap.WrapReverse) != flex.RightToLeft;
         var offset = auto switch
         {
             AutoMargins.Left | AutoMargins.Right => free / 2,
@@ -476,7 +482,7 @@ internal sealed partial class Paginator
             return widest;
         }).ToList();
 
-        var reverseLines = flex.Wrap == FlexWrap.WrapReverse;
+        var reverseLines = (flex.Wrap == FlexWrap.WrapReverse) != flex.RightToLeft;
         var (lineStarts, extra) = wrap
             ? AlignLines(lineWidths, width, flex.ColumnGap, flex.AlignContent, reverse: false)
             : ([0.0], 0.0);

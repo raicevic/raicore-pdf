@@ -67,6 +67,7 @@ internal sealed partial class BoxBuilder
         return new FlexBlock(box, items)
         {
             Direction = style.FlexDirection,
+            RightToLeft = style.Rtl,
             Wrap = style.FlexWrap,
             JustifyContent = style.JustifyContent,
             AlignItems = style.AlignItems,
