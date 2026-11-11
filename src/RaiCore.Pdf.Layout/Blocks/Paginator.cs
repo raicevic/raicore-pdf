@@ -57,7 +57,25 @@ internal sealed record PaginationResult(
 /// keeps it with the start of the next one, and boxes split across pages are sliced (top border and padding on
 /// the first fragment, bottom ones on the last).
 /// </summary>
-/// <remarks>All y values here are distances from the top of the page.</remarks>
+/// <remarks>
+/// <para>
+/// Coordinates. All y values here are distances from the top of the page, in that page's own geometry: content starts
+/// at its top margin (<see cref="ContentTop"/>, <see cref="PageTop"/>) and ends above its bottom margin
+/// (<see cref="PageBottom"/>), which may differ per page (<see cref="FlowDocument.PageSetupResolver"/>).
+/// </para>
+/// <para>
+/// X values are layout coordinates, not page coordinates: they are measured as if every page had the left margin of the
+/// document's <see cref="FlowDocument.Setup"/>. The top-level blocks start at <c>Setup.Margins.Left</c> and the content
+/// area of page <c>p</c> spans <c>[Setup.Margins.Left, Setup.Margins.Left + ContentWidthOf(p))</c>.
+/// <see cref="FlowDocument.RenderTo"/> shifts each page's drawing operations by
+/// <c>page.Margins.Left - Setup.Margins.Left</c> (a canvas transform, which links follow), so a page with another left
+/// margin (e.g. mirrored :left/:right margins) moves its content without relaying it out. Placements and anchors keep
+/// layout x values. To convert: page x = layout x + <c>_frames[p].Setup.Margins.Left - _setup.Margins.Left</c>.
+/// Anything recorded in page coordinates (e.g. areas that later content must avoid on a page) must be converted with
+/// that per-page offset; with a single setup (no resolver) the offset is always 0. A static column
+/// (<see cref="LayoutStatic"/>) is never shifted.
+/// </para>
+/// </remarks>
 internal sealed partial class Paginator
 {
     private const double Epsilon = 1e-6;
