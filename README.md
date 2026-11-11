@@ -73,6 +73,9 @@ own engine. Supported today:
   Nynorsk) are bundled, from [hyph-utf8](https://github.com/hyphenation/tex-hyphen) under their own permissive
   licences (MIT, BSD or similar, see
   [the list](src/RaiCore.Pdf.Layout/Text/Hyphenation/Patterns/LICENSES.md)).
+- Overflow: `overflow: hidden`/`clip`/`auto`/`scroll` clip the content to the padding box (with rounded corners), also
+  floats and positioned children and on every page of a box split across pages; a clipped box of a fixed height does
+  not make pages for what it hides. `text-overflow: ellipsis`. A fixed height taller than a page continues on the next.
 - Backgrounds: `background-image` with `url()` (raster and SVG) and `linear-gradient`/`radial-gradient` (also
   repeating ones, translucent stops, toward corners), several layers, `background-repeat` (also `space` and `round`),
   `-position`, `-size` (`cover`, `contain`, lengths), `-origin` and `-clip`, and the `background` shorthand. Boxes split
@@ -210,8 +213,8 @@ Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowD
 before rendering, e.g. to set your own page decorator.
 
 Not yet: grid layout (rendered as blocks), `@page :nth()` and document counters in margin
-boxes (use `string-set`). Content taller than a fixed `height` overflows
-the box (`overflow: hidden` is not supported yet).
+boxes (use `string-set`). `overflow` other than `visible` clips to the padding box (rounded corners included), and
+`text-overflow: ellipsis` ends a line that does not fit with "…".
 
 ### Razor to PDF
 

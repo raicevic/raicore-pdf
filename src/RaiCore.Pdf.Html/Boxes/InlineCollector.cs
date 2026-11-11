@@ -227,6 +227,7 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
                 : ParagraphDirection.LeftToRight,
             FirstLineIndent = indent,
             BreakLongWords = false,
+            Ellipsis = blockStyle.TextOverflowEllipsis && blockStyle.ClipOverflow,
         };
 
         // An override on the block applies to all of its inline content.

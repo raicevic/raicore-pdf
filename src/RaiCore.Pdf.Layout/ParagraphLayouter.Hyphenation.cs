@@ -116,6 +116,10 @@ internal static partial class ParagraphLayouter
     private static string HyphenText(TextStyle style) =>
         style.HyphenateCharacter ?? (style.Fonts[0].HasGlyph(0x2010) ? "\u2010" : "-");
 
+    /// <summary>The width of a text shaped in the style's fonts with its letter spacing.</summary>
+    private static double ShapedWidth(string text, TextStyle style) =>
+        TextShaper.Shape(text, style.Fonts, ShapingFor(style)).Runs.Sum(run => Spaced(run, style).Sum(g => g.Advance)) * style.FontSize;
+
     /// <summary>The width of <see cref="HyphenText"/>, shaped in the style's fonts with its letter spacing.</summary>
     private static double HyphenWidth(TextStyle style) => HyphenText(style) is { Length: > 0 } hyphen
         ? TextShaper.Shape(hyphen, style.Fonts, ShapingFor(style)).Runs.Sum(run => Spaced(run, style).Sum(g => g.Advance)) * style.FontSize

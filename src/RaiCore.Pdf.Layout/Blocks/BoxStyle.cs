@@ -311,6 +311,13 @@ public sealed record BoxStyle
     public ClearSide Clear { get; init; }
 
     /// <summary>
+    /// The block's content is clipped to its padding box (CSS <c>overflow</c> other than <c>visible</c>: on paper
+    /// <c>hidden</c>, <c>clip</c>, <c>auto</c> and <c>scroll</c> all clip), with the inner rounded corners. A box with a fixed
+    /// <see cref="Height"/> that fits on the page is laid out as one piece, so content it hides does not start new pages.
+    /// </summary>
+    public bool ClipOverflow { get; init; }
+
+    /// <summary>
     /// The block starts a new formatting context for floats (CSS <c>display: flow-root</c>, or <c>overflow</c> other than
     /// <c>visible</c>): it grows to contain the floats inside it, floats outside do not affect its content, and it is
     /// itself placed beside earlier floats like a table. Floats, flex items and table cells always do this.

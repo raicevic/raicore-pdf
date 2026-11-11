@@ -126,6 +126,12 @@ public sealed class Paragraph
     /// </summary>
     public bool BreakLongWords { get; set; }
 
+    /// <summary>
+    /// A line too wide for its room is cut before the last character that still fits with an ellipsis ("…"), which ends
+    /// it instead (CSS <c>text-overflow: ellipsis</c>, usually with <c>white-space: nowrap</c> in a box that clips).
+    /// </summary>
+    public bool Ellipsis { get; set; }
+
     /// <summary>The spans, in order.</summary>
     public IReadOnlyList<ParagraphSpan> Spans => _spans;
 

@@ -212,6 +212,33 @@ internal sealed partial class Paginator
         return (paginator.Y, paginator._pages[0].Grouped(), paginator._anchors);
     }
 
+    /// <summary>
+    /// Lays out a block that clips its overflow and has a fixed height without page breaks, and draws it at the current
+    /// position, which moves below it.
+    /// </summary>
+    private void PlaceClipped(Block block, double x, double width, double height)
+    {
+        var (boxHeight, content, anchors) = LayoutAbsoluteBox(block, width, height);
+        var (page, top) = (PageIndex, Y);
+        _pages[page].Add((canvas, pageHeight) =>
+        {
+            canvas.SaveState().Transform(1, 0, 0, 1, x, 0);
+            foreach (var draw in content)
+            {
+                draw(canvas, pageHeight - top);
+            }
+
+            canvas.RestoreState();
+        });
+        _placements.Add(new Placement(page, block, top, top + boxHeight, -1, -1, x, width));
+        foreach (var anchor in anchors)
+        {
+            _anchors.Add(anchor with { Page = page, Top = top + anchor.Top, Left = x + anchor.Left });
+        }
+
+        Y = top + boxHeight;
+    }
+
     /// <summary>Places the fixed blocks in the page area of every page, as browsers print them.</summary>
     private void PlaceFixed()
     {

@@ -146,6 +146,13 @@ change at any time, and this section lists what the packages can do so far.
   transparency group per page it is on, also in flex items, table cells and inline boxes. `InlineImage.Opacity` (and
   the `opacity` argument of `Paragraph.AddImage`) does the same for an image in a line. Translucent dashed and dotted
   borders are painted once where adjacent sides' dashes meet in a corner.
+- Overflow (`BoxStyle.ClipOverflow`): a block's content (also its floats and positioned children, which paint in later
+  layers) is clipped to its padding box, with the inner rounded corners, on each page of a box split across pages. A
+  clipped box of a fixed height that fits on the page is laid out in one piece, so content it hides makes no pages; a
+  taller one ends at its height. Drawing scopes now nest clips with opacity groups. `Paragraph.Ellipsis` cuts a line
+  too wide for its room at the last grapheme where "…" still fits (CSS `text-overflow: ellipsis`).
+- A fixed height (or min-height) that reaches below the page now continues on the next pages, splitting the box,
+  instead of running off the page.
 - Background layers (`BoxStyle.BackgroundLayers`): images (`ImageBackground`) and gradients (`LinearGradient` at an
   angle or toward a corner, `RadialGradient` with circle or ellipse, extent keywords or radii and a center; both
   repeating if wanted) over the background color, the first on top. Each layer is sized (`BackgroundSize`: auto,
@@ -268,6 +275,7 @@ change at any time, and this section lists what the packages can do so far.
   `hyphenate-limit-chars`, with the language from the nearest `lang` (or `xml:lang`) attribute; the language also
   reaches HarfBuzz for localized glyph forms. Text with `white-space: nowrap` or `pre` is not hyphenated, not even at
   soft hyphens.
+- `overflow` (`hidden`, `clip`, `auto`, `scroll`: all clip on paper) and `text-overflow: ellipsis` (in a box that clips).
 - `background-image` (`url()`, `linear-gradient()`, `radial-gradient()` and their repeating forms),
   `background-repeat`, `-position` (one to four values), `-size`, `-origin`, `-clip` and multiple layers. The
   `background` shorthand is split into its longhands before AngleSharp.Css parses it (it throws on several layers and
@@ -308,7 +316,9 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   keeps the static position of its paragraph's start; absolutely positioned children of a flex container are laid out
   as flex items; inside a table cell the containing block of an absolute block without a positioned ancestor in the
   cell is the cell's content.
-- Grid (rendered as blocks); `overflow: hidden` (it contains floats but does not clip yet).
+- Grid (rendered as blocks). `overflow` clips both axes, even when only one is set; `text-overflow` takes only `clip`
+  and `ellipsis` (no strings), at the line's end; content hidden in a clipped box taller than a page may still add
+  pages at the end of the document.
 - Backgrounds: `background-attachment` is ignored (`fixed` acts as `scroll`); color hints in gradients are dropped
   (the colors blend evenly); `image-set()`, `conic-gradient()` and `cross-fade()` are not supported; inline elements
   (a `span` in text) and collapsed table cells paint only their background color. `calc()` with percentages in a

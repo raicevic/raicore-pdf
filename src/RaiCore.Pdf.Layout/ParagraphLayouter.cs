@@ -133,11 +133,37 @@ internal static partial class ParagraphLayouter
             return available;
         }
 
+        int[]? graphemes = null;
         foreach (var (start, end, hard, hyphenate) in BreakIntoLines(paragraph, text, AvailableFor, Measure, spans, spanStarts))
         {
             var isLast = end >= text.Length;
-            var line = BuildLine(paragraph, text, spans, spanStarts, start, end, hyphenate, available, top, lines.Count == 0,
-                justify: paragraph.Alignment == TextAlignment.Justify && !isLast && !hard, boxes, bidi, shift);
+            var (lineEnd, ellipsis) = (end, (string?)null);
+            if (paragraph.Ellipsis && Measure(start, TrimEnd(text, start, end)) > available + Epsilon)
+            {
+                // Cut at the last grapheme boundary where the text and the ellipsis fit (keeping at least one grapheme).
+                var style = StyleAt(spans, spanStarts, Math.Max(start, end - 1));
+                ellipsis = style.Fonts[0].HasGlyph(0x2026) ? "\u2026" : "...";
+                var room = available - ShapedWidth(ellipsis, style);
+                graphemes ??= StringInfo.ParseCombiningCharacters(text);
+                lineEnd = -1;
+                foreach (var g in graphemes.Append(text.Length))
+                {
+                    if (g <= start)
+                    {
+                        continue;
+                    }
+
+                    if (g > end || (lineEnd > 0 && Measure(start, TrimEnd(text, start, g)) > room + Epsilon))
+                    {
+                        break;
+                    }
+
+                    lineEnd = g; // The first grapheme always stays, even when nothing fits beside the ellipsis.
+                }
+            }
+
+            var line = BuildLine(paragraph, text, spans, spanStarts, start, lineEnd, hyphenate && ellipsis is null, available, top, lines.Count == 0,
+                justify: paragraph.Alignment == TextAlignment.Justify && !isLast && !hard && ellipsis is null, boxes, bidi, shift, ellipsis);
             lines.Add(line);
             top += line.Height;
         }
@@ -326,7 +352,7 @@ internal static partial class ParagraphLayouter
     private static LineLayout BuildLine(
         Paragraph paragraph, string text, IReadOnlyList<ParagraphSpan> spans, int[] spanStarts,
         int start, int end, bool hyphenate, double available, double top, bool firstLine, bool justify,
-        Dictionary<InlineBox, InlineBoxFragment> boxes, BidiText bidi, double shift = 0)
+        Dictionary<InlineBox, InlineBoxFragment> boxes, BidiText bidi, double shift = 0, string? suffix = null)
     {
         var contentEnd = TrimEnd(text, start, end);
         var lineLevels = bidi.LineLevels(start, contentEnd);
@@ -370,9 +396,9 @@ internal static partial class ParagraphLayouter
             {
                 var (a, b, level) = segments[k];
                 var piece = text[a..b];
-                if (hyphenate && isLastPiece && k == segments.Count - 1)
+                if (isLastPiece && k == segments.Count - 1)
                 {
-                    piece += HyphenText(style);
+                    piece += hyphenate ? HyphenText(style) : suffix ?? string.Empty; // A hyphen or an ellipsis ends the line.
                 }
 
                 var direction = (level & 1) == 1 ? TextDirection.RightToLeft : TextDirection.LeftToRight;

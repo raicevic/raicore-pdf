@@ -32,7 +32,8 @@ images, styled inline or as blocks). CSS counters (`counter-reset`/`counter-incr
 `dir` attribute. Headings become PDF bookmarks, customized with `bookmark-level`,
 `bookmark-label` and `bookmark-state`. Links (`<a href>`) are clickable, to URIs and to elements by `#id`.
 
-Floats and `clear`, with text flowing around floats and `display: flow-root`/`overflow` containing them.
+Floats and `clear`, with text flowing around floats and `display: flow-root`/`overflow` containing them. `overflow`
+clips to the padding box, and `text-overflow: ellipsis` ends lines that do not fit.
 
 Positioning: `relative`, `absolute` and `fixed` (on every page), with `z-index`. Background images and gradients
 (`linear-gradient`, `radial-gradient`, repeating, several layers) with repeat, position, size, origin and clip.
