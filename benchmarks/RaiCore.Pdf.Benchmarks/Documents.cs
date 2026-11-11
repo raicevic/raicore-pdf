@@ -249,4 +249,19 @@ public static class Documents
         };
         return flow;
     }
+
+    /// <summary>Draws 1,000 pages of 60 lines of text with the canvas, calling <paramref name="afterPage"/> after each.</summary>
+    public static void DrawPages(PdfDocument document, PdfFont font, Action<PdfDocument>? afterPage = null, int pages = 1000)
+    {
+        for (var p = 0; p < pages; p++)
+        {
+            var page = document.AddPage(PdfPageSize.A4);
+            for (var line = 0; line < 60; line++)
+            {
+                page.Canvas.DrawText(Text((p * 60) + line, 12), font, 10, 50, page.Height - 50 - (line * 12));
+            }
+
+            afterPage?.Invoke(document);
+        }
+    }
 }
