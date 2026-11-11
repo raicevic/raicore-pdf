@@ -22,6 +22,8 @@ These files are in the repository but in no package.
 | Unicode test data: `BidiTest.txt`, `BidiCharacterTest.txt`, `LineBreakTest.txt` (Unicode 18.0.0, gzipped) | `tests/RaiCore.Pdf.Tests/Fixtures/Unicode` | [Unicode License v3](tests/RaiCore.Pdf.Tests/Fixtures/Unicode/UNICODE-LICENSE.txt) |
 | PngSuite by Willem van Schaik | `tests/RaiCore.Pdf.Tests/Fixtures/PngSuite` | [PngSuite license](tests/RaiCore.Pdf.Tests/Fixtures/PngSuite/PngSuite.LICENSE) (free to use, copy, modify and distribute) |
 | Noto Sans Arabic (a subset) | `tests/RaiCore.Pdf.Tests/Fixtures/NotoSansArabic-Subset.ttf` | [SIL Open Font License 1.1](tests/RaiCore.Pdf.Tests/Fixtures/NotoSansArabic-OFL.txt) |
+| Source Sans 3 and Source Sans 3 VF (subsets, renamed RaiCore Sans3 because "Source" is a Reserved Font Name) | `tests/RaiCore.Pdf.Tests/Fixtures/RaiCoreSans3-Subset.otf`, `RaiCoreSans3VF-Subset.otf` | [SIL Open Font License 1.1](tests/RaiCore.Pdf.Tests/Fixtures/RaiCoreSans3-OFL.txt) |
+| Noto Sans JP (a subset) | `tests/RaiCore.Pdf.Tests/Fixtures/NotoSansJP-Subset.otf` | [SIL Open Font License 1.1](tests/RaiCore.Pdf.Tests/Fixtures/NotoSansCJK-OFL.txt) |
 | Liberation Sans as WOFF and WOFF2 | `tests/RaiCore.Pdf.Tests/Fixtures/LiberationSans-Regular.woff`, `.woff2` | [SIL Open Font License 1.1](tests/RaiCore.Pdf.Tests/Fixtures/LiberationSans-OFL.txt) |
 
 The other test fixtures (the `RaiCoreTest*` fonts, and the BMP, WebP, JPEG, GIF, SVG and PDF files) are made for this

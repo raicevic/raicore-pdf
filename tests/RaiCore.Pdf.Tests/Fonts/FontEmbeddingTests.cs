@@ -91,7 +91,7 @@ public partial class FontEmbeddingTests
     }
 
     [Fact]
-    public void Embeds_cff_fonts_as_opentype()
+    public void Embeds_cff_fonts_as_cid_keyed_cff_subsets()
     {
         var font = PdfFont.Load(Fixtures.Path("RaiCoreTestCFF-Regular.otf"));
         var doc = new PdfDocument();
@@ -101,7 +101,9 @@ public partial class FontEmbeddingTests
         var text = Encoding.Latin1.GetString(pdf);
         Assert.Contains("/Subtype /CIDFontType0", text, StringComparison.Ordinal);
         Assert.Contains("/FontFile3", text, StringComparison.Ordinal);
-        Assert.Contains("/Subtype /OpenType", text, StringComparison.Ordinal);
+        Assert.Contains("/Subtype /CIDFontType0C", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("/CIDToGIDMap", text, StringComparison.Ordinal);
+        Assert.Matches(@"/BaseFont /[A-Z]{6}\+RaiCoreTestCFF-Regular\b", text);
 
         // "A" is a filled box from x = 4 to 56 at 100 pt (width 600, inset 40), 70 pt tall.
         using var bitmap = Conversion.ToImage(pdf, page: 0, options: new RenderOptions(Dpi: 72));
@@ -146,7 +148,7 @@ public partial class FontEmbeddingTests
         Assert.Equal(0.6, font.MeasureText("A", 1), 3); // Measuring is still allowed.
     }
 
-    private static void SetFsType(byte[] font, ushort fsType)
+    internal static void SetFsType(byte[] font, ushort fsType)
     {
         int numTables = BinaryPrimitives.ReadUInt16BigEndian(font.AsSpan(4));
         for (var i = 0; i < numTables; i++)

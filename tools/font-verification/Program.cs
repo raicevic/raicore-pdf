@@ -13,6 +13,7 @@ var getGid = otType.GetMethod("GetGlyphId")!;
 var getAdv = otType.GetMethod("GetAdvanceWidth")!;
 var mapped = otType.GetMethod("GetMappedCodePoints")!;
 var subsetter = asm.GetType("RaiCore.Pdf.Fonts.OpenType.TrueTypeSubsetter")!.GetMethod("Subset")!;
+var cffSubsetter = asm.GetType("RaiCore.Pdf.Fonts.OpenType.Cff.CffSubsetter")!.GetMethod("Subset")!;
 var woff2 = asm.GetType("RaiCore.Pdf.Fonts.OpenType.Woff2")!.GetMethod("Decode")!;
 var woff = asm.GetType("RaiCore.Pdf.Fonts.OpenType.Woff")!.GetMethod("Decode")!;
 
@@ -40,14 +41,30 @@ foreach (var file in files)
                 map[cp] = [gid, (int)getAdv.Invoke(font, [(int)gid])!];
             }
 
-            string? subsetPath = null;
+            string? subsetPath = null, cffSubset = null, cffSubsetError = null;
+            var sample = map.Values.Select(v => v[0]).Distinct().Where((_, k) => k % 7 == 0).Take(200).ToList();
             if (P(font, "Outlines")!.ToString() == "TrueType")
             {
-                var sample = map.Values.Select(v => v[0]).Distinct().Where((_, k) => k % 7 == 0).Take(200).ToList();
                 var subset = (byte[])subsetter.Invoke(null, [font, sample.Select(g => (int)g)])!;
                 subsetPath = Path.Combine(outDir, "subsets", $"{ok}.ttf");
                 File.WriteAllBytes(subsetPath, subset);
                 subsetPath += "|" + string.Join(",", sample);
+            }
+            else
+            {
+                // CFF/CFF2: a desubroutinized subset (the default) and one with subroutines kept; both bare CFF.
+                try
+                {
+                    var gids = sample.Select(g => (int)g).ToList();
+                    var basePath = Path.Combine(outDir, "subsets", $"{ok}");
+                    File.WriteAllBytes(basePath + ".cff", (byte[])cffSubsetter.Invoke(null, [font, gids, false])!);
+                    File.WriteAllBytes(basePath + ".subrs.cff", (byte[])cffSubsetter.Invoke(null, [font, gids, true])!);
+                    cffSubset = basePath + "|" + string.Join(",", gids);
+                }
+                catch (TargetInvocationException ex)
+                {
+                    cffSubsetError = ex.InnerException!.GetType().Name + ": " + ex.InnerException.Message;
+                }
             }
 
             output.WriteLine(JsonSerializer.Serialize(new
@@ -55,6 +72,7 @@ foreach (var file in files)
                 file, face = i, family = P(font, "FamilyName"), ps = P(font, "PostScriptName"),
                 upem = P(font, "UnitsPerEm"), numGlyphs = P(font, "NumGlyphs"), weight = P(font, "WeightClass"),
                 italic = P(font, "IsItalic"), outlines = P(font, "Outlines")!.ToString(), subset = subsetPath,
+                cffSubset, cffSubsetError,
                 map = map.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value),
             }));
             ok++;

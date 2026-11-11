@@ -434,8 +434,10 @@ PdfFont heading = fonts.Find("Arial", weight: 700)!;           // → Liberation
 PdfFont body = fonts.Find(["Inter", "Helvetica", "sans-serif"])!; // first available family
 ```
 
-Fonts with CFF outlines are embedded whole for now; CFF subsetting comes later. Fonts whose license forbids
-embedding are rejected.
+Fonts with CFF or CFF2 outlines (`.otf`) are subset too: the used glyphs are embedded as a compact CID-keyed CFF
+font, with subroutines inlined (which compresses better than subroutinized charstrings), and variable CFF2 fonts are
+embedded at their default instance. Fonts whose license asks not to be subset are embedded whole, and fonts whose
+license forbids embedding are rejected.
 
 ### Images
 

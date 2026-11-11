@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using RaiCore.Pdf.Fonts.OpenType;
+using RaiCore.Pdf.Fonts.OpenType.Cff;
 using RaiCore.Pdf.IO;
 using RaiCore.Pdf.Objects;
 
@@ -16,19 +17,26 @@ internal static class CidFontWriter
     public static PdfReference Write(PdfFileWriter writer, OpenTypeFont font, FontUsage usage)
     {
         var isTrueType = font.Outlines == OutlineFormat.TrueType;
-        var subset = isTrueType && !font.NoSubsetting;
-        var glyphIds = subset ? usage.Glyphs.Keys : Enumerable.Range(0, font.NumGlyphs);
+        var glyphIds = font.NoSubsetting ? Enumerable.Range(0, font.NumGlyphs) : usage.Glyphs.Keys;
 
         PdfStreamObject fontFile;
+        var subset = !font.NoSubsetting;
         if (isTrueType)
         {
             var program = TrueTypeSubsetter.Subset(font, glyphIds);
             fontFile = PdfStreamObject.CreateCompressed(program);
             fontFile.Dictionary["Length1"] = new PdfInteger(program.Length);
         }
+        else if (subset && TrySubsetCff(font, glyphIds) is { } cff)
+        {
+            // A bare CID-keyed CFF whose charset maps the kept glyphs to their original glyph IDs as CIDs.
+            fontFile = PdfStreamObject.CreateCompressed(cff);
+            fontFile.Dictionary["Subtype"] = new PdfName("CIDFontType0C");
+        }
         else
         {
-            // CFF outlines: embed the whole OpenType font (CFF subsetting comes later).
+            // The font asks not to be subset, or its CFF uses features the subsetter does not handle: embed it whole.
+            subset = false;
             fontFile = PdfStreamObject.CreateCompressed(ExtractFace(font));
             fontFile.Dictionary["Subtype"] = new PdfName("OpenType");
         }
@@ -165,6 +173,19 @@ internal static class CidFontWriter
 
         cmap.Append("endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n");
         return Encoding.ASCII.GetBytes(cmap.ToString());
+    }
+
+    /// <summary>The subset CFF font program, or null when the CFF cannot be subset (it is then embedded whole).</summary>
+    private static byte[]? TrySubsetCff(OpenTypeFont font, IEnumerable<int> glyphIds)
+    {
+        try
+        {
+            return CffSubsetter.Subset(font, glyphIds);
+        }
+        catch (Exception ex) when (ex is FontFormatException or NotSupportedException)
+        {
+            return null;
+        }
     }
 
     /// <summary>A standalone SFNT for one face (needed when the font came from a collection).</summary>

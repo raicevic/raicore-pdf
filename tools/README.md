@@ -24,6 +24,16 @@ CFF-based OpenType font, and tiny TrueType fonts with a composite glyph (also as
 .venv/bin/python tools/generate_test_fonts.py src/RaiCore.Pdf.Fonts/Liberation/LiberationSans-Regular.ttf
 ```
 
+## `generate_cff_test_fonts.py`
+
+Regenerates the CFF subsetter's fixtures: subsets of Source Sans 3 (renamed "RaiCore Sans3", since 'Source' is a
+Reserved Font Name), its CFF2 variable version and Noto Sans JP (CID-keyed), plus tiny made-up fonts with `seac`,
+1300 subroutines and long CFF2 argument lists. The script's docstring says where to download the source fonts.
+
+```sh
+.venv/bin/python tools/generate_cff_test_fonts.py SourceSans3-Regular.otf SourceSans3VF-Upright.otf NotoSansJP-Regular.otf
+```
+
 ## `generate_line_break_data.py`
 
 Regenerates `src/RaiCore.Pdf.Layout/Text/LineBreakData.g.cs` (Line_Break classes plus the East Asian width,
@@ -94,6 +104,9 @@ Cross-checks the font parser against fontTools on a large set of real fonts, whi
 
 - every cmap entry (code point to glyph ID) and advance width,
 - the TrueType subsetter: fontTools must load each subset and find identical outlines and widths,
+- the CFF subsetter (CFF and CFF2 fonts): fontTools must load each bare CFF subset, desubroutinized and with
+  subroutines kept, as CID-keyed, and draw every kept glyph (by CID = original glyph ID) exactly as the original
+  font draws it (CFF2 at the default instance), with the `hmtx` advance as width,
 - decoded WOFF/WOFF2 output (written as `decoded-woff*.ttf`; compare with the original in fontTools).
 
 ```sh
@@ -102,6 +115,10 @@ dotnet build tools/font-verification
 tr '\n' '\0' < /tmp/fonts.txt | xargs -0 dotnet tools/font-verification/bin/Debug/net10.0/FontVerification.dll /tmp/font-check
 .venv/bin/python tools/font-verification/compare.py /tmp/font-check
 ```
+
+CFF subsets (2026-11-11, macOS 27): all 274 validated, for the 137 CFF faces among the system fonts (74 name-keyed,
+54 CID-keyed, 9 CFF2). A one-off run that subset every mapped glyph of those faces and of Source Sans 3 (all
+weights, and the variable fonts) and Noto Sans JP found no differences either.
 
 Last run (macOS 27, 2026-11-02): 800 faces matched fontTools exactly and 662 TrueType subsets validated. The
 only differences are symbol fonts (Wingdings, Webdings), where RaiCore.Pdf also maps the Windows symbol cmap
