@@ -80,7 +80,7 @@ public class HtmlFlexTests
         var (a, b, c, d) = (flex.Items[0], flex.Items[1], flex.Items[2], flex.Items[3]);
 
         Assert.Equal((2.0, 3.0, -1, FlexAlignment.FlexEnd), (a.Grow, a.Shrink, a.Order, a.AlignSelf));
-        Assert.Equal(FlexBasis.Points(0.4 * 400), a.Basis); // 40% of the 400 pt content width.
+        Assert.Equal(FlexBasis.Percent(40), a.Basis); // Of the container's content width, resolved in layout.
         Assert.Equal(AutoMargins.Left, a.AutoMargins);
         Assert.Equal(0, a.Content.Style.Margin.Left);
 

@@ -136,7 +136,7 @@ internal sealed partial class Paginator
     private void PlaceAbsolute(PendingAbsolute absolute, ContainingBox box, bool withAnchors)
     {
         var block = absolute.Block;
-        var style = block.Style;
+        var style = ResolveStyle(block, box.Width);
         var (margin, insets) = (style.Margin, style.Insets);
         var left = insets.Left?.Resolve(box.Width);
         var right = insets.Right?.Resolve(box.Width);
@@ -160,7 +160,7 @@ internal sealed partial class Paginator
         double? height = style.Height is null && block is not (ImageBlock or TableBlock) && top is { } t0 && bottom is { } b0
             ? Math.Max(0, box.Height - t0 - b0 - margin.Vertical)
             : null;
-        var (boxHeight, content, anchors) = LayoutAbsoluteBox(block, boxWidth, height);
+        var (boxHeight, content, anchors) = LayoutAbsoluteBox(block, boxWidth, height, box.Width);
 
         var x = left is { } leftInset ? box.X + leftInset + margin.Left
             : right is { } rightInset ? box.X + box.Width - rightInset - margin.Right - boxWidth
@@ -204,10 +204,11 @@ internal sealed partial class Paginator
     /// context. Returns its border-box height, drawing operations with its top-left corner at x = 0 and y = the top
     /// passed to them, and its anchors (relative to that corner).
     /// </summary>
-    private static (double Height, IReadOnlyList<DrawOperation> Content, IReadOnlyList<Anchor> Anchors) LayoutAbsoluteBox(Block block, double borderWidth, double? height)
+    private static (double Height, IReadOnlyList<DrawOperation> Content, IReadOnlyList<Anchor> Anchors) LayoutAbsoluteBox(Block block, double borderWidth, double? height, double containingWidth)
     {
         var setup = new PageSetup(new PdfPageSize(borderWidth + 1, StaticHeight), new Thickness(0, 1, 0, 0));
         var paginator = new Paginator(setup, isStatic: true);
+        paginator.ResolveStyle(block, containingWidth);
         paginator.InFloatRoot(() => paginator.LayoutBlock(block, 0, borderWidth, new BoxSizing(Height: height, Isolated: true)));
         return (paginator.Y, paginator._pages[0].Grouped(), paginator._anchors);
     }
@@ -216,9 +217,9 @@ internal sealed partial class Paginator
     /// Lays out a block that clips its overflow and has a fixed height without page breaks, and draws it at the current
     /// position, which moves below it.
     /// </summary>
-    private void PlaceClipped(Block block, double x, double width, double height)
+    private void PlaceClipped(Block block, double x, double width, double height, double containingWidth)
     {
-        var (boxHeight, content, anchors) = LayoutAbsoluteBox(block, width, height);
+        var (boxHeight, content, anchors) = LayoutAbsoluteBox(block, width, height, containingWidth);
         var (page, top) = (PageIndex, Y);
         _pages[page].Add((canvas, pageHeight) =>
         {

@@ -108,7 +108,8 @@ own engine. Supported today:
 - The box model: margin, border (every `border-style`: solid, dashed, dotted, double, groove, ridge, inset and
   outset), `border-radius` (elliptical and percentage radii, every border style, rounded images), padding, background
   and `background-clip`, width, `min-width`, `max-width`, `height`, `min-height`, `max-height`, auto margins,
-  `box-sizing` and percentages. `min-width`/`max-width` also limit shrink-to-fit boxes and scale images (with
+  `box-sizing` and percentages, which resolve against the width the containing block gets in layout (a flex item after
+  flexing, a table column, a shrink-to-fit float or `inline-block`). `min-width`/`max-width` also limit shrink-to-fit boxes and scale images (with
   `max-width: 100%; height: auto` keeping the aspect ratio). Percentage heights resolve against definite ancestor heights, starting with the page area (so
   `html, body { height: 100% }` and `100vh` fill the page).
 - `calc()`, `min()`, `max()` and `clamp()`, nested and with CSS variables, in every length: widths, heights, margins,
@@ -214,7 +215,10 @@ before rendering, e.g. to set your own page decorator.
 
 Not yet: grid layout (rendered as blocks), `@page :nth()` and document counters in margin
 boxes (use `string-set`). `overflow` other than `visible` clips to the padding box (rounded corners included), and
-`text-overflow: ellipsis` ends a line that does not fit with "…".
+`text-overflow: ellipsis` ends a line that does not fit with "…". The size of an image in text (`max-width: 100%` on an
+inline `<img>`) and `min()`/`max()`/`clamp()` of a percentage are resolved against the width the containing block is
+expected to have, so they do not follow a flex item that shrinks; give the image `display: block` to make its
+`max-width` follow.
 
 ### Razor to PDF
 

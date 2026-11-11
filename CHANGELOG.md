@@ -105,6 +105,12 @@ change at any time, and this section lists what the packages can do so far.
   columns) and to intrinsic widths; the minimum wins over the maximum, as in CSS. Images scale to them, keeping their
   aspect ratio unless both a width and a height are given; a table without a width does not get narrower than its
   content. They replace `FlexItem.MinWidth`/`MaxWidth`.
+- Percentage sizes (`BoxStyle.Percentages`, `BoxPercentages`, `BoxLength`, `RelativeThickness`): a width, min/max
+  width, margins and padding of points plus a percentage of the containing block's width, resolved in layout against
+  the width that block actually gets: a flex item after it grew or shrank, a table column, a shrink-to-fit float or
+  inline box, an absolute box's containing block. Min-content and max-content widths treat a percentage width as
+  auto, and an image with a percentage width or max-width can shrink with its container (CSS Sizing 3 section 5.2).
+  `FlexBasis.Percent` also applies to rows.
 - Tables: automatic and fixed layout, `colspan`/`rowspan`, separate and collapsed borders. Header rows repeat at the
   top of every page and footer rows (`TableRow.IsFooter`) right below the body; footers taller than a quarter of the
   page are not repeated, as in Chrome. Rows that do not fit are split like browsers do, each cell continuing on the
@@ -232,6 +238,10 @@ change at any time, and this section lists what the packages can do so far.
   shrink-to-fit boxes (`inline-block`, tables, flex items) and the content inside them; a block narrowed by
   `max-width` is centered by auto margins. Images scale to them, and a declared `width` or `height` (even `auto`, as
   in `img { max-width: 100%; height: auto }`) overrides the `width`/`height` attributes, as in browsers.
+- Percentages (also in `calc()`) in `width`, `min-width`, `max-width`, `margin`, `padding` and row `flex-basis`
+  resolve against the width the containing block gets in layout, so the children of a flex item that grew or shrank,
+  of a table cell, of a shrink-to-fit float or `inline-block` and of an absolute box follow its final width (issue
+  #90). A block with a `width` centered by `margin: 0 auto` stays centered in that final width.
 - `direction`, `unicode-bidi` (`embed`, `isolate`, `bidi-override`, `isolate-override`, `plaintext`) and the `dir`
   attribute (`ltr`, `rtl`, `auto`), `<bdi>` and `<bdo>`: right-to-left paragraphs start on the right, inline elements
   become the matching bidi embeddings, overrides and isolates, and `text-align: start`/`end` follow the direction.
@@ -300,6 +310,13 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
 - Borders on inline elements are drawn solid, unless they have rounded corners.
 - `min()`, `max()` and `clamp()` with percentages in `border-radius` are evaluated against the box's width as far as it
   is known when the styles are read (plain percentages and `calc()` follow the painted box exactly).
+- Percentages that are resolved when the styles are read, against the width the containing block is expected to
+  have (so they do not follow a flex item that grew or shrank, a table column or a shrink-to-fit box): `min()`,
+  `max()` and `clamp()` of a percentage in sizes, margins and padding; the size of an image in text (`<img>` is
+  inline unless it is `display: block` or a flex item) and the `width` and `height` of a block image (its
+  `max-width` and `min-width` follow); `text-indent`, gaps and `inset`s of relative boxes; a `flex-basis` with a
+  percentage and content-box padding or borders; the auto margins of a block limited by `min-width` or `max-width`; the vertical padding of a box with a content-box `height`, `min-height` or `max-height` (which
+  includes it); the margins of `inline-block` boxes; and the padding of table cells.
 - Generated content: no `::marker`, `::first-line` or `::first-letter`; the legacy `:before`/`:after` count as a class
   in specificity (AngleSharp), not as an element. `counter(page)` in the document's own content (outside margin boxes)
   generates nothing; use `target-counter()`. Document counters are not in scope in margin boxes (they show 0; pass

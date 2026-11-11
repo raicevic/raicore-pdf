@@ -98,7 +98,7 @@ internal static partial class ParagraphLayouter
         foreach (var box in spans.Where(s => s.Box is not null).Select(s => s.Box!))
         {
             var borderWidth = Paginator.InlineBoxWidth(box.Content, width);
-            var (height, baseline, content) = Paginator.LayoutInlineBox(box.Content, borderWidth);
+            var (height, baseline, content) = Paginator.LayoutInlineBox(box.Content, borderWidth, width);
             boxes[box] = new InlineBoxFragment(box, 0, borderWidth, height, baseline, content);
         }
 

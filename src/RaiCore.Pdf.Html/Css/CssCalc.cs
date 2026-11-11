@@ -41,6 +41,32 @@ internal abstract partial class CssCalc
     /// <summary>The same expression, clamped at 0 (for properties that cannot be negative, as CSS clamps calc results).</summary>
     public CssCalc NonNegative() => Extremum(isMax: true, [this, new Term(0, 0, isNumber: false)]);
 
+    /// <summary>
+    /// The expression as points plus a percentage of the reference, when it is one (<c>calc()</c> with <c>+</c>,
+    /// <c>-</c>, <c>*</c> and <c>/</c>, also clamped at 0 by <see cref="NonNegative"/>, which the caller applies);
+    /// <c>false</c> for <c>min()</c>, <c>max()</c> and <c>clamp()</c> of a percentage.
+    /// </summary>
+    public bool TryLinear(out double points, out double percent)
+    {
+        switch (this)
+        {
+            case Term term:
+                (points, percent) = (term.Points, term.Percent);
+                return true;
+            case Sum sum when sum.Left.TryLinear(out var leftPoints, out var leftPercent) && sum.Right.TryLinear(out var rightPoints, out var rightPercent):
+                (points, percent) = (leftPoints + rightPoints, leftPercent + rightPercent);
+                return true;
+            case Scaled scaled when scaled.Inner.TryLinear(out var innerPoints, out var innerPercent):
+                (points, percent) = (innerPoints * scaled.Factor, innerPercent * scaled.Factor);
+                return true;
+            case Extreme { IsMax: true, Arguments: [var inner, Term { Points: 0, Percent: 0 }] }:
+                return inner.TryLinear(out points, out percent); // NonNegative().
+            default:
+                (points, percent) = (0, 0);
+                return false;
+        }
+    }
+
     /// <summary>A plain length or percentage when the expression folded to one, otherwise a calc length.</summary>
     public CssLength ToLength() => this switch
     {
@@ -88,7 +114,11 @@ internal abstract partial class CssCalc
 
     private sealed class Sum(CssCalc left, CssCalc right) : CssCalc(left.IsNumber)
     {
-        public override double Evaluate(double reference) => left.Evaluate(reference) + right.Evaluate(reference);
+        public CssCalc Left { get; } = left;
+
+        public CssCalc Right { get; } = right;
+
+        public override double Evaluate(double reference) => Left.Evaluate(reference) + Right.Evaluate(reference);
     }
 
     private sealed class Scaled(CssCalc inner, double factor) : CssCalc(inner.IsNumber)
@@ -102,13 +132,17 @@ internal abstract partial class CssCalc
 
     private sealed class Extreme(bool isMax, CssCalc[] arguments) : CssCalc(arguments[0].IsNumber)
     {
+        public bool IsMax { get; } = isMax;
+
+        public CssCalc[] Arguments { get; } = arguments;
+
         public override double Evaluate(double reference)
         {
-            var result = arguments[0].Evaluate(reference);
-            foreach (var argument in arguments.Skip(1))
+            var result = Arguments[0].Evaluate(reference);
+            foreach (var argument in Arguments.Skip(1))
             {
                 var value = argument.Evaluate(reference);
-                result = isMax ? Math.Max(result, value) : Math.Min(result, value);
+                result = IsMax ? Math.Max(result, value) : Math.Min(result, value);
             }
 
             return result;
