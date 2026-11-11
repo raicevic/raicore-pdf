@@ -64,6 +64,10 @@ public class HtmlTaggingTests
         Assert.Equal("Quarterly report", root.Children[0].Text);
         Assert.Equal("Read the full figures online.", root.Children[1].Text.Trim());
         Assert.Equal("full figures", root.Children[1].Children[0].Text);
+
+        // Backgrounds, borders and underlines are artifacts: text elements' marked content holds text and no paths.
+        Assert.All(root.Descendants().Where(e => e.Type != "Figure"), e => Assert.All(e.ContentTexts, text => Assert.NotEqual(string.Empty, text)));
+        Assert.All(root.Descendants(), e => Assert.True(e.PaintedPaths == 0, $"{e.Type} \"{e.Text}\" paints {e.PaintedPaths} paths."));
     }
 
     [Fact]
@@ -104,6 +108,15 @@ public class HtmlTaggingTests
     }
 
     [Fact]
+    public void Header_cells_in_header_rows_are_column_headers_even_beside_data_cells()
+    {
+        const string html = "<html lang=\"en\"><head><title>T</title></head><body><table><thead><tr><th>A</th><td>b</td></tr></thead><tbody><tr><th>R</th><td>1</td></tr></tbody></table></body></html>";
+        var root = TaggedPdfInspector.Inspect(Convert(html));
+        var scopes = root.Descendants().Where(e => e.Type == "TH").Select(e => ((e.Dictionary["A"] as Objects.PdfDictionary)?["Scope"] as Objects.PdfName)?.Value);
+        Assert.Equal(["Column", "Row"], scopes);
+    }
+
+    [Fact]
     public void Repeated_table_headers_and_page_margin_boxes_are_artifacts()
     {
         var rows = string.Concat(Enumerable.Range(1, 30).Select(i => $"<tr><td>Row {i}</td></tr>"));
@@ -134,12 +147,15 @@ public class HtmlTaggingTests
         flow.Add(new ParagraphBlock(new Paragraph(style).Add("Title"), new BoxStyle { Background = PdfColor.FromRgb(230, 230, 230) }) { Tag = StructureTag.Heading(1) });
         flow.Add(new ParagraphBlock(new Paragraph(style).Add("Body text")));
         flow.Add(new ContainerBlock(new BoxStyle(), new ParagraphBlock(new Paragraph(style).Add("Decor"))) { Tag = StructureTag.Artifact });
+        flow.Add(new TableBlock().Add(new TableRow(new TableCell(new Paragraph(style).Add("Head"))) { IsHeader = true }).Add(new TableRow(new TableCell(new Paragraph(style).Add("Cell")))));
         flow.PageDecorator = (canvas, info) => canvas.DrawText($"{info.Number}", style.Fonts[0], 8, 140, 10);
         var doc = new PdfDocument { Tagged = true, CompressContent = false };
         flow.RenderTo(doc);
 
         var root = TaggedPdfInspector.Inspect(doc.ToArray());
-        Assert.Equal("Document(H1 P)", root.ToString());
+        Assert.Equal("Document(H1 P Table(THead(TR(TH(P))) TBody(TR(TD(P)))))", root.ToString());
+        Assert.Equal("Column", ((root.Children[2].Descendants().Single(e => e.Type == "TH").Dictionary["A"] as Objects.PdfDictionary)?["Scope"] as Objects.PdfName)?.Value);
+        Assert.Equal(0, root.Children[0].PaintedPaths); // Its background is an artifact.
         Assert.Equal("Title", root.Children[0].Text);
         Assert.Equal("Body text", root.Children[1].Text);
     }

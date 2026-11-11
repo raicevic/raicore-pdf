@@ -29,6 +29,9 @@ internal sealed class InspectedElement
     /// <summary>The text of each piece of <see cref="Content"/>.</summary>
     public List<string> ContentTexts { get; } = [];
 
+    /// <summary>How many paths the element's own marked content fills or strokes (decorations belong in artifacts).</summary>
+    public int PaintedPaths { get; set; }
+
     /// <summary>The text of the element and its descendants, in reading order (<c>/K</c> order).</summary>
     public string Text => string.Concat(Order.Select(kid => kid is InspectedElement child ? child.Text : ContentTexts[(int)kid]));
 
@@ -107,12 +110,13 @@ internal static class TaggedPdfInspector
 
         // Check every content stream with marked content against the parent tree, and collect the text per MCID.
         var texts = new Dictionary<(int Page, PdfObject? Stream, int Mcid), string>();
+        var paths = new Dictionary<(int Page, PdfObject? Stream, int Mcid), int>();
         for (var i = 0; i < pages.Count; i++)
         {
             var page = reader.Pages[i];
             Assert.Equal("S", (page.Dictionary["Tabs"] as PdfName)?.Value);
             var content = Encoding.Latin1.GetString(page.GetContent());
-            CheckStream(reader, content, page.Resources, StructParents(page.Dictionary), parentTree, elementObjects, i, null, texts);
+            CheckStream(reader, content, page.Resources, StructParents(page.Dictionary), parentTree, elementObjects, i, null, texts, paths);
         }
 
         // Every element's MCIDs must exist in their streams.
@@ -125,6 +129,7 @@ internal static class TaggedPdfInspector
                 Assert.True(texts.ContainsKey(match) && match.Page == key.Page, $"{element.Type} refers to MCID {key.Mcid} on page {key.Page}, which is not in the content.");
                 own.Append(texts[match]);
                 element.ContentTexts.Add(texts[match]);
+                element.PaintedPaths += paths.GetValueOrDefault(match);
             }
 
             element.OwnText = own.ToString();
@@ -168,7 +173,7 @@ internal static class TaggedPdfInspector
     private static void CheckStream(
         PdfReader reader, string content, PdfDictionary resources, int structParents, Dictionary<int, object> parentTree,
         Dictionary<PdfDictionary, InspectedElement> elements, int page, PdfObject? stream, Dictionary<(int, PdfObject?, int), string> texts,
-        bool inheritedMark = false)
+        Dictionary<(int, PdfObject?, int), int> paths, bool inheritedMark = false)
     {
         var lexer = new PdfLexer(Encoding.Latin1.GetBytes(content));
         var operands = new List<string>();
@@ -246,14 +251,21 @@ internal static class TaggedPdfInspector
                         CheckStream(
                             reader, Encoding.Latin1.GetString(reader.Store.Decode((PdfStreamObject)xobject)),
                             Assert.IsType<PdfDictionary>(reader.Resolve(formDictionary["Resources"])),
-                            formDictionary["StructParents"] is PdfInteger formKey ? (int)formKey.Value : -1, parentTree, elements, page, formReference, texts);
+                            formDictionary["StructParents"] is PdfInteger formKey ? (int)formKey.Value : -1, parentTree, elements, page, formReference, texts, paths);
                     }
                     else if (PaintingOperators.Contains(text))
                     {
                         Assert.True(marked, $"'{text}' on page {page} is neither tagged nor an artifact.");
-                        if (open.FirstOrDefault(o => o.Mcid is not null) is { Mcid: { } current } && text is "Tj" or "TJ")
+                        if (open.FirstOrDefault(o => o.Mcid is not null) is { Mcid: { } current })
                         {
-                            texts[(page, stream, current)] += Decode(reader, font, operands);
+                            if (text is "Tj" or "TJ")
+                            {
+                                texts[(page, stream, current)] += Decode(reader, font, operands);
+                            }
+                            else if (text is not ("Do" or "sh" or "BI" or "'" or "\""))
+                            {
+                                paths[(page, stream, current)] = paths.GetValueOrDefault((page, stream, current)) + 1;
+                            }
                         }
                     }
 
