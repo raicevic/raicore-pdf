@@ -59,6 +59,9 @@ public sealed class PdfPage
     /// <summary>The page of another file this page was imported from, or <c>null</c> for a generated page.</summary>
     internal PdfReaderPage? Source { get; }
 
+    /// <summary>Whether pages of other files are drawn on this page (<see cref="PdfCanvas.DrawPage(PdfReaderPage, double, double)"/>).</summary>
+    internal bool DrawsOtherFiles => _pageForms.Count > 0;
+
     /// <summary>How the page was imported, for an imported page.</summary>
     internal PdfImportOptions? ImportOptions { get; }
 

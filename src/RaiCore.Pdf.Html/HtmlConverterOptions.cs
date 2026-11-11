@@ -90,6 +90,14 @@ public sealed class HtmlConverterOptions
     /// <see cref="Language"/>), and whose images need <c>alt</c> text.
     /// </summary>
     public bool PdfUA { get; init; }
+
+    /// <summary>
+    /// Writes the PDF as PDF/A-2b or PDF/A-3b for archiving (see <see cref="PdfDocument.PdfAConformance"/>). The bundled
+    /// Liberation fonts are then embedded in place of the standard fonts (used for SVG text), and converting throws
+    /// <see cref="InvalidOperationException"/> when the document breaks a rule, such as text in characters no font has,
+    /// a CMYK JPEG image, or <see cref="Encryption"/>. Defaults to <see cref="PdfAConformance.None"/>.
+    /// </summary>
+    public PdfAConformance PdfAConformance { get; init; }
 }
 
 /// <summary>Built-in resource loading.</summary>

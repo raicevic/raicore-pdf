@@ -11,6 +11,15 @@ internal sealed class PdfFileWriter
 {
     private readonly List<PdfObject> _objects = [];
 
+    /// <summary>
+    /// The PDF/A level the document is written for. Objects that check a PDF/A rule while they are written (fonts,
+    /// images) look here, which also covers those nested in SVG images.
+    /// </summary>
+    public PdfAConformance PdfA { get; init; }
+
+    /// <summary>The font that embeds a standard font in its place (see <c>PdfDocument.StandardFontSubstitute</c>), or <c>null</c>.</summary>
+    public Func<Fonts.StandardFont, Fonts.PdfFont?>? StandardFontSubstitute { get; init; }
+
     /// <summary>Registers an indirect object and returns a reference to it.</summary>
     public PdfReference Add(PdfObject obj)
     {

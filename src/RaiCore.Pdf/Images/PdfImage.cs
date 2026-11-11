@@ -201,6 +201,13 @@ public sealed class PdfImage
         }
 
         var image = Image;
+        if (image.ColorSpace == ImageColorSpace.Cmyk && writer.PdfA != PdfAConformance.None)
+        {
+            // PDF/A allows device CMYK only with a CMYK output intent; the document's is sRGB.
+            throw new InvalidOperationException(
+                "PDF/A documents use an sRGB output intent, which does not allow CMYK images: convert the CMYK JPEG image to RGB.");
+        }
+
         PdfStreamObject stream;
         if (image.Encoding == ImageEncoding.Jpeg)
         {

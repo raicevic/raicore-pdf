@@ -112,6 +112,7 @@ internal static class PdfLinkWriter
                 ["Subtype"] = new PdfName("Link"),
                 ["Rect"] = PdfArray.OfNumbers(x, y, x + link.Width, y + link.Height),
                 ["Border"] = PdfArray.OfNumbers(0, 0, 0), // No border: the link is the content under it.
+                ["F"] = new PdfInteger(4), // Print, as PDF/A requires of every annotation.
             };
 
             if (link.Description is { Length: > 0 } description)

@@ -58,6 +58,12 @@ public static class HtmlToPdf
         flow.RenderTo(document);
         metadata.ApplyTo(document, options, defaultCreator);
         document.Encryption = options.Encryption;
+        document.PdfAConformance = options.PdfAConformance;
+        if (options.PdfAConformance != PdfAConformance.None)
+        {
+            document.EmbedStandardFonts();
+        }
+
         return document;
     }
 

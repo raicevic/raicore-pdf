@@ -34,6 +34,9 @@ internal static class WinAnsiEncoding
         _ => HighMap.TryGetValue(c, out var b) ? b : (byte)'?',
     };
 
+    /// <summary>The character a code stands for, or <c>'\0'</c> for the five codes WinAnsiEncoding leaves unused.</summary>
+    public static char Decode(byte code) => code is >= 0x80 and <= 0x9F ? HighControlRange[code - 0x80] : (char)code;
+
     private static Dictionary<char, byte> BuildHighMap()
     {
         var map = new Dictionary<char, byte>();
