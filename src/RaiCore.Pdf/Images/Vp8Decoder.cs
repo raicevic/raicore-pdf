@@ -78,10 +78,7 @@ internal sealed class Vp8Decoder
             throw new ImageFormatException("VP8 image has a zero size.");
         }
 
-        if ((long)_width * _height > 200_000_000)
-        {
-            throw new ImageFormatException("WebP image is too large.");
-        }
+        ResourceLimits.CheckImagePixels(_width, _height);
 
         _mbWidth = (_width + 15) >> 4;
         _mbHeight = (_height + 15) >> 4;

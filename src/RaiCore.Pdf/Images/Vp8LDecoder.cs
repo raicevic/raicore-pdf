@@ -60,10 +60,7 @@ internal sealed class Vp8LDecoder
     /// <summary>The main image: transforms, then the entropy-coded pixels, then the transforms are undone.</summary>
     private uint[] DecodeLevel0(int width, int height)
     {
-        if ((long)width * height > 200_000_000)
-        {
-            throw new ImageFormatException("WebP image is too large.");
-        }
+        ResourceLimits.CheckImagePixels(width, height);
 
         var transforms = new List<(Transform Type, int Bits, int XSize, uint[]? Data)>();
         var seen = 0;

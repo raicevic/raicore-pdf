@@ -83,6 +83,9 @@ internal static class GifDecoder
             throw new ImageFormatException("GIF image has a zero size.");
         }
 
+        ResourceLimits.CheckImagePixels(screenWidth, screenHeight);
+        ResourceLimits.CheckImagePixels(width, height);
+
         Require(data, pos, 1);
         int minCodeSize = data[pos++];
         if (minCodeSize is < 2 or > 11)

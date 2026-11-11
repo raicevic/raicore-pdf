@@ -208,6 +208,7 @@ public sealed class FlowDocument
         var rendered = new List<PdfPage>(pages.Count);
         for (var i = 0; i < pages.Count; i++)
         {
+            ResourceLimits.Checkpoint(); // Drawing (and, saving page by page, writing) takes a while too.
             var (context, setup) = result.Frames[i];
             var page = document.AddPage(setup.Size);
             rendered.Add(page);
@@ -307,6 +308,7 @@ public sealed class FlowDocument
     public static double MeasureBlocks(IReadOnlyList<Block> blocks, double width)
     {
         ArgumentNullException.ThrowIfNull(blocks);
+        BlockDepth.Check(blocks);
         return Paginator.LayoutStatic(blocks, 0, Math.Max(1, width)).Height;
     }
 
@@ -319,6 +321,7 @@ public sealed class FlowDocument
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(blocks);
+        BlockDepth.Check(blocks);
         var (height, content, _) = Paginator.LayoutStatic(blocks, x, Math.Max(1, width));
         foreach (var draw in content)
         {

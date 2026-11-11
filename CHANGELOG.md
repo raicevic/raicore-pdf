@@ -104,6 +104,12 @@ change at any time, and this section lists what the packages can do so far.
   measured from the media box.
 - `PdfCanvas.DrawPage` draws a page of a read file as a form XObject, at its size or scaled into a rectangle, as it
   is displayed (crop box, `/Rotate`), e.g. a letterhead under generated content. `PdfRectangle` holds page boxes.
+- Resource limits for untrusted input (`ResourceLimits`): nesting depth, element and table cell counts, image pixels
+  (checked from the header, before decoding), resource, font and decompressed stream sizes, pages and time. Exceeding
+  one throws `ResourceLimitExceededException`, naming the limit. The defaults apply everywhere (image decoding, WOFF
+  and WOFF2, the PDF reader, layout); `limits.Enforce(cancellationToken)` applies others to the work in its scope, with
+  a time limit and cancellation checked between pages, blocks, table rows and lines. Deep nesting stops with that
+  exception instead of overflowing the stack. PNG data is inflated only as far as the image needs.
 
 - Tagged PDF and PDF/UA-1: `PdfDocument.Tagged`/`PdfUA`, structure elements (`PdfDocument.StructureRoot`,
   `PdfStructureElement` with alternate and actual text, language, table scope and spans, list numbering;
@@ -407,6 +413,12 @@ change at any time, and this section lists what the packages can do so far.
   the size of the document: a 10,000-row table converts in about 10 s instead of 208 s.
 - `HtmlToPdf.ConvertToStream(Async)` writes the PDF to a stream page by page.
 - Style sheets with rules AngleSharp cannot parse the selector of (such as `li::marker`) no longer fail the conversion.
+- `HtmlConverterOptions.Limits` (resource limits, see RaiCore.Pdf): a document nested too deeply or with too many
+  elements, table cells or pages, or that takes too long (parsing included), fails with
+  `ResourceLimitExceededException`; an image, stylesheet or web font over a size limit is skipped like a broken one.
+  `ConvertAsync` observes its cancellation token throughout. Conversions run on a thread of their own with a large
+  stack, so deeply nested documents do not overflow it. `colspan`, `rowspan` and `<col span>` are clamped as HTML
+  says (1000, 65534 and 1000).
 
 ### RaiCore.Pdf.Razor
 - Razor components to PDF with Blazor's static `HtmlRenderer`: `RazorToPdf` for the simple case, `RazorPdfRenderer`
@@ -494,6 +506,10 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   (`rsm:CrossIndustryInvoice`); it is not validated against the profile's XML schema or business rules (use the
   official validators or Mustang for that), nor compared with the visible pages. Attachments are document-level
   associated files only: no file attachment annotations on pages and no portfolios.
+- Layout time grows exponentially with the nesting of tables (each level measures and lays out the next more than
+  once): 12 nested tables take about a second, 20 more than a minute, so a few hundred bytes of such markup run until
+  the `ResourceLimits.Timeout` (5 minutes by default; lower it on servers). Nested `inline-block`s and flex
+  containers are linear, and a 10,000-row table takes about 9 s.
 - Metadata: custom property names that are not XML names are encoded (`_x0020_` for a space).
   Keywords and the author are plain text (`dc:creator` holds one entry). Language alternatives are written with
   `x-default` only, and the language is not checked against BCP 47. `HtmlToPdf.CreateFlowDocument` returns no

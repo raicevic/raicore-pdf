@@ -229,6 +229,9 @@ internal sealed partial class BoxBuilder
     /// </param>
     private void AddChildren(IElement element, ComputedStyle style, double contentWidth, List<Block> children, InlineCollector collector, InlineAlignment inherited = default)
     {
+        // Every nested element passes here: stop before deep nesting overflows the stack, and when out of time.
+        ResourceLimits.EnsureStack();
+        ResourceLimits.Checkpoint();
         var listIndex = ListStart(element);
         foreach (var node in WithGeneratedContent(element))
         {
@@ -667,13 +670,17 @@ internal sealed partial class BoxBuilder
         try
         {
             var data = src.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
-                ? Resources.DecodeDataUri(src)
-                : ResolveUri(src) is { } uri ? _options.ResourceLoader(uri) : null;
+                ? Resources.Limit(Resources.DecodeDataUri(src))
+                : ResolveUri(src) is { } uri ? Resources.Load(_options.ResourceLoader, uri) : null;
             image = data is null ? null : PdfImage.Load(data);
         }
         catch (ImageFormatException)
         {
             // A broken image is skipped (its alt text is shown), as browsers do.
+        }
+        catch (ResourceLimitExceededException ex) when (Resources.IsPerResource(ex))
+        {
+            // So is one that is too large (a decompression bomb).
         }
 
         _images[src] = image;

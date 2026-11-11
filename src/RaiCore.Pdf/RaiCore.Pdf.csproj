@@ -8,6 +8,8 @@
     <InternalsVisibleTo Include="RaiCore.Pdf.Tests" />
     <!-- Sibling packages need the raw font data and glyph-level access. -->
     <InternalsVisibleTo Include="RaiCore.Pdf.Layout" />
+    <!-- Resource limits: the HTML converter enforces them and checks the time limit while it builds boxes. -->
+    <InternalsVisibleTo Include="RaiCore.Pdf.Html" />
   </ItemGroup>
 
   <ItemGroup>

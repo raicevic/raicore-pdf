@@ -32,6 +32,10 @@ internal sealed partial class BoxBuilder
         {
             // An unreadable SVG is skipped, as browsers do.
         }
+        catch (ResourceLimitExceededException ex) when (Resources.IsPerResource(ex))
+        {
+            // So is one with a raster image that is too large.
+        }
 
         _images[key] = image;
         return image;

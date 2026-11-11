@@ -116,7 +116,10 @@ internal static class PngDecoder
 
         var channels = colorType switch { 0 => 1, 2 => 3, 3 => 1, 4 => 2, 6 => 4, _ => 0 };
         var bitsPerPixel = channels * bitDepth;
-        var raw = Inflate(idat.ToArray());
+        // The filtered rows need at most this much (interlaced passes add a filter byte per pass row); more is ignored,
+        // so a small file cannot inflate to gigabytes.
+        var rowBytes = (((long)width * bitsPerPixel) + 7) / 8;
+        var raw = Inflate(idat.ToArray(), ((rowBytes + 1) * height) + (7L * (height + 8)) + 64);
         var image = interlace == 0
             ? Unfilter(raw, 0, width, height, bitsPerPixel, out _)
             : Deinterlace(raw, width, height, bitsPerPixel);
@@ -147,10 +150,7 @@ internal static class PngDecoder
             throw new ImageFormatException("PNG size must be positive.");
         }
 
-        if ((long)width * height > 200_000_000)
-        {
-            throw new ImageFormatException("PNG is too large.");
-        }
+        ResourceLimits.CheckImagePixels(width, height);
 
         var valid = colorType switch
         {
@@ -165,14 +165,20 @@ internal static class PngDecoder
         }
     }
 
-    private static byte[] Inflate(byte[] compressed)
+    private static byte[] Inflate(byte[] compressed, long maxLength)
     {
         try
         {
             using var input = new MemoryStream(compressed);
             using var zlib = new ZLibStream(input, CompressionMode.Decompress);
             using var output = new MemoryStream();
-            zlib.CopyTo(output);
+            var buffer = new byte[81920];
+            int read;
+            while (output.Length < maxLength && (read = zlib.Read(buffer, 0, (int)Math.Min(buffer.Length, maxLength - output.Length))) > 0)
+            {
+                output.Write(buffer, 0, read);
+            }
+
             return output.ToArray();
         }
         catch (InvalidDataException ex)

@@ -271,6 +271,32 @@ conversion throws if the document breaks a rule, e.g. text that no font has a gl
 var pdf = HtmlToPdf.ConvertToBytes(html, new HtmlConverterOptions { PdfAConformance = PdfAConformance.PdfA3B });
 ```
 
+**Untrusted HTML.** `HtmlConverterOptions.Limits` bounds what a document can make the conversion do, so a server
+cannot be crashed or stalled by hostile input. A structural limit fails the conversion with
+`ResourceLimitExceededException` (its `LimitName` says which); an image, stylesheet or web font over a size limit is
+skipped like a broken one. Parsing, layout and rendering check the time limit and the cancellation token as they go.
+
+```csharp
+var limits = ResourceLimits.Default with { MaxPages = 100, Timeout = TimeSpan.FromSeconds(30) };
+var pdf = await HtmlToPdf.ConvertAsync(html, new HtmlConverterOptions { Limits = limits }, cancellationToken);
+```
+
+| Limit | Default | Exceeded |
+| --- | --- | --- |
+| `MaxNestingDepth` (HTML elements) | 256 | fails |
+| `MaxElements` | 1,000,000 | fails |
+| `MaxTableCells` (one table's grid) | 2,000,000 | fails |
+| `MaxPages` | 10,000 | fails |
+| `Timeout` | 5 minutes | fails |
+| `MaxImagePixels` (one image) | 100,000,000 | image skipped |
+| `MaxResourceBytes` (one image, stylesheet or font) | 64 MB | resource skipped |
+| `MaxFontBytes` (a WOFF/WOFF2 font, decompressed) | 64 MB | font skipped |
+| `MaxDecompressedBytes` (one PDF stream) | 256 MB | fails |
+
+The same defaults protect `PdfImage.Load`, `PdfFont.Load` and `PdfReader`; `using (limits.Enforce(cancellationToken))`
+applies other limits (and a time limit) to the work in its scope. The default `ResourceLoader` reads local files
+(`file:` URLs); for untrusted HTML, pass one that only loads what you allow.
+
 Not yet: grid layout (rendered as blocks), `@page :nth()` and document counters in margin
 boxes (use `string-set`). `overflow` other than `visible` clips to the padding box (rounded corners included), and
 `text-overflow: ellipsis` ends a line that does not fit with "…". The size of an image in text (`max-width: 100%` on an

@@ -82,10 +82,7 @@ internal static class BmpDecoder
             throw new ImageFormatException("BMP size must be positive.");
         }
 
-        if ((long)width * height > 200_000_000)
-        {
-            throw new ImageFormatException("BMP is too large.");
-        }
+        ResourceLimits.CheckImagePixels(width, height);
 
         var valid = (bitsPerPixel, compression) switch
         {

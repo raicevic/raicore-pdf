@@ -86,6 +86,8 @@ internal static class JpegReader
             throw new ImageFormatException("The JPEG has no frame header or a zero size.");
         }
 
+        ResourceLimits.CheckImagePixels(width.Value, height.Value); // Embedded as it is, but viewers decode it.
+
         if (precision != 8)
         {
             throw new ImageFormatException($"{precision}-bit JPEG is not supported by PDF viewers.");
