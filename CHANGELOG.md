@@ -55,6 +55,24 @@ change at any time, and this section lists what the packages can do so far.
   date) is written as `/ModDate`, and `PdfDocumentInfo.CustomProperties` as custom Info entries (text strings) and in
   Adobe's `pdfx:` XMP namespace, as Acrobat does.
 - Document language: `PdfDocument.Language` (a BCP 47 tag) is written as the catalog's `/Lang` and as `dc:language`.
+- Reading existing PDFs: `PdfReader.Open` (file, stream or bytes) parses classic cross-reference tables,
+  cross-reference streams, object streams, hybrid files and incremental updates (the newest revision wins), and
+  repairs damaged files by scanning for objects when the cross-reference data is missing or wrong
+  (`PdfReader.IsRepaired`). Streams decode with Flate and LZW (with PNG and TIFF predictors), ASCIIHex, ASCII85 and
+  RunLength; image codecs are passed through untouched. `PdfReader.Pages` lists `PdfReaderPage`s with their inherited
+  resources, media and crop boxes and rotation resolved; `GetContent()` returns a page's decoded content. Reference
+  loops, `/Prev` loops and page tree loops are cut, nesting depth and decoded stream sizes are limited, and malformed
+  input throws `PdfFormatException`.
+- Merging: `PdfDocument.ImportPages` appends pages of a read file (all, or chosen ones in any order) and
+  `InsertPages` inserts them anywhere; `InsertPage` adds a new page anywhere, e.g. a cover. The reachable objects are
+  deep-copied once per source file, so fonts and images shared by pages (also across several imports and
+  `DrawPage`) are written once, and streams keep their data and filters. `PdfImportOptions`: annotations are kept
+  by default, with links within the file pointed at the imported pages (named destinations made explicit, links to
+  pages left out dropped); `KeepOutline` adds the file's bookmarks to `PdfDocument.Outline`. More can be drawn on
+  imported pages (e.g. page numbers), in a form XObject of its own over the original content; positions on them are
+  measured from the media box.
+- `PdfCanvas.DrawPage` draws a page of a read file as a form XObject, at its size or scaled into a rectangle, as it
+  is displayed (crop box, `/Rotate`), e.g. a letterhead under generated content. `PdfRectangle` holds page boxes.
 
 ### RaiCore.Pdf.Fonts
 - Bundled Liberation Sans, Serif and Mono (SIL OFL 1.1), metric-compatible with Arial, Times New Roman and Courier New.
@@ -381,6 +399,13 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   `x-default` only, and the language is not checked against BCP 47. `HtmlToPdf.CreateFlowDocument` returns no
   metadata: set `PdfDocument.Info` and `Language` on the document you render it into. XMP in images and other
   objects is not written.
+- Reading PDFs: encrypted files are rejected (`NotSupportedException`); decryption will follow encryption. Imports
+  do not copy the source's interactive form (`/AcroForm`: widgets keep their appearance but are not fields of the
+  new document), structure tree (tagged PDF), optional content configuration, named destinations, JavaScript or
+  page labels; a page imported twice has its annotations on its first copy only. `DrawPage` draws a page's content
+  without its annotations. Decoding is needed only for cross-reference and object streams and for pages drawn with
+  several content streams, so the image filters (DCT, JPX, JBIG2, CCITT) are never decoded. Not fuzzed yet beyond a
+  seeded smoke test.
 - SVG: no filters, masks, markers, patterns, `spreadMethod` `reflect`/`repeat` (drawn as `pad`), text on a path or
   per-character positions (only the first `x`/`y`/`dx`/`dy`), and no web fonts in SVG text (the standard fonts are
   used). PDF shadings have no alpha: a gradient whose stops differ in opacity takes its most opaque stop's alpha and

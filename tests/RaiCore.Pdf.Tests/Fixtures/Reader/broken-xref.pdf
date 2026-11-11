@@ -1,0 +1,45 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 400 400] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /Contents 7 0 R >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 65 >>
+stream
+1 0 0 rg 50 50 100 100 re f
+BT /F1 24 Tf 50 300 Td (Broken) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Length 29 >>
+stream
+0 0 1 rg 200 200 100 100 re f
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000025 00000 n
+0000000074 00000 n
+0000000161 00000 n
+0000000263 00000 n
+0000000365 00000 n
+0000000462 00000 n
+0000000577 00000 n
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+151
+%%EOF

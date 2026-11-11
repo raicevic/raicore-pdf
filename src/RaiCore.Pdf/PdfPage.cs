@@ -13,11 +13,24 @@ public sealed class PdfPage
     private readonly List<PdfLink> _links = [];
     private readonly List<((double Fill, double Stroke) Alpha, string Name)> _extGStates = [];
     private readonly List<GroupForm> _groups = [];
+    private readonly List<(PdfReaderPage Page, string Name)> _pageForms = [];
 
     internal PdfPage(PdfPageSize size)
     {
         Size = size;
         Canvas = new PdfCanvas(this);
+    }
+
+    /// <summary>
+    /// A page imported from another file. Its size is the source page's media box, and everything placed on it
+    /// (drawing, links, destinations) is measured from the media box's bottom-left corner, as on a generated page.
+    /// </summary>
+    internal PdfPage(PdfReaderPage source, PdfImportOptions options)
+        : this(new PdfPageSize(source.MediaBox.Width, source.MediaBox.Height))
+    {
+        Source = source;
+        ImportOptions = options;
+        Origin = (source.MediaBox.X, source.MediaBox.Y);
     }
 
     /// <summary>The page size in points.</summary>
@@ -39,6 +52,18 @@ public sealed class PdfPage
 
     internal IReadOnlyList<(PdfImage Image, string Name)> Images => _images;
 
+    /// <summary>The page of another file this page was imported from, or <c>null</c> for a generated page.</summary>
+    internal PdfReaderPage? Source { get; }
+
+    /// <summary>How the page was imported, for an imported page.</summary>
+    internal PdfImportOptions? ImportOptions { get; }
+
+    /// <summary>
+    /// Where the page's coordinates start in its PDF user space: (0, 0) for generated pages, the media box's corner for
+    /// imported ones. Coordinates written into the file (link rectangles, destinations) are offset by it.
+    /// </summary>
+    internal (double X, double Y) Origin { get; }
+
     /// <summary>The extended graphics states (fill and stroke alpha) the page's content uses.</summary>
     internal IReadOnlyList<((double Fill, double Stroke) Alpha, string Name)> ExtGStates => _extGStates;
 
@@ -46,7 +71,8 @@ public sealed class PdfPage
     internal IReadOnlyList<GroupForm> Groups => _groups;
 
     /// <summary>Whether the page uses transparency: alpha, groups, or an SVG image that does.</summary>
-    internal bool UsesTransparency => _extGStates.Count > 0 || Canvas.SoftMasks.Count > 0 || _images.Any(entry => entry.Image.UsesTransparency);
+    internal bool UsesTransparency =>
+        _extGStates.Count > 0 || Canvas.SoftMasks.Count > 0 || _images.Any(entry => entry.Image.UsesTransparency) || _pageForms.Any(entry => entry.Page.UsesTransparency);
 
     /// <summary>
     /// Makes a rectangle of the page a link that opens <paramref name="uri"/> (a URI action), e.g. a web page or a
@@ -120,6 +146,22 @@ public sealed class PdfPage
         return name;
     }
 
+    /// <summary>Returns the page-local resource name (e.g. <c>Pg1</c>) for a page of another file drawn as a form XObject.</summary>
+    internal string UsePageForm(PdfReaderPage page)
+    {
+        foreach (var entry in _pageForms)
+        {
+            if (ReferenceEquals(entry.Page, page))
+            {
+                return entry.Name;
+            }
+        }
+
+        var name = string.Create(CultureInfo.InvariantCulture, $"Pg{_pageForms.Count + 1}");
+        _pageForms.Add((page, name));
+        return name;
+    }
+
     /// <summary>Returns the page-local resource name (e.g. <c>GS1</c>) for an extended graphics state with these alphas.</summary>
     internal string UseExtGState(double fill, double stroke)
     {
@@ -150,11 +192,12 @@ public sealed class PdfPage
     /// <summary>
     /// Writes the transparency groups and returns the resource dictionary of the page's content stream. Each content
     /// stream (the page's and every group's) gets only the resources it uses; the callbacks supply the references of
-    /// resources written elsewhere, and are called at most once per resource.
+    /// resources written elsewhere, and are called at most once per resource. <paramref name="pageForm"/> writes pages of
+    /// other files drawn with <see cref="PdfCanvas.DrawPage(PdfReaderPage, double, double)"/>.
     /// </summary>
     internal PdfDictionary WriteResources(
         PdfFileWriter writer, bool compress, Func<PdfFont, FontUsage, PdfReference> font, Func<PdfImage, PdfReference> image,
-        Func<(double Fill, double Stroke), PdfReference> extGState)
+        Func<(double Fill, double Stroke), PdfReference> extGState, Func<PdfReaderPage, PdfReference>? pageForm = null)
     {
         var references = new Dictionary<string, PdfReference>(StringComparer.Ordinal);
         PdfReference Resolve(string name, Func<PdfReference> write)
@@ -206,6 +249,11 @@ public sealed class PdfPage
             foreach (var group in _groups.Where(group => used.Contains(group.Name)))
             {
                 xobjects[group.Name] = references[group.Name];
+            }
+
+            foreach (var (p, name) in _pageForms.Where(entry => used.Contains(entry.Name)))
+            {
+                xobjects[name] = Resolve(name, () => (pageForm ?? throw new InvalidOperationException("Pages of other files cannot be drawn here."))(p));
             }
 
             var states = new PdfDictionary();

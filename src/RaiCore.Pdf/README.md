@@ -38,6 +38,9 @@ doc.Save("hello.pdf");
 - Metadata: `PdfDocument.Info` (title, author, subject, keywords, dates and custom properties) is written to the
   Info dictionary and to an XMP metadata stream kept in sync with it; `PdfDocument.Language` sets the document
   language (`/Lang`).
+- Existing PDFs: `PdfReader.Open` reads a file; `PdfDocument.ImportPages`/`InsertPages` merge its pages into a
+  document (fonts and images shared, links and bookmarks kept), and `Canvas.DrawPage` draws a page under or over new
+  content, e.g. a letterhead.
 - Coordinates are PDF points (1/72 inch) with the origin at the bottom-left of the page.
 
 ## More

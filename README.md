@@ -358,6 +358,32 @@ doc.NamedDestinations["appendix"] = new PdfDestination(lastPage, top: lastPage.H
 page.Canvas.AddLink(0, 0, 50, 20, new PdfDestination(firstPage));     // in the canvas's transformed coordinates
 ```
 
+### Existing PDFs
+
+`PdfReader` reads existing PDF files, so a generated document can take pages from them: add a cover page, append
+attachments, merge documents, or print on a letterhead:
+
+```csharp
+var terms = PdfReader.Open("terms.pdf");
+var letterhead = PdfReader.Open("letterhead.pdf");
+
+var doc = new PdfDocument();
+var cover = doc.AddPage(PdfPageSize.A4);
+cover.Canvas.DrawPage(letterhead.Pages[0], 0, 0);              // an existing page drawn under new content
+cover.Canvas.DrawText("Contract", StandardFont.HelveticaBold, 32, 72, 600);
+
+var pages = doc.ImportPages(terms, new PdfImportOptions { KeepOutline = true });   // all pages, with bookmarks
+doc.InsertPages(1, PdfReader.Open("summary.pdf"), [0, 2]);    // pages 1 and 3, after the cover
+pages[0].Canvas.DrawText("Annex A", StandardFont.Helvetica, 10, 500, 20);         // stamped on an imported page
+doc.Save("contract.pdf");
+```
+
+Imported pages keep their content, fonts and images exactly (streams are copied, not decoded and re-encoded), and
+what pages share is written once, also across several imports from one reader and pages drawn with `DrawPage`. Links
+within the file are pointed at the imported pages (links to pages left out are dropped), and the outline can be kept.
+The reader handles classic and cross-reference-stream files, object streams, incremental updates and damaged files
+(it scans for objects when the cross-reference data is missing or wrong). Encrypted files are not supported yet.
+
 ### Fonts
 
 Any TrueType or OpenType font (`.ttf`, `.otf`, `.ttc`, `.woff`, `.woff2`) can be embedded. Only the glyphs you use

@@ -148,7 +148,8 @@ internal static class PdfOutlineWriter
                 dictionary["Next"] = refs[i + 1];
             }
 
-            dictionary["Dest"] = new PdfArray(pageRef, new PdfName("XYZ"), Number(item.Left), Number(item.Top), PdfNull.Instance);
+            var origin = item.Page.Origin; // Imported pages: positions are measured from the media box's corner.
+            dictionary["Dest"] = new PdfArray(pageRef, new PdfName("XYZ"), Number(item.Left + origin.X), Number(item.Top + origin.Y), PdfNull.Instance);
 
             // Count: the descendants shown when the item is open; negative when it is closed (how many it would show).
             var descendants = WriteItems(writer, dictionary, refs[i], item.Children, pages, seen);

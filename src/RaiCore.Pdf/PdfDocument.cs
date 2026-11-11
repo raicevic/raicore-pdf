@@ -1,4 +1,5 @@
 using RaiCore.Pdf.Fonts;
+using RaiCore.Pdf.Import;
 using RaiCore.Pdf.IO;
 using RaiCore.Pdf.Objects;
 
@@ -132,42 +133,56 @@ public sealed partial class PdfDocument
             return reference;
         }
 
+        // Imported pages and pages drawn as forms: each object of a read file is written once.
+        var imports = new PdfImportWriter(writer, CompressContent);
+
         var kids = new PdfArray();
         var pageRefs = new Dictionary<PdfPage, PdfReference>(ReferenceEqualityComparer.Instance);
         var pageDictionaries = new List<PdfDictionary>(_pages.Count);
         foreach (var page in _pages)
         {
             var content = page.Canvas.ToBytes();
-            var resources = page.WriteResources(writer, CompressContent, (font, _) => fontRefs[font], image => imageRefs[image], ExtGState);
-            var contentStream = CompressContent ? PdfStreamObject.CreateCompressed(content) : new PdfStreamObject(content);
+            var resources = page.WriteResources(
+                writer, CompressContent, (font, _) => fontRefs[font], image => imageRefs[image], ExtGState, imports.WritePageForm);
 
-            var pageDictionary = new PdfDictionary
+            PdfDictionary pageDictionary;
+            if (page.Source is not null)
             {
-                ["Type"] = new PdfName("Page"),
-                ["Parent"] = pageTreeRef,
-                ["MediaBox"] = PdfArray.OfNumbers(0, 0, page.Width, page.Height),
-                ["Resources"] = resources,
-                ["Contents"] = writer.Add(contentStream),
-            };
+                pageDictionary = imports.WritePage(page, pageTreeRef, content, resources);
+            }
+            else
+            {
+                var contentStream = CompressContent ? PdfStreamObject.CreateCompressed(content) : new PdfStreamObject(content);
+                pageDictionary = new PdfDictionary
+                {
+                    ["Type"] = new PdfName("Page"),
+                    ["Parent"] = pageTreeRef,
+                    ["MediaBox"] = PdfArray.OfNumbers(0, 0, page.Width, page.Height),
+                    ["Resources"] = resources,
+                    ["Contents"] = writer.Add(contentStream),
+                };
 
-            // A page with transparency blends in RGB, so that viewers agree on how translucent colors mix.
-            if (page.UsesTransparency)
-            {
-                pageDictionary["Group"] = PdfPage.TransparencyGroup(isolated: false);
+                // A page with transparency blends in RGB, so that viewers agree on how translucent colors mix.
+                if (page.UsesTransparency)
+                {
+                    pageDictionary["Group"] = PdfPage.TransparencyGroup(isolated: false);
+                }
             }
 
             var pageRef = writer.Add(pageDictionary);
             kids.Items.Add(pageRef);
             pageRefs[page] = pageRef;
             pageDictionaries.Add(pageDictionary);
+            imports.RegisterPage(page, pageRef);
         }
 
         // Links may point at any page, so they are written once every page has its object number.
         for (var i = 0; i < _pages.Count; i++)
         {
-            if (PdfLinkWriter.WriteAnnotations(writer, _pages[i], pageRefs, NamedDestinations) is { } annotations)
+            var annotations = PdfLinkWriter.WriteAnnotations(writer, _pages[i], pageRefs, NamedDestinations);
+            if (imports.WriteAnnotations(_pages[i], annotations) is { } all)
             {
-                pageDictionaries[i]["Annots"] = annotations;
+                pageDictionaries[i]["Annots"] = all;
             }
         }
 
