@@ -77,4 +77,16 @@ regular.save(out / "RaiCoreTestTT-Regular.ttf")
 collection = TTCollection()
 collection.fonts = [regular, bold]
 collection.save(out / "RaiCoreTestTT.ttc")
+
+def symbol_font():
+    """Like the TrueType font, but with only a Windows symbol cmap (3, 0) that maps the glyphs to U+F0xx."""
+    from fontTools.ttLib.tables._c_m_a_p import cmap_format_4
+    font = tt_font("Symbol", 400, 600)
+    subtable = cmap_format_4(4)
+    subtable.platformID, subtable.platEncID, subtable.language = 3, 0, 0
+    subtable.cmap = {0xF020: "space", 0xF041: "A", 0xF060: "grave", 0xF0C0: "Agrave"}
+    font["cmap"].tables = [subtable]
+    return font
+
+symbol_font().save(out / "RaiCoreTestTT-Symbol.ttf")
 print("fixtures written to", out)

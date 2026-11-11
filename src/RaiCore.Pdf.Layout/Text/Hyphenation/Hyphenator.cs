@@ -14,7 +14,12 @@ namespace RaiCore.Pdf.Layout.Text;
 /// Each pattern is a fragment of a word with digits between its letters, such as <c>.ach4</c> or <c>a1b</c> (a dot
 /// marks the start or end of the word). Every pattern found in a word votes on the gaps between its letters; where the
 /// highest vote is odd, the word may be hyphenated. Exceptions list whole words with their hyphens, such as
-/// <c>ta-ble</c>. Thread-safe.
+/// <c>ta-ble</c>.
+/// <para>
+/// Thread-safe: a hyphenator can be used from any number of threads at once. Bundled patterns are loaded once per
+/// process, the first time a language needs them, and shared by all documents. <see cref="Register"/> may be called
+/// at any time; lookups that start after it returns see the registration.
+/// </para>
 /// </remarks>
 public sealed class Hyphenator
 {
@@ -38,6 +43,12 @@ public sealed class Hyphenator
     private static readonly ConcurrentDictionary<string, Lazy<Hyphenator>> Loaded = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Hyphenator> Registered = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Hyphenator?> Resolved = new(StringComparer.Ordinal);
+
+    /// <summary>Guards <see cref="Registered"/> changes against a <see cref="ForLanguage"/> caching what it resolved before them.</summary>
+    private static readonly Lock RegistrationLock = new();
+
+    /// <summary>Counts <see cref="Register"/> calls, so a resolution that raced with one is not cached.</summary>
+    private static int _registrations;
 
     private readonly PatternTable _patterns;
     private readonly Dictionary<string, int[]> _exceptions;
@@ -90,24 +101,42 @@ public sealed class Hyphenator
             return null;
         }
 
-        return Resolved.GetOrAdd(language, static tag =>
+        if (Resolved.TryGetValue(language, out var cached))
         {
-            for (var candidate = tag.Trim().Replace('_', '-').ToLowerInvariant(); candidate.Length > 0; candidate = candidate[..Math.Max(0, candidate.LastIndexOf('-'))])
-            {
-                if (Registered.TryGetValue(candidate, out var registered))
-                {
-                    return registered;
-                }
+            return cached;
+        }
 
-                var bundled = Aliases.GetValueOrDefault(candidate, candidate);
-                if (Array.IndexOf(Bundled, bundled) >= 0)
-                {
-                    return LoadBundled(bundled);
-                }
+        var registrations = Volatile.Read(ref _registrations);
+        var resolved = Resolve(language);
+        lock (RegistrationLock)
+        {
+            // A registration made while this one was resolving may change the answer; then leave it uncached.
+            if (registrations == _registrations)
+            {
+                Resolved.TryAdd(language, resolved);
+            }
+        }
+
+        return resolved;
+    }
+
+    private static Hyphenator? Resolve(string tag)
+    {
+        for (var candidate = tag.Trim().Replace('_', '-').ToLowerInvariant(); candidate.Length > 0; candidate = candidate[..Math.Max(0, candidate.LastIndexOf('-'))])
+        {
+            if (Registered.TryGetValue(candidate, out var registered))
+            {
+                return registered;
             }
 
-            return null;
-        });
+            var bundled = Aliases.GetValueOrDefault(candidate, candidate);
+            if (Array.IndexOf(Bundled, bundled) >= 0)
+            {
+                return LoadBundled(bundled);
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -118,16 +147,20 @@ public sealed class Hyphenator
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(language);
         var tag = language.Trim().Replace('_', '-').ToLowerInvariant();
-        if (hyphenator is null)
+        lock (RegistrationLock)
         {
-            Registered.TryRemove(tag, out _);
-        }
-        else
-        {
-            Registered[tag] = hyphenator;
-        }
+            if (hyphenator is null)
+            {
+                Registered.TryRemove(tag, out _);
+            }
+            else
+            {
+                Registered[tag] = hyphenator;
+            }
 
-        Resolved.Clear();
+            _registrations++;
+            Resolved.Clear();
+        }
     }
 
     /// <summary>

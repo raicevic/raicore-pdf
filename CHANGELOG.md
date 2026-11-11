@@ -99,6 +99,15 @@ change at any time, and this section lists what the packages can do so far.
 ### RaiCore.Pdf.Fonts
 - Bundled Liberation Sans, Serif and Mono (SIL OFL 1.1), metric-compatible with Arial, Times New Roman and Courier New.
 - `FontCollection` with CSS font matching, system font discovery and metric-compatible substitutes.
+- Thread safety: `PdfFont`, `FontCollection`, `BundledFonts`, `PdfImage`, `TextShaper`, `Hyphenator`, `HtmlToPdf`,
+  `RazorToPdf` and `RazorPdfRenderer` are thread-safe; documents, pages, canvases, flow documents and `PdfReader` are
+  used by one thread at a time (see "Thread safety" in the README). Font data (the file's bytes, parsed tables,
+  character map and HarfBuzz face) is shared by every document and thread; what a document uses of a font is kept per
+  document. The bundled fonts are loaded once per process and shared by every collection, so conversions without a
+  `FontCollection` no longer read and parse them each time; the faces of a `.ttc` file share one copy of its data.
+  `FontCollection.AddFont(Func<PdfFont>, ...)` adds a lazily created font that can be shared between collections.
+  Fixed: a font's character map could be seen without its symbol flag by a concurrent first use, and a hyphenation
+  `Register` racing with lookups could leave them cached with the old answer.
 
 ### RaiCore.Pdf.Layout
 - The package includes the Unicode License v3 notice (`licenses/unicode.txt`) for its bidi and line break tables,
@@ -462,6 +471,9 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   without its annotations. Decoding is needed only for cross-reference and object streams and for pages drawn with
   several content streams, so the image filters (DCT, JPX, JBIG2, CCITT) are never decoded. Not fuzzed yet beyond a
   seeded smoke test.
+- Thread safety: fonts declared with `@font-face` are loaded per conversion (put fonts shared by many documents in the
+  `FontCollection`); a loaded font's data stays in memory as long as the `PdfFont` (and a collection that found it) is
+  referenced.
 - Variable fonts are embedded at their default instance: CFF2 fonts are not instanced at other axis values (nor are
   TrueType variable fonts), so `font-weight` or `font-variation-settings` cannot select another instance of one
   variable font file. CFF glyphs built with `seac` (accented glyphs from old Type 1 conversions) and charstrings using

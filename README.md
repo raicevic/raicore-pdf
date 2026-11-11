@@ -620,6 +620,27 @@ flow.Render().Save("report.pdf");
   rowspans join may also break between them with the spanning cell continuing alongside, and borders can be separate
   or collapsed (conflicts resolved by width and style as in CSS 2.1).
 
+### Thread safety
+
+Fonts, images, hyphenation patterns and the converters are thread-safe and meant to be shared: create one
+`FontCollection` at startup and pass it to every conversion, and run as many conversions in parallel as you like.
+Parallel conversions are independent and give exactly the bytes of the same conversions run one at a time.
+
+```csharp
+var options = new HtmlConverterOptions { Fonts = BundledFonts.CreateCollection() }; // share fonts between threads
+var pdfs = await Task.WhenAll(invoices.Select(i => Task.Run(() => HtmlToPdf.ConvertToBytes(Render(i), options))));
+```
+
+| Type | Guarantee |
+| --- | --- |
+| `PdfFont` | Immutable; one instance can be used by any number of documents and threads. It holds only the font data (bytes, parsed tables, character map, HarfBuzz face, each created once); the glyphs a document uses, its subset and its PDF objects are kept per document. |
+| `FontCollection` | Thread-safe for adding and finding fonts. Each face is loaded once, on first use, and the same `PdfFont` is returned from then on; the faces of a `.ttc` share one copy of the file. |
+| `BundledFonts` | The Liberation fonts are read and parsed once per process and shared by every collection, so a collection per document is cheap. |
+| `PdfImage`, `Hyphenator`, `TextShaper` | Thread-safe; bundled hyphenation patterns load once per process. `Hyphenator.Register` may be called at any time. |
+| `HtmlToPdf`, `RazorToPdf`, `RazorPdfRenderer` | Thread-safe; each conversion has its own DOM, layout and document. `HtmlConverterOptions` can be shared (its `ResourceLoader`, and a renderer's services, are then called from several threads). Fonts from `@font-face` are loaded per conversion. |
+| `PdfDocument`, `PdfPage`, `PdfCanvas`, `FlowDocument`, `Paragraph` | Not thread-safe: build and save each document on one thread at a time (different documents in parallel). |
+| `PdfReader` | Not thread-safe, and documents importing its pages read it when they are saved: open a reader per thread. |
+
 ## Architecture
 
 ```

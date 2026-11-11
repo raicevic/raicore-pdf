@@ -8,6 +8,7 @@ namespace RaiCore.Pdf.Razor;
 /// Converts Razor components to PDF without dependency injection. Use <see cref="RazorPdfRenderer"/> when components
 /// need to <c>@inject</c> services.
 /// </summary>
+/// <remarks>Thread-safe: each call renders with its own renderer and converts independently (see <see cref="HtmlToPdf"/>).</remarks>
 /// <example>
 /// <code>
 /// var pdf = RazorToPdf.Convert&lt;InvoiceDocument&gt;(new Dictionary&lt;string, object?&gt;

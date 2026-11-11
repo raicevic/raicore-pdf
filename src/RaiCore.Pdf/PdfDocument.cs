@@ -9,6 +9,12 @@ namespace RaiCore.Pdf;
 /// <summary>
 /// A PDF document under construction.
 /// </summary>
+/// <remarks>
+/// A document, its pages and their canvases are not thread-safe: build and save each document on one thread at a time.
+/// Different documents are independent and can be built and saved in parallel, and they can share fonts
+/// (<see cref="Fonts.PdfFont"/>, <see cref="Fonts.FontCollection"/>) and images (<see cref="PdfImage"/>), which are
+/// thread-safe and are not copied per document.
+/// </remarks>
 /// <example>
 /// <code>
 /// var doc = new PdfDocument();

@@ -1,5 +1,3 @@
-using System.Reflection;
-
 namespace RaiCore.Pdf.Fonts;
 
 /// <summary>
@@ -7,6 +5,12 @@ namespace RaiCore.Pdf.Fonts;
 /// Liberation Sans, Serif and Mono (SIL Open Font License 1.1) have the same character widths as
 /// Arial/Helvetica, Times New Roman and Courier New, so text breaks into lines exactly as with those fonts.
 /// </summary>
+/// <remarks>
+/// Thread-safe. Each bundled font is read from the assembly and parsed once per process, the first time any collection
+/// uses it; every collection made with <see cref="AddBundledFonts"/> or <see cref="CreateCollection"/> then returns that
+/// same <see cref="PdfFont"/> instance. Creating a collection per document is therefore cheap, and documents converted
+/// at the same time on different threads share the font data instead of each holding a copy.
+/// </remarks>
 public static class BundledFonts
 {
     private static readonly (string Family, string File)[] Families =
@@ -24,16 +28,27 @@ public static class BundledFonts
         ("BoldItalic", 700, true),
     ];
 
-    /// <summary>Adds Liberation Sans, Serif and Mono (4 styles each). Font data is loaded on first use.</summary>
+    /// <summary>The bundled faces, each family of <see cref="Families"/> in each style of <see cref="Styles"/>, in order. Each is loaded once, on first use, and then shared by every collection.</summary>
+    private static readonly Lazy<PdfFont>[] Faces =
+    [
+        .. Families.SelectMany(family => Styles.Select(style =>
+        {
+            var resource = $"RaiCore.Pdf.Fonts.Liberation.{family.File}-{style.Suffix}.ttf";
+            return new Lazy<PdfFont>(() => PdfFont.Load(ReadResource(resource)), LazyThreadSafetyMode.ExecutionAndPublication);
+        })),
+    ];
+
+    /// <summary>Adds Liberation Sans, Serif and Mono (4 styles each). Font data is loaded on first use and shared by all collections.</summary>
     public static FontCollection AddBundledFonts(this FontCollection collection)
     {
         ArgumentNullException.ThrowIfNull(collection);
-        foreach (var (family, file) in Families)
+        var i = 0;
+        foreach (var (family, _) in Families)
         {
-            foreach (var (suffix, weight, italic) in Styles)
+            foreach (var (_, weight, italic) in Styles)
             {
-                var resource = $"RaiCore.Pdf.Fonts.Liberation.{file}-{suffix}.ttf";
-                collection.AddFont(() => ReadResource(resource), family, weight, italic);
+                var face = Faces[i++];
+                collection.AddFont(() => face.Value, family, weight, italic);
             }
         }
 

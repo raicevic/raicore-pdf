@@ -14,7 +14,12 @@ namespace RaiCore.Pdf;
 /// The reader handles classic cross-reference tables, cross-reference streams, object streams, hybrid files and
 /// incremental updates (the newest revision wins). A file whose cross-reference data is missing or wrong is repaired by
 /// scanning it for objects (<see cref="IsRepaired"/>). The whole file is kept in memory, and objects are parsed when
-/// they are first needed. A reader is not thread-safe.
+/// they are first needed.
+/// </para>
+/// <para>
+/// A reader is not thread-safe, and documents that import its pages or draw them read it again when they are saved: use
+/// a reader, and the documents made from it, on one thread at a time. To merge the same file into documents built in
+/// parallel, open a reader per thread.
 /// </para>
 /// <para>
 /// Encrypted files are not supported yet: <see cref="Open(byte[])"/> throws <see cref="NotSupportedException"/>.

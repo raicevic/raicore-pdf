@@ -73,6 +73,11 @@ public sealed record PageMap(IReadOnlyList<PageContext> Pages, IReadOnlyDictiona
 /// <summary>
 /// A sequence of blocks that flows across as many pages as needed.
 /// </summary>
+/// <remarks>
+/// Not thread-safe: build and render a flow document (and its blocks and paragraphs) on one thread at a time. Separate
+/// flow documents can be laid out in parallel and share fonts, images, hyphenators and immutable styles
+/// (<see cref="TextStyle"/>, <see cref="BoxStyle"/>, <see cref="PageSetup"/>).
+/// </remarks>
 /// <example>
 /// <code>
 /// var flow = new FlowDocument(PageSetup.A4)
