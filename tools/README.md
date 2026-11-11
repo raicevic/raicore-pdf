@@ -55,6 +55,20 @@ gzip -9 -c /tmp/ucd/BidiTest.txt > tests/RaiCore.Pdf.Tests/Fixtures/Unicode/Bidi
 gzip -9 -c /tmp/ucd/BidiCharacterTest.txt > tests/RaiCore.Pdf.Tests/Fixtures/Unicode/BidiCharacterTest.txt.gz
 ```
 
+## `generate_hyphenation_patterns.py`
+
+Regenerates the hyphenation patterns in `src/RaiCore.Pdf.Layout/Text/Hyphenation/Patterns` (`<language>.hyph.gz`,
+gzipped UTF-8 text with the original header, the hyphenmins, the Liang patterns and the exceptions) from the
+[hyph-utf8](https://github.com/hyphenation/tex-hyphen) project at the commit pinned in the script. Only the standard
+library is needed. Before adding a language, check its licence (in the header of its `hyph-*.tex`): only permissive
+ones (MIT, BSD, all-permissive notices) are bundled, and each must be listed in `Patterns/LICENSES.md` and in the
+Layout package's `PackageLicenseExpression`.
+
+```sh
+python3 tools/generate_hyphenation_patterns.py            # downloads the pinned files
+python3 tools/generate_hyphenation_patterns.py /tmp/hyph  # or reads hyph-*.tex, .pat.txt and .hyp.txt from a directory
+```
+
 ## `generate_test_images.py`
 
 Regenerates the JPEG and GIF fixtures in `tests/RaiCore.Pdf.Tests/Fixtures/Images` (needs Pillow): images with four

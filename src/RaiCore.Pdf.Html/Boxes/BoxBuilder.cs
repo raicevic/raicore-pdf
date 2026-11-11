@@ -85,7 +85,7 @@ internal sealed partial class BoxBuilder
     {
         if (!_styles.TryGetValue(element, out var style))
         {
-            style = ComputedStyle.From(_window.GetComputedStyle(element), _rootFontSize, _viewport);
+            style = ComputedStyle.From(_window.GetComputedStyle(element), _rootFontSize, _viewport) with { Language = LanguageOf(element) };
             style = style with { ContainerRtl = element.ParentElement is { } parent ? Style(parent).Rtl : style.Rtl };
             var dir = element.GetAttribute("dir")?.Trim().ToLowerInvariant();
             if (dir == "auto" || (element.LocalName == "bdi" && dir is not ("ltr" or "rtl")))
@@ -118,10 +118,30 @@ internal sealed partial class BoxBuilder
             LineHeight = style.LineHeight,
             LetterSpacing = style.LetterSpacing,
             WordSpacing = style.WordSpacing,
-            Shaping = new ShapingOptions { Features = ParseFeatures(style.FontFeatures) },
+            Shaping = new ShapingOptions { Features = ParseFeatures(style.FontFeatures), Language = style.Language },
+            Language = style.Language,
+
+            // Text that does not wrap is not hyphenated either, not even at soft hyphens.
+            Hyphens = style.WhiteSpace is CssWhiteSpace.NoWrap or CssWhiteSpace.Pre ? Hyphens.None : style.Hyphens,
+            HyphenateCharacter = style.HyphenateCharacter,
+            HyphenationLimits = style.HyphenationLimits,
         };
         _textStyles[style] = textStyle;
         return textStyle;
+    }
+
+    /// <summary>The HTML <c>lang</c> (or <c>xml:lang</c>) of the element or its nearest ancestor with one; <c>null</c> when unknown or empty.</summary>
+    private static string? LanguageOf(IElement element)
+    {
+        for (var e = element; e is not null; e = e.ParentElement)
+        {
+            if ((e.GetAttribute("lang") ?? e.GetAttribute("xml:lang")) is { } lang)
+            {
+                return string.IsNullOrWhiteSpace(lang) ? null : lang.Trim();
+            }
+        }
+
+        return null;
     }
 
     private Block? BuildBlock(IElement element, ComputedStyle style, double containingWidth, string? marker, bool flexItem = false)

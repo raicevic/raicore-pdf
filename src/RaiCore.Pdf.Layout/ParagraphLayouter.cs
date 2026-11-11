@@ -7,11 +7,12 @@ using RaiCore.Pdf.Layout.Text;
 namespace RaiCore.Pdf.Layout;
 
 /// <summary>
-/// Breaks a paragraph into lines: shapes every span to measure it, finds break opportunities with UAX #14,
-/// fills lines greedily, then reshapes each line so glyphs are exact, and computes line boxes with the
-/// CSS inline model (each piece of text contributes its ascent, descent and half-leading).
+/// Breaks a paragraph into lines: shapes every span to measure it, finds break opportunities with UAX #14 and
+/// hyphenation (ParagraphLayouter.Hyphenation.cs), fills lines greedily, then reshapes each line so glyphs are exact,
+/// and computes line boxes with the CSS inline model (each piece of text contributes its ascent, descent and
+/// half-leading).
 /// </summary>
-internal static class ParagraphLayouter
+internal static partial class ParagraphLayouter
 {
     private const double Epsilon = 1e-6;
     private const char SoftHyphen = '\u00AD';
@@ -39,9 +40,10 @@ internal static class ParagraphLayouter
         var indent = paragraph.FirstLineIndent;
         double min = 0, max = 0;
         int segmentStart = 0, lineStart = 0;
-        foreach (var opportunity in LineBreaker.GetBreakOpportunities(text))
+        foreach (var opportunity in GetBreakOpportunities(paragraph.Spans, text, spanStarts))
         {
-            var segment = minPrefix[TrimEnd(text, segmentStart, opportunity.Position)] - minPrefix[segmentStart] + (segmentStart == 0 ? Math.Max(0, indent) : 0);
+            var segment = minPrefix[TrimEnd(text, segmentStart, opportunity.Position)] - minPrefix[segmentStart] + (segmentStart == 0 ? Math.Max(0, indent) : 0)
+                + (opportunity.Hyphen ? HyphenWidth(StyleAt(paragraph.Spans, spanStarts, opportunity.Position - 1)) : 0);
             min = Math.Max(min, segment);
             segmentStart = opportunity.Position;
             if (opportunity.Required || opportunity.Position == text.Length)
@@ -173,7 +175,7 @@ internal static class ParagraphLayouter
         Paragraph paragraph, string text, double width, Func<int, int, double> measure,
         IReadOnlyList<ParagraphSpan> spans, int[] spanStarts)
     {
-        var breaks = LineBreaker.GetBreakOpportunities(text);
+        var breaks = GetBreakOpportunities(spans, text, spanStarts);
         int[]? graphemes = null;
         var lines = new List<(int, int, bool, bool)>();
         var lineStart = 0;
@@ -186,12 +188,12 @@ internal static class ParagraphLayouter
                 b++;
             }
 
-            LineBreakOpportunity? lastFit = null;
+            BreakOpportunity? lastFit = null;
             (int End, bool Hard, bool Hyphenate)? chosen = null;
             for (; b < breaks.Count; b++)
             {
                 var candidate = breaks[b];
-                var hyphenate = !candidate.Required && candidate.Position < text.Length && text[candidate.Position - 1] == SoftHyphen;
+                var hyphenate = candidate.Hyphen;
                 var lineWidth = measure(lineStart, TrimEnd(text, lineStart, candidate.Position))
                     + (hyphenate ? HyphenWidth(StyleAt(spans, spanStarts, candidate.Position - 1)) : 0);
 
@@ -210,7 +212,7 @@ internal static class ParagraphLayouter
 
                 if (lastFit is { } fit)
                 {
-                    chosen = (fit.Position, false, text[fit.Position - 1] == SoftHyphen && fit.Position < text.Length);
+                    chosen = (fit.Position, false, fit.Hyphen);
                 }
                 else if (paragraph.BreakLongWords)
                 {
@@ -307,7 +309,7 @@ internal static class ParagraphLayouter
                 continue;
             }
 
-            // A soft-hyphen break keeps the U+00AD in the line, so the last piece is never empty.
+            // A hyphenation break keeps a letter (or the U+00AD) in the line, so the last piece is never empty.
             var isLastPiece = to == contentEnd;
 
             var style = spans[s].Style;
@@ -329,7 +331,7 @@ internal static class ParagraphLayouter
                 var piece = text[a..b];
                 if (hyphenate && isLastPiece && k == segments.Count - 1)
                 {
-                    piece += style.Fonts[0].HasGlyph(0x2010) ? "\u2010" : "-";
+                    piece += HyphenText(style);
                 }
 
                 var direction = (level & 1) == 1 ? TextDirection.RightToLeft : TextDirection.LeftToRight;
@@ -662,10 +664,6 @@ internal static class ParagraphLayouter
 
         return spans[^1].Style;
     }
-
-    private static double HyphenWidth(TextStyle style) =>
-        TextShaper.Shape(style.Fonts[0].HasGlyph(0x2010) ? "\u2010" : "-", style.Fonts, ShapingFor(style)).Runs
-            .Sum(run => Spaced(run, style).Sum(g => g.Advance)) * style.FontSize;
 
     /// <summary>
     /// The style's shaping options; with letter spacing, optional ligatures are off as in browsers (CSS Text 3

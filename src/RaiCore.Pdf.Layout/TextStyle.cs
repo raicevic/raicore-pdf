@@ -158,6 +158,62 @@ public sealed record TextStyle
     /// Adjacent text sharing a decoration gets one continuous line.
     /// </summary>
     public IReadOnlyList<TextDecoration> Decorations { get; init; } = [];
+
+    /// <summary>
+    /// The language of the text, as a BCP 47 tag such as <c>en-US</c> or <c>de</c> (HTML <c>lang</c>), which picks the
+    /// patterns for <see cref="Hyphens.Auto"/> (see <see cref="Hyphenator.ForLanguage"/>); <c>null</c> when unknown,
+    /// and then words are not hyphenated automatically. Shaping has its own language, <see cref="ShapingOptions.Language"/>.
+    /// </summary>
+    public string? Language { get; init; }
+
+    /// <summary>
+    /// Whether words may be hyphenated at the end of a line (CSS <c>hyphens</c>): only at soft hyphens (U+00AD) by
+    /// default, also where the <see cref="Language"/>'s hyphenation patterns allow, or never. The style of a word's first
+    /// character decides for the whole word.
+    /// </summary>
+    public Hyphens Hyphens { get; init; } = Hyphens.Manual;
+
+    /// <summary>
+    /// The text shown at the end of a hyphenated line (CSS <c>hyphenate-character</c>), or <c>null</c> for the hyphen
+    /// U+2010 (or the hyphen-minus when the first font has no U+2010). An empty string shows nothing.
+    /// </summary>
+    public string? HyphenateCharacter { get; init; }
+
+    /// <summary>
+    /// The shortest word that is hyphenated automatically and the fewest characters kept before and after a hyphen
+    /// (CSS <c>hyphenate-limit-chars</c>).
+    /// </summary>
+    public HyphenationLimits HyphenationLimits { get; init; }
+}
+
+/// <summary>Where words may be hyphenated at the end of a line (CSS <c>hyphens</c>).</summary>
+public enum Hyphens
+{
+    /// <summary>Only at soft hyphens (U+00AD) in the text, the CSS initial value.</summary>
+    Manual,
+
+    /// <summary>Never, not even at soft hyphens.</summary>
+    None,
+
+    /// <summary>
+    /// At soft hyphens, and where the hyphenation patterns of the text's <see cref="TextStyle.Language"/> allow. Words
+    /// with a soft hyphen are hyphenated only at their soft hyphens.
+    /// </summary>
+    Auto,
+}
+
+/// <summary>
+/// Minimum lengths for automatic hyphenation (CSS <c>hyphenate-limit-chars</c>), in characters; <c>null</c> is
+/// <c>auto</c>: words of 5 characters or more, and the language's own minimum before and after a hyphen
+/// (<see cref="Hyphenator.MinBefore"/> and <see cref="Hyphenator.MinAfter"/>, usually 2 and 2 or 3).
+/// </summary>
+/// <param name="Word">The shortest word that is hyphenated.</param>
+/// <param name="Before">The fewest characters before a hyphen.</param>
+/// <param name="After">The fewest characters after a hyphen.</param>
+public readonly record struct HyphenationLimits(int? Word = null, int? Before = null, int? After = null)
+{
+    /// <summary>The word length used for <c>auto</c>.</summary>
+    public const int DefaultWord = 5;
 }
 
 /// <summary>Which lines a <see cref="TextDecoration"/> draws (CSS <c>text-decoration-line</c>).</summary>
