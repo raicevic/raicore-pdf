@@ -5,17 +5,18 @@ internal sealed partial class Paginator
 {
     /// <summary>
     /// The border-box width an inline box gets: its fixed width, or shrink-to-fit (its preferred width, but no wider
-    /// than the space available and no narrower than its minimum width).
+    /// than the space available and no narrower than its minimum width). Its percentages are of
+    /// <paramref name="availableWidth"/>, the width of the paragraph it is in.
     /// </summary>
     public static double InlineBoxWidth(Block block, double availableWidth)
     {
-        var style = block.Style;
+        var style = block.Style.Resolve(availableWidth) with { Margin = block.Style.Margin }; // Margins: see ParagraphLayouter.
         if (style.Width is { } width)
         {
             return style.ClampWidth(width);
         }
 
-        var (min, max) = IntrinsicContentBorderBox(block);
+        var (min, max) = IntrinsicContentBorderBox(block, style);
         return style.ClampWidth(Math.Min(max, Math.Max(min, availableWidth - style.Margin.Horizontal)));
     }
 
@@ -29,10 +30,11 @@ internal sealed partial class Paginator
     /// text), and drawing operations
     /// with its top-left corner at x = 0 and y = the top passed to them.
     /// </summary>
-    public static (double Height, double Baseline, IReadOnlyList<DrawOperation> Content) LayoutInlineBox(Block block, double borderWidth)
+    public static (double Height, double Baseline, IReadOnlyList<DrawOperation> Content) LayoutInlineBox(Block block, double borderWidth, double containingWidth)
     {
         var setup = new PageSetup(new PdfPageSize(borderWidth + 1, StaticHeight), new Thickness(0, 1, 0, 0));
         var paginator = new Paginator(setup, isStatic: true);
+        paginator.ResolveStyle(block, containingWidth);
         paginator.LayoutBlock(block, 0, borderWidth, new BoxSizing(Isolated: true));
         var height = paginator.Y;
         var baseline = block switch
@@ -57,7 +59,7 @@ internal sealed partial class Paginator
         }
 
         // With collapsed borders the table's own border is part of the grid lines (the cells' insets).
-        var style = table.BorderCollapse == BorderCollapse.Collapse ? table.Style with { Border = Borders.None } : table.Style;
+        var style = table.BorderCollapse == BorderCollapse.Collapse ? StyleOf(table) with { Border = Borders.None } : StyleOf(table);
         var top = style.Border.Top.Width + style.Padding.Top;
         var contentWidth = Math.Max(MinimumContentWidth, borderWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
         var layout = TableLayouter.Layout(table, 0, contentWidth);
@@ -65,9 +67,10 @@ internal sealed partial class Paginator
         foreach (var cell in layout.Cells.Where(c => c.Grid.Row == 0 && c.Grid.Cell.Content.Count > 0))
         {
             var first = cell.Grid.Cell.Content[0];
+            var firstStyle = ResolveStyle(first, cell.InnerWidth);
             if (FirstBaseline(first, BoxWidth(first, cell.InnerWidth)) is { } baseline)
             {
-                var candidate = top + layout.SpacingY + cell.InsetTop + first.Style.Margin.Top + baseline;
+                var candidate = top + layout.SpacingY + cell.InsetTop + firstStyle.Margin.Top + baseline;
                 best = best is null ? candidate : Math.Max(best.Value, candidate);
             }
         }

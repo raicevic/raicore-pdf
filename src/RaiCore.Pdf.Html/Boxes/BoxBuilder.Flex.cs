@@ -142,6 +142,7 @@ internal sealed partial class BoxBuilder
                 ? FlexBasis.Points(Math.Max(0, style.FlexBasis.Resolve(innerHeight) + (style.BorderBox ? 0 : vertical)))
                 : FlexBasis.Content
             : column ? FlexBasis.Points(Math.Max(0, style.FlexBasis.Resolve(0) + (style.BorderBox ? 0 : vertical)))
+            : style.FlexBasis.Kind == CssLengthKind.Percent && (style.BorderBox || horizontal == 0) ? FlexBasis.Percent(style.FlexBasis.Value) // Of the container's final width.
             : FlexBasis.Points(Width(style.FlexBasis) ?? 0);
 
         var auto = AutoMargins.None;

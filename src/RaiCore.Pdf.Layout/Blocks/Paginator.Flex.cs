@@ -48,9 +48,9 @@ internal sealed partial class Paginator
     /// The container's inner (content-box) height limits: a definite height if it has one, and the min and max that
     /// an auto height is clamped to.
     /// </summary>
-    private static (double? Definite, double Min, double Max) InnerHeights(FlexBlock flex, double? definiteBorderBox = null)
+    private (double? Definite, double Min, double Max) InnerHeights(FlexBlock flex, double? definiteBorderBox = null)
     {
-        var style = flex.Style;
+        var style = StyleOf(flex);
         var decoration = style.Border.Widths.Vertical + style.Padding.Vertical;
         var min = Math.Max(0, (style.MinHeight ?? 0) - decoration);
         var max = style.MaxHeight is { } maxHeight ? Math.Max(0, maxHeight - decoration) : double.PositiveInfinity;
@@ -106,14 +106,18 @@ internal sealed partial class Paginator
 
     // ---- Rows -------------------------------------------------------------------------------------------------
 
-    /// <summary>The main-axis inputs of a row item: its flex base size and min/max widths, as border-box widths.</summary>
-    private static FlexMainInput RowInput(FlexItem item, double width)
+    /// <summary>
+    /// The main-axis inputs of a row item: its flex base size and min/max widths, as border-box widths. Its percentages
+    /// resolve against the container's content width (<paramref name="width"/>).
+    /// </summary>
+    private FlexMainInput RowInput(FlexItem item, double width)
     {
         var content = item.Content;
-        var margin = content.Style.Margin;
+        var style = ResolveStyle(content, width);
+        var margin = style.Margin;
         var margins = MarginOrZero(item, AutoMargins.Left, margin.Left) + MarginOrZero(item, AutoMargins.Right, margin.Right);
-        var (minContent, maxContent) = IntrinsicContentBorderBox(content);
-        var specified = content.Style.Width;
+        var (minContent, maxContent) = IntrinsicContentBorderBox(content, style);
+        var specified = style.Width;
         var baseSize = item.Basis.Kind switch
         {
             FlexBasisKind.Points => item.Basis.Value,
@@ -122,10 +126,10 @@ internal sealed partial class Paginator
             _ => specified ?? maxContent,
         };
 
-        var max = content.Style.MaxWidth ?? double.PositiveInfinity;
+        var max = style.MaxWidth ?? double.PositiveInfinity;
 
         // min-width: auto is the content's min-content width, capped by a specified width and the max width.
-        var min = content.Style.MinWidth ?? Math.Min(Math.Min(minContent, specified ?? double.PositiveInfinity), max);
+        var min = style.MinWidth ?? Math.Min(Math.Min(minContent, specified ?? double.PositiveInfinity), max);
         return new FlexMainInput(baseSize, min, Math.Max(min, max), Math.Max(0, item.Grow), Math.Max(0, item.Shrink), margins);
     }
 
@@ -162,7 +166,7 @@ internal sealed partial class Paginator
             {
                 var item = items[start + i];
                 var content = item.Content;
-                var margin = content.Style.Margin;
+                var margin = StyleOf(content).Margin;
                 // Items are placed from the main-start edge, which is on the right of a reversed row or of a row in a
                 // right-to-left container; the margin on that side comes first.
                 var startSide = mirrored ? AutoMargins.Right : AutoMargins.Left;
@@ -381,9 +385,9 @@ internal sealed partial class Paginator
     /// A column item's border-box width and its x offset (to the border box) within a line of the given width.
     /// <paramref name="stretch"/> is false when sizing the item's hypothetical width (to find the width of a wrapped line).
     /// </summary>
-    private static (double X, double Width) ColumnCross(FlexBlock flex, FlexItem item, double width, bool stretch = true)
+    private (double X, double Width) ColumnCross(FlexBlock flex, FlexItem item, double width, bool stretch = true)
     {
-        var style = item.Content.Style;
+        var style = StyleOf(item.Content); // Resolved against the container's content width (see ComputeColumns).
         var auto = Auto(item) & (AutoMargins.Left | AutoMargins.Right);
         var marginLeft = MarginOrZero(item, AutoMargins.Left, style.Margin.Left);
         var marginRight = MarginOrZero(item, AutoMargins.Right, style.Margin.Right);
@@ -401,7 +405,7 @@ internal sealed partial class Paginator
         }
         else
         {
-            var (min, max) = IntrinsicContentBorderBox(item.Content);
+            var (min, max) = IntrinsicContentBorderBox(item.Content, style);
             boxWidth = Math.Min(max, Math.Max(min, available)); // Shrink to fit.
         }
 
@@ -429,7 +433,7 @@ internal sealed partial class Paginator
     private FlexMainInput ColumnInput(FlexItem item, double boxWidth, double? definiteHeight)
     {
         var content = item.Content;
-        var style = content.Style;
+        var style = StyleOf(content);
         var margins = MarginOrZero(item, AutoMargins.Top, style.Margin.Top) + MarginOrZero(item, AutoMargins.Bottom, style.Margin.Bottom);
         var natural = MeasureContentBox(content, boxWidth);
         var specified = content is ImageBlock ? null : style.Height;
@@ -458,6 +462,12 @@ internal sealed partial class Paginator
         var (definite, minInner, maxInner) = InnerHeights(flex, definiteHeight);
         var wrap = flex.Wrap != FlexWrap.NoWrap && (definite is not null || !double.IsPositiveInfinity(maxInner));
 
+        // The items' percentages are of the container's content width, also in narrower wrapped lines.
+        foreach (var item in items)
+        {
+            ResolveStyle(item.Content, width);
+        }
+
         // Hypothetical widths: a single line is as wide as the container; wrapped lines are as wide as their widest item.
         var widths = items.Select(item => wrap ? ColumnCross(flex, item, width, stretch: false).Width : ColumnCross(flex, item, width).Width).ToList();
         var inputs = items.Select((item, i) => ColumnInput(item, widths[i], definite)).ToList();
@@ -475,7 +485,7 @@ internal sealed partial class Paginator
             var widest = 0.0;
             for (var i = r.Start; i < r.End; i++)
             {
-                var margin = items[i].Content.Style.Margin;
+                var margin = StyleOf(items[i].Content).Margin;
                 widest = Math.Max(widest, widths[i] + MarginOrZero(items[i], AutoMargins.Left, margin.Left) + MarginOrZero(items[i], AutoMargins.Right, margin.Right));
             }
 
@@ -512,7 +522,7 @@ internal sealed partial class Paginator
             for (var i = 0; i < count; i++)
             {
                 var item = items[start + i];
-                var margin = item.Content.Style.Margin;
+                var margin = StyleOf(item.Content).Margin;
                 var marginTop = (Auto(item) & AutoMargins.Top) != 0 ? autoMargin : margin.Top;
                 var marginBottom = (Auto(item) & AutoMargins.Bottom) != 0 ? autoMargin : MarginOrZero(item, AutoMargins.Bottom, margin.Bottom);
                 var top = starts[i];
@@ -623,7 +633,7 @@ internal sealed partial class Paginator
     {
         var contributions = flex.Items.Select(item =>
         {
-            var margin = item.Content.Style.Margin;
+            var margin = item.Content.Style.Intrinsic().Margin;
             var margins = MarginOrZero(item, AutoMargins.Left, margin.Left) + MarginOrZero(item, AutoMargins.Right, margin.Right);
             var (min, max) = IntrinsicBorderBox(item.Content); // Within the item's min and max widths.
             return (Min: min + margins, Max: max + margins);
@@ -652,7 +662,7 @@ internal sealed partial class Paginator
     /// </summary>
     private double? FirstBaseline(Block block, double boxWidth)
     {
-        var style = block.Style;
+        var style = StyleOf(block);
         var top = style.Border.Top.Width + style.Padding.Top;
         var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
         switch (block)
@@ -662,7 +672,8 @@ internal sealed partial class Paginator
                 return lines.Count > 0 ? top + lines[0].Baseline : null;
             case ContainerBlock { Children.Count: > 0 } container:
                 var child = container.Children[0];
-                return FirstBaseline(child, BoxWidth(child, contentWidth)) is { } inner ? top + child.Style.Margin.Top + inner : null;
+                var childStyle = ResolveStyle(child, contentWidth);
+                return FirstBaseline(child, BoxWidth(child, contentWidth)) is { } inner ? top + childStyle.Margin.Top + inner : null;
             case FlexBlock { IsRow: true } flex when flex.Items.Count > 0:
                 var (rows, starts) = ComputeRows(flex, flex.OrderedItems(), contentWidth);
                 var placed = rows[0].Items[0];

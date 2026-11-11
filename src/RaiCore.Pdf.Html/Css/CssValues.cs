@@ -30,6 +30,28 @@ internal readonly record struct CssLength(double Value, CssLengthKind Kind)
         _ => 0,
     };
 
+    /// <summary>
+    /// The length as points plus a percentage of the reference: a length, a percentage, or a calc() of them (also clamped
+    /// at 0, see <see cref="NonNegative"/>); <c>false</c> for auto and for min(), max() and clamp() of a percentage.
+    /// </summary>
+    public bool TryLinear(out double points, out double percent)
+    {
+        switch (Kind)
+        {
+            case CssLengthKind.Points:
+                (points, percent) = (Value, 0);
+                return true;
+            case CssLengthKind.Percent:
+                (points, percent) = (0, Value);
+                return true;
+            case CssLengthKind.Calc when Calc is not null:
+                return Calc.TryLinear(out points, out percent);
+            default:
+                (points, percent) = (0, 0);
+                return false;
+        }
+    }
+
     /// <summary>The length clamped at 0, for properties that cannot be negative (a calc() result can be).</summary>
     public CssLength NonNegative() => Kind switch
     {

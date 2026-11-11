@@ -794,6 +794,7 @@ internal sealed partial class BoxBuilder
             ContainsFloats = style.ContainsFloats,
             ClipOverflow = style.ClipOverflow,
         };
+        box = box with { Percentages = PercentagesFor(style, box, containingWidth, flexItem) };
         var content = Clamp(borderBoxWidth ?? (containingWidth - box.Margin.Horizontal)) - decoration;
         return (box, Math.Max(1, content));
 
@@ -810,6 +811,60 @@ internal sealed partial class BoxBuilder
             var vertical = padding.Vertical + borders.Widths.Vertical;
             return value is { } v ? Math.Max(style.BorderBox ? Math.Max(v, vertical) : v + vertical, 0) : null;
         }
+    }
+
+    /// <summary>
+    /// The sizes of a box that depend on its containing block's width, for the layout to resolve against the width it
+    /// actually gets (e.g. a flex item's after flexing), or <c>null</c> when none does. <paramref name="box"/> has them
+    /// resolved against <paramref name="containingWidth"/>; lengths that are not linear in it (min(), max() and clamp()
+    /// of a percentage) keep those values, and so do auto margins, unless they are linear too (beside a width without
+    /// min or max widths, while they are not clamped at 0).
+    /// </summary>
+    private static BoxPercentages? PercentagesFor(ComputedStyle style, BoxStyle box, double containingWidth, bool flexItem)
+    {
+        static BoxLength? Linear(CssLength length) => length.TryLinear(out var points, out var percent) ? new BoxLength(points, percent) : null;
+        static bool Relative(BoxLength? length) => length is { Percent: not 0 };
+        static RelativeThickness Sides(Func<int, BoxLength> side) => new(side(0), side(1), side(2), side(3));
+        static double Side(Thickness thickness, int side) => side switch { 0 => thickness.Top, 1 => thickness.Right, 2 => thickness.Bottom, _ => thickness.Left };
+
+        // A content-box height includes the vertical padding as resolved here, so then that padding stays as it is.
+        var fixedVertical = !style.BorderBox && !(style.Height.IsAuto && style.MinHeight.IsAuto && style.MaxHeight.IsAuto);
+        var padding = Sides(i => (i % 2 == 0 && fixedVertical ? null : Linear(style.Padding[i])) ?? new BoxLength(Side(box.Padding, i)));
+        var decoration = padding.Horizontal + new BoxLength(box.Border.Widths.Horizontal);
+        BoxLength? BorderBox(CssLength length) =>
+            length.IsAuto || Linear(length) is not { } value ? null : style.BorderBox ? value : value + decoration;
+
+        var width = BorderBox(style.Width);
+        var minWidth = BorderBox(style.MinWidth);
+        var maxWidth = BorderBox(style.MaxWidth);
+
+        // Auto margins share the free space beside a width: linear while they are not clamped at 0 (CSS 2.1 section
+        // 10.3.3); otherwise (and beside a width limited by min-width or max-width) they keep their points.
+        var margin = Sides(i => style.Margin[i].IsAuto ? new BoxLength(Side(box.Margin, i)) : Linear(style.Margin[i]) ?? new BoxLength(Side(box.Margin, i)));
+        var (leftAuto, rightAuto) = (style.Margin[3].IsAuto, style.Margin[1].IsAuto);
+        if (!flexItem && style.Float == FloatSide.None && width is { } used && style.MinWidth.IsAuto && style.MaxWidth.IsAuto
+            && (leftAuto || rightAuto || style.ContainerRtl))
+        {
+            var nonAuto = (leftAuto ? default : margin.Left) + (rightAuto ? default : margin.Right);
+            var free = new BoxLength(0, 100) + new BoxLength(-used.Points, -used.Percent) + new BoxLength(-nonAuto.Points, -nonAuto.Percent);
+            if (free.Resolve(containingWidth) >= 0)
+            {
+                var half = new BoxLength(free.Points / 2, free.Percent / 2);
+                margin = (leftAuto, rightAuto) switch
+                {
+                    (true, true) => margin with { Left = half, Right = half },
+                    (true, false) => margin with { Left = free },
+                    (false, false) => margin with { Left = margin.Left + free }, // Over-constrained, right to left.
+                    _ => margin,
+                };
+            }
+        }
+
+        return Relative(padding.Top) || Relative(padding.Right) || Relative(padding.Bottom) || Relative(padding.Left)
+            || Relative(width) || Relative(minWidth) || Relative(maxWidth)
+            || Relative(margin.Top) || Relative(margin.Right) || Relative(margin.Bottom) || Relative(margin.Left)
+            ? new BoxPercentages { Width = width, MinWidth = minWidth, MaxWidth = maxWidth, Margin = margin, Padding = padding }
+            : null;
     }
 
     /// <summary>

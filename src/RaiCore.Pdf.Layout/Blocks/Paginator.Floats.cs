@@ -86,7 +86,7 @@ internal sealed partial class Paginator
     /// </summary>
     private void PlaceFloat(Block block, double x, double width, double pendingMargin)
     {
-        var style = block.Style;
+        var style = ResolveStyle(block, width);
         var boxWidth = FloatBoxWidth(block, width);
         var outerWidth = boxWidth + style.Margin.Horizontal;
         var height = MeasureBox(block, boxWidth) + style.Margin.Vertical;
@@ -153,18 +153,19 @@ internal sealed partial class Paginator
 
     /// <summary>
     /// A float's border-box width: its own width, or shrink-to-fit (CSS 2.1 section 10.3.5): its max-content width,
-    /// but no wider than the available width, and no narrower than its min-content width.
+    /// but no wider than the available width, and no narrower than its min-content width. Its percentages must be
+    /// resolved (see <see cref="ResolveStyle"/>).
     /// </summary>
     private double FloatBoxWidth(Block block, double width)
     {
-        var style = block.Style;
+        var style = StyleOf(block);
         if (style.Width is not null || block is ImageBlock or TableBlock)
         {
             return BoxWidth(block, width);
         }
 
         var available = Math.Max(0, width - style.Margin.Horizontal);
-        var (min, max) = IntrinsicContentBorderBox(block);
+        var (min, max) = IntrinsicContentBorderBox(block, style);
         return style.ClampWidth(Math.Min(Math.Max(min, available), max));
     }
 

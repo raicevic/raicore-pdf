@@ -23,7 +23,7 @@ internal sealed partial class Paginator
         foreach (var cell in layout.Cells.Where(c => c.Grid.Row == row))
         {
             var content = cell.Grid.Cell.Content;
-            var start = content.Count == 0 ? 0 : content[0].Style.Margin.Top + MinimumStartHeight(content[0], cell.InnerWidth);
+            var start = content.Count == 0 ? 0 : ResolveStyle(content[0], cell.InnerWidth).Margin.Top + MinimumStartHeight(content[0], cell.InnerWidth);
             needed = Math.Max(needed, cell.InsetTop + start);
         }
 
