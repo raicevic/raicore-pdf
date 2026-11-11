@@ -186,6 +186,12 @@ public class HtmlConversionTests
     [InlineData("@page { size: A5 landscape; margin: 1cm }", 595.28, 419.53, 28.35)]
     [InlineData("@page { size: letter; margin: 0.5in 1in }", 612, 792, 36)]
     [InlineData("@page { size: 100mm 50mm }", 283.46, 141.73, 56.69)]
+    [InlineData("@page { size: A6 }", 297.64, 419.53, 56.69)]
+    [InlineData("@page { size: a6 landscape }", 419.53, 297.64, 56.69)]
+    [InlineData("@page { size: A0 }", 2383.94, 3370.39, 56.69)]
+    [InlineData("@page { size: B6 }", 354.33, 498.9, 56.69)]
+    [InlineData("@page { size: jis-b5 }", 515.91, 728.5, 56.69)]
+    [InlineData("@page { size: 300PX 200Px; margin: 10PT }", 225, 150, 10)]
     public void Page_size_and_margins_come_from_at_page(string css, double width, double height, double marginTop)
     {
         var flow = HtmlToPdf.CreateFlowDocument($"<style>{css}</style><p>x</p>");

@@ -37,6 +37,28 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
     /// </summary>
     public IReadOnlyList<string> DroppedAnchors { get; private set; } = [];
 
+    /// <summary>
+    /// Adds a leader (CSS <c>leader()</c>): its pattern, repeated when the line is laid out to fill the rest of the
+    /// line. Its spaces are kept.
+    /// </summary>
+    public void AddLeader(string pattern, ComputedStyle style, InlineAlignment alignment = default)
+    {
+        var textStyle = builder.TextStyleFor(style);
+        if (alignment != default)
+        {
+            textStyle = textStyle with { VerticalAlign = alignment };
+        }
+
+        if (builder.CurrentDecorations.Count > 0)
+        {
+            textStyle = textStyle with { Decorations = builder.CurrentDecorations };
+        }
+
+        Paragraph().AddLeader(pattern, textStyle);
+        _afterSpace = pattern.EndsWith(' ');
+        _hasVisibleContent = true;
+    }
+
     /// <summary>A list marker to place before the first content (or alone, if the item is empty).</summary>
     public void SetMarker(string marker) => _marker = marker;
 

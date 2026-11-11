@@ -22,7 +22,7 @@ internal static class ListMarkers
         _ => "\u2022",
     };
 
-    /// <summary>A number in a counter style, without the list marker suffix (for <c>counter(page, style)</c>).</summary>
+    /// <summary>A number in a counter style, without the list marker suffix (for <c>counter(name, style)</c>).</summary>
     public static string FormatNumber(string style, int value) => style switch
     {
         "decimal-leading-zero" => value.ToString("00", CultureInfo.InvariantCulture),
@@ -31,6 +31,9 @@ internal static class ListMarkers
         "lower-roman" => Roman(value).ToLowerInvariant(),
         "upper-roman" => Roman(value),
         "lower-greek" => Greek(value),
+        "disc" => "\u2022",
+        "circle" => "\u25E6",
+        "square" => "\u25AA",
         "none" => string.Empty,
         _ => value.ToString(CultureInfo.InvariantCulture),
     };

@@ -300,6 +300,7 @@ internal static partial class ParagraphLayouter
         // Shape each span's part of the line again, so kerning and contextual forms are exact at line edges: in runs
         // of one bidi level, each in the direction its level gives. Explicit bidi controls are not drawn.
         var pieces = new List<Piece>();
+        var leaders = new List<(int Piece, ParagraphSpan Span)>();
         for (var s = 0; s < spans.Count; s++)
         {
             var from = Math.Max(start, spanStarts[s]);
@@ -322,6 +323,11 @@ internal static partial class ParagraphLayouter
                 }
 
                 continue;
+            }
+
+            if (spans[s].IsLeader)
+            {
+                leaders.Add((pieces.Count, spans[s]));
             }
 
             var segments = LevelRuns(bidi.Types, lineLevels, start, from, to);
@@ -361,6 +367,7 @@ internal static partial class ParagraphLayouter
             (d.HasStartEdge && d.Start >= start ? StartEdge(d.Box) : 0) + (d.HasEndEdge && d.End <= contentEnd ? EndEdge(d.Box) : 0));
         var naturalWidth = edges + pieces.Sum(p => p.Run is not null ? p.Glyphs.Sum(g => g.Advance) * p.Style.FontSize : p.Image?.Width ?? p.Box!.OuterWidth);
         var glyphLists = pieces.Select(p => p.Glyphs).ToList();
+        naturalWidth += FillLeaders(leaders, pieces, glyphLists, available - naturalWidth);
         if (justify && naturalWidth < available)
         {
             var spaces = glyphLists.Sum(g => g.Count(IsSpace));
@@ -572,6 +579,54 @@ internal static partial class ParagraphLayouter
         {
             Links = linkPieces,
         };
+    }
+
+    /// <summary>
+    /// Leaders (<see cref="Paragraph.AddLeader"/>) share the space left on the line: each repeats its pattern as often
+    /// as fits in its share, the repetitions pushed to the end of the share so what follows ends at the line's end.
+    /// Returns the width added.
+    /// </summary>
+    private static double FillLeaders(List<(int Piece, ParagraphSpan Span)> leaders, List<Piece> pieces, List<IReadOnlyList<PositionedGlyph>> glyphLists, double free)
+    {
+        if (leaders.Count == 0 || free <= Epsilon)
+        {
+            return 0;
+        }
+
+        var share = free / leaders.Count;
+        var added = 0.0;
+        foreach (var (index, span) in leaders)
+        {
+            var style = span.Style;
+            var runs = TextShaper.Shape(span.Text, style.Fonts, ShapingFor(style)).Runs;
+            if (index >= pieces.Count || pieces[index].Run is null || runs.Count != 1 || style.FontSize <= 0)
+            {
+                continue; // A pattern in more than one font is drawn once.
+            }
+
+            var pattern = Spaced(runs[0], style);
+            var patternWidth = pattern.Sum(g => g.Advance) * style.FontSize;
+            var width = (glyphLists[index].Sum(g => g.Advance) * style.FontSize) + share;
+            var copies = patternWidth > 0 ? (int)Math.Floor((width + Epsilon) / patternWidth) : 0;
+            if (copies < 1)
+            {
+                continue;
+            }
+
+            var gap = (width - (copies * patternWidth)) / style.FontSize;
+            var glyphs = new List<PositionedGlyph>(copies * pattern.Count);
+            for (var c = 0; c < copies; c++)
+            {
+                glyphs.AddRange(pattern.Select(g => g with { OffsetX = g.OffsetX + gap }));
+            }
+
+            glyphs[^1] = glyphs[^1] with { Advance = glyphs[^1].Advance + gap };
+            pieces[index] = pieces[index] with { Run = runs[0], Glyphs = glyphs };
+            glyphLists[index] = glyphs;
+            added += share;
+        }
+
+        return added;
     }
 
     /// <summary>

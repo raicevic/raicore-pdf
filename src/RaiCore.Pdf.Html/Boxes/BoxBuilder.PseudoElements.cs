@@ -10,8 +10,8 @@ namespace RaiCore.Pdf.Html.Boxes;
 /// <summary>
 /// Generated content: the CSS <c>::before</c> and <c>::after</c> pseudo-elements (also written <c>:before</c> and
 /// <c>:after</c>). AngleSharp cascades a pseudo-element's rules and inherits from its element; the pseudo-element is
-/// then materialized as a detached element holding its content (text nodes, and <c>img</c> elements for
-/// <c>url()</c>), which is laid out like any other child: inline (with an inline box for its background, border and
+/// then materialized as a detached element holding its content (text nodes, <c>img</c> elements for <c>url()</c> and
+/// leader elements for <c>leader()</c>; counters and cross-references become text, see BoxBuilder.Counters), which is laid out like any other child: inline (with an inline box for its background, border and
 /// padding), as an atomic inline box or as a block, as its <c>display</c> says.
 /// </summary>
 internal sealed partial class BoxBuilder
@@ -25,11 +25,17 @@ internal sealed partial class BoxBuilder
         "img", "svg", "br", "input", "textarea", "select", "iframe", "object", "embed", "video", "audio", "canvas",
     };
 
+    /// <summary>The detached element standing in for a <c>leader()</c> in generated content (with its pattern).</summary>
+    private const string LeaderElement = "raicore-leader";
+
     /// <summary>The detached elements standing in for pseudo-elements (they have no pseudo-elements of their own).</summary>
     private readonly HashSet<IElement> _generated = [];
 
     /// <summary>The text each pseudo-element generated, for <c>content(before)</c> and <c>content(after)</c> in bookmark labels.</summary>
     private readonly Dictionary<(IElement Element, string Pseudo), string> _generatedText = [];
+
+    /// <summary>The content and style of each pseudo-element asked for (see <see cref="PseudoElement"/>).</summary>
+    private readonly Dictionary<(IElement Element, string Pseudo), (IReadOnlyList<ContentItem> Content, ComputedStyle Style, IReadOnlyList<string> Quotes)?> _pseudoElements = [];
 
     /// <summary>The elements some rule could give a pseudo-element (the others are not asked for its style, which is slow).</summary>
     private HashSet<IElement>? _pseudoCandidates;
@@ -68,37 +74,18 @@ internal sealed partial class BoxBuilder
     /// </summary>
     private IElement? Generate(IElement element, string pseudo)
     {
-        if (_generated.Contains(element) || NoGeneratedContent.Contains(element.LocalName) || !PseudoCandidates().Contains(element))
+        if (_generated.Contains(element) || PseudoElement(element, pseudo) is not { } generated)
         {
             return null;
         }
 
-        var css = _window.GetComputedStyle(element, "::" + pseudo);
-        if (ContentValue.Parse(css.GetPropertyValue("content") ?? string.Empty) is not { } content)
-        {
-            return null;
-        }
-
-        var style = ComputedStyle.From(css, _rootFontSize, _viewport);
-        if (style.Display == CssDisplay.None)
-        {
-            return null;
-        }
-
-        style = style with { Display = GeneratedDisplay(style.Display) };
+        var (content, style, quotes) = generated;
         var box = Document.CreateElement("raicore-" + pseudo);
-        var quotes = Quotes(css.GetPropertyValue("quotes") ?? string.Empty);
         var text = new StringBuilder();
         foreach (var item in content)
         {
             switch (item)
             {
-                case TextItem literal:
-                    text.Append(literal.Text);
-                    break;
-                case AttributeItem attribute:
-                    text.Append(element.GetAttribute(attribute.Name));
-                    break;
                 case QuoteItem quote:
                     text.Append(Quote(quote.Kind, quotes));
                     break;
@@ -109,8 +96,17 @@ internal sealed partial class BoxBuilder
                     _styles[img] = new ComputedStyle(); // Inline, at its natural size.
                     box.AppendChild(img);
                     break;
-
-                // counter() and counters() generate nothing: CSS counters are not supported yet.
+                case LeaderItem leader when leader.Pattern.Length > 0:
+                    AppendText();
+                    var filler = Document.CreateElement(LeaderElement);
+                    filler.SetAttribute("pattern", leader.Pattern);
+                    _styles[filler] = style with { Display = CssDisplay.Inline };
+                    box.AppendChild(filler);
+                    break;
+                default:
+                    // Strings, attr(), counters and cross-references.
+                    text.Append(CounterText(element, pseudo, item));
+                    break;
             }
         }
 
@@ -128,6 +124,36 @@ internal sealed partial class BoxBuilder
                 text.Clear();
             }
         }
+    }
+
+    /// <summary>
+    /// The content, style (with its display as generated) and quotes of a pseudo-element, or <c>null</c> when it
+    /// generates no box. Cached: counters need it before the boxes are built.
+    /// </summary>
+    private (IReadOnlyList<ContentItem> Content, ComputedStyle Style, IReadOnlyList<string> Quotes)? PseudoElement(IElement element, string pseudo)
+    {
+        if (_pseudoElements.TryGetValue((element, pseudo), out var cached))
+        {
+            return cached;
+        }
+
+        (IReadOnlyList<ContentItem>, ComputedStyle, IReadOnlyList<string>)? result = null;
+        var scanned = _paged?.ContentFor(element, pseudo); // Content values AngleSharp drops (target-counter(), leader()...).
+        if (!NoGeneratedContent.Contains(element.LocalName) && (scanned is not null || PseudoCandidates().Contains(element)))
+        {
+            var css = _window.GetComputedStyle(element, "::" + pseudo);
+            if (ContentValue.Parse(scanned ?? css.GetPropertyValue("content") ?? string.Empty) is { } content)
+            {
+                var style = ComputedStyle.From(css, _rootFontSize, _viewport);
+                if (style.Display != CssDisplay.None)
+                {
+                    result = (content, style with { Display = GeneratedDisplay(style.Display) }, Quotes(css.GetPropertyValue("quotes") ?? string.Empty));
+                }
+            }
+        }
+
+        _pseudoElements[(element, pseudo)] = result;
+        return result;
     }
 
     /// <summary>

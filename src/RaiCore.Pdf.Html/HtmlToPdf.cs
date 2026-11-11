@@ -20,6 +20,12 @@ namespace RaiCore.Pdf.Html;
 /// </example>
 public static class HtmlToPdf
 {
+    /// <summary>
+    /// How many times a document with page cross-references is laid out at most: once with placeholders, then with
+    /// the pages found, until they stay the same.
+    /// </summary>
+    private const int MaxLayoutPasses = 4;
+
     /// <summary>Converts an HTML document to a PDF document.</summary>
     public static PdfDocument Convert(string html, HtmlConverterOptions? options = null) =>
         ConvertAsync(html, options).GetAwaiter().GetResult();
@@ -90,10 +96,19 @@ public static class HtmlToPdf
         {
             PageContentWidth = pageRules.VariesPerPage ? name => pageRules.Resolve(new PageContext(3, name, PageSide.Right, IsBlank: false)).ContentWidth : null,
         };
-        var flow = new FlowDocument(setup) { PageSetupResolver = pageRules.VariesPerPage ? pageRules.Resolve : null };
-        foreach (var block in builder.Build(setup.ContentWidth, setup.ContentHeight))
+        var flow = Build(builder, setup, pageRules);
+
+        // Cross-references to pages (target-counter(..., page)) are only known after pagination: lay out again with
+        // the pages found until they no longer change (a page number that is wider can move what follows).
+        for (var pass = 2; pass <= MaxLayoutPasses && builder.UsesPageReferences; pass++)
         {
-            flow.Add(block);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!builder.ResolvePageReferences(flow.MapPages()))
+            {
+                break;
+            }
+
+            flow = Build(builder, setup, pageRules);
         }
 
         if (paged.HasMarginBoxes && document.DocumentElement is { } root)
@@ -103,6 +118,18 @@ public static class HtmlToPdf
 
         var title = document.Title;
         return (flow, string.IsNullOrWhiteSpace(title) ? null : title.Trim());
+    }
+
+    /// <summary>Builds the boxes of the document into a flow with the page setups of the @page rules.</summary>
+    private static FlowDocument Build(BoxBuilder builder, PageSetup setup, PageRules pageRules)
+    {
+        var flow = new FlowDocument(setup) { PageSetupResolver = pageRules.VariesPerPage ? pageRules.Resolve : null };
+        foreach (var block in builder.Build(setup.ContentWidth, setup.ContentHeight))
+        {
+            flow.Add(block);
+        }
+
+        return flow;
     }
 
     /// <summary>

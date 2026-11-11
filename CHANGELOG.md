@@ -57,7 +57,8 @@ change at any time, and this section lists what the packages can do so far.
   font fallback.
 - Unicode line breaking (UAX #14, passing the full conformance test) and paragraphs with alignment, justification,
   line heights, indents, soft hyphens and hard breaks; inline images and inline boxes (`Paragraph.AddBox`: any block
-  as one item of a line, shrink-to-fit, aligned on its last baseline); `InlineAlignment` positions inline text, images
+  as one item of a line, shrink-to-fit, aligned on its last baseline), leaders (`Paragraph.AddLeader`: a pattern
+  repeated to fill the rest of the line, as in a table of contents); `InlineAlignment` positions inline text, images
   and boxes vertically (CSS 2.1 section 10.8); `Paragraph.BeginInline`/`EndInline`/`AddInline` give part of the text an
   inline element's box (`InlineDecoration`).
 - Hyphenation: `TextStyle.Hyphens` (`Manual`, the default: only at soft hyphens; `None`: never, not even at soft
@@ -180,6 +181,20 @@ change at any time, and this section lists what the packages can do so far.
   atomic inline boxes, or block-level. `content` takes strings with CSS escapes, `attr()`, `open-quote`/`close-quote`
   (with `quotes`; by default double quotes, then single quotes for nested ones), `no-open-quote`/`no-close-quote` and
   `url()` images; `none` and `normal` generate nothing. `<q>` elements get quotes from the browser default styles.
+- CSS counters (CSS Lists 3): `counter-reset`, `counter-increment` and `counter-set` with nested scopes (a reset on a
+  sibling replaces the counter, one on a descendant nests a new one), computed in document order with `::before` and
+  `::after`; `counter()` and `counters()` in every list-style counter style in generated content, `string-set` and
+  `bookmark-label`. List items increment the implicit `list-item` counter (`ol`/`ul`/`menu` reset it, honoring
+  `start`, `reversed` and `value`), and list markers show it.
+- Page-context counters: `counter-reset`, `counter-increment` and `counter-set` in `@page` rules (cascaded like the
+  other page properties, so named pages and `:first`/`:left`/`:right`/`:blank` rules apply to the pages they match)
+  change the `page` counter (incremented on every page, blank pages included, unless named) and named counters, shown
+  in margin boxes with `counter()`.
+- Cross-references (CSS GCPM): `target-counter()` and `target-counters()` (the page, or any counter, of the element
+  an `attr(href)` or `"#id"` points to), `target-text()` (its text, `::before`/`::after` or first letter) and
+  `leader()`, for tables of contents with dotted leaders and right-aligned page numbers. Page references to later
+  elements are resolved by laying the document out again until the pages stop changing (at most four layouts).
+  `FlowDocument.MapPages` gives the pages (with their names and sides) and the page of each destination.
 - `min-width` and `max-width` (also with percentages and `calc()`), applied in layout, so they also limit
   shrink-to-fit boxes (`inline-block`, tables, flex items) and the content inside them; a block narrowed by
   `max-width` is centered by auto margins. Images scale to them, and a declared `width` or `height` (even `auto`, as
@@ -201,7 +216,8 @@ change at any time, and this section lists what the packages can do so far.
   CSS variables, any mix of units, and percentages resolved against the containing block like plain percentages.
   Invalid expressions fall back to the property's initial value; results are clamped at 0 where lengths cannot be
   negative. Viewport units (`vw`, `vh`, `vmin`, `vmax`) follow the page area set by `@page`.
-- CSS Paged Media: `@page` size and margins, `:first`/`:left`/`:right`, margin boxes for headers and footers,
+- CSS Paged Media: `@page` size (lengths, `landscape`/`portrait`, and the ISO A0-A10 and B0-B10, JIS-B4/B5, letter,
+  legal and ledger keywords) and margins, `:first`/`:left`/`:right`, margin boxes for headers and footers,
   `counter(page)`/`counter(pages)`, `string-set` and running elements (which can be flex containers).
 - Named pages and page-specific geometry: the `page` property (cascaded by specificity) with `@page name` rules, page
   selectors combining a name with `:first`, `:left`, `:right` and `:blank` (also in selector lists), cascaded by
@@ -237,11 +253,16 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
 - Borders on inline elements are drawn solid, unless they have rounded corners.
 - `min()`, `max()` and `clamp()` with percentages in `border-radius` are evaluated against the box's width as far as it
   is known when the styles are read (plain percentages and `calc()` follow the painted box exactly).
-- Generated content: `counter()`/`counters()` generate nothing (no CSS counters yet); no `::marker`,
-  `::first-line` or `::first-letter`; the legacy `:before`/`:after` count as a class in specificity (AngleSharp), not
-  as an element.
+- Generated content: no `::marker`, `::first-line` or `::first-letter`; the legacy `:before`/`:after` count as a class
+  in specificity (AngleSharp), not as an element. `counter(page)` in the document's own content (outside margin boxes)
+  generates nothing; use `target-counter()`. Document counters are not in scope in margin boxes (they show 0; pass
+  them with `string-set`). The `content` values AngleSharp drops (with `target-counter()`, `target-counters()`,
+  `target-text()` or `leader()`) are cascaded without `!important`. `target-*()` only follow same-document `#id`
+  URLs, and `target-text()` of a `::before`/`::after` further on leaves out quotes. Page references that keep
+  changing after four layouts keep the last values. A leader is drawn once on a line that is already full, and only
+  in its own font (a pattern needing font fallback is not repeated).
 - Ids on table rows and cells are not link destinations (ids inside cells are), and neither are ids inside inline
-  boxes (`inline-block`) or in running elements; links inside them work. A link's clickable area is the line box
+  boxes (`inline-block`) or in running elements; links inside them work. The same goes for `target-counter(..., page)`. A link's clickable area is the line box
   (rectangles, not rotated with transforms).
 - Floats, positioning and grid (rendered as blocks); `overflow: hidden` and background images.
 - `opacity` on inline elements (other than images and inline boxes) and on table rows and cells is ignored; where
@@ -259,8 +280,8 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   element's named page (that of a right page that is not the first; unnamed pages use the plain `@page` rules), so
   `:first`/`:left`/`:right` pages with another content width do not change them. Content continuing onto a page with
   another content width (after an automatic break) keeps the width it started with, and `page` is ignored inside flex
-  items, table cells and inline boxes. Page progression is left to right (`recto` is a right page). Bookmark labels
-  cannot use counters, and inline elements cannot be bookmarks.
+  items, table cells and inline boxes. Page progression is left to right (`recto` is a right page). Inline elements
+  cannot be bookmarks.
 - No tagged PDF, PDF/A or encryption.
 - SVG: no filters, masks, markers, patterns, `spreadMethod` `reflect`/`repeat` (drawn as `pad`), text on a path or
   per-character positions (only the first `x`/`y`/`dx`/`dy`), and no web fonts in SVG text (the standard fonts are

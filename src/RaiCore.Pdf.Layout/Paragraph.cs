@@ -62,7 +62,14 @@ public sealed record InlineAnchor(int Index, string Id);
 /// <param name="Style">The style (for an image or a box, the paragraph style).</param>
 /// <param name="Image">The image, or <c>null</c>.</param>
 /// <param name="Box">The inline box, or <c>null</c>.</param>
-public sealed record ParagraphSpan(string Text, TextStyle Style, InlineImage? Image = null, InlineBox? Box = null);
+public sealed record ParagraphSpan(string Text, TextStyle Style, InlineImage? Image = null, InlineBox? Box = null)
+{
+    /// <summary>
+    /// The text is a leader's pattern (CSS <c>leader()</c>, see <see cref="Paragraph.AddLeader"/>), repeated to fill
+    /// the rest of its line.
+    /// </summary>
+    public bool IsLeader { get; init; }
+}
 
 /// <summary>
 /// A paragraph of styled text, laid out into lines with <see cref="Layout(double)"/>.
@@ -261,6 +268,21 @@ public sealed class Paragraph
             BorderRadius = borderRadius,
         }));
         _length++;
+        return this;
+    }
+
+    /// <summary>
+    /// Appends a leader (CSS <c>leader()</c>): <paramref name="pattern"/> (such as <c>". "</c>) is repeated to fill the
+    /// space left on its line, so what follows it ends at the line's end, as page numbers in a table of contents. On
+    /// a line that is already full it is drawn once; in justified text it takes the space justification would.
+    /// </summary>
+    /// <param name="pattern">The text to repeat.</param>
+    /// <param name="style">Its style, or <c>null</c> for the paragraph style.</param>
+    public Paragraph AddLeader(string pattern, TextStyle? style = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(pattern);
+        _spans.Add(new ParagraphSpan(pattern, style ?? Style) { IsLeader = true });
+        _length += pattern.Length;
         return this;
     }
 
