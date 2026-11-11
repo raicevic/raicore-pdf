@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The BenchmarkDotNet suite: never packed, not a test project. See benchmarks/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\RaiCore.Pdf\RaiCore.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\RaiCore.Pdf.Fonts\RaiCore.Pdf.Fonts.csproj" />
+    <ProjectReference Include="..\..\src\RaiCore.Pdf.Layout\RaiCore.Pdf.Layout.csproj" />
+    <ProjectReference Include="..\..\src\RaiCore.Pdf.Html\RaiCore.Pdf.Html.csproj" />
+  </ItemGroup>
+
+</Project>

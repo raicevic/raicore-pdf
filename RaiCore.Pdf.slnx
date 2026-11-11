@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/RaiCore.Pdf.Benchmarks/RaiCore.Pdf.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/RaiCore.Pdf.Fonts/RaiCore.Pdf.Fonts.csproj" />
     <Project Path="src/RaiCore.Pdf.Html/RaiCore.Pdf.Html.csproj" />

@@ -17,4 +17,8 @@
     <PackageVersion Include="PDFtoImage" Version="5.4.0" />
   </ItemGroup>
 
+  <ItemGroup Label="Benchmarks only (never shipped)">
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
 </Project>
