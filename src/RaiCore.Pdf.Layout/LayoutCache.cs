@@ -28,6 +28,12 @@ internal sealed class LayoutCache
     /// <summary>The most shaped texts kept (a bound on the memory of very long documents); past it the cache starts over.</summary>
     private const int MaxShapedTexts = 100_000;
 
+    /// <summary>
+    /// Longer texts are not cached: they are whole spans and lines, rarely shaped twice once layouts are cached, and
+    /// keeping them kept a long document's glyphs alive twice (about 20% of the peak memory of a 100-page report).
+    /// </summary>
+    private const int MaxShapedLength = 64;
+
     [ThreadStatic]
     private static LayoutCache? t_current;
 
@@ -88,6 +94,11 @@ internal sealed class LayoutCache
     /// <summary>Shaped text, from the cache or by <paramref name="shape"/>.</summary>
     public ShapedText Shape(string text, IReadOnlyList<PdfFont> fonts, ShapingOptions options, TextDirection? direction, Func<ShapedText> shape)
     {
+        if (text.Length > MaxShapedLength)
+        {
+            return shape();
+        }
+
         var key = new ShapeKey(text, fonts, options, direction);
         if (_shapes.TryGetValue(key, out var shaped))
         {

@@ -189,6 +189,12 @@ public class LayoutCacheTests
             Assert.NotSame(
                 TextShaper.Shape("office", [sans], new ShapingOptions { Features = ["-liga"] }),
                 TextShaper.Shape("office", [sans], new ShapingOptions { Features = ["-kern"] }));
+
+            // Long texts (whole spans and lines) are not kept.
+            var text = Documents.Text(3, 20);
+            Assert.True(text.Length > 64);
+            Assert.NotSame(TextShaper.Shape(text, [sans]), TextShaper.Shape(text, [sans]));
+            Assert.Same(TextShaper.Shape(text[..64], [sans]), TextShaper.Shape(text[..64], [sans]));
         }
 
         Assert.NotSame(TextShaper.Shape("office", [sans]), TextShaper.Shape("office", [sans]));
