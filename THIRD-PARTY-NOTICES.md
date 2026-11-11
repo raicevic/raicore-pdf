@@ -27,5 +27,5 @@ These files are in the repository but in no package.
 | Noto Sans JP (a subset) | `tests/RaiCore.Pdf.Tests/Fixtures/NotoSansJP-Subset.otf` | [SIL Open Font License 1.1](tests/RaiCore.Pdf.Tests/Fixtures/NotoSansCJK-OFL.txt) |
 | Liberation Sans as WOFF and WOFF2 | `tests/RaiCore.Pdf.Tests/Fixtures/LiberationSans-Regular.woff`, `.woff2` | [SIL Open Font License 1.1](tests/RaiCore.Pdf.Tests/Fixtures/LiberationSans-OFL.txt) |
 
-The other test fixtures (the `RaiCoreTest*` fonts, and the BMP, WebP, JPEG, GIF, SVG and PDF files) are made for this
+The other test fixtures (the `RaiCoreTest*` fonts, and the BMP, WebP, JPEG, GIF, SVG, PDF and invoice XML files) are made for this
 project by the scripts in `tools/` or by hand, and are under its Apache License 2.0.

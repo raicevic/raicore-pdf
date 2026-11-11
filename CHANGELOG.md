@@ -77,6 +77,15 @@ change at any time, and this section lists what the packages can do so far.
   `PdfDocument.StandardFontSubstitute` embeds a TrueType font in place of the standard fonts (a simple font with
   WinAnsi encoding and a (3,1) `cmap`, so the codes already drawn keep working); `EmbedStandardFonts()` from
   RaiCore.Pdf.Fonts uses Liberation. Validated with veraPDF in CI.
+- Attachments: `PdfDocument.Attachments` with `PdfAttachment` (file name, data, MIME type, description, relationship,
+  dates). Each is an embedded file (Flate-compressed, `/Subtype` MIME type, `/Params` with size, dates and MD5
+  checksum) with a file specification (`/F` and `/UF`, `/Desc`, `/AFRelationship`) in the `/EmbeddedFiles` name tree
+  and in the catalog's associated files (`/AF`). PDF/A-2b rejects attachments; PDF/A-3b allows any file.
+- Factur-X 1.0 / ZUGFeRD 2.x e-invoices: `document.AttachFacturXInvoice(xml, FacturXProfile.EN16931)` attaches the
+  CII invoice XML as `factur-x.xml` (`xrechnung.xml` for XRECHNUNG) with the relationship the profile needs (`Data`
+  for MINIMUM and BASIC WL, `Alternative` otherwise), makes the document PDF/A-3b and writes the `fx:` XMP properties
+  (document type, file name, version, conformance level) with their PDF/A extension schema. Profiles MINIMUM,
+  BASIC WL, BASIC, EN 16931, EXTENDED and XRECHNUNG. Validated with veraPDF in CI.
 - Reading existing PDFs: `PdfReader.Open` (file, stream or bytes) parses classic cross-reference tables,
   cross-reference streams, object streams, hybrid files and incremental updates (the newest revision wins), and
   repairs damaged files by scanning for objects when the cross-reference data is missing or wrong
@@ -468,6 +477,10 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   paragraphs. Flex items are read in document order, not in their visual order (`order`, `row-reverse`). PDF/UA needs
   embedded fonts (a standard font only with a `StandardFontSubstitute`, such as `EmbedStandardFonts()`), and imported
   pages are not tagged.
+- Factur-X / ZUGFeRD: the invoice XML is only checked to be well-formed with a CII root element
+  (`rsm:CrossIndustryInvoice`); it is not validated against the profile's XML schema or business rules (use the
+  official validators or Mustang for that), nor compared with the visible pages. Attachments are document-level
+  associated files only: no file attachment annotations on pages and no portfolios.
 - Metadata: custom property names that are not XML names are encoded (`_x0020_` for a space).
   Keywords and the author are plain text (`dc:creator` holds one entry). Language alternatives are written with
   `x-default` only, and the language is not checked against BCP 47. `HtmlToPdf.CreateFlowDocument` returns no

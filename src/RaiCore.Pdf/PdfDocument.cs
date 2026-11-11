@@ -96,6 +96,7 @@ public sealed partial class PdfDocument
 
         // Checked first, so invalid passwords, permissions or PDF/A settings fail before any work is done.
         CheckPdfA();
+        CheckAttachments();
         var security = Encryption is null ? null : StandardSecurityHandler.Create(Encryption);
         var writer = new PdfFileWriter { PdfA = PdfAConformance, StandardFontSubstitute = StandardFontSubstitute };
 
@@ -214,9 +215,16 @@ public sealed partial class PdfDocument
             catalog["Outlines"] = PdfOutlineWriter.Write(writer, Outline, pageRefs);
         }
 
+        var names = new PdfDictionary();
         if (NamedDestinations.Count > 0)
         {
-            catalog["Names"] = new PdfDictionary { ["Dests"] = PdfLinkWriter.WriteNames(writer, NamedDestinations, pageRefs) };
+            names["Dests"] = PdfLinkWriter.WriteNames(writer, NamedDestinations, pageRefs);
+        }
+
+        WriteAttachments(writer, catalog, names);
+        if (names.Count > 0)
+        {
+            catalog["Names"] = names;
         }
 
         if (PageMode == PdfPageMode.UseOutlines || (PageMode == PdfPageMode.Automatic && Outline.Count > 0))

@@ -8,6 +8,15 @@ namespace RaiCore.Pdf.Xmp;
 internal sealed record PdfAExtensionProperty(string Name, string ValueType, string Category, string Description);
 
 /// <summary>
+/// Properties of a namespace that a standard (such as Factur-X) adds to the document's XMP, with their values and the
+/// description of the schema for PDF/A.
+/// </summary>
+/// <param name="Namespace">The namespace (prefix and URI).</param>
+/// <param name="Description">The schema's description in the PDF/A extension schema.</param>
+/// <param name="Properties">The properties and their (text) values.</param>
+internal sealed record XmpExtension(XmpNamespace Namespace, string Description, IReadOnlyList<(PdfAExtensionProperty Property, string Value)> Properties);
+
+/// <summary>
 /// PDF/A extension schemas (ISO 19005-2, 6.6.2.3): every XMP property outside the schemas PDF/A predefines must be
 /// described in the packet's <c>pdfaExtension:schemas</c> bag, one structure per namespace with its properties.
 /// </summary>

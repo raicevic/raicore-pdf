@@ -471,6 +471,17 @@ var doc = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B }.EmbedStan
 doc.AddPage().Canvas.DrawText("Archived", StandardFont.Helvetica, 12, 72, 720);
 ```
 
+Files can be attached (`PdfDocument.Attachments`; PDF/A-3b allows any file, PDF/A-2b none), and
+`AttachFacturXInvoice` makes a Factur-X / ZUGFeRD e-invoice: a PDF/A-3b carrying the invoice as CII XML. The XML is
+checked to be well-formed, not validated against the profile's rules:
+
+```csharp
+var invoice = HtmlToPdf.Convert(invoiceHtml, new HtmlConverterOptions { PdfAConformance = PdfAConformance.PdfA3B });
+invoice.AttachFacturXInvoice(File.ReadAllBytes("factur-x.xml"), FacturXProfile.EN16931);
+invoice.Attachments.Add(new PdfAttachment("timesheet.csv", csv, "text/csv") { Relationship = PdfAttachmentRelationship.Supplement });
+invoice.Save("invoice.pdf");
+```
+
 ### Existing PDFs
 
 `PdfReader` reads existing PDF files, so a generated document can take pages from them: add a cover page, append
