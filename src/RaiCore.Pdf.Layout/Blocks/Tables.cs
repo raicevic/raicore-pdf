@@ -73,6 +73,13 @@ public sealed class TableBlock : Block
     /// <summary>Optional width specifications per column (CSS <c>col</c> widths); <c>null</c> entries are automatic.</summary>
     public IList<TableWidth?> ColumnWidths { get; } = [];
 
+    /// <summary>
+    /// The table's direction is right to left (CSS <c>direction: rtl</c>): the first column (of the rows' cells and of
+    /// <see cref="ColumnWidths"/>) is on the right and the columns follow to the left. Cell borders and padding stay
+    /// on their physical sides.
+    /// </summary>
+    public bool RightToLeft { get; init; }
+
     /// <summary>Border model.</summary>
     public BorderCollapse BorderCollapse { get; init; }
 

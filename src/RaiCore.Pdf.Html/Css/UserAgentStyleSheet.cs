@@ -2,11 +2,13 @@ namespace RaiCore.Pdf.Html.Css;
 
 /// <summary>
 /// Default styles for HTML elements, following the "Rendering" section of the HTML standard (the defaults browsers use).
-/// It is added before the document's own styles, so any author rule overrides it.
+/// It is added before the document's own styles, so any author rule overrides it. The universal rule keeps the custom
+/// properties LogicalSides adds from being inherited.
 /// </summary>
 internal static class UserAgentStyleSheet
 {
     public const string Css = """
+        * { --raicore-rtl-margin-left: initial; --raicore-rtl-margin-right: initial; --raicore-rtl-padding-left: initial; --raicore-rtl-padding-right: initial; }
         html { display: block; font-family: serif; font-size: 16px; line-height: normal; color: black; }
         address, blockquote, center, dialog, div, figure, figcaption, footer, form, header, hr, legend, listing,
         main, p, plaintext, pre, search, xmp, article, aside, h1, h2, h3, h4, h5, h6, hgroup, nav, section,
@@ -28,8 +30,8 @@ internal static class UserAgentStyleSheet
         body { margin: 8px; }
         p, dl, multicol, pre, listing, xmp, plaintext { margin-top: 1em; margin-bottom: 1em; }
         blockquote, figure { margin: 1em 40px; }
-        dd { margin-left: 40px; }
-        ol, ul, menu { margin-top: 1em; margin-bottom: 1em; padding-left: 40px; }
+        dd { margin-inline-start: 40px; }
+        ol, ul, menu { margin-top: 1em; margin-bottom: 1em; padding-inline-start: 40px; }
         ol ol, ol ul, ul ol, ul ul, menu ul, menu ol, ul menu, ol menu { margin-top: 0; margin-bottom: 0; }
         ul, menu { list-style-type: disc; }
         ol { list-style-type: decimal; }

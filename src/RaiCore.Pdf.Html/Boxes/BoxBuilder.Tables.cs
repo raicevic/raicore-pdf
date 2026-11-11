@@ -57,12 +57,8 @@ internal sealed partial class BoxBuilder
             HorizontalSpacing = spacingAttribute ?? style.BorderSpacingX,
             VerticalSpacing = spacingAttribute ?? style.BorderSpacingY,
             LayoutMode = style.TableLayoutFixed ? TableLayoutMode.Fixed : TableLayoutMode.Auto,
-            Alignment = (style.Margin[3].IsAuto, style.Margin[1].IsAuto) switch
-            {
-                (true, true) => TextAlignment.Center,
-                (true, false) => TextAlignment.Right,
-                _ => TextAlignment.Left,
-            },
+            Alignment = ShrinkToFitAlignment(style),
+            RightToLeft = style.Rtl,
         };
 
         var header = new List<TableRow>();
