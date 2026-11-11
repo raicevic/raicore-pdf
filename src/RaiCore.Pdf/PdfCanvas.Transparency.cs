@@ -63,7 +63,7 @@ public sealed partial class PdfCanvas
         if (!_transform.IsIdentity)
         {
             var t = _transform;
-            Op($"{N(t.A)} {N(t.B)} {N(t.C)} {N(t.D)} {N(t.E)} {N(t.F)} cm");
+            StateOp($"{N(t.A)} {N(t.B)} {N(t.C)} {N(t.D)} {N(t.E)} {N(t.F)} cm");
         }
 
         return this;
@@ -118,7 +118,7 @@ public sealed partial class PdfCanvas
         }
 
         (_fillAlpha, _strokeAlpha) = (fill, stroke);
-        return Op($"/{UseResource(_page.UseExtGState(fill, stroke))} gs");
+        return StateOp($"/{UseResource(_page.UseExtGState(fill, stroke))} gs");
     }
 
     /// <summary>Rounds an alpha to the precision extended graphics states are written with.</summary>

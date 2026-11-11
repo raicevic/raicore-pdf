@@ -7,6 +7,12 @@ public sealed partial class PdfDocument
     private PdfStructureElement? _structureRoot;
 
     /// <summary>
+    /// The structure elements of layout objects (blocks, table cells, tagged text runs) rendered into the document, by
+    /// reference; <c>null</c> marks an artifact. Filled by the layout engine before it draws.
+    /// </summary>
+    internal Dictionary<object, PdfStructureElement?> LayoutStructure { get; } = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>
     /// Whether the document is tagged (ISO 32000-1, section 14.8): content drawn between
     /// <see cref="PdfCanvas.BeginTag(PdfStructureElement)"/> and <see cref="PdfCanvas.EndTag"/> belongs to the structure
     /// elements under <see cref="StructureRoot"/>, everything else is written as artifacts, and links are tagged. Set it

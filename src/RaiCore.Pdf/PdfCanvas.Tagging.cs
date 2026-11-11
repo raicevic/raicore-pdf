@@ -28,9 +28,32 @@ public sealed partial class PdfCanvas
 
     /// <summary>
     /// The structure element that content drawn now belongs to: the innermost tag begun with
-    /// <see cref="BeginTag(PdfStructureElement)"/>, or <c>null</c> under an artifact or outside any tag.
+    /// <see cref="BeginTag(PdfStructureElement)"/>, or <c>null</c> inside an artifact or outside any tag.
     /// </summary>
-    public PdfStructureElement? CurrentElement => _tags.Count > 0 ? _tags[^1].Element : null;
+    public PdfStructureElement? CurrentElement => CurrentTag.Element;
+
+    /// <summary>The document the canvas draws in; <c>null</c> for the drawing surface of an SVG image.</summary>
+    internal PdfDocument? Document => _page.Document;
+
+    /// <summary>
+    /// The tag content drawn now gets: the outermost artifact begun (everything inside an artifact is an artifact),
+    /// else the innermost element; outside any tag, an artifact.
+    /// </summary>
+    private Tag CurrentTag
+    {
+        get
+        {
+            foreach (var tag in _tags)
+            {
+                if (tag.Element is null)
+                {
+                    return tag;
+                }
+            }
+
+            return _tags.Count > 0 ? _tags[^1] : Tag.Untagged;
+        }
+    }
 
     /// <summary>
     /// Starts content that belongs to <paramref name="element"/>: everything drawn until the matching
@@ -68,6 +91,13 @@ public sealed partial class PdfCanvas
         return this;
     }
 
+    /// <summary>Begins a tag that keeps the current one (so that a matching <see cref="EndTag"/> balances it).</summary>
+    internal PdfCanvas BeginInherited()
+    {
+        _tags.Add(CurrentTag);
+        return this;
+    }
+
     /// <summary>Ends the innermost tag begun with <see cref="BeginTag(PdfStructureElement)"/> or <see cref="BeginArtifact"/>.</summary>
     /// <exception cref="InvalidOperationException">No tag is open.</exception>
     public PdfCanvas EndTag()
@@ -90,7 +120,7 @@ public sealed partial class PdfCanvas
     /// </summary>
     private void MarkContent()
     {
-        var tag = _tags.Count > 0 ? _tags[^1] : Tag.Untagged;
+        var tag = CurrentTag;
         if (_openTag == tag)
         {
             return;

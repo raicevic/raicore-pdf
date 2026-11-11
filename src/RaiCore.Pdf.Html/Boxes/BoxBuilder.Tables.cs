@@ -128,7 +128,7 @@ internal sealed partial class BoxBuilder
                 var cellStyle = Style(td);
                 if (cellStyle.Display != CssDisplay.None)
                 {
-                    cells.Add(BuildCell(td, cellStyle, tableWidth, defaults));
+                    cells.Add(BuildCell(td, cellStyle, tableWidth, defaults, isHeader));
                 }
             }
 
@@ -143,7 +143,7 @@ internal sealed partial class BoxBuilder
         }
     }
 
-    private TableCell BuildCell(IElement td, ComputedStyle style, double tableWidth, CellDefaults defaults)
+    private TableCell BuildCell(IElement td, ComputedStyle style, double tableWidth, CellDefaults defaults, bool headerGroup)
     {
         // Legacy attributes apply only where the CSS keeps the user-agent defaults.
         if (defaults.Padding is { } padding && style.Padding.All(p => p.Kind == CssLengthKind.Points && Math.Abs(p.Value - CssValues.PointsPerPixel) < 1e-6))
@@ -180,6 +180,7 @@ internal sealed partial class BoxBuilder
         var width = style.Width.IsAuto ? Dimension(td.GetAttribute("width")) : style.Width;
         return new TableCell(content)
         {
+            Tag = CellTag(td, headerGroup),
             Style = new BoxStyle { Padding = box.Padding, Border = box.Border, Background = box.Background, BackgroundClip = box.BackgroundClip, BorderRadius = box.BorderRadius },
             ColumnSpan = Math.Max(1, Integer(td.GetAttribute("colspan")) ?? 1),
             RowSpan = Math.Max(1, Integer(td.GetAttribute("rowspan")) ?? 1),

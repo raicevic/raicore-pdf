@@ -54,14 +54,14 @@ public sealed partial class PdfCanvas
     public PdfCanvas SaveState()
     {
         PushState();
-        return Op("q");
+        return StateOp("q");
     }
 
     /// <summary>Restores the graphics state (<c>Q</c>).</summary>
     public PdfCanvas RestoreState()
     {
         PopState();
-        return Op("Q");
+        return StateOp("Q");
     }
 
     /// <summary>
@@ -71,7 +71,7 @@ public sealed partial class PdfCanvas
     /// </summary>
     public PdfCanvas SetFillColor(PdfColor color)
     {
-        Op($"{N(color.Red)} {N(color.Green)} {N(color.Blue)} rg");
+        StateOp($"{N(color.Red)} {N(color.Green)} {N(color.Blue)} rg");
         return SetAlpha(color.Alpha, _strokeAlpha);
     }
 
@@ -81,12 +81,12 @@ public sealed partial class PdfCanvas
     /// </summary>
     public PdfCanvas SetStrokeColor(PdfColor color)
     {
-        Op($"{N(color.Red)} {N(color.Green)} {N(color.Blue)} RG");
+        StateOp($"{N(color.Red)} {N(color.Green)} {N(color.Blue)} RG");
         return SetAlpha(_fillAlpha, color.Alpha);
     }
 
     /// <summary>Sets the stroke line width in points.</summary>
-    public PdfCanvas SetLineWidth(double width) => Op($"{N(width)} w");
+    public PdfCanvas SetLineWidth(double width) => StateOp($"{N(width)} w");
 
     /// <summary>
     /// Sets the dash pattern for strokes: lengths of alternating dashes and gaps in points, starting
@@ -100,20 +100,20 @@ public sealed partial class PdfCanvas
             throw new ArgumentException("Dash lengths must be non-negative and not all zero.", nameof(pattern));
         }
 
-        return Op($"[{string.Join(' ', pattern.Select(N))}] {N(phase)} d");
+        return StateOp($"[{string.Join(' ', pattern.Select(N))}] {N(phase)} d");
     }
 
     /// <summary>Sets how the ends of open lines and dashes are drawn.</summary>
-    public PdfCanvas SetLineCap(LineCap cap) => Op($"{(int)cap} J");
+    public PdfCanvas SetLineCap(LineCap cap) => StateOp($"{(int)cap} J");
 
     /// <summary>Sets how corners of stroked paths are drawn.</summary>
-    public PdfCanvas SetLineJoin(LineJoin join) => Op($"{(int)join} j");
+    public PdfCanvas SetLineJoin(LineJoin join) => StateOp($"{(int)join} j");
 
     /// <summary>Sets the miter limit: the longest miter, as a multiple of the line width, before a corner is beveled.</summary>
     public PdfCanvas SetMiterLimit(double limit)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
-        return Op($"{N(limit)} M");
+        return StateOp($"{N(limit)} M");
     }
 
     /// <summary>
@@ -123,7 +123,7 @@ public sealed partial class PdfCanvas
     public PdfCanvas Transform(double a, double b, double c, double d, double e, double f)
     {
         ConcatTransform(a, b, c, d, e, f);
-        return Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} cm");
+        return StateOp($"{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} cm");
     }
 
     /// <summary>Starts a new subpath at the given point.</summary>
@@ -287,6 +287,17 @@ public sealed partial class PdfCanvas
         return Encoding.Latin1.GetBytes(_ops.ToString());
     }
 
+    /// <summary>
+    /// Appends a graphics state operator (<c>q</c>, <c>cm</c>, colors, line styles): not content itself, so in a tagged
+    /// document it does not open a marked-content sequence and may fall in any.
+    /// </summary>
+    private PdfCanvas StateOp(string op)
+    {
+        _ops.Append(op).Append('\n');
+        return this;
+    }
+
+    /// <summary>Appends a path or painting operator: in a tagged document, it is marked with the current tag.</summary>
     private PdfCanvas Op(string op)
     {
         if (Tagging)

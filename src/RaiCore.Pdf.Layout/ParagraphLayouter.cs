@@ -90,7 +90,7 @@ internal static partial class ParagraphLayouter
         var (text, spanStarts) = Concatenate(spans);
         if (text.Length == 0)
         {
-            return new ParagraphLayout(width, []);
+            return new ParagraphLayout(width, []) { Source = paragraph };
         }
 
         // Inline boxes are laid out once at this width; their outer widths take part in line breaking.
@@ -168,7 +168,7 @@ internal static partial class ParagraphLayouter
             top += line.Height;
         }
 
-        return new ParagraphLayout(width, lines);
+        return new ParagraphLayout(width, lines) { Source = paragraph };
     }
 
     /// <summary>prefix[i] = width in points of text[0..i), measured by shaping each span.</summary>
@@ -592,7 +592,7 @@ internal static partial class ParagraphLayouter
             var itemX = items[p].X;
             if (image is not null)
             {
-                images.Add(new InlineImageFragment(image, itemX, shifts[p]));
+                images.Add(new InlineImageFragment(image, itemX, shifts[p]) { Start = pieces[p].Start });
             }
             else if (box is not null)
             {
@@ -600,7 +600,7 @@ internal static partial class ParagraphLayouter
             }
             else
             {
-                fragments.Add(new LineFragment(run!, style, glyphLists[p], itemX, shifts[p]));
+                fragments.Add(new LineFragment(run!, style, glyphLists[p], itemX, shifts[p]) { Range = (pieces[p].Start, pieces[p].End) });
             }
         }
 

@@ -23,22 +23,29 @@ internal sealed partial class Paginator
     /// </summary>
     private CollapsedMargin LayoutBlock(Block block, double x, double width, BoxSizing sizing = default)
     {
-        if (block.Style.Opacity >= 1)
+        var (outer, outerOwner) = (_scope, _tagOwner);
+        _tagOwner = block;
+        if (block.Style.Opacity < 1)
         {
-            return LayoutBlockInScope(block, x, width, sizing);
+            _scope = new DrawScope(outer, Math.Max(0, block.Style.Opacity));
         }
 
-        var outer = _scope;
-        _scope = new DrawScope(outer, Math.Max(0, block.Style.Opacity));
         try
         {
             return LayoutBlockInScope(block, x, width, sizing);
         }
         finally
         {
-            _scope = outer;
+            (_scope, _tagOwner) = (outer, outerOwner);
         }
     }
+
+    /// <summary>
+    /// The layout object (block or table cell) whose content is being laid out: in a tagged document, the operations
+    /// added now draw its structure element's content (see <see cref="LayoutTagging"/>). Decorations are drawn as
+    /// artifacts on their own.
+    /// </summary>
+    private object? _tagOwner;
 
     /// <summary>
     /// The paint layer operations are added in: floats go over the flow, positioned boxes over floats (CSS 2.1
@@ -55,18 +62,18 @@ internal sealed partial class Paginator
     /// </summary>
     private Action InCurrentDrawScope(Action draw)
     {
-        var (scope, layer, shift) = (_scope, _layer, _shift);
+        var (scope, layer, shift, owner) = (_scope, _layer, _shift, _tagOwner);
         return () =>
         {
-            var outer = (_scope, _layer, _shift);
-            (_scope, _layer, _shift) = (scope, layer, shift);
+            var outer = (_scope, _layer, _shift, _tagOwner);
+            (_scope, _layer, _shift, _tagOwner) = (scope, layer, shift, owner);
             try
             {
                 draw();
             }
             finally
             {
-                (_scope, _layer, _shift) = outer;
+                (_scope, _layer, _shift, _tagOwner) = outer;
             }
         };
     }
@@ -199,7 +206,7 @@ internal sealed partial class Paginator
         {
             _scopes.Insert(index, owner._scope);
             _layers.Insert(index, owner._layer);
-            base.InsertItem(index, Shifted(item));
+            base.InsertItem(index, Tagged(Shifted(item)));
         }
 
         protected override void RemoveItem(int index)
@@ -207,6 +214,22 @@ internal sealed partial class Paginator
             _scopes.RemoveAt(index);
             _layers.RemoveAt(index);
             base.RemoveItem(index);
+        }
+
+        /// <summary>The operation drawing the content of the current tag owner, if any (see <see cref="_tagOwner"/>).</summary>
+        private DrawOperation Tagged(DrawOperation item)
+        {
+            if (owner._tagOwner is not { } tagOwner)
+            {
+                return item;
+            }
+
+            return (canvas, pageHeight) =>
+            {
+                LayoutTagging.Begin(canvas, tagOwner);
+                item(canvas, pageHeight);
+                LayoutTagging.End(canvas);
+            };
         }
 
         /// <summary>The operation moved by the current relative offset, if any.</summary>
@@ -230,7 +253,7 @@ internal sealed partial class Paginator
         {
             _scopes[index] = owner._scope;
             _layers[index] = owner._layer;
-            base.SetItem(index, Shifted(item));
+            base.SetItem(index, Tagged(Shifted(item)));
         }
 
         protected override void ClearItems()

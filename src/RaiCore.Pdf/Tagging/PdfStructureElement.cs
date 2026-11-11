@@ -80,16 +80,58 @@ public sealed class PdfStructureElement
 
     /// <summary>Adds a child element at the end, after the content and children added so far.</summary>
     /// <param name="type">The structure type (see <see cref="PdfStructureTypes"/>).</param>
-    public PdfStructureElement AddChild(string type)
+    public PdfStructureElement AddChild(string type) => AddChild(type, placeOnFirstContent: false);
+
+    /// <summary>
+    /// Adds a child element. With <paramref name="placeOnFirstContent"/>, its place among the element's content is
+    /// where its first content is drawn (for inline elements such as links, whose element exists before the text
+    /// around them is drawn); otherwise it is after the content and children added so far.
+    /// </summary>
+    internal PdfStructureElement AddChild(string type, bool placeOnFirstContent)
     {
         var child = new PdfStructureElement(type, this, Document);
         _children.Add(child);
-        _kids.Add(new ElementKid(child));
+        if (placeOnFirstContent)
+        {
+            child._unplaced = true;
+        }
+        else
+        {
+            _kids.Add(new ElementKid(child));
+        }
+
+        return child;
+    }
+
+    /// <summary>Whether the element still waits for its first content to take its place in its parent.</summary>
+    private bool _unplaced;
+
+    /// <summary>Inserts a child element before the element's other children and content (such as a list item's label).</summary>
+    internal PdfStructureElement InsertChild(int index, string type)
+    {
+        var child = new PdfStructureElement(type, this, Document);
+        _children.Insert(Math.Min(index, _children.Count), child);
+        _kids.Insert(Math.Min(index, _kids.Count), new ElementKid(child));
         return child;
     }
 
     /// <summary>Records marked content or an annotation as the element's next piece of content.</summary>
-    internal void AddContent(StructureKid kid) => _kids.Add(kid);
+    internal void AddContent(StructureKid kid)
+    {
+        Place();
+        _kids.Add(kid);
+    }
+
+    /// <summary>Puts an element added with <c>placeOnFirstContent</c> (and its waiting ancestors) at the end of its parent.</summary>
+    private void Place()
+    {
+        if (_unplaced && Parent is { } parent)
+        {
+            parent.Place();
+            parent._kids.Add(new ElementKid(this));
+            _unplaced = false;
+        }
+    }
 
     /// <summary>Whether the element, or one of its descendants, has content: elements without any are not written.</summary>
     internal bool HasContent => _kids.Any(kid => kid is not ElementKid { Element.HasContent: false });

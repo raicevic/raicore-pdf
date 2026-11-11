@@ -946,7 +946,8 @@ internal sealed partial class Paginator
                     var index = first ? insertAt : 0; // Pages created inside the box: under everything on them.
                     var fragment = corners.Fragment(first, last, fragmentWidth, bottom - top);
                     var fragmentOffset = offset;
-                    _pages[page].Insert(index, (canvas, pageHeight) => DrawBox(canvas, pageHeight, style, x, top, fragmentWidth, bottom - top, first, last, fragment, (fragmentOffset, wholeHeight)));
+                    _pages[page].Insert(index, (canvas, pageHeight) => LayoutTagging.Decoration(
+                        canvas, () => DrawBox(canvas, pageHeight, style, x, top, fragmentWidth, bottom - top, first, last, fragment, (fragmentOffset, wholeHeight))));
                     _placements.Add(new Placement(page, block, top, bottom, -1, -1, x, fragmentWidth));
                 }
 
@@ -1241,10 +1242,14 @@ internal sealed partial class Paginator
         var footerStart = table.Rows.Count - layout.FooterRows;
         var anchoredCells = new HashSet<CellLayout>(ReferenceEqualityComparer.Instance);
 
+        // Header rows are content where the table starts, and artifacts where they repeat.
+        var headerPlaced = false;
         void Place(int start, int end)
         {
             var top = Y;
-            _pages[PageIndex].Add((canvas, pageHeight) => DrawRows(canvas, pageHeight, layout, x, top, start, end));
+            var repeated = start == 0 && end == headerEnd && headerPlaced;
+            headerPlaced |= start == 0 && end == headerEnd;
+            _pages[PageIndex].Add((canvas, pageHeight) => DrawRows(canvas, pageHeight, layout, x, top, start, end, repeated));
             AddCellAnchors(layout, top, start, end, anchoredCells);
             Y += layout.Height(start, end);
             _placements.Add(new Placement(PageIndex, table, top, Y, start, end, x, width));
@@ -1334,7 +1339,7 @@ internal sealed partial class Paginator
             foreach (var (page, bottom) in bodyEnds)
             {
                 var top = bottom + layout.SpacingY;
-                _pages[page].Add((canvas, pageHeight) => DrawRows(canvas, pageHeight, layout, x, top, footerStart, table.Rows.Count));
+                _pages[page].Add((canvas, pageHeight) => DrawRows(canvas, pageHeight, layout, x, top, footerStart, table.Rows.Count, repeated: true));
                 _placements.Add(new Placement(page, table, top, top + footerHeight, footerStart, table.Rows.Count, x, width));
             }
         }
@@ -1342,7 +1347,26 @@ internal sealed partial class Paginator
         Place(footerStart, table.Rows.Count);
     }
 
-    private static void DrawRows(PdfCanvas canvas, double pageHeight, TableLayout layout, double x, double top, int start, int end)
+    /// <summary>
+    /// Draws rows [start, end) of a table with their cells' content. In a tagged document the cells' content belongs to
+    /// their elements and the backgrounds and borders are artifacts; <paramref name="repeated"/> rows (header rows on
+    /// later pages, footer rows before the last) are artifacts as a whole.
+    /// </summary>
+    private static void DrawRows(PdfCanvas canvas, double pageHeight, TableLayout layout, double x, double top, int start, int end, bool repeated = false)
+    {
+        if (repeated)
+        {
+            LayoutTagging.BeginArtifact(canvas, PdfArtifactKind.Pagination);
+        }
+
+        DrawRowsTagged(canvas, pageHeight, layout, x, top, start, end);
+        if (repeated)
+        {
+            LayoutTagging.End(canvas);
+        }
+    }
+
+    private static void DrawRowsTagged(PdfCanvas canvas, double pageHeight, TableLayout layout, double x, double top, int start, int end)
     {
         var table = layout.Table;
         var collapse = table.BorderCollapse == BorderCollapse.Collapse;
@@ -1357,6 +1381,7 @@ internal sealed partial class Paginator
         var left = x + layout.ColumnX[0];
         var right = x + layout.ColumnX[^1] - layout.SpacingX;
 
+        LayoutTagging.BeginArtifact(canvas);
         for (var r = start; r < end; r++)
         {
             if (table.Rows[r].Background is { } rowBackground)
@@ -1365,8 +1390,10 @@ internal sealed partial class Paginator
             }
         }
 
+        LayoutTagging.End(canvas);
         foreach (var cell in layout.Cells.Where(c => c.Grid.Row >= start && c.Grid.Row < end))
         {
+            LayoutTagging.BeginArtifact(canvas);
             var cellTop = TopOf(cell.Grid.Row);
             var cellHeight = layout.Height(cell.Grid.Row, cell.Grid.Row + cell.Grid.RowSpan);
             var style = cell.Grid.Cell.Style;
@@ -1382,16 +1409,20 @@ internal sealed partial class Paginator
                 DrawBox(canvas, pageHeight, style, x + cell.X, cellTop, cell.Width, cellHeight, first: true, last: true);
             }
 
+            LayoutTagging.End(canvas);
             var contentTop = cellTop + cell.InsetTop + ContentOffset(cell, cellHeight);
+            LayoutTagging.Begin(canvas, cell.Grid.Cell);
             foreach (var draw in cell.Content)
             {
                 draw(canvas, pageHeight - contentTop);
             }
+
+            LayoutTagging.End(canvas);
         }
 
         if (collapse && layout.Horizontal is { } horizontal && layout.Vertical is { } vertical)
         {
-            DrawCollapsedLines(canvas, pageHeight, layout, horizontal, vertical, x, start, end, TopOf);
+            LayoutTagging.Decoration(canvas, () => DrawCollapsedLines(canvas, pageHeight, layout, horizontal, vertical, x, start, end, TopOf));
         }
     }
 

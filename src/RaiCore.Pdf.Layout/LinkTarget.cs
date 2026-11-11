@@ -39,21 +39,18 @@ public sealed class LinkTarget
     /// <inheritdoc />
     public override string ToString() => Uri?.ToString() ?? "#" + Destination;
 
-    /// <summary>Adds the link annotation for a rectangle in the canvas's coordinates; empty rectangles are skipped.</summary>
-    internal void AddTo(PdfCanvas canvas, double x, double y, double width, double height)
+    /// <summary>
+    /// Adds the link annotation for a rectangle in the canvas's coordinates, with a description for screen readers (such
+    /// as the link's text); empty rectangles are skipped.
+    /// </summary>
+    internal void AddTo(PdfCanvas canvas, double x, double y, double width, double height, string? description = null)
     {
         if (width <= 0 || height <= 0)
         {
             return;
         }
 
-        if (Uri is { } uri)
-        {
-            canvas.AddLink(x, y, width, height, uri);
-        }
-        else
-        {
-            canvas.AddLink(x, y, width, height, Destination!);
-        }
+        var link = Uri is { } uri ? canvas.AddLink(x, y, width, height, uri) : canvas.AddLink(x, y, width, height, Destination!);
+        link.Description = description;
     }
 }

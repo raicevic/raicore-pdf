@@ -68,7 +68,10 @@ internal sealed partial class Paginator
                 Y = top.Y + cell.InsetTop;
                 TruncateMargins = truncate;
                 var pending = default(CollapsedMargin);
+                var outerOwner = _tagOwner;
+                _tagOwner = cell.Grid.Cell;
                 LayoutChildren(cell.Grid.Cell.Content, x + cell.X + cell.InsetLeft, cell.InnerWidth, ref pending, firstTopMarginApplied: false);
+                _tagOwner = outerOwner;
                 cellEnds[cell] = (PageIndex, Y + pending.Value + cell.InsetBottom);
             }
 
@@ -116,7 +119,7 @@ internal sealed partial class Paginator
             }
 
             // Under the cells' content; continuation pages start with the header rows, which this does not overlap.
-            _pages[page].Insert(page == startPage ? insertAt : 0, (canvas, pageHeight) => DrawFragments(canvas, pageHeight, layout, x, rows, spanning));
+            _pages[page].Insert(page == startPage ? insertAt : 0, (canvas, pageHeight) => LayoutTagging.Decoration(canvas, () => DrawFragments(canvas, pageHeight, layout, x, rows, spanning)));
         }
 
         Y += layout.SpacingY;

@@ -182,4 +182,11 @@ public sealed class TableCell
 
     /// <summary>Requested width (CSS <c>width</c> on a cell), or <c>null</c>.</summary>
     public TableWidth? Width { get; init; }
+
+    /// <summary>
+    /// What the cell is in a tagged document: <c>null</c> (the default) for a data cell (<c>TD</c>), or a header cell
+    /// (<c>TH</c>, with column scope) in a header row. Tag header cells elsewhere with
+    /// <see cref="PdfStructureTypes.TableHeaderCell"/> and a <see cref="StructureTag.Scope"/>.
+    /// </summary>
+    public StructureTag? Tag { get; init; }
 }

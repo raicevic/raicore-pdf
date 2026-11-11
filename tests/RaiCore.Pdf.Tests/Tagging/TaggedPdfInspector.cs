@@ -23,8 +23,14 @@ internal sealed class InspectedElement
     /// <summary>The text of the element's own marked content.</summary>
     public string OwnText { get; set; } = string.Empty;
 
-    /// <summary>The text of the element and its descendants, in reading order.</summary>
-    public string Text => OwnText + string.Concat(Children.Select(child => child.Text));
+    /// <summary>The element's kids in <c>/K</c> order: an index into <see cref="Content"/>, or a child element.</summary>
+    public List<object> Order { get; } = [];
+
+    /// <summary>The text of each piece of <see cref="Content"/>.</summary>
+    public List<string> ContentTexts { get; } = [];
+
+    /// <summary>The text of the element and its descendants, in reading order (<c>/K</c> order).</summary>
+    public string Text => string.Concat(Order.Select(kid => kid is InspectedElement child ? child.Text : ContentTexts[(int)kid]));
 
     public string? Entry(string key) => Dictionary[key] is PdfString s ? PdfText.Decode(s.Bytes) : null;
 
@@ -72,6 +78,7 @@ internal static class TaggedPdfInspector
                 switch (reader.Resolve(kid))
                 {
                     case PdfDictionary { } d when d["Type"] is PdfName { Value: "MCR" }:
+                        element.Order.Add(element.Content.Count);
                         element.Content.Add((PageIndex(d["Pg"] ?? dictionary["Pg"]), d["Stm"], (int)((PdfInteger)d["MCID"]!).Value));
                         break;
                     case PdfDictionary { } d when d["Type"] is PdfName { Value: "OBJR" }:
@@ -79,9 +86,12 @@ internal static class TaggedPdfInspector
                         break;
                     case PdfDictionary { } d:
                         Assert.Same(dictionary, reader.Resolve(d["P"]));
-                        element.Children.Add(Read(d));
+                        var child = Read(d);
+                        element.Children.Add(child);
+                        element.Order.Add(child);
                         break;
                     case PdfInteger mcid:
+                        element.Order.Add(element.Content.Count);
                         element.Content.Add((PageIndex(dictionary["Pg"]), null, (int)mcid.Value));
                         break;
                     default:
@@ -114,6 +124,7 @@ internal static class TaggedPdfInspector
                 var match = texts.Keys.FirstOrDefault(k => k.Page == key.Page && k.Mcid == key.Mcid && SameObject(reader, k.Stream, key.Stream));
                 Assert.True(texts.ContainsKey(match) && match.Page == key.Page, $"{element.Type} refers to MCID {key.Mcid} on page {key.Page}, which is not in the content.");
                 own.Append(texts[match]);
+                element.ContentTexts.Add(texts[match]);
             }
 
             element.OwnText = own.ToString();

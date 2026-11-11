@@ -48,7 +48,8 @@ public static class HtmlToPdf
     {
         options ??= new HtmlConverterOptions();
         var (flow, metadata) = await LayoutAsync(html, options, cancellationToken).ConfigureAwait(false);
-        var document = flow.Render();
+        var document = new PdfDocument { Tagged = options.Tagged, PdfUA = options.PdfUA };
+        flow.RenderTo(document);
         metadata.ApplyTo(document, options, defaultCreator);
         document.Encryption = options.Encryption;
         return document;

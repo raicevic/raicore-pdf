@@ -209,9 +209,9 @@ public class TaggedPdfTests
         Assert.Throws<ArgumentException>(() => canvas.BeginTag(Tagged().StructureRoot));
         Assert.Throws<ArgumentException>(() => doc.StructureRoot.AddChild("Bad Name"));
         Assert.Null(canvas.CurrentElement);
-        canvas.BeginArtifact();
-        Assert.Null(canvas.CurrentElement);
-        canvas.BeginTag(doc.StructureRoot);
+        canvas.BeginArtifact().BeginTag(doc.StructureRoot);
+        Assert.Null(canvas.CurrentElement); // Everything inside an artifact is an artifact.
+        canvas.EndTag().EndTag().BeginTag(doc.StructureRoot);
         Assert.Same(doc.StructureRoot, canvas.CurrentElement);
     }
 
