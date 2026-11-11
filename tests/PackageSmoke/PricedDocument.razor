@@ -1,0 +1,13 @@
+@* Child components and a cascading value: Blazor finds both by reflection, which trimming must not break. *@
+<html>
+<head><title>Prices</title></head>
+<body>
+    <CascadingValue Value="Currency">
+        <PriceLine Label="Consulting" Amount="1234.5m" />
+    </CascadingValue>
+</body>
+</html>
+
+@code {
+    [Parameter] public string Currency { get; set; } = "DKK";
+}

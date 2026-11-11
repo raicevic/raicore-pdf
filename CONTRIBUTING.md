@@ -34,6 +34,11 @@ dotnet run --project tests/PackageSmoke -c Release
 
 It restores into its own cache (`tests/PackageSmoke/.packages`). Delete that folder when you re-pack the same version.
 
+`tests/PackageSmoke/publish-and-run.sh` (bash, from the repository root, after packing) publishes the same app
+trimmed and with Native AOT, runs both binaries and fails on unexpected trim or AOT warnings. Native AOT needs the
+platform's C toolchain (clang on Linux, Xcode on macOS, Visual Studio's C++ tools on Windows); pass `trimmed` to
+publish only the trimmed app.
+
 ## Guidelines
 
 - One feature per pull request, with tests that fail without the change.

@@ -17,4 +17,9 @@
     <PackageReference Include="RaiCore.Pdf.Razor" Version="$(RaiCoreVersion)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The private package folder from nuget.config, which Program.cs checks the packages were restored into. -->
+    <AssemblyMetadata Include="PackageCache" Value="$(NuGetPackageRoot)" />
+  </ItemGroup>
+
 </Project>

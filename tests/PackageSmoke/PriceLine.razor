@@ -1,0 +1,9 @@
+<p>@Label: @Amount.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) @Currency</p>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+
+    [Parameter] public decimal Amount { get; set; }
+
+    [CascadingParameter] public string Currency { get; set; } = "";
+}

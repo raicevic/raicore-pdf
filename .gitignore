@@ -484,3 +484,4 @@ $RECYCLE.BIN/
 # Package smoke test (tests/PackageSmoke)
 .packages/
 smoke-output/
+smoke-publish/
