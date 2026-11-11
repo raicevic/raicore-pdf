@@ -27,7 +27,8 @@ translucent colors and `opacity` (as PDF transparency), lists, images
 borders), flexbox and CSS Paged Media: `@page` size and margins (per page too: named pages such as landscape pages
 for wide tables, `:first`/`:left`/`:right`/`:blank`, and left/right breaks with blank pages), headers and footers in
 margin boxes, page counters, `string-set` and running elements. `::before`/`::after` generated content (strings, `attr()`, quotes and
-images, styled inline or as blocks). Right-to-left and mixed-direction text with `direction`, `unicode-bidi` and the
+images, styled inline or as blocks). CSS counters (`counter-reset`/`counter-increment`/`counter-set`, `counter()`,
+`counters()`) and tables of contents with `target-counter()`, `target-text()` and `leader()`. Right-to-left and mixed-direction text with `direction`, `unicode-bidi` and the
 `dir` attribute. Headings become PDF bookmarks, customized with `bookmark-level`,
 `bookmark-label` and `bookmark-state`. Links (`<a href>`) are clickable, to URIs and to elements by `#id`.
 

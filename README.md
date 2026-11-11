@@ -84,6 +84,10 @@ own engine. Supported today:
   (`"\201C"`, `"\A"` with `white-space: pre`), `attr()`, `open-quote`/`close-quote` (following `quotes`, nested
   quotes alternate between double and single; `<q>` gets them by default), `no-open-quote`/`no-close-quote` and
   `url()` images; `none` and `normal` generate nothing.
+- CSS counters: `counter-reset`, `counter-increment` and `counter-set` with nested scopes (CSS Lists 3), shown with
+  `counter()` and `counters()` (e.g. "1.2.3" section numbers) in any list-style counter style, in generated content,
+  `string-set` and `bookmark-label`. List items count with the implicit `list-item` counter (honoring `start`,
+  `reversed` and `value`), which their markers show.
 - The box model: margin, border (every `border-style`: solid, dashed, dotted, double, groove, ridge, inset and
   outset), `border-radius` (elliptical and percentage radii, every border style, rounded images), padding, background
   and `background-clip`, width, `min-width`, `max-width`, `height`, `min-height`, `max-height`, auto margins,
@@ -103,7 +107,7 @@ own engine. Supported today:
   `format()` hints, `font-weight` ranges for variable fonts, `font-style` and `unicode-range` (so per-script files as
   Google Fonts serves them work as one family). Fonts load through the `ResourceLoader` when text first needs them;
   URLs in linked stylesheets resolve against the stylesheet.
-- List markers: bullets, decimal, alpha and roman numerals, `start`, `reversed` and `value`.
+- List markers: bullets, decimal, alpha and roman numerals, `start`, `reversed` and `value` (the `list-item` counter).
 - Images from `data:` and `file:` URLs (JPEG, PNG, GIF, BMP, WebP and SVG), inline `<svg>` elements drawn as vectors (sized
   like images; `currentColor` follows the CSS `color`), linked stylesheets, `@page` size and margins, and page break
   properties.
@@ -133,6 +137,8 @@ Headers and footers come from CSS Paged Media:
 h1 { string-set: chapter content(); }
 ```
 
+- Page sizes: lengths (`size: 210mm 297mm`), `landscape`/`portrait`, and the keywords `A0`-`A10`, `B0`-`B10`,
+  `JIS-B4`, `JIS-B5`, `letter`, `legal` and `ledger` (in any case).
 - Margin boxes: `top-`/`bottom-` `left`, `center`, `right` and corners, with font, color, alignment and
   vertical-align.
 - Page selectors: `:first`, `:left`, `:right`, `:blank` and page names, combined (`@page chapter:first`) and in
@@ -144,6 +150,26 @@ h1 { string-set: chapter content(); }
   `@page :blank`).
 - Content values: `counter(page)` and `counter(pages)` in any counter style, `string()` with
   `first`/`start`/`last`/`first-except`, `element()` for running elements, and strings with CSS escapes.
+- Page counters: `counter-reset`, `counter-increment` and `counter-set` in `@page` rules (also named pages and
+  `:first`/`:left`/`:right`/`:blank`) change the `page` counter (e.g. `@page :first { counter-set: page 5 }`) and
+  named counters of the page context, which margin boxes show with `counter()`. Blank pages count. Document counters reach margin boxes through `string-set` (e.g. `string-set: chapter counter(chapter)`).
+
+Cross-references and tables of contents come from CSS GCPM: `target-counter()` gives the page (or any counter) of
+the element a link points to, `target-text()` its text, and `leader()` fills the line up to the page number:
+
+```css
+nav a::before { content: target-text(attr(href), before); }       /* "2.1 " from the heading's ::before */
+nav a::after  { content: leader(dotted) target-counter(attr(href), page); }
+h2::before    { content: counter(chapter) "." counter(section) " "; }
+```
+
+- `target-counter(url, name[, style])` and `target-counters(url, name, separator[, style])`, with `page` for the page
+  number; the URL is `attr(href)` (or a `"#id"` string). Page numbers of elements further on are found by laying the
+  document out again (up to four times, until they stop changing), so documents using them take about two to three
+  times as long to convert.
+- `target-text(url[, content|before|after|first-letter])`.
+- `leader(dotted|solid|space|"string")`: the pattern repeats to fill the rest of the line; leaders on one line share
+  the space.
 
 Headings become PDF bookmarks (the outline in a viewer's navigation panel), nested by level. The GCPM properties
 customize them, and `HtmlConverterOptions.CreateBookmarks = false` turns them off:
@@ -169,8 +195,8 @@ not exist are left out.
 Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowDocument` returns the laid-out document
 before rendering, e.g. to set your own page decorator.
 
-Not yet: floats and positioning, grid layout (rendered as blocks), `@page :nth()` and counters other than
-`page`/`pages`. Content taller than a fixed `height` overflows
+Not yet: floats and positioning, grid layout (rendered as blocks), `@page :nth()` and document counters in margin
+boxes (use `string-set`). Content taller than a fixed `height` overflows
 the box (`overflow: hidden` is not supported yet).
 
 ### Razor to PDF

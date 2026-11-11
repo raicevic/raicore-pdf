@@ -171,17 +171,31 @@ internal sealed partial class PageRules
         return portrait && size.Width > size.Height ? new PdfPageSize(size.Height, size.Width) : size;
     }
 
+    /// <summary>
+    /// A page size keyword (upper case): the CSS ones (A3-A5, B4, B5, JIS-B4, JIS-B5, letter, legal, ledger) and the
+    /// rest of the ISO 216 A and B series (A0-A10, B0-B10), portrait.
+    /// </summary>
     private static PdfPageSize? NamedSize(string name) => name switch
     {
         "A3" => PdfPageSize.A3,
         "A4" => PdfPageSize.A4,
         "A5" => PdfPageSize.A5,
-        "B4" => PdfPageSize.FromMillimeters(250, 353),
-        "B5" => PdfPageSize.FromMillimeters(176, 250),
+        "JIS-B4" => PdfPageSize.FromMillimeters(257, 364),
+        "JIS-B5" => PdfPageSize.FromMillimeters(182, 257),
         "LETTER" => PdfPageSize.Letter,
         "LEGAL" => PdfPageSize.Legal,
         "LEDGER" => new PdfPageSize(792, 1224),
+        _ when IsoSizes.TryGetValue(name, out var mm) => PdfPageSize.FromMillimeters(mm.Width, mm.Height),
         _ => null,
+    };
+
+    /// <summary>The ISO 216 A and B series in millimeters.</summary>
+    private static readonly Dictionary<string, (double Width, double Height)> IsoSizes = new(StringComparer.Ordinal)
+    {
+        ["A0"] = (841, 1189), ["A1"] = (594, 841), ["A2"] = (420, 594), ["A6"] = (105, 148), ["A7"] = (74, 105),
+        ["A8"] = (52, 74), ["A9"] = (37, 52), ["A10"] = (26, 37),
+        ["B0"] = (1000, 1414), ["B1"] = (707, 1000), ["B2"] = (500, 707), ["B3"] = (353, 500), ["B4"] = (250, 353),
+        ["B5"] = (176, 250), ["B6"] = (125, 176), ["B7"] = (88, 125), ["B8"] = (62, 88), ["B9"] = (44, 62), ["B10"] = (31, 44),
     };
 
     private static Thickness ParseMargin(string value, Thickness current)

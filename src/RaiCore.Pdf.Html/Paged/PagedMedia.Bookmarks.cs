@@ -28,7 +28,8 @@ internal sealed partial class PagedMedia
     /// The text of the element's <c>::before</c> or <c>::after</c> (given "before" or "after"), for
     /// <c>content(before)</c> and <c>content(after)</c>.
     /// </param>
-    public Bookmark? BookmarkFor(IElement element, Func<string, string>? generatedText = null)
+    /// <param name="resolve">The text of other items, such as counters and cross-references (null if unsupported).</param>
+    public Bookmark? BookmarkFor(IElement element, Func<string, string>? generatedText = null, Func<ContentItem, string?>? resolve = null)
     {
         if (!_bookmarkProperties.TryGetValue(element, out var properties)
             || !properties.TryGetValue("bookmark-level", out var levelDeclaration)
@@ -45,7 +46,7 @@ internal sealed partial class PagedMedia
             ElementTextItem { Part: "first-letter" } => FirstLetter(TextOf(element)),
             ElementTextItem { Part: "before" or "after" } part => generatedText?.Invoke(part.Part) ?? string.Empty,
             AttributeItem attribute => element.GetAttribute(attribute.Name) ?? string.Empty,
-            _ => string.Empty, // content(marker) and counters.
+            _ => resolve?.Invoke(item) ?? string.Empty, // Counters; content(marker) is not supported.
         })));
         if (title.Length == 0)
         {
@@ -126,7 +127,7 @@ internal sealed partial class PagedMedia
     }
 
     /// <summary>The element's text, with a space for each line break.</summary>
-    private static string TextOf(IElement element)
+    internal static string TextOf(IElement element)
     {
         var text = new StringBuilder();
         Append(element);
@@ -154,6 +155,6 @@ internal sealed partial class PagedMedia
         }
     }
 
-    private static string FirstLetter(string text) =>
+    internal static string FirstLetter(string text) =>
         text.Length == 0 ? text : text[..StringInfo.GetNextTextElementLength(text)];
 }

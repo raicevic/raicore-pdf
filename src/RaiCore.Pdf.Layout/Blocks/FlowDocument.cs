@@ -65,6 +65,11 @@ public readonly record struct PageInfo(int Number, int Count, PageSetup Setup, I
     public PageContext Context => new(Number, Name, Side, IsBlank);
 }
 
+/// <summary>The pages a <see cref="FlowDocument"/> was laid out on (see <see cref="FlowDocument.MapPages"/>).</summary>
+/// <param name="Pages">Each page, in order (<see cref="PageContext.Number"/> is 1-based).</param>
+/// <param name="Destinations">The page number (1-based) of each named destination.</param>
+public sealed record PageMap(IReadOnlyList<PageContext> Pages, IReadOnlyDictionary<string, int> Destinations);
+
 /// <summary>
 /// A sequence of blocks that flows across as many pages as needed.
 /// </summary>
@@ -132,6 +137,27 @@ public sealed class FlowDocument
 
     /// <summary>Lays out the blocks and returns the number of pages they need.</summary>
     public int CountPages() => Paginator.Paginate(this).Pages.Count;
+
+    /// <summary>
+    /// Lays out the blocks and returns the pages they make (with their names, sides and blank pages) and the page of
+    /// each named destination: the blocks' ids (<see cref="Block.Id"/>) and the paragraphs' anchors
+    /// (<see cref="Paragraph.AddAnchor"/>), the first of each name winning as in <see cref="RenderTo"/>. Useful for
+    /// cross-references such as the page numbers of a table of contents.
+    /// </summary>
+    public PageMap MapPages()
+    {
+        var result = Paginator.Paginate(this);
+        var destinations = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var anchor in result.Anchors)
+        {
+            if (anchor.DestinationName is { } name)
+            {
+                destinations.TryAdd(name, anchor.Page + 1);
+            }
+        }
+
+        return new PageMap([.. result.Frames.Select(f => f.Context)], destinations);
+    }
 
     /// <summary>Pagination details, for tests and diagnostics.</summary>
     internal PaginationResult Paginate() => Paginator.Paginate(this);

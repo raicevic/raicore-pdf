@@ -72,6 +72,13 @@ internal sealed partial class BoxBuilder
     {
         _pageContentWidth = contentWidth;
         _containingHeight = contentHeight;
+
+        // A document can be built more than once (to resolve page references); what one build generates starts over.
+        _anonymous.Clear();
+        _generated.Clear();
+        _generatedText.Clear();
+        _usedPages.Clear();
+        _quoteDepth = 0;
         var root = Document.DocumentElement;
         if (root is null || Style(root).Display == CssDisplay.None)
         {
@@ -171,7 +178,7 @@ internal sealed partial class BoxBuilder
 
         // A block whose only content is one anonymous paragraph becomes a paragraph block with the element's box.
         // Elements with string-set carry a marker, so running headers know which page they start on.
-        var pageMarker = _paged?.MarkerFor(element);
+        var pageMarker = _paged?.MarkerFor(element, item => CounterText(element, string.Empty, item));
         if (children is [ParagraphBlock only] && _anonymous.Contains(only))
         {
             return new ParagraphBlock(only.Paragraph, box) { Marker = pageMarker, Bookmark = BookmarkFor(element), Id = IdFor(element), Link = LinkFor(element) };
@@ -185,7 +192,7 @@ internal sealed partial class BoxBuilder
     /// get one too, but it has no effect: margin boxes are drawn outside the flow, which is what the outline is made of.
     /// </summary>
     private Bookmark? BookmarkFor(IElement element) =>
-        _options.CreateBookmarks ? _paged?.BookmarkFor(element, pseudo => GeneratedText(element, pseudo)) : null;
+        _options.CreateBookmarks ? _paged?.BookmarkFor(element, pseudo => GeneratedText(element, pseudo), item => CounterText(element, string.Empty, item)) : null;
 
     /// <summary>
     /// Adds the element's children, with its <c>::before</c> and <c>::after</c>: inline content goes to the collector,
@@ -229,6 +236,12 @@ internal sealed partial class BoxBuilder
                     if (child.LocalName == "br")
                     {
                         collector.AddLineBreak(childStyle);
+                        break;
+                    }
+
+                    if (child.LocalName == LeaderElement && _generated.Contains(element))
+                    {
+                        collector.AddLeader(child.GetAttribute("pattern")!, childStyle, inherited);
                         break;
                     }
 
@@ -470,10 +483,14 @@ internal sealed partial class BoxBuilder
         return parent with { Shift = parent.Shift + shift };
     }
 
-    /// <summary>The marker text of a list item, advancing the list's counter (honoring value and reversed).</summary>
-    private static string? NextListMarker(IElement list, IElement item, ComputedStyle style, ref int listIndex)
+    /// <summary>
+    /// The marker text of a list item: its <c>list-item</c> counter (see BoxBuilder.Counters), or else the list's own
+    /// count, which this advances (honoring value and reversed).
+    /// </summary>
+    private string? NextListMarker(IElement list, IElement item, ComputedStyle style, ref int listIndex)
     {
-        listIndex = item.GetAttribute("value") is { } value && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : listIndex;
+        listIndex = ListItemValue(item)
+            ?? (item.GetAttribute("value") is { } value && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : listIndex);
         var marker = ListMarkers.Format(style.ListStyleType, listIndex);
         listIndex += IsReversed(list) ? -1 : 1;
         return marker;

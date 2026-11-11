@@ -144,6 +144,15 @@ internal sealed partial record ComputedStyle
 
     public bool ListStyleInside { get; init; }
 
+    /// <summary>CSS <c>counter-reset</c> as computed (<c>name value</c> pairs, or empty for <c>none</c>).</summary>
+    public string CounterReset { get; init; } = string.Empty;
+
+    /// <summary>CSS <c>counter-increment</c> as computed.</summary>
+    public string CounterIncrement { get; init; } = string.Empty;
+
+    /// <summary>CSS <c>counter-set</c> as computed.</summary>
+    public string CounterSet { get; init; } = string.Empty;
+
     public bool Hidden { get; init; }
 
     public bool BorderCollapse { get; init; }
@@ -290,6 +299,9 @@ internal sealed partial record ComputedStyle
                 _ => CssWhiteSpace.Normal,
             },
             TextTransform = Get("text-transform") is { Length: > 0 } transform ? transform : "none",
+            CounterReset = Counters(Get("counter-reset")),
+            CounterIncrement = Counters(Get("counter-increment")),
+            CounterSet = Counters(Get("counter-set")),
             FontFeatures = Get("font-feature-settings") is { Length: > 0 } features ? features : "normal",
             Margin = Horizontal(Sides("margin"), "margin"),
             Padding = [.. Horizontal(Sides("padding"), "padding").Select(p => p.NonNegative())],
@@ -402,6 +414,10 @@ internal sealed partial record ComputedStyle
             return Math.Max(0, CssValues.ParseLength(part, fontSize, rootFontSize, viewport).Resolve(0));
         }
     }
+
+    /// <summary>A counter property's value, with <c>none</c> (and the CSS-wide keywords) as empty.</summary>
+    private static string Counters(string value) =>
+        value.Trim() is var trimmed && trimmed.ToLowerInvariant() is "none" or "initial" or "unset" or "inherit" ? string.Empty : trimmed;
 
     private static BorderStyle ParseBorderStyle(string value) => value switch
     {

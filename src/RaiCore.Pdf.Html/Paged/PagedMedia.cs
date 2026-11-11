@@ -48,10 +48,16 @@ internal sealed partial class PagedMedia
 
         var media = new PagedMedia(pageRules);
         var selectorParser = new AngleSharp.Css.Parser.CssSelectorParser();
+        var scanContent = styleRules.Any(rule => rule.Declarations.Any(d => d.Property == "content" && DropsContent(d.Value)));
         foreach (var rule in styleRules)
         {
             media.AddBookmarkRule(document, selectorParser, rule.Selector, rule.Declarations);
             media.AddPageNameRule(document, selectorParser, rule.Selector, rule.Declarations);
+            if (scanContent)
+            {
+                media.AddContentRule(document, selectorParser, rule.Selector, rule.Declarations);
+            }
+
             foreach (var declaration in rule.Declarations)
             {
                 if (declaration.Property == "string-set")
@@ -100,7 +106,9 @@ internal sealed partial class PagedMedia
     public string? RunningName(IElement element) => _running.GetValueOrDefault(element);
 
     /// <summary>The marker to put on the block of <paramref name="element"/> if it assigns running strings.</summary>
-    public StringSetMarker? MarkerFor(IElement element)
+    /// <param name="element">The element.</param>
+    /// <param name="resolve">The text of other items, such as counters (null if unsupported).</param>
+    public StringSetMarker? MarkerFor(IElement element, Func<ContentItem, string?>? resolve = null)
     {
         if (!_stringSets.TryGetValue(element, out var sets))
         {
@@ -115,7 +123,7 @@ internal sealed partial class PagedMedia
                 TextItem text => text.Text,
                 ElementTextItem => CollapseWhiteSpace(element.TextContent),
                 AttributeItem attribute => element.GetAttribute(attribute.Name) ?? string.Empty,
-                _ => string.Empty,
+                _ => resolve?.Invoke(item) ?? string.Empty,
             }));
             assignments.Add((name, value));
         }
@@ -128,6 +136,7 @@ internal sealed partial class PagedMedia
     {
         var entryStrings = new Dictionary<string, string>(StringComparer.Ordinal);
         var entryElements = new Dictionary<string, IReadOnlyList<Block>>(StringComparer.Ordinal);
+        Dictionary<string, int>? pageCounters = null;
         return (canvas, page) =>
         {
             if (page.Number == 1)
@@ -165,6 +174,8 @@ internal sealed partial class PagedMedia
                 };
             }
 
+            pageCounters = NextPageCounters(page.Number == 1 ? null : pageCounters, page.Context);
+            var counters = pageCounters;
             var boxes = BoxesFor(page.Context);
             foreach (var (name, declarations) in boxes)
             {
@@ -185,8 +196,8 @@ internal sealed partial class PagedMedia
                     var text = string.Concat(content.Select(item => item switch
                     {
                         TextItem t => t.Text,
-                        CounterItem { Name: "pages" } c => ListMarkers.FormatNumber(c.Style, page.Count),
-                        CounterItem c => ListMarkers.FormatNumber(c.Style, page.Number),
+                        CounterItem c => PageCounterText(c.Name, c.Style, counters, page),
+                        CountersItem c => PageCounterText(c.Name, c.Style, counters, page),
                         StringItem s => ResolveString(s),
                         _ => string.Empty,
                     }));
