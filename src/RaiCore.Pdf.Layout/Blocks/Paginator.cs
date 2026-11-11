@@ -229,8 +229,12 @@ internal sealed partial class Paginator
         var setup = new PageSetup(new PdfPageSize(x + width + 1, StaticHeight), new Thickness(0, 1, 0, x));
         var paginator = new Paginator(setup, isStatic: true);
         var pending = default(CollapsedMargin);
-        paginator.LayoutChildren(blocks, x, width, ref pending, firstTopMarginApplied: false);
-        return (paginator.Y + pending.Value, paginator._pages[0].Grouped(), paginator._anchors);
+        paginator.InFloatRoot(() =>
+        {
+            paginator.LayoutChildren(blocks, x, width, ref pending, firstTopMarginApplied: false);
+            paginator.Y += pending.Value;
+        });
+        return (paginator.Y, paginator._pages[0].Grouped(), paginator._anchors);
     }
 
     /// <summary>A block's min-content and max-content widths, including its margins (CSS intrinsic sizes).</summary>
@@ -459,8 +463,16 @@ internal sealed partial class Paginator
             var next = i + 1 < blocks.Count ? blocks[i + 1] : null;
             var style = block.Style;
 
+            if (style.Float != FloatSide.None)
+            {
+                // Out of the flow: placed beside it, at the current position after the pending margin.
+                PlaceFloat(block, x, width, AtPageTop && TruncateMargins ? 0 : pending.Value);
+                continue;
+            }
+
             if (TakesNoSpace(block))
             {
+                ApplyClearance(style.Clear, ref pending); // E.g. an empty clearing block after floats ("clearfix").
                 pending.Add(style.Margin.Top);
                 pending.Add(style.Margin.Bottom);
                 if (block.Marker is { } emptyMarker && !_static)
@@ -499,6 +511,8 @@ internal sealed partial class Paginator
                 pending.Add(CollapseThroughTop(block)); // First descendants' top margins collapse with this one.
             }
 
+            ApplyClearance(style.Clear, ref pending);
+
             // Move to a new page when the start of the block (and, for break-after: avoid, the start of the
             // next block) would not fit here but would fit at the top of a fresh page.
             var needed = MinimumStartHeight(block, available);
@@ -528,8 +542,19 @@ internal sealed partial class Paginator
 
             pending = default;
 
-            var boxX = x + style.Margin.Left;
-            var boxWidth = BoxWidth(block, available);
+            // Tables, flex containers, images and new formatting contexts go beside floats, or below them.
+            var (areaX, areaWidth) = (x, available);
+            if (AvoidsFloats(block))
+            {
+                (areaX, areaWidth, var moveTo) = RoomBeside(block, x, available, 0);
+                if (moveTo is { } below)
+                {
+                    Y = below;
+                }
+            }
+
+            var boxX = areaX + style.Margin.Left;
+            var boxWidth = BoxWidth(block, areaWidth);
             var alignment = block switch
             {
                 ImageBlock { Style.Width: null } image => image.Alignment,
@@ -539,7 +564,7 @@ internal sealed partial class Paginator
             if (alignment != TextAlignment.Left)
             {
                 // Images and tables shrink to their content; the alignment then positions the whole box.
-                var free = Math.Max(0, available - style.Margin.Horizontal - boxWidth);
+                var free = Math.Max(0, areaWidth - style.Margin.Horizontal - boxWidth);
                 boxX += alignment switch
                 {
                     TextAlignment.Center => free / 2,
@@ -566,7 +591,7 @@ internal sealed partial class Paginator
     /// </summary>
     private static double CollapseThroughTop(Block block)
     {
-        if (block is not ContainerBlock { Children.Count: > 0 } container || HasTopEdge(block.Style))
+        if (block is not ContainerBlock { Children.Count: > 0 } container || HasTopEdge(block.Style) || IsFloatRoot(block, default))
         {
             return 0;
         }
@@ -631,19 +656,32 @@ internal sealed partial class Paginator
                 LayoutBox(block, x, width, (contentX, contentWidth) => LayoutFlex(flex, contentX, contentWidth, sizing.DefiniteHeight), sizing);
                 break;
             case ContainerBlock container:
-                // A flex item is an independent formatting context: its children's margins stay inside it.
-                var isolated = sizing.Isolated;
+                // A new formatting context (a flex item, a float, a flow root) keeps its children's margins and floats
+                // inside it.
+                var isolated = IsFloatRoot(block, sizing);
                 LayoutBox(block, x, width, (contentX, contentWidth) =>
                 {
-                    var pending = default(CollapsedMargin);
-                    LayoutChildren(container.Children, contentX, contentWidth, ref pending, firstTopMarginApplied: !HasTopEdge(block.Style) && !isolated);
-                    if (HasBottomEdge(block.Style) || isolated)
+                    void Children()
                     {
-                        Y = Math.Min(Y + pending.Value, Math.Max(Y, ContentBottom)); // Stays inside the box.
+                        var pending = default(CollapsedMargin);
+                        LayoutChildren(container.Children, contentX, contentWidth, ref pending, firstTopMarginApplied: !HasTopEdge(block.Style) && !isolated);
+                        if (HasBottomEdge(block.Style) || isolated)
+                        {
+                            Y = Math.Min(Y + pending.Value, Math.Max(Y, ContentBottom)); // Stays inside the box.
+                        }
+                        else
+                        {
+                            trailing = pending; // Collapses through the container's bottom.
+                        }
+                    }
+
+                    if (isolated)
+                    {
+                        InFloatRoot(Children);
                     }
                     else
                     {
-                        trailing = pending; // Collapses through the container's bottom.
+                        Children();
                     }
                 }, sizing);
                 break;
@@ -923,18 +961,35 @@ internal sealed partial class Paginator
 
     private void LayoutParagraph(ParagraphBlock block, double x, double width)
     {
-        var layout = block.Paragraph.Layout(width);
+        // Lines beside floats get the room the floats leave where the lines are. So after each page break the lines that
+        // are left are laid out again from where they now start: the lines already placed keep the room they had (and so
+        // stay the same), the others get the room on the new page.
+        var rooms = new List<(double Top, double Offset, double Width)>();
+        var from = 0.0; // Where the current page's lines start, from the paragraph's top.
+        ParagraphLayout LayoutFrom(int keep) => rooms.Count > 0 || HasFloatsBelow(Y)
+            ? block.Paragraph.Layout(width, LineRooms(x, width, Y - from, keep, rooms))
+            : block.Paragraph.Layout(width);
+
+        var layout = LayoutFrom(0);
         var lines = layout.Lines;
         var orphans = Math.Max(1, block.Style.Orphans);
         var widows = Math.Max(1, block.Style.Widows);
         var i = 0;
+        void NextPage()
+        {
+            NewPage();
+            from = i == 0 ? 0 : lines[i - 1].Top + lines[i - 1].Height; // Without a gap line i had above it on the last page.
+            layout = LayoutFrom(i);
+            lines = layout.Lines;
+        }
+
         while (i < lines.Count)
         {
-            var fit = CountFittingLines(lines, i, Remaining);
+            var fit = CountFittingLines(lines, i, from, Remaining);
             var rest = lines.Count - i;
             if (fit >= rest)
             {
-                Place(block, layout, x, i, lines.Count);
+                Place(block, layout, x, i, lines.Count, Y - from);
                 return;
             }
 
@@ -950,7 +1005,7 @@ internal sealed partial class Paginator
             {
                 if (!AtPageTop)
                 {
-                    NewPage();
+                    NextPage();
                     continue;
                 }
 
@@ -958,18 +1013,22 @@ internal sealed partial class Paginator
                 take = Math.Max(1, Math.Min(fit, rest));
             }
 
-            Place(block, layout, x, i, i + take);
+            Place(block, layout, x, i, i + take, Y - from);
             i += take;
             if (i < lines.Count)
             {
-                NewPage();
+                NextPage();
             }
         }
     }
 
-    private void Place(ParagraphBlock block, ParagraphLayout layout, double x, int first, int end)
+    /// <summary>
+    /// Places lines [first, end) on the current page, with the paragraph's top at <paramref name="origin"/> (lines that
+    /// moved down past floats keep their gap).
+    /// </summary>
+    private void Place(ParagraphBlock block, ParagraphLayout layout, double x, int first, int end, double origin)
     {
-        var top = Y;
+        var top = origin + layout.Lines[first].Top;
         _pages[PageIndex].Add((canvas, pageHeight) => layout.Draw(canvas, x, pageHeight - top, first, end));
         Y += layout.Lines[end - 1].Top + layout.Lines[end - 1].Height - layout.Lines[first].Top;
         _placements.Add(new Placement(PageIndex, block, top, Y, first, end, x, layout.AvailableWidth));
@@ -998,13 +1057,17 @@ internal sealed partial class Paginator
         }
     }
 
-    private static int CountFittingLines(IReadOnlyList<LineLayout> lines, int start, double available)
+    /// <summary>
+    /// How many lines from <paramref name="start"/> fit in <paramref name="available"/> height below
+    /// <paramref name="from"/> (from the paragraph's top): lines that moved down past floats leave gaps, so heights are
+    /// measured from the lines' tops.
+    /// </summary>
+    private static int CountFittingLines(IReadOnlyList<LineLayout> lines, int start, double from, double available)
     {
-        var used = 0.0;
         var count = 0;
         for (var i = start; i < lines.Count; i++)
         {
-            used += lines[i].Height;
+            var used = lines[i].Top + lines[i].Height - from;
             if (used > available + Epsilon)
             {
                 break;

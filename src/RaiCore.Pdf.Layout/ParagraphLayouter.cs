@@ -7,6 +7,14 @@ using RaiCore.Pdf.Layout.Text;
 namespace RaiCore.Pdf.Layout;
 
 /// <summary>
+/// Where a line goes when floats beside the paragraph leave less room: given the top the line would have (from the
+/// paragraph's top), the height it is expected to have, and the width its first unbreakable piece needs, returns its
+/// top (lower, when the line had to move down past floats to get that width), its offset from the paragraph's left
+/// edge and its width.
+/// </summary>
+internal delegate (double Top, double Offset, double Width) LineSpace(double top, double height, double minWidth);
+
+/// <summary>
 /// Breaks a paragraph into lines: shapes every span to measure it, finds break opportunities with UAX #14 and
 /// hyphenation (ParagraphLayouter.Hyphenation.cs), fills lines greedily, then reshapes each line so glyphs are exact,
 /// and computes line boxes with the CSS inline model (each piece of text contributes its ascent, descent and
@@ -71,7 +79,12 @@ internal static partial class ParagraphLayouter
         return (builder.ToString(), spanStarts);
     }
 
-    public static ParagraphLayout Layout(Paragraph paragraph, double width)
+    /// <param name="paragraph">The paragraph.</param>
+    /// <param name="width">The width lines are broken to (and inline boxes are laid out at).</param>
+    /// <param name="space">
+    /// Where each line goes when floats leave less room (see <see cref="LineSpace"/>); <c>null</c> for the full width.
+    /// </param>
+    public static ParagraphLayout Layout(Paragraph paragraph, double width, LineSpace? space = null)
     {
         var spans = paragraph.Spans;
         var (text, spanStarts) = Concatenate(spans);
@@ -92,8 +105,6 @@ internal static partial class ParagraphLayouter
         var prefix = MeasurePrefix(text, paragraph, spanStarts, box => boxes[box].OuterWidth);
         double Measure(int from, int to) => prefix[to] - prefix[from];
 
-        var lineRanges = BreakIntoLines(paragraph, text, width, Measure, spans, spanStarts);
-
         // The bidi levels of the whole paragraph; lines are broken in logical order and reordered one by one.
         var bidi = BidiAlgorithm.Resolve(text, paragraph.Direction switch
         {
@@ -102,15 +113,31 @@ internal static partial class ParagraphLayouter
             _ => 0,
         });
 
-        var lines = new List<LineLayout>(lineRanges.Count);
+        // Lines are broken one at a time, so each one's room beside floats is known from where the lines above ended:
+        // the strut's height stands for the line's when asking for it.
+        var lines = new List<LineLayout>();
         var top = 0.0;
-        for (var i = 0; i < lineRanges.Count; i++)
+        var shift = 0.0;
+        var available = width;
+        var strut = space is null ? 0 : StrutHeight(paragraph.Style);
+        double AvailableFor(int index, double minWidth)
         {
-            var (start, end, hard, hyphenate) = lineRanges[i];
-            var available = width - (i == 0 ? paragraph.FirstLineIndent : 0);
-            var isLast = i == lineRanges.Count - 1;
-            var line = BuildLine(paragraph, text, spans, spanStarts, start, end, hyphenate, available, top, i == 0,
-                justify: paragraph.Alignment == TextAlignment.Justify && !isLast && !hard, boxes, bidi);
+            var indent = index == 0 ? paragraph.FirstLineIndent : 0;
+            var room = width;
+            if (space is not null)
+            {
+                (top, shift, room) = space(top, strut, minWidth + Math.Max(0, indent));
+            }
+
+            available = room - indent;
+            return available;
+        }
+
+        foreach (var (start, end, hard, hyphenate) in BreakIntoLines(paragraph, text, AvailableFor, Measure, spans, spanStarts))
+        {
+            var isLast = end >= text.Length;
+            var line = BuildLine(paragraph, text, spans, spanStarts, start, end, hyphenate, available, top, lines.Count == 0,
+                justify: paragraph.Alignment == TextAlignment.Justify && !isLast && !hard, boxes, bidi, shift);
             lines.Add(line);
             top += line.Height;
         }
@@ -171,22 +198,31 @@ internal static partial class ParagraphLayouter
         return prefix;
     }
 
-    private static List<(int Start, int End, bool Hard, bool Hyphenate)> BreakIntoLines(
-        Paragraph paragraph, string text, double width, Func<int, int, double> measure,
+    /// <summary>
+    /// Breaks the text into lines, lazily: <paramref name="availableFor"/> gives each line's width from its index and the
+    /// width of its first piece that cannot be broken, when the line is reached.
+    /// </summary>
+    private static IEnumerable<(int Start, int End, bool Hard, bool Hyphenate)> BreakIntoLines(
+        Paragraph paragraph, string text, Func<int, double, double> availableFor, Func<int, int, double> measure,
         IReadOnlyList<ParagraphSpan> spans, int[] spanStarts)
     {
         var breaks = GetBreakOpportunities(spans, text, spanStarts);
         int[]? graphemes = null;
-        var lines = new List<(int, int, bool, bool)>();
+        var count = 0;
         var lineStart = 0;
         var b = 0;
         while (lineStart < text.Length)
         {
-            var available = width - (lines.Count == 0 ? paragraph.FirstLineIndent : 0);
             while (b < breaks.Count && breaks[b].Position <= lineStart)
             {
                 b++;
             }
+
+            // The narrowest the line can be: its first piece that cannot be broken (with the hyphen, if it ends at one).
+            var firstPiece = b < breaks.Count
+                ? measure(lineStart, TrimEnd(text, lineStart, breaks[b].Position)) + (breaks[b].Hyphen ? HyphenWidth(StyleAt(spans, spanStarts, breaks[b].Position - 1)) : 0)
+                : measure(lineStart, text.Length);
+            var available = availableFor(count, firstPiece);
 
             BreakOpportunity? lastFit = null;
             (int End, bool Hard, bool Hyphenate)? chosen = null;
@@ -251,11 +287,10 @@ internal static partial class ParagraphLayouter
             }
 
             chosen ??= lastFit is { } last ? (last.Position, last.Required, false) : (text.Length, false, false);
-            lines.Add((lineStart, chosen.Value.End, chosen.Value.Hard, chosen.Value.Hyphenate));
+            yield return (lineStart, chosen.Value.End, chosen.Value.Hard, chosen.Value.Hyphenate);
+            count++;
             lineStart = chosen.Value.End;
         }
-
-        return lines;
     }
 
     /// <summary>
@@ -291,7 +326,7 @@ internal static partial class ParagraphLayouter
     private static LineLayout BuildLine(
         Paragraph paragraph, string text, IReadOnlyList<ParagraphSpan> spans, int[] spanStarts,
         int start, int end, bool hyphenate, double available, double top, bool firstLine, bool justify,
-        Dictionary<InlineBox, InlineBoxFragment> boxes, BidiText bidi)
+        Dictionary<InlineBox, InlineBoxFragment> boxes, BidiText bidi, double shift = 0)
     {
         var contentEnd = TrimEnd(text, start, end);
         var lineLevels = bidi.LineLevels(start, contentEnd);
@@ -575,7 +610,7 @@ internal static partial class ParagraphLayouter
             })
             .ToList();
 
-        return new LineLayout(start, end, top, above + below, above, indent + offset, x, fragments, images, lineBoxes, decorationFragments)
+        return new LineLayout(start, end, top, above + below, above, shift + indent + offset, x, fragments, images, lineBoxes, decorationFragments)
         {
             Links = linkPieces,
         };
@@ -685,6 +720,13 @@ internal static partial class ParagraphLayouter
     private static double StartEdge(BoxStyle box) => box.Margin.Left + box.Border.Left.Width + box.Padding.Left;
 
     private static double EndEdge(BoxStyle box) => box.Padding.Right + box.Border.Right.Width + box.Margin.Right;
+
+    /// <summary>The height of a line holding only the paragraph's strut: its own font at its line height.</summary>
+    private static double StrutHeight(TextStyle style)
+    {
+        var (above, below) = InlineBox(style.Fonts[0], style);
+        return above + below;
+    }
 
     private static (double Above, double Below) InlineBox(PdfFont font, TextStyle style)
     {

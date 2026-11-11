@@ -73,6 +73,12 @@ own engine. Supported today:
   Nynorsk) are bundled, from [hyph-utf8](https://github.com/hyphenation/tex-hyphen) under their own permissive
   licences (MIT, BSD or similar, see
   [the list](src/RaiCore.Pdf.Layout/Text/Hyphenation/Patterns/LICENSES.md)).
+- Floats and `clear` (CSS 2.1 section 9.5): `float: left | right` with shrink-to-fit widths, text that flows around
+  floats (lines beside them are shortened, and move down when a word does not fit), `clear`, and the classic
+  clearfix. Tables, flex containers, images and `display: flow-root`/`overflow` boxes are placed beside floats or
+  below them, and new formatting contexts (those, table cells, flex items and floats) contain their floats. A float
+  that does not fit on the rest of a page moves to the next one; one taller than a page continues on the next, and
+  text keeps flowing around it there.
 - Bidirectional text (the Unicode bidi algorithm, UAX #9): `direction`, `unicode-bidi`, the `dir` attribute (also
   `auto`), `<bdi>` and `<bdo>`; right-to-left paragraphs start on the right, and `text-align: start`/`end` follow the
   direction. Right-to-left tables put their first column on the right, flex rows and the cross axis of flex columns
@@ -195,7 +201,7 @@ not exist are left out.
 Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowDocument` returns the laid-out document
 before rendering, e.g. to set your own page decorator.
 
-Not yet: floats and positioning, grid layout (rendered as blocks), `@page :nth()` and document counters in margin
+Not yet: positioning, grid layout (rendered as blocks), `@page :nth()` and document counters in margin
 boxes (use `string-set`). Content taller than a fixed `height` overflows
 the box (`overflow: hidden` is not supported yet).
 

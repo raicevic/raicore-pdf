@@ -80,20 +80,24 @@ internal sealed partial class Paginator
     {
         private readonly List<OpacityScope?> _scopes = [];
 
+        /// <summary>Whether each operation draws a float, which goes over the rest of the page (see <see cref="Ordered"/>).</summary>
+        private readonly List<bool> _floats = [];
+
         /// <summary>
         /// The operations, with a group begun before the first operation of each run of operations in a scope and
         /// ended after the last (nested scopes nest). Without opacity, the operations themselves.
         /// </summary>
         public List<DrawOperation> Grouped()
         {
+            var order = Ordered();
             if (_scopes.TrueForAll(scope => scope is null))
             {
-                return [.. Items];
+                return [.. order.Select(i => Items[i])];
             }
 
             var result = new List<DrawOperation>(Count + 4);
             var open = new List<OpacityScope>(); // The groups open at this point, outermost first.
-            for (var i = 0; i < Count; i++)
+            foreach (var i in order)
             {
                 var chain = Chain(_scopes[i]);
                 var common = 0;
@@ -126,27 +130,42 @@ internal sealed partial class Paginator
             return result;
         }
 
+        /// <summary>
+        /// The order the operations are drawn in: floats after everything else, as in CSS, where they are painted over
+        /// the backgrounds of the blocks around them (which are added under the content already laid out). Each layer
+        /// keeps its own order.
+        /// </summary>
+        private List<int> Ordered()
+        {
+            var order = Enumerable.Range(0, Count).ToList();
+            return _floats.Contains(true) ? [.. order.Where(i => !_floats[i]), .. order.Where(i => _floats[i])] : order;
+        }
+
         protected override void InsertItem(int index, DrawOperation item)
         {
             _scopes.Insert(index, owner._opacity);
+            _floats.Insert(index, owner._floatDepth > 0);
             base.InsertItem(index, item);
         }
 
         protected override void RemoveItem(int index)
         {
             _scopes.RemoveAt(index);
+            _floats.RemoveAt(index);
             base.RemoveItem(index);
         }
 
         protected override void SetItem(int index, DrawOperation item)
         {
             _scopes[index] = owner._opacity;
+            _floats[index] = owner._floatDepth > 0;
             base.SetItem(index, item);
         }
 
         protected override void ClearItems()
         {
             _scopes.Clear();
+            _floats.Clear();
             base.ClearItems();
         }
 

@@ -94,7 +94,7 @@ internal sealed partial class BoxBuilder
 
     private FlexItem? BuildFlexItem(IElement container, IElement child, ComputedStyle childStyle, double containerWidth, ref int listIndex)
     {
-        var style = BlockLevel(childStyle);
+        var style = BlockLevel(childStyle) with { Float = FloatSide.None, Clear = ClearSide.None }; // Flex items do not float.
         Block? block;
         if (child.LocalName is "img" or "svg")
         {

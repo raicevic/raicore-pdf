@@ -73,6 +73,18 @@ internal sealed partial record ComputedStyle
     /// <summary>CSS <c>direction: rtl</c> (inherited).</summary>
     public bool Rtl { get; init; }
 
+    /// <summary>CSS <c>float</c>; a floated element is block-level (its display is blockified).</summary>
+    public FloatSide Float { get; init; }
+
+    /// <summary>CSS <c>clear</c>.</summary>
+    public ClearSide Clear { get; init; }
+
+    /// <summary>
+    /// The element starts a new block formatting context, which contains its floats: <c>display: flow-root</c>, or
+    /// <c>overflow</c> other than <c>visible</c> and <c>clip</c>.
+    /// </summary>
+    public bool ContainsFloats { get; init; }
+
     /// <summary>
     /// The parent's <c>direction</c> is rtl (the root's own): the containing block's direction, which decides which side
     /// a box narrower than it goes to.
@@ -256,9 +268,47 @@ internal sealed partial record ComputedStyle
         var borderColor = sides.Select(side => CssValues.ParseColor(Get($"border-{side}-color")) ?? color).ToArray();
         var borderStyle = sides.Select(side => ParseBorderStyle(Get($"border-{side}-style"))).ToArray();
 
+        // A float is block-level (CSS 2.1 section 9.7): inline content becomes a block, inline tables and flex boxes their
+        // block forms.
+        var display = ParseDisplay(Get("display"));
+        // inline-start and inline-end are the left and right in a left-to-right element, the other way round otherwise.
+        var floating = Get("float") switch
+        {
+            "left" => FloatSide.Left,
+            "right" => FloatSide.Right,
+            "inline-start" => rtl ? FloatSide.Right : FloatSide.Left,
+            "inline-end" => rtl ? FloatSide.Left : FloatSide.Right,
+            _ => FloatSide.None,
+        };
+        if (floating != FloatSide.None)
+        {
+            display = display switch
+            {
+                CssDisplay.Inline or CssDisplay.InlineBlock => CssDisplay.Block,
+                CssDisplay.InlineTable => CssDisplay.Table,
+                CssDisplay.InlineFlex => CssDisplay.Flex,
+                var other => other,
+            };
+        }
+
+        // overflow other than visible (and clip) on either axis makes a new block formatting context.
+        var overflow = $"{Get("overflow")} {Get("overflow-x")} {Get("overflow-y")}".Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var scrolls = overflow.Any(value => value is not ("visible" or "clip"));
+
         return new ComputedStyle
         {
-            Display = ParseDisplay(Get("display")),
+            Display = display,
+            Float = floating,
+            Clear = Get("clear") switch
+            {
+                "left" => ClearSide.Left,
+                "right" => ClearSide.Right,
+                "inline-start" => rtl ? ClearSide.Right : ClearSide.Left,
+                "inline-end" => rtl ? ClearSide.Left : ClearSide.Right,
+                "both" => ClearSide.Both,
+                _ => ClearSide.None,
+            },
+            ContainsFloats = Get("display") == "flow-root" || scrolls,
             FontFamilies = CssValues.ParseFontFamilies(Get("font-family")),
             FontSize = fontSize,
             FontWeight = CssValues.ParseFontWeight(Get("font-weight")),

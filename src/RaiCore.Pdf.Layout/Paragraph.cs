@@ -314,4 +314,7 @@ public sealed class Paragraph
 
         return ParagraphLayouter.Layout(this, width);
     }
+
+    /// <summary>Breaks the paragraph into lines that each get the room <paramref name="space"/> gives them (beside floats).</summary>
+    internal ParagraphLayout Layout(double width, LineSpace space) => ParagraphLayouter.Layout(this, width, space);
 }

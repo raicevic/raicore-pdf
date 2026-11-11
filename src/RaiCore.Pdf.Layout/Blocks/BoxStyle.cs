@@ -120,6 +120,35 @@ public enum PageBreak
     Right,
 }
 
+/// <summary>Which side a block floats to (CSS <c>float</c>).</summary>
+public enum FloatSide
+{
+    /// <summary>Not floated: the block is in the normal flow.</summary>
+    None,
+
+    /// <summary>Floated to the left: following text flows on its right.</summary>
+    Left,
+
+    /// <summary>Floated to the right: following text flows on its left.</summary>
+    Right,
+}
+
+/// <summary>Which earlier floats a block is moved below (CSS <c>clear</c>).</summary>
+public enum ClearSide
+{
+    /// <summary>None: the block may sit beside floats.</summary>
+    None,
+
+    /// <summary>Below left floats.</summary>
+    Left,
+
+    /// <summary>Below right floats.</summary>
+    Right,
+
+    /// <summary>Below all floats.</summary>
+    Both,
+}
+
 /// <summary>Page break behavior inside a block (CSS <c>break-inside</c>).</summary>
 public enum PageBreakInside
 {
@@ -221,6 +250,28 @@ public sealed record BoxStyle
     /// as one transparency group, then composited with this opacity. A block split across pages gets a group per page.
     /// </summary>
     public double Opacity { get; init; } = 1;
+
+    /// <summary>
+    /// Takes the block out of the flow and floats it to a side (CSS 2.1 section 9.5): it goes as high as it can at its
+    /// place in the flow, as far to that side as other floats allow (moving down until it fits beside them), and
+    /// following text in the same formatting context flows around it: lines beside it are shortened, while block boxes
+    /// stay where they are (their text avoids the float). Tables, flex containers, images and blocks with
+    /// <see cref="ContainsFloats"/> are narrowed to fit beside floats, or moved below them. Without a
+    /// <see cref="Width"/> it shrinks to fit its content. Its margins do not collapse. A float that does not fit on the
+    /// rest of the page moves to the next one together with what follows it.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "The CSS property's name.")]
+    public FloatSide Float { get; init; }
+
+    /// <summary>Moves the block below earlier floats of its formatting context on those sides (CSS <c>clear</c>).</summary>
+    public ClearSide Clear { get; init; }
+
+    /// <summary>
+    /// The block starts a new formatting context for floats (CSS <c>display: flow-root</c>, or <c>overflow</c> other than
+    /// <c>visible</c>): it grows to contain the floats inside it, floats outside do not affect its content, and it is
+    /// itself placed beside earlier floats like a table. Floats, flex items and table cells always do this.
+    /// </summary>
+    public bool ContainsFloats { get; init; }
 
     /// <summary>A border-box width limited by <see cref="MaxWidth"/> and then <see cref="MinWidth"/>.</summary>
     internal double ClampWidth(double width) =>
