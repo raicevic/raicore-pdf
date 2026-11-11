@@ -18,12 +18,11 @@ env:
 jobs:
   build:
     name: ${{ matrix.os }}
-    # Private-repo minutes are limited (macOS counts 10x), so pull requests run Linux only;
-    # main, nightly and manual runs use the full matrix.
+    # The repository is public, so Actions minutes are free: pull requests run the full matrix too.
     strategy:
       fail-fast: false
       matrix:
-        os: ${{ github.event_name == 'pull_request' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest","windows-latest","macos-latest"]') }}
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
