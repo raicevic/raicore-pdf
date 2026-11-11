@@ -177,7 +177,7 @@ public static class HtmlToPdf
             }
 
             var style = document.CreateElement("style");
-            style.TextContent = css;
+            style.TextContent = sheetUri is not null ? CssBackgrounds.AbsolutizeUrls(css, sheetUri) : css; // url() is relative to the sheet.
             link.Replace(style);
             linkedBases[style] = sheetUri;
         }
@@ -217,7 +217,7 @@ public static class HtmlToPdf
     }
 
     /// <summary>Rewrites CSS that AngleSharp would misread before it is parsed (see LegacyBreaks and LogicalSides).</summary>
-    private static string RewriteCss(string css) => LogicalSides.Rewrite(LegacyBreaks.Rewrite(css));
+    private static string RewriteCss(string css) => CssBackgrounds.RewriteShorthand(LogicalSides.Rewrite(LegacyBreaks.Rewrite(css)));
 
     private static Uri? ResolveUri(Uri? baseUri, string reference) =>
         Uri.TryCreate(reference, UriKind.Absolute, out var absolute) ? absolute

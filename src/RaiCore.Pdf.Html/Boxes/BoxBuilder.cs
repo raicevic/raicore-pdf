@@ -94,6 +94,11 @@ internal sealed partial class BoxBuilder
         {
             style = ComputedStyle.From(_window.GetComputedStyle(element), _rootFontSize, _viewport) with { Language = LanguageOf(element) };
             style = style with { ContainerRtl = element.ParentElement is { } parent ? Style(parent).Rtl : style.Rtl };
+            if (style.BackgroundValues is { } backgrounds)
+            {
+                style = style with { BackgroundLayers = CssBackgrounds.Layers(backgrounds, style.FontSize, _rootFontSize, LoadImage) };
+            }
+
             var dir = element.GetAttribute("dir")?.Trim().ToLowerInvariant();
             if (dir == "auto" || (element.LocalName == "bdi" && dir is not ("ltr" or "rtl")))
             {
@@ -767,6 +772,7 @@ internal sealed partial class BoxBuilder
             Border = borders,
             Background = style.Background,
             BackgroundClip = style.BackgroundClip,
+            BackgroundLayers = style.BackgroundLayers,
             BorderRadius = RadiiFor(style, usedWidth),
             Width = borderBoxWidth,
             MinWidth = minWidth,

@@ -757,7 +757,7 @@ internal sealed partial class Paginator
     {
         var style = styleOverride ?? block.Style;
         var border = style.Border.Widths;
-        var decorated = style.Background is not null || border.Vertical > 0 || border.Horizontal > 0;
+        var decorated = style.Background is not null || style.BackgroundLayers.Count > 0 || border.Vertical > 0 || border.Horizontal > 0;
         var link = block.Link;
 
         var startPage = PageIndex;
@@ -812,18 +812,15 @@ internal sealed partial class Paginator
         // Backgrounds and borders of each page fragment, and the link over it.
         void Decorate(int endPage, double endY)
         {
-            // Rounded corners are sized for the whole box; each fragment keeps the corners it has.
-            var corners = default(RoundedCorners);
-            if (decorated && !style.BorderRadius.IsSquare)
+            // Rounded corners and background layers are sized for the whole box; each fragment keeps the part it has.
+            var wholeHeight = 0.0;
+            for (var page = startPage; page <= endPage; page++)
             {
-                var height = 0.0;
-                for (var page = startPage; page <= endPage; page++)
-                {
-                    height += (page == endPage ? endY : PageBottom(page)) - (page == startPage ? startY : PageTop(page));
-                }
-
-                corners = style.BorderRadius.Resolve(width, height);
+                wholeHeight += (page == endPage ? endY : PageBottom(page)) - (page == startPage ? startY : PageTop(page));
             }
+
+            var corners = decorated && !style.BorderRadius.IsSquare ? style.BorderRadius.Resolve(width, wholeHeight) : default;
+            var offset = 0.0;
 
             for (var page = startPage; page <= endPage; page++)
             {
@@ -836,9 +833,12 @@ internal sealed partial class Paginator
                 {
                     var index = first ? insertAt : 0; // Pages created inside the box: under everything on them.
                     var fragment = corners.Fragment(first, last, fragmentWidth, bottom - top);
-                    _pages[page].Insert(index, (canvas, pageHeight) => DrawBox(canvas, pageHeight, style, x, top, fragmentWidth, bottom - top, first, last, fragment));
+                    var fragmentOffset = offset;
+                    _pages[page].Insert(index, (canvas, pageHeight) => DrawBox(canvas, pageHeight, style, x, top, fragmentWidth, bottom - top, first, last, fragment, (fragmentOffset, wholeHeight)));
                     _placements.Add(new Placement(page, block, top, bottom, -1, -1, x, fragmentWidth));
                 }
+
+                offset += bottom - top;
 
                 if (link is not null)
                 {
@@ -876,10 +876,13 @@ internal sealed partial class Paginator
 
     /// <summary>
     /// Draws a box's (or a fragment's) background and borders. Rounded <paramref name="corners"/> are those of the
-    /// fragment; <c>null</c> sizes the style's radii to the fragment.
+    /// fragment; <c>null</c> sizes the style's radii to the fragment. <paramref name="whole"/> places a fragment in its
+    /// whole box (how far below the box's top it starts, and the box's height) for the background layers; <c>null</c> is
+    /// a whole box.
     /// </summary>
     private static void DrawBox(
-        PdfCanvas canvas, double pageHeight, BoxStyle style, double x, double top, double width, double height, bool first, bool last, RoundedCorners? corners = null)
+        PdfCanvas canvas, double pageHeight, BoxStyle style, double x, double top, double width, double height, bool first, bool last,
+        RoundedCorners? corners = null, (double Offset, double Height)? whole = null)
     {
         var y = pageHeight - top - height; // PDF y of the bottom edge.
         var rounded = corners ?? (style.BorderRadius.IsSquare ? default : style.BorderRadius.Resolve(width, height).Fragment(first, last, width, height));
@@ -890,6 +893,12 @@ internal sealed partial class Paginator
             {
                 canvas.Fill();
             }
+        }
+
+        if (style.BackgroundLayers.Count > 0)
+        {
+            var (offset, wholeHeight) = whole ?? (0, height);
+            PaintBackgroundLayers(canvas, style, rounded, x, y, width, height, first, last, offset, wholeHeight);
         }
 
         BorderPainter.PaintBox(canvas, style.Border, x, y, width, height, top: first, bottom: last, corners: rounded);

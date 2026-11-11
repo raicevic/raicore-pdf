@@ -146,6 +146,14 @@ change at any time, and this section lists what the packages can do so far.
   transparency group per page it is on, also in flex items, table cells and inline boxes. `InlineImage.Opacity` (and
   the `opacity` argument of `Paragraph.AddImage`) does the same for an image in a line. Translucent dashed and dotted
   borders are painted once where adjacent sides' dashes meet in a corner.
+- Background layers (`BoxStyle.BackgroundLayers`): images (`ImageBackground`) and gradients (`LinearGradient` at an
+  angle or toward a corner, `RadialGradient` with circle or ellipse, extent keywords or radii and a center; both
+  repeating if wanted) over the background color, the first on top. Each layer is sized (`BackgroundSize`: auto,
+  cover, contain or lengths), positioned from either edge of its origin box (`BackgroundPosition`), repeated
+  (`BackgroundRepeat`: repeat, no-repeat, space, round) and painted in its clip box, rounded corners included. A box
+  split across pages is painted as if whole. Gradients are PDF shadings painted with `sh` (so they follow relative
+  offsets and other transformations); translucent stops get a soft mask. Repeated images are stored once and drawn
+  per tile (up to 10,000 tiles per fragment).
 - Positioning (`BoxStyle.Position`, `Insets`, `ZIndex`): a relative block is laid out in the flow and drawn moved by
   its insets. An absolute block leaves the flow and is placed in its containing block (the padding box of the nearest
   positioned ancestor, or the page area of the page it is on) once that is laid out: its width from its own, from a
@@ -260,6 +268,11 @@ change at any time, and this section lists what the packages can do so far.
   `hyphenate-limit-chars`, with the language from the nearest `lang` (or `xml:lang`) attribute; the language also
   reaches HarfBuzz for localized glyph forms. Text with `white-space: nowrap` or `pre` is not hyphenated, not even at
   soft hyphens.
+- `background-image` (`url()`, `linear-gradient()`, `radial-gradient()` and their repeating forms),
+  `background-repeat`, `-position` (one to four values), `-size`, `-origin`, `-clip` and multiple layers. The
+  `background` shorthand is split into its longhands before AngleSharp.Css parses it (it throws on several layers and
+  resets `background-origin` wrongly), gradients toward a corner keep their corner, and `url()` in a linked stylesheet
+  is relative to that stylesheet.
 - `position` (`relative`, `absolute`, `fixed`; `sticky` is static), `top`/`right`/`bottom`/`left` and `z-index`:
   absolutely positioned elements are block-level and do not float, also spans and images in the middle of text (they
   leave the paragraph without splitting it). A relative element's percentages resolve against its containing block's
@@ -295,8 +308,11 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   keeps the static position of its paragraph's start; absolutely positioned children of a flex container are laid out
   as flex items; inside a table cell the containing block of an absolute block without a positioned ancestor in the
   cell is the cell's content.
-- Grid (rendered as blocks); `overflow: hidden` (it contains floats but does not clip yet) and
-  background images.
+- Grid (rendered as blocks); `overflow: hidden` (it contains floats but does not clip yet).
+- Backgrounds: `background-attachment` is ignored (`fixed` acts as `scroll`); color hints in gradients are dropped
+  (the colors blend evenly); `image-set()`, `conic-gradient()` and `cross-fade()` are not supported; inline elements
+  (a `span` in text) and collapsed table cells paint only their background color. `calc()` with percentages in a
+  background position or size uses 0 for the percentage.
 - Floats: a float in the middle of a paragraph's text starts at the paragraph's first line, not at the line it is
   on. A line is checked against floats at its strut's height, so a taller line (a large font or image) may overlap a
   float that starts lower down.
