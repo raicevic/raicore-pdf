@@ -73,6 +73,10 @@ own engine. Supported today:
   Nynorsk) are bundled, from [hyph-utf8](https://github.com/hyphenation/tex-hyphen) under their own permissive
   licences (MIT, BSD or similar, see
   [the list](src/RaiCore.Pdf.Layout/Text/Hyphenation/Patterns/LICENSES.md)).
+- Backgrounds: `background-image` with `url()` (raster and SVG) and `linear-gradient`/`radial-gradient` (also
+  repeating ones, translucent stops, toward corners), several layers, `background-repeat` (also `space` and `round`),
+  `-position`, `-size` (`cover`, `contain`, lengths), `-origin` and `-clip`, and the `background` shorthand. Boxes split
+  across pages show the slice of their background each fragment covers.
 - Positioning: `position: relative` (drawn moved, keeping its place), `absolute` (in the padding box of the nearest
   positioned ancestor, or the page area of its page: insets, sizes from insets, shrink-to-fit, static position for
   auto insets) and `fixed` (repeated on every page, as browsers print it), painted over the flow by `z-index`; e.g. an

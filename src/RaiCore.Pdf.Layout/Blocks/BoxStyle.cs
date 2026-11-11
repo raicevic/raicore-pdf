@@ -218,6 +218,13 @@ public sealed record BoxStyle
     public PdfColor? Background { get; init; }
 
     /// <summary>
+    /// Background images and gradients over the <see cref="Background"/> color, the first on top (CSS
+    /// <c>background-image</c> and its companions). Each is sized and positioned in its origin box and painted in its clip
+    /// box; a box split across pages is painted as if whole, each fragment showing its slice.
+    /// </summary>
+    public IReadOnlyList<BackgroundLayer> BackgroundLayers { get; init; } = [];
+
+    /// <summary>
     /// The area the background covers: the border box (the default), the padding box or the content box, with the
     /// rounded corners of <see cref="BorderRadius"/> reduced accordingly.
     /// </summary>

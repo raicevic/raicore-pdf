@@ -46,7 +46,7 @@ public sealed class PdfPage
     internal IReadOnlyList<GroupForm> Groups => _groups;
 
     /// <summary>Whether the page uses transparency: alpha, groups, or an SVG image that does.</summary>
-    internal bool UsesTransparency => _extGStates.Count > 0 || _images.Any(entry => entry.Image.UsesTransparency);
+    internal bool UsesTransparency => _extGStates.Count > 0 || Canvas.SoftMasks.Count > 0 || _images.Any(entry => entry.Image.UsesTransparency);
 
     /// <summary>
     /// Makes a rectangle of the page a link that opens <paramref name="uri"/> (a URI action), e.g. a web page or a
@@ -214,13 +214,24 @@ public sealed class PdfPage
                 states[name] = Resolve(name, () => extGState(alpha));
             }
 
+            foreach (var (alpha, name) in Canvas.SoftMasks.Where(entry => used.Contains(entry.Name)))
+            {
+                states[name] = Resolve(name, () => writer.Add(SoftMask(writer, alpha, compress)));
+            }
+
             var patterns = new PdfDictionary();
             foreach (var (pattern, name) in Canvas.Patterns.Where(entry => used.Contains(entry.Name)))
             {
                 patterns[name] = Resolve(name, () => writer.Add(pattern));
             }
 
-            foreach (var (key, dictionary) in new[] { ("Font", fonts), ("XObject", xobjects), ("ExtGState", states), ("Pattern", patterns) })
+            var shadings = new PdfDictionary();
+            foreach (var (shading, name) in Canvas.Shadings.Where(entry => used.Contains(entry.Name)))
+            {
+                shadings[name] = Resolve(name, () => writer.Add(shading));
+            }
+
+            foreach (var (key, dictionary) in new[] { ("Font", fonts), ("XObject", xobjects), ("ExtGState", states), ("Pattern", patterns), ("Shading", shadings) })
             {
                 if (dictionary.Count > 0)
                 {
@@ -237,6 +248,36 @@ public sealed class PdfPage
         }
 
         return Build(Canvas.PageResources);
+    }
+
+    /// <summary>
+    /// An extended graphics state whose soft mask is the luminosity of a gray shading: painted through it, a gradient
+    /// gets the alpha the shading carries. The mask's group covers far more than any page, as the shading fills it.
+    /// </summary>
+    private static PdfDictionary SoftMask(PdfFileWriter writer, PdfDictionary alphaShading, bool compress)
+    {
+        var content = "/A sh"u8.ToArray();
+        var form = compress ? PdfStreamObject.CreateCompressed(content) : new PdfStreamObject(content);
+        form.Dictionary["Type"] = new PdfName("XObject");
+        form.Dictionary["Subtype"] = new PdfName("Form");
+        form.Dictionary["BBox"] = PdfArray.OfNumbers(-20000, -20000, 20000, 20000);
+        form.Dictionary["Group"] = new PdfDictionary
+        {
+            ["Type"] = new PdfName("Group"),
+            ["S"] = new PdfName("Transparency"),
+            ["CS"] = new PdfName("DeviceGray"),
+        };
+        form.Dictionary["Resources"] = new PdfDictionary { ["Shading"] = new PdfDictionary { ["A"] = writer.Add(alphaShading) } };
+        return new PdfDictionary
+        {
+            ["Type"] = new PdfName("ExtGState"),
+            ["SMask"] = new PdfDictionary
+            {
+                ["Type"] = new PdfName("Mask"),
+                ["S"] = new PdfName("Luminosity"),
+                ["G"] = writer.Add(form),
+            },
+        };
     }
 
     /// <summary>A transparency group dictionary in the RGB blending space (for pages, and for groups when isolated).</summary>

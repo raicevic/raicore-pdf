@@ -34,7 +34,8 @@ images, styled inline or as blocks). CSS counters (`counter-reset`/`counter-incr
 
 Floats and `clear`, with text flowing around floats and `display: flow-root`/`overflow` containing them.
 
-Positioning: `relative`, `absolute` and `fixed` (on every page), with `z-index`.
+Positioning: `relative`, `absolute` and `fixed` (on every page), with `z-index`. Background images and gradients
+(`linear-gradient`, `radial-gradient`, repeating, several layers) with repeat, position, size, origin and clip.
 
 Not yet: grid (rendered as blocks).
 

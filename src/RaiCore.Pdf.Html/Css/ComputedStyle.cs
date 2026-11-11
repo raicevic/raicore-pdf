@@ -128,6 +128,12 @@ internal sealed partial record ComputedStyle
 
     public BackgroundClip BackgroundClip { get; init; }
 
+    /// <summary>The background longhands as computed (turned into <see cref="BackgroundLayers"/> by the box builder).</summary>
+    public CssBackgroundValues? BackgroundValues { get; init; }
+
+    /// <summary>The background images and gradients, the first on top (set by the box builder, which loads the images).</summary>
+    public IReadOnlyList<BackgroundLayer> BackgroundLayers { get; init; } = [];
+
     /// <summary>
     /// Corner radii (top left, top right, bottom right, bottom left), each a horizontal and a vertical length or
     /// percentage (of the border box's width and height); 0 when unset or invalid.
@@ -384,6 +390,9 @@ internal sealed partial record ComputedStyle
             BorderStyle = borderStyle,
             Background = CssValues.ParseColor(Get("background-color")) is { Alpha: > 0 } background ? background : null, // Transparent is none.
             // The background color is clipped like the bottom background layer: the last of a list.
+            BackgroundValues = Get("background-image") is { Length: > 0 } images && images != "none"
+                ? new CssBackgroundValues(images, Get("background-repeat"), Get("background-position"), Get("background-size"), Get("background-origin"), Get("background-clip"))
+                : null,
             BackgroundClip = Get("background-clip").Split(',').Last().Trim() switch
             {
                 "padding-box" => BackgroundClip.PaddingBox,
