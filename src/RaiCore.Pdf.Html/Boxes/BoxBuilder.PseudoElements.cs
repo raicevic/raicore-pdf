@@ -141,7 +141,7 @@ internal sealed partial class BoxBuilder
         var scanned = _paged?.ContentFor(element, pseudo); // Content values AngleSharp drops (target-counter(), leader()...).
         if (!NoGeneratedContent.Contains(element.LocalName) && (scanned is not null || PseudoCandidates().Contains(element)))
         {
-            var css = _window.GetComputedStyle(element, "::" + pseudo);
+            var css = ComputeStyle(element, "::" + pseudo);
             if (ContentValue.Parse(scanned ?? css.GetPropertyValue("content") ?? string.Empty) is { } content)
             {
                 var style = ComputedStyle.From(css, _rootFontSize, _viewport);

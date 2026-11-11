@@ -1,4 +1,5 @@
 using System.Globalization;
+using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using RaiCore.Pdf.Fonts;
@@ -18,6 +19,13 @@ namespace RaiCore.Pdf.Html.Boxes;
 internal sealed partial class BoxBuilder
 {
     private readonly IWindow _window;
+
+    /// <summary>
+    /// The style sheets' rules, collected once. AngleSharp's <c>GetComputedStyle</c> collects them again on every call
+    /// by walking the whole document for its style sheets, which made styling quadratic in the number of elements
+    /// (a 10,000-row table took minutes). The style sheets are complete before boxes are built.
+    /// </summary>
+    private IStyleCollection? _styleCollection;
     private readonly FontCollection _fonts;
     private readonly HtmlConverterOptions _options;
     private readonly Uri? _baseUri;
@@ -92,7 +100,7 @@ internal sealed partial class BoxBuilder
     {
         if (!_styles.TryGetValue(element, out var style))
         {
-            style = ComputedStyle.From(_window.GetComputedStyle(element), _rootFontSize, _viewport) with { Language = LanguageOf(element) };
+            style = ComputedStyle.From(ComputeStyle(element), _rootFontSize, _viewport) with { Language = LanguageOf(element) };
             style = style with { ContainerRtl = element.ParentElement is { } parent ? Style(parent).Rtl : style.Rtl };
             if (style.BackgroundValues is { } backgrounds)
             {
@@ -115,6 +123,13 @@ internal sealed partial class BoxBuilder
         }
 
         return style;
+    }
+
+    /// <summary>The computed declarations of an element or one of its pseudo-elements (<c>::before</c>), as the window's <c>GetComputedStyle</c> gives them.</summary>
+    private ICssStyleDeclaration ComputeStyle(IElement element, string? pseudo = null)
+    {
+        _styleCollection ??= _window.GetStyleCollection(Document.Context.GetService<AngleSharp.Css.IRenderDevice>() ?? new AngleSharp.Css.DefaultRenderDevice());
+        return _styleCollection.ComputeDeclarations(element, pseudo);
     }
 
     public TextStyle TextStyleFor(ComputedStyle style)
