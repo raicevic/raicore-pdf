@@ -94,6 +94,12 @@ internal sealed partial record ComputedStyle
     /// </summary>
     public bool ContainsFloats { get; init; }
 
+    /// <summary>CSS <c>overflow</c> other than <c>visible</c> on either axis: the content is clipped to the padding box.</summary>
+    public bool ClipOverflow { get; init; }
+
+    /// <summary>CSS <c>text-overflow: ellipsis</c> (it applies in a box that clips its overflow).</summary>
+    public bool TextOverflowEllipsis { get; init; }
+
     /// <summary>
     /// The parent's <c>direction</c> is rtl (the root's own): the containing block's direction, which decides which side
     /// a box narrower than it goes to.
@@ -339,6 +345,8 @@ internal sealed partial record ComputedStyle
                 _ => ClearSide.None,
             },
             ContainsFloats = Get("display") == "flow-root" || scrolls,
+            ClipOverflow = overflow.Any(value => value != "visible"),
+            TextOverflowEllipsis = Get("text-overflow").Trim().Equals("ellipsis", StringComparison.OrdinalIgnoreCase),
             FontFamilies = CssValues.ParseFontFamilies(Get("font-family")),
             FontSize = fontSize,
             FontWeight = CssValues.ParseFontWeight(Get("font-weight")),

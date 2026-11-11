@@ -587,6 +587,15 @@ internal sealed partial class Paginator
             }
 
             _containingWidth = width;
+            if (style.ClipOverflow && !_static && block is ContainerBlock && style.Height is { } clippedHeight && clippedHeight <= Remaining + Epsilon)
+            {
+                // A clipped box of a fixed height that fits here: laid out in one piece, so what it hides makes no pages.
+                PlaceClipped(block, boxX, boxWidth, clippedHeight);
+                pending = default;
+                pending.Add(style.Margin.Bottom);
+                continue;
+            }
+
             var trailing = LayoutBlock(block, boxX, boxWidth);
 
             pending = trailing;
@@ -768,11 +777,27 @@ internal sealed partial class Paginator
         var fluid = _fluid && !_static;
         var startWidth = ContentWidthOf(startPage);
 
-        Y += border.Top + style.Padding.Top;
-        layoutContent(x + border.Left + style.Padding.Left, Math.Max(MinimumContentWidth, width - border.Horizontal - style.Padding.Horizontal));
-        Y += style.Padding.Bottom + border.Bottom;
+        // A box that clips its overflow draws its content in a clip scope; its own background and borders stay outside.
+        var outerScope = _scope;
+        var clip = style.ClipOverflow ? new ClipRegion(_shift) : null;
+        if (clip is not null)
+        {
+            _scope = new DrawScope(_scope, 1, clip);
+        }
+
+        try
+        {
+            Y += border.Top + style.Padding.Top;
+            layoutContent(x + border.Left + style.Padding.Left, Math.Max(MinimumContentWidth, width - border.Horizontal - style.Padding.Horizontal));
+            Y += style.Padding.Bottom + border.Bottom;
+        }
+        finally
+        {
+            _scope = outerScope;
+        }
 
         // CSS height, min-height and max-height; a flex item's size from its container overrides height.
+        var contentEnd = Y;
         var (fixedHeight, minHeight, maxHeight) = HeightLimits(block, sizing);
         if (PageIndex == startPage)
         {
@@ -790,15 +815,34 @@ internal sealed partial class Paginator
             var target = Math.Max(Math.Min(fixedHeight ?? total, maxHeight), minHeight);
             if (target > total)
             {
-                Y = Math.Min(ContentBottom, Y + target - total);
+                Y += target - total;
             }
+            else if (clip is not null && target < total - Epsilon)
+            {
+                // A clipping box ends at its height, not below the content it hides; what follows goes on from there.
+                MoveToHeightBelow(startPage, startY, target);
+            }
+        }
+
+        // A height (beyond the content's) that reaches below the page continues on the next pages: the box is split.
+        while (!_static && Y > ContentBottom + Epsilon && Y > contentEnd + Epsilon)
+        {
+            var below = Y - ContentBottom;
+            NewPage();
+            Y = PageTop(PageIndex) + below;
+            contentEnd = PageTop(PageIndex);
         }
 
         if (sizing.StretchTo is { } line)
         {
             if (decorated || link is not null)
             {
-                line.Pending.Add(InCurrentOpacityScope(() => Decorate(line.Page, line.Y - sizing.StretchInset)));
+                line.Pending.Add(InCurrentDrawScope(() => Decorate(line.Page, line.Y - sizing.StretchInset)));
+            }
+
+            if (clip is not null)
+            {
+                line.Pending.Add(() => RecordClip(clip, line.Page, line.Y - sizing.StretchInset));
             }
 
             return;
@@ -807,6 +851,32 @@ internal sealed partial class Paginator
         if (decorated || link is not null)
         {
             Decorate(PageIndex, Y);
+        }
+
+        if (clip is not null)
+        {
+            RecordClip(clip, PageIndex, Y);
+        }
+
+        // Where the clipped content shows: the box's fragment on each page.
+        void RecordClip(ClipRegion region, int endPage, double endY)
+        {
+            var wholeHeight = 0.0;
+            for (var page = startPage; page <= endPage; page++)
+            {
+                wholeHeight += (page == endPage ? endY : PageBottom(page)) - (page == startPage ? startY : PageTop(page));
+            }
+
+            var corners = style.BorderRadius.IsSquare ? default : style.BorderRadius.Resolve(width, wholeHeight);
+            for (var page = startPage; page <= endPage; page++)
+            {
+                var (first, last) = (page == startPage, page == endPage);
+                var top = first ? startY : PageTop(page);
+                var bottom = last ? endY : PageBottom(page);
+                var fragmentWidth = fluid ? Math.Max(0, width + ContentWidthOf(page) - startWidth) : width;
+                region.Fragments[page] = new ClipFragment(
+                    style, corners.Fragment(first, last, fragmentWidth, bottom - top), x, top, fragmentWidth, bottom - top, first, last);
+            }
         }
 
         // Backgrounds and borders of each page fragment, and the link over it.
@@ -846,6 +916,20 @@ internal sealed partial class Paginator
                 }
             }
         }
+    }
+
+    /// <summary>Moves the position to <paramref name="height"/> below a point, across the pages after it.</summary>
+    private void MoveToHeightBelow(int page, double y, double height)
+    {
+        while (y + height > PageBottom(page) + Epsilon && page + 1 < _pages.Count)
+        {
+            height -= PageBottom(page) - y;
+            page++;
+            y = PageTop(page);
+        }
+
+        _pageIndex = page;
+        Y = y + height;
     }
 
     /// <summary>

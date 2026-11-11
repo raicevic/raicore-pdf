@@ -15,7 +15,7 @@ namespace RaiCore.Pdf.Layout.Blocks;
 internal sealed partial class Paginator
 {
     /// <summary>The opacity scope operations are added in: the innermost block with an opacity below 1, if any.</summary>
-    private OpacityScope? _opacity;
+    private DrawScope? _scope;
 
     /// <summary>
     /// Lays out one block; returns the bottom margin that collapses out of it (from its last child). A block with an
@@ -28,15 +28,15 @@ internal sealed partial class Paginator
             return LayoutBlockInScope(block, x, width, sizing);
         }
 
-        var outer = _opacity;
-        _opacity = new OpacityScope(outer, Math.Max(0, block.Style.Opacity));
+        var outer = _scope;
+        _scope = new DrawScope(outer, Math.Max(0, block.Style.Opacity));
         try
         {
             return LayoutBlockInScope(block, x, width, sizing);
         }
         finally
         {
-            _opacity = outer;
+            _scope = outer;
         }
     }
 
@@ -53,20 +53,20 @@ internal sealed partial class Paginator
     /// Wraps deferred drawing (e.g. a flex item's background, added once the line's height is known) so that it runs
     /// in the opacity scope, paint layer and offset current now.
     /// </summary>
-    private Action InCurrentOpacityScope(Action draw)
+    private Action InCurrentDrawScope(Action draw)
     {
-        var (scope, layer, shift) = (_opacity, _layer, _shift);
+        var (scope, layer, shift) = (_scope, _layer, _shift);
         return () =>
         {
-            var outer = (_opacity, _layer, _shift);
-            (_opacity, _layer, _shift) = (scope, layer, shift);
+            var outer = (_scope, _layer, _shift);
+            (_scope, _layer, _shift) = (scope, layer, shift);
             try
             {
                 draw();
             }
             finally
             {
-                (_opacity, _layer, _shift) = outer;
+                (_scope, _layer, _shift) = outer;
             }
         };
     }
@@ -74,20 +74,54 @@ internal sealed partial class Paginator
     /// <summary>The pages' drawing operations, with transparency groups for the opacity scopes.</summary>
     private List<IReadOnlyList<DrawOperation>> GroupedPages() => [.. _pages.Select(page => (IReadOnlyList<DrawOperation>)page.Grouped())];
 
-    /// <summary>A block's opacity scope, nested in the scopes of the blocks around it.</summary>
-    private sealed class OpacityScope(OpacityScope? parent, double opacity)
+    /// <summary>
+    /// A scope operations are drawn in, nested in the scopes of the blocks around it: a block's opacity (a transparency
+    /// group), or the clip of a block whose overflow is hidden.
+    /// </summary>
+    private sealed class DrawScope(DrawScope? parent, double opacity, ClipRegion? clip = null)
     {
-        public OpacityScope? Parent { get; } = parent;
+        public DrawScope? Parent { get; } = parent;
 
         public double Opacity { get; } = opacity;
+
+        /// <summary>The region the scope clips to, or <c>null</c> for an opacity scope.</summary>
+        public ClipRegion? Clip { get; } = clip;
 
         public int Depth { get; } = parent is null ? 1 : parent.Depth + 1;
     }
 
+    /// <summary>
+    /// Where a block that clips its overflow lets its content show: its padding box on each page it is on (with the inner
+    /// rounded corners), recorded once the block is laid out. On pages where it has no fragment nothing shows.
+    /// </summary>
+    private sealed class ClipRegion((double X, double Y) shift)
+    {
+        public Dictionary<int, ClipFragment> Fragments { get; } = [];
+
+        /// <summary>Clips to the region on a page (in PDF coordinates for its height).</summary>
+        public void Apply(PdfCanvas canvas, double pageHeight, int page)
+        {
+            if (Fragments.TryGetValue(page, out var f))
+            {
+                var y = pageHeight - (f.Top + shift.Y) - f.Height;
+                if (AddBackgroundArea(canvas, f.Style with { BackgroundClip = BackgroundClip.PaddingBox }, f.Corners, f.X + shift.X, y, f.Width, f.Height, f.First, f.Last))
+                {
+                    canvas.Clip();
+                    return;
+                }
+            }
+
+            canvas.Rectangle(0, 0, 0, 0).Clip();
+        }
+    }
+
+    /// <summary>A clipping block's border box on one page, and which of its edges that fragment has.</summary>
+    private readonly record struct ClipFragment(BoxStyle Style, RoundedCorners Corners, double X, double Top, double Width, double Height, bool First, bool Last);
+
     /// <summary>The drawing operations of a page; each remembers the opacity scope it was added in.</summary>
     private sealed class PageOperations(Paginator owner) : Collection<DrawOperation>
     {
-        private readonly List<OpacityScope?> _scopes = [];
+        private readonly List<DrawScope?> _scopes = [];
 
         /// <summary>The paint layer of each operation (see <see cref="Ordered"/>).</summary>
         private readonly List<PaintLayer> _layers = [];
@@ -105,7 +139,8 @@ internal sealed partial class Paginator
             }
 
             var result = new List<DrawOperation>(Count + 4);
-            var open = new List<OpacityScope>(); // The groups open at this point, outermost first.
+            var open = new List<DrawScope>(); // The groups and clips open at this point, outermost first.
+            var page = owner._pages.IndexOf(this);
             foreach (var i in order)
             {
                 var chain = Chain(_scopes[i]);
@@ -117,15 +152,21 @@ internal sealed partial class Paginator
 
                 for (var j = open.Count - 1; j >= common; j--)
                 {
-                    result.Add(static (canvas, _) => canvas.EndGroup());
+                    result.Add(Close(open[j]));
                     open.RemoveAt(j);
                 }
 
                 for (var j = common; j < chain.Count; j++)
                 {
-                    var opacity = chain[j].Opacity;
-                    result.Add((canvas, _) => canvas.BeginGroup(opacity));
-                    open.Add(chain[j]);
+                    var scope = chain[j];
+                    result.Add(scope.Clip is { } clip
+                        ? (canvas, pageHeight) =>
+                        {
+                            canvas.SaveState();
+                            clip.Apply(canvas, pageHeight, page);
+                        }
+                        : (canvas, _) => canvas.BeginGroup(scope.Opacity));
+                    open.Add(scope);
                 }
 
                 result.Add(Items[i]);
@@ -133,10 +174,14 @@ internal sealed partial class Paginator
 
             for (var j = open.Count - 1; j >= 0; j--)
             {
-                result.Add(static (canvas, _) => canvas.EndGroup());
+                result.Add(Close(open[j]));
             }
 
             return result;
+
+            static DrawOperation Close(DrawScope scope) => scope.Clip is null
+                ? static (canvas, _) => canvas.EndGroup()
+                : static (canvas, _) => canvas.RestoreState();
         }
 
         /// <summary>
@@ -152,7 +197,7 @@ internal sealed partial class Paginator
 
         protected override void InsertItem(int index, DrawOperation item)
         {
-            _scopes.Insert(index, owner._opacity);
+            _scopes.Insert(index, owner._scope);
             _layers.Insert(index, owner._layer);
             base.InsertItem(index, Shifted(item));
         }
@@ -183,7 +228,7 @@ internal sealed partial class Paginator
 
         protected override void SetItem(int index, DrawOperation item)
         {
-            _scopes[index] = owner._opacity;
+            _scopes[index] = owner._scope;
             _layers[index] = owner._layer;
             base.SetItem(index, Shifted(item));
         }
@@ -196,9 +241,9 @@ internal sealed partial class Paginator
         }
 
         /// <summary>The scopes from the outermost to <paramref name="scope"/>.</summary>
-        private static List<OpacityScope> Chain(OpacityScope? scope)
+        private static List<DrawScope> Chain(DrawScope? scope)
         {
-            var chain = new List<OpacityScope>(scope?.Depth ?? 0);
+            var chain = new List<DrawScope>(scope?.Depth ?? 0);
             for (var s = scope; s is not null; s = s.Parent)
             {
                 chain.Add(s);

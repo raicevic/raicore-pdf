@@ -792,6 +792,7 @@ internal sealed partial class BoxBuilder
             Insets = InsetsFor(style, containingWidth, containingHeight),
             ZIndex = style.ZIndex,
             ContainsFloats = style.ContainsFloats,
+            ClipOverflow = style.ClipOverflow,
         };
         var content = Clamp(borderBoxWidth ?? (containingWidth - box.Margin.Horizontal)) - decoration;
         return (box, Math.Max(1, content));
