@@ -500,7 +500,9 @@ internal sealed partial record ComputedStyle
 
     private static PageBreak ParseBreak(string value) => value switch
     {
-        "page" or "left" or "right" or "recto" or "verso" or "always" => PageBreak.Page,
+        "page" or "always" => PageBreak.Page,
+        "left" or "verso" => PageBreak.Left, // Left-to-right page progression: verso pages are left pages.
+        "right" or "recto" => PageBreak.Right,
         "avoid" or "avoid-page" => PageBreak.Avoid,
         _ => PageBreak.Auto,
     };

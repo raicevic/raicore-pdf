@@ -135,7 +135,13 @@ h1 { string-set: chapter content(); }
 
 - Margin boxes: `top-`/`bottom-` `left`, `center`, `right` and corners, with font, color, alignment and
   vertical-align.
-- Page selectors: `:first`, `:left` and `:right`.
+- Page selectors: `:first`, `:left`, `:right`, `:blank` and page names, combined (`@page chapter:first`) and in
+  lists, cascaded by specificity. Each page gets its own `size` and margins from them, e.g. mirrored margins on left
+  and right pages, and margin boxes are placed in each page's own margins.
+- Named pages: `page: wide` with `@page wide { size: A4 landscape }` puts an element (say, a wide table) on pages of
+  its own; a change of page name forces a page break, and percentages inside resolve against that page's width.
+- `break-before`/`break-after: left`, `right`, `recto` and `verso` insert a blank page when needed (styled with
+  `@page :blank`).
 - Content values: `counter(page)` and `counter(pages)` in any counter style, `string()` with
   `first`/`start`/`last`/`first-except`, `element()` for running elements, and strings with CSS escapes.
 
@@ -163,8 +169,7 @@ not exist are left out.
 Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowDocument` returns the laid-out document
 before rendering, e.g. to set your own page decorator.
 
-Not yet: floats and positioning, grid layout (rendered as blocks),
-different page margins for `:first`/`:left`/`:right`, named pages and counters other than
+Not yet: floats and positioning, grid layout (rendered as blocks), `@page :nth()` and counters other than
 `page`/`pages`. Content taller than a fixed `height` overflows
 the box (`overflow: hidden` is not supported yet).
 

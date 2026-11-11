@@ -33,6 +33,14 @@ public abstract class Block
     /// For links in text, see <see cref="Paragraph.BeginLink"/>.
     /// </summary>
     public LinkTarget? Link { get; init; }
+
+    /// <summary>
+    /// The name of the pages the block goes on (CSS <c>page</c>), which <see cref="FlowDocument.PageSetupResolver"/> can
+    /// give their own size and margins; <c>null</c> (the default) for the parent's (CSS <c>auto</c>). Between sibling
+    /// blocks whose pages have different names there is a forced page break, and a page takes the name of the content
+    /// it starts with (a container starts with its first child's).
+    /// </summary>
+    public string? PageName { get; init; }
 }
 
 /// <summary>A block containing one paragraph of text.</summary>

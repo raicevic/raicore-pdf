@@ -88,6 +88,14 @@ change at any time, and this section lists what the packages can do so far.
 - Block layout and pagination: the box model, margin collapsing, orphans and widows, forced and avoided page breaks,
   boxes sliced across pages, page decorators for headers and footers. A paragraph whose orphans and widows leave no
   possible break needs all its lines at the bottom of a page before it starts there.
+- A page setup per page: `FlowDocument.PageSetupResolver` chooses each page's size and margins from a `PageContext`
+  (page number, `IsFirst`, page name, `PageSide` and whether it is a blank page), and `PageInfo` gives decorators the
+  page's own setup, name, side and blankness. `Block.PageName` names the pages a block goes on: a change of name
+  between siblings forces a page break, a container starts with its first child's name, and pages created by
+  automatic breaks keep the name. `PageBreak.Left` and `PageBreak.Right` start a page on that side, inserting a blank
+  page when needed (before the first content they set the first page's side). Blocks laid out on a page with another
+  content width get that width through containers without a width of their own (backgrounds follow on every page),
+  and pages with another left margin shift their content (links included).
 - `height`, `min-height` and `max-height` on every block (`BoxStyle.Height`, `MinHeight`, `MaxHeight`). Content
   taller than a fixed height overflows, as with `overflow: visible`; a fixed-height box that fits on a page is not
   split.
@@ -195,6 +203,11 @@ change at any time, and this section lists what the packages can do so far.
   negative. Viewport units (`vw`, `vh`, `vmin`, `vmax`) follow the page area set by `@page`.
 - CSS Paged Media: `@page` size and margins, `:first`/`:left`/`:right`, margin boxes for headers and footers,
   `counter(page)`/`counter(pages)`, `string-set` and running elements (which can be flex containers).
+- Named pages and page-specific geometry: the `page` property (cascaded by specificity) with `@page name` rules, page
+  selectors combining a name with `:first`, `:left`, `:right` and `:blank` (also in selector lists), cascaded by
+  page selector specificity then source order, give each page its own `size` and margins (e.g. landscape pages for
+  wide tables, mirrored margins); margin boxes use each page's size and margins. `break-before`/`break-after: left`,
+  `right`, `recto` and `verso` insert blank pages, which `@page :blank` styles.
 - Web fonts: `@font-face` with `url()` and `local()` sources, `format()` hints (unsupported formats are not
   downloaded), weight ranges, `font-style` and `unicode-range`, matched like CSS Fonts 4 and loaded on first use. A
   declared family hides installed fonts of the same name; a family that fails to load falls back to the next one.
@@ -242,8 +255,12 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   language, so it is not hyphenated automatically. Patterns for languages under the LPPL alone (such as Swedish) or
   the GPL (Czech) are not bundled, and decomposed (NFD) text may miss hyphenation points.
 - No synthetic bold or italic: a family without a bold or italic face uses its closest face as is.
-- `:first`/`:left`/`:right` cannot change page margins; no named pages. Bookmark labels cannot use counters, and inline
-  elements cannot be bookmarks.
+- Pages: no `@page :nth()`. Percentages, `vw`/`vh` and auto margins resolve against the content width of the
+  element's named page (that of a right page that is not the first; unnamed pages use the plain `@page` rules), so
+  `:first`/`:left`/`:right` pages with another content width do not change them. Content continuing onto a page with
+  another content width (after an automatic break) keeps the width it started with, and `page` is ignored inside flex
+  items, table cells and inline boxes. Page progression is left to right (`recto` is a right page). Bookmark labels
+  cannot use counters, and inline elements cannot be bookmarks.
 - No tagged PDF, PDF/A or encryption.
 - SVG: no filters, masks, markers, patterns, `spreadMethod` `reflect`/`repeat` (drawn as `pad`), text on a path or
   per-character positions (only the first `x`/`y`/`dx`/`dy`), and no web fonts in SVG text (the standard fonts are
