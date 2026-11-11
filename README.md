@@ -598,7 +598,8 @@ dotnet test
 ```
 
 Install [qpdf](https://github.com/qpdf/qpdf) and poppler's `pdftotext` to run the PDF structure and text
-extraction tests locally; otherwise they are skipped (CI always runs them). See [CONTRIBUTING.md](CONTRIBUTING.md)
+extraction tests locally, and a `verapdf` command for the PDF/A and PDF/UA checks; otherwise they are skipped (CI
+always runs them). See [CONTRIBUTING.md](CONTRIBUTING.md)
 for the package smoke test and the release process, and [tools/README.md](tools/README.md) for the maintainer
 scripts.
 

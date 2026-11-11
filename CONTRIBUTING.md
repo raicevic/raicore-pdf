@@ -14,6 +14,9 @@ dotnet test
 
 - Install [qpdf](https://github.com/qpdf/qpdf) and poppler's `pdftotext` to run the PDF structure and text extraction
   tests locally; otherwise they are skipped. CI always runs them.
+- PDF/A and PDF/UA tests validate with [veraPDF](https://verapdf.org). Put a `verapdf` command on your PATH to run them
+  locally, for example a script running `docker run --rm -v /tmp:/tmp verapdf/cli:v1.30.3 "$@"`; otherwise they are
+  skipped. CI runs them on Linux.
 - Rendering tests rasterize PDFs with PDFium (via PDFtoImage) and check pixels. When you change layout, also render a
   sample and look at it.
 - [tools/README.md](tools/README.md) describes the scripts that regenerate font metrics, Unicode data and test fixtures.
