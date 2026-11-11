@@ -240,6 +240,42 @@ public class ConcurrencyTests
     }
 
     [Fact]
+    public void A_symbol_font_maps_8_bit_codes_to_its_private_use_glyphs()
+    {
+        var font = (OpenTypePdfFont)PdfFont.Load(Fixtures.Path("RaiCoreTestTT-Symbol.ttf"));
+
+        Assert.True(font.Font.IsSymbolCmap);
+        Assert.NotEqual(0, font.Font.GetGlyphId(0xF041));
+        Assert.Equal(font.Font.GetGlyphId(0xF041), font.Font.GetGlyphId('A'));
+        Assert.False(font.HasGlyph('B'));
+    }
+
+    [Fact]
+    public void A_symbol_font_used_for_the_first_time_on_many_threads_at_once_maps_every_code()
+    {
+        var data = Fixtures.Read("RaiCoreTestTT-Symbol.ttf");
+        const int Threads = 8;
+        for (var round = 0; round < 500; round++)
+        {
+            // A new font each round: the threads race to build its character map, and each must see the map with
+            // its symbol flag (8-bit codes are found at U+F0xx only in a symbol font). The window in which a map could
+            // be seen without its flag is short, so this catches such a bug in some runs, not every run.
+            var font = PdfFont.Load(data);
+            using var start = new Barrier(Threads);
+            var found = new bool[Threads];
+            var threads = Enumerable.Range(0, Threads).Select(t => new Thread(() =>
+            {
+                start.SignalAndWait(Ct);
+                found[t] = font.HasGlyph('A');
+            })).ToList();
+            threads.ForEach(t => t.Start());
+            threads.ForEach(t => t.Join());
+
+            Assert.All(found, Assert.True);
+        }
+    }
+
+    [Fact]
     public async Task A_registration_racing_with_lookups_is_seen_by_the_lookups_after_it()
     {
         var hyphenator = Hyphenator.FromPatterns(["a1b"]);
