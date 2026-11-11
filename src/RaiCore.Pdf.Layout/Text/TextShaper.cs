@@ -128,7 +128,7 @@ public static class TextShaper
             if (seen.Add(cluster))
             {
                 var end = boundaries[Array.BinarySearch(boundaries, cluster) + 1];
-                glyphText = text[cluster..end];
+                glyphText = end == cluster + 1 && text[cluster] < SingleCharacters.Length ? SingleCharacter(text[cluster]) : text[cluster..end];
             }
             else
             {
@@ -151,6 +151,15 @@ public static class TextShaper
         return new ShapedRun(
             text, item.Start, item.Length, font, item.Script.ToString(), item.Direction, glyphs, clusters, needsActualText: !oneToOneInOrder);
     }
+
+    /// <summary>
+    /// The text of one-character clusters, shared: every glyph carries its cluster's text, and a string per glyph was
+    /// most of what a laid-out document kept alive. Filled on first use; racing threads store equal strings.
+    /// </summary>
+    private static string SingleCharacter(char c) => SingleCharacters[c] ??= c.ToString();
+
+    /// <summary>A home for the strings of <see cref="SingleCharacter"/> below U+0800 (Latin, Greek, Cyrillic, Hebrew, Arabic...).</summary>
+    private static readonly string?[] SingleCharacters = new string?[0x800];
 
     /// <summary>
     /// The HarfBuzz objects of a font. They are created under a lock, so that threads shaping with a new font at the
