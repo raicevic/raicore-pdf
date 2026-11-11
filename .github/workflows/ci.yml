@@ -111,3 +111,60 @@ jobs:
           path: |
             smoke-publish/*.log
             smoke-publish/*-pdfs/*.pdf
+
+  # The deployment targets beyond the runners' own OS: Alpine (musl) and Debian containers on x64 and Arm64. Each
+  # builds the packages inside the container, runs the package smoke test and publishes it trimmed and with Native
+  # AOT; the Alpine jobs also build and run the sample Dockerfile in docs/docker. Docker runs on the host runner
+  # (not a `container:` job), since JavaScript actions cannot run in Alpine containers on Arm64. Not required checks.
+  containers:
+    name: container (${{ matrix.distro }}, ${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+        distro: [alpine, debian]
+        include:
+          - arch: x64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+          # The -aot SDK images add clang and the other Native AOT prerequisites.
+          - distro: alpine
+            image: mcr.microsoft.com/dotnet/sdk:10.0-alpine-aot
+            setup: apk add --no-cache bash
+          # .NET 10 has no Debian SDK image, so the SDK from global.json is installed into Debian 13 (trixie).
+          - distro: debian
+            image: debian:trixie-slim
+            setup: |
+              apt-get update
+              apt-get install -y --no-install-recommends ca-certificates curl libicu-dev openssl clang zlib1g-dev
+              curl -fsSL -o /tmp/dotnet-install.sh https://dot.net/v1/dotnet-install.sh
+              bash /tmp/dotnet-install.sh --jsonfile global.json --install-dir /usr/share/dotnet
+              export DOTNET_ROOT=/usr/share/dotnet PATH="/usr/share/dotnet:$PATH"
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Pack and run the package smoke test (also trimmed and Native AOT) in ${{ matrix.image }}
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/repo" -w /repo \
+            -e CI=true -e DOTNET_NOLOGO=true -e DOTNET_CLI_TELEMETRY_OPTOUT=true -e DEBIAN_FRONTEND=noninteractive \
+            ${{ matrix.image }} sh -euc '
+              ${{ matrix.setup }}
+              # The checkout belongs to the runner user, not root: let SourceLink read it anyway.
+              printf "[safe]\n\tdirectory = *\n" >> "$HOME/.gitconfig"
+              dotnet --info
+              dotnet pack --configuration Release --output artifacts
+              dotnet run --project tests/PackageSmoke --configuration Release -- smoke-output
+              tests/PackageSmoke/publish-and-run.sh'
+
+      - name: Build and run the sample Dockerfile (docs/docker)
+        if: matrix.distro == 'alpine'
+        run: |
+          mkdir -p docs/docker/packages
+          cp artifacts/*.nupkg docs/docker/packages/
+          docker build --tag hello-pdf docs/docker
+          docker run --rm hello-pdf > hello.pdf
+          ls -l hello.pdf
+          head -c 5 hello.pdf | grep -q '%PDF-'
+          grep -aq /FontFile2 hello.pdf
