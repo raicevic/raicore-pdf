@@ -15,7 +15,7 @@ internal sealed record RunningMarker(string Name, IReadOnlyList<Block> Blocks);
 
 /// <summary>
 /// CSS Paged Media and Generated Content for Paged Media: <c>@page</c> margin boxes (headers and footers) for all,
-/// first, left and right pages, page counters, running strings (<c>string-set</c>/<c>string()</c>), running
+/// first, left, right, blank and named pages, page counters, running strings (<c>string-set</c>/<c>string()</c>), running
 /// elements (<c>position: running()</c>/<c>element()</c>) and bookmarks (<c>bookmark-level</c> and friends).
 /// </summary>
 internal sealed partial class PagedMedia
@@ -51,6 +51,7 @@ internal sealed partial class PagedMedia
         foreach (var rule in styleRules)
         {
             media.AddBookmarkRule(document, selectorParser, rule.Selector, rule.Declarations);
+            media.AddPageNameRule(document, selectorParser, rule.Selector, rule.Declarations);
             foreach (var declaration in rule.Declarations)
             {
                 if (declaration.Property == "string-set")
@@ -74,6 +75,11 @@ internal sealed partial class PagedMedia
         {
             var inline = CssRuleScanner.ParseDeclarations(element.GetAttribute("style")!);
             media.SetBookmarkProperties(element, AngleSharp.Css.Priority.Inline, media.BookmarkDeclarations(inline));
+            if (media.PageNameDeclaration(inline) is { } pageName)
+            {
+                media.SetPageName(element, AngleSharp.Css.Priority.Inline, pageName);
+            }
+
             foreach (var declaration in inline)
             {
                 if (declaration.Property == "string-set")
@@ -159,7 +165,7 @@ internal sealed partial class PagedMedia
                 };
             }
 
-            var boxes = BoxesFor(page.Number);
+            var boxes = BoxesFor(page.Context);
             foreach (var (name, declarations) in boxes)
             {
                 var content = declarations.LastOrDefault(d => d.Property == "content") is { Property: not null } d ? ContentValue.Parse(d.Value) : null;
@@ -218,15 +224,12 @@ internal sealed partial class PagedMedia
     }
 
     /// <summary>
-    /// The margin boxes of a page: rules for all pages, then :left/:right, then :first, each overriding the
-    /// declarations of earlier ones (CSS cascade by page selector specificity).
+    /// The margin boxes of a page: from the page rules matching it (by name, :first, :blank, :left, :right), each
+    /// overriding the declarations of earlier ones (CSS cascade by page selector specificity, then source order).
     /// </summary>
-    private Dictionary<string, List<CssDeclaration>> BoxesFor(int pageNumber)
+    private Dictionary<string, List<CssDeclaration>> BoxesFor(PageContext page)
     {
-        var side = pageNumber % 2 == 1 ? ":right" : ":left"; // Left-to-right documents start on a right page.
-        var applicable = _pageRules.Where(r => r.Selector.Length == 0)
-            .Concat(_pageRules.Where(r => r.Selector.Equals(side, StringComparison.OrdinalIgnoreCase)))
-            .Concat(_pageRules.Where(r => pageNumber == 1 && r.Selector.Equals(":first", StringComparison.OrdinalIgnoreCase)));
+        var applicable = PageRules.Matching(_pageRules, page);
         var boxes = new Dictionary<string, List<CssDeclaration>>(StringComparer.OrdinalIgnoreCase);
         foreach (var rule in applicable)
         {
@@ -250,7 +253,7 @@ internal sealed partial class PagedMedia
     }
 
     /// <summary>
-    /// The rectangle of a margin box (top measured from the top of the page): top boxes fill the top margin and bottom
+    /// The rectangle of a margin box (top measured from the top of the page, in the page's own size and margins): top boxes fill the top margin and bottom
     /// boxes the bottom margin; across the content width, left/center/right share it in thirds when a center box is
     /// used, otherwise left and right share it in halves. Corner boxes fill the page margin corners.
     /// </summary>

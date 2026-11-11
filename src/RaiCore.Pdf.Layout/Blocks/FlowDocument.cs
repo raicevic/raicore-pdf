@@ -15,12 +15,55 @@ public sealed record PageSetup(PdfPageSize Size, Thickness Margins)
     public double ContentHeight => Size.Height - Margins.Vertical;
 }
 
+/// <summary>Which side of a spread a page is on. In left-to-right documents the first page is a right page.</summary>
+public enum PageSide
+{
+    /// <summary>A right (recto) page: odd page numbers, unless the document starts on a left page.</summary>
+    Right,
+
+    /// <summary>A left (verso) page.</summary>
+    Left,
+}
+
+/// <summary>
+/// What a page's setup is chosen by (see <see cref="FlowDocument.PageSetupResolver"/>), like the CSS page selectors
+/// <c>@page name:first:left:blank</c>.
+/// </summary>
+/// <param name="Number">1-based page number.</param>
+/// <param name="Name">
+/// The page name (CSS <c>page</c>): the <see cref="Block.PageName"/> of the content the page starts with, inherited from
+/// the parent blocks; <c>null</c> for unnamed pages.
+/// </param>
+/// <param name="Side">Whether it is a left or a right page.</param>
+/// <param name="IsBlank">
+/// The page was inserted empty by a <see cref="PageBreak.Left"/> or <see cref="PageBreak.Right"/> break, to make the
+/// content after it start on the requested side.
+/// </param>
+public readonly record struct PageContext(int Number, string? Name, PageSide Side, bool IsBlank)
+{
+    /// <summary>The first page of the document (CSS <c>:first</c>).</summary>
+    public bool IsFirst => Number == 1;
+}
+
 /// <summary>Information passed to a page decorator (header/footer callback).</summary>
 /// <param name="Number">1-based page number.</param>
 /// <param name="Count">Total number of pages.</param>
-/// <param name="Setup">The page setup.</param>
+/// <param name="Setup">The page's setup (its own size and margins, see <see cref="FlowDocument.PageSetupResolver"/>).</param>
 /// <param name="Markers">Markers (<see cref="Block.Marker"/>) of the blocks that start on this page, in document order.</param>
-public readonly record struct PageInfo(int Number, int Count, PageSetup Setup, IReadOnlyList<object> Markers);
+public readonly record struct PageInfo(int Number, int Count, PageSetup Setup, IReadOnlyList<object> Markers)
+{
+    /// <summary>The page name (see <see cref="PageContext.Name"/>); <c>null</c> for unnamed pages.</summary>
+    public string? Name { get; init; }
+
+    /// <summary>Whether it is a left or a right page.</summary>
+    public PageSide Side { get; init; }
+
+    /// <summary>The page was inserted empty by a left or right page break (see <see cref="PageContext.IsBlank"/>).</summary>
+    public bool IsBlank { get; init; }
+
+    /// <summary>What the page's setup was chosen by.</summary>
+    public PageContext Context => new(Number, Name, Side, IsBlank);
+}
 
 /// <summary>
 /// A sequence of blocks that flows across as many pages as needed.
@@ -50,8 +93,25 @@ public sealed class FlowDocument
         Setup = setup;
     }
 
-    /// <summary>The page setup.</summary>
+    /// <summary>The page setup: of every page, unless <see cref="PageSetupResolver"/> chooses one per page.</summary>
     public PageSetup Setup { get; }
+
+    /// <summary>
+    /// Chooses each page's size and margins (CSS named pages and <c>@page :first</c>/<c>:left</c>/<c>:right</c>/<c>:blank</c>),
+    /// e.g. landscape pages for wide tables or mirrored margins; <c>null</c> (the default) gives every page
+    /// <see cref="Setup"/>. Called once per distinct <see cref="PageContext"/> while laying out, also to look ahead at the
+    /// next page. Content on a page with a different content width than <see cref="Setup"/> is laid out at that page's
+    /// width when it starts there; a block continuing from a page of another width keeps the width it started with.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// flow.PageSetupResolver = page => page.Name == "wide"
+    ///     ? new PageSetup(PdfPageSize.A4.Landscape, Thickness.All(36))
+    ///     : page.Side == PageSide.Left ? leftSetup : rightSetup;
+    /// flow.Add(new ContainerBlock { PageName = "wide" }.Add(table)); // Starts on a new, landscape page.
+    /// </code>
+    /// </example>
+    public Func<PageContext, PageSetup>? PageSetupResolver { get; set; }
 
     /// <summary>The top-level blocks.</summary>
     public IReadOnlyList<Block> Blocks => _blocks;
@@ -98,15 +158,29 @@ public sealed class FlowDocument
         var rendered = new List<PdfPage>(pages.Count);
         for (var i = 0; i < pages.Count; i++)
         {
-            var page = document.AddPage(Setup.Size);
+            var (context, setup) = result.Frames[i];
+            var page = document.AddPage(setup.Size);
             rendered.Add(page);
+
+            // Content is laid out from the left margin of the document's setup; pages with another left margin shift it.
+            var shift = setup.Margins.Left - Setup.Margins.Left;
+            if (shift != 0)
+            {
+                page.Canvas.SaveState().Transform(1, 0, 0, 1, shift, 0);
+            }
+
             foreach (var draw in pages[i])
             {
                 draw(page.Canvas, page.Height);
             }
 
+            if (shift != 0)
+            {
+                page.Canvas.RestoreState();
+            }
+
             var markers = result.Markers.Where(m => m.Page == i).Select(m => m.Marker).ToList();
-            PageDecorator?.Invoke(page.Canvas, new PageInfo(i + 1, pages.Count, Setup, markers));
+            PageDecorator?.Invoke(page.Canvas, new PageInfo(i + 1, pages.Count, setup, markers) { Name = context.Name, Side = context.Side, IsBlank = context.IsBlank });
         }
 
         AddOutline(document.Outline, result.Anchors, rendered);
@@ -153,6 +227,23 @@ public sealed class FlowDocument
             (open.Count > 0 ? open[^1].Item.Children : outline).Add(item);
             open.Add((bookmark.Level, item));
         }
+    }
+
+    /// <summary>The setup of a page: from <see cref="PageSetupResolver"/>, or <see cref="Setup"/>.</summary>
+    internal PageSetup ResolveSetup(PageContext context)
+    {
+        if (PageSetupResolver is not { } resolve)
+        {
+            return Setup;
+        }
+
+        var setup = resolve(context) ?? throw new InvalidOperationException($"The page setup resolver returned no setup for page {context.Number}.");
+        if (setup.ContentWidth <= 0 || setup.ContentHeight <= 0)
+        {
+            throw new InvalidOperationException($"The margins of page {context.Number} leave no room for content.");
+        }
+
+        return setup;
     }
 
     /// <summary>The height of blocks laid out in one unbroken column of <paramref name="width"/> points.</summary>

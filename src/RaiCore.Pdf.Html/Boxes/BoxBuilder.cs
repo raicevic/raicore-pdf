@@ -78,7 +78,7 @@ internal sealed partial class BoxBuilder
             return [];
         }
 
-        return BuildBlock(root, Style(root), contentWidth, marker: null) is { } block ? [block] : [];
+        return BuildInPage(root, contentWidth, width => BuildBlock(root, Style(root), width, marker: null) is { } block ? [block] : []);
     }
 
     public ComputedStyle Style(IElement element)
@@ -161,7 +161,10 @@ internal sealed partial class BoxBuilder
 
         var outerHeight = EnterBox(box);
         var outerDecorations = EnterDecoration(style, 0);
-        AddChildren(element, style, contentWidth, children, collector);
+        WithPageWidthFluid(!flexItem && box is { Width: null, MaxWidth: null }, () =>
+        {
+            AddChildren(element, style, contentWidth, children, collector);
+        });
         Flush(collector, children);
         _decorations = outerDecorations;
         _containingHeight = outerHeight;
@@ -295,7 +298,7 @@ internal sealed partial class BoxBuilder
                     var blockStart = children.Count;
                     if (childStyle.Display == CssDisplay.Table)
                     {
-                        children.AddRange(BuildTable(child, childStyle, contentWidth));
+                        children.AddRange(BuildInPage(child, contentWidth, width => BuildTable(child, childStyle, width)));
                         LinkBlocks(children, blockStart, collector.CurrentLink);
                         break;
                     }
@@ -306,10 +309,7 @@ internal sealed partial class BoxBuilder
                         marker = NextListMarker(element, child, childStyle, ref listIndex);
                     }
 
-                    if (BuildBlock(child, childStyle, contentWidth, marker) is { } block)
-                    {
-                        children.Add(block);
-                    }
+                    children.AddRange(BuildInPage(child, contentWidth, width => BuildBlock(child, childStyle, width, marker) is { } block ? [block] : []));
 
                     LinkBlocks(children, blockStart, collector.CurrentLink);
                     break;

@@ -74,7 +74,8 @@ public static class HtmlToPdf
 
         var styleSheets = PrepareStyles(document, options);
         var cssTexts = styleSheets.Select(s => s.Css).ToList();
-        var setup = PageRules.Apply(options.Page, cssTexts);
+        var pageRules = PageRules.Load(options.Page, cssTexts);
+        var setup = pageRules.Setup;
 
         // @page can change the page size and margins; styles are computed lazily, so vw/vh still see the final area.
         device.ViewPortWidth = (int)(setup.ContentWidth / CssValues.PointsPerPixel);
@@ -83,8 +84,13 @@ public static class HtmlToPdf
         var paged = Paged.PagedMedia.Load(document, cssTexts);
         var webFonts = WebFonts.Load(styleSheets, options.ResourceLoader, fonts);
 
-        var builder = new BoxBuilder(document, options, fonts, options.BaseUri, paged, webFonts);
-        var flow = new FlowDocument(setup);
+        // Named pages and @page :first/:left/:right/:blank can give pages their own size and margins. Percentages in a
+        // named page resolve against its content width (that of a right page that is not the first).
+        var builder = new BoxBuilder(document, options, fonts, options.BaseUri, paged, webFonts)
+        {
+            PageContentWidth = pageRules.VariesPerPage ? name => pageRules.Resolve(new PageContext(3, name, PageSide.Right, IsBlank: false)).ContentWidth : null,
+        };
+        var flow = new FlowDocument(setup) { PageSetupResolver = pageRules.VariesPerPage ? pageRules.Resolve : null };
         foreach (var block in builder.Build(setup.ContentWidth, setup.ContentHeight))
         {
             flow.Add(block);

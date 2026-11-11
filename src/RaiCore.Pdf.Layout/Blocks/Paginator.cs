@@ -32,14 +32,23 @@ internal sealed record Anchor(Block Block, int Page, double Top, double Left)
     public string? DestinationName => Name ?? Block.Id;
 }
 
+/// <summary>A page's context (number, name, side, blank) and the setup chosen for it.</summary>
+/// <param name="Context">What the setup was chosen by.</param>
+/// <param name="Setup">The page's size and margins.</param>
+internal readonly record struct PageFrame(PageContext Context, PageSetup Setup);
+
 /// <summary>The result of pagination: drawing operations per page, and where everything went.</summary>
 /// <param name="Pages">Drawing operations per page.</param>
-/// <param name="Placements">Where each piece of each block went.</param>
+/// <param name="Placements">
+/// Where each piece of each block went. X values are in layout coordinates: from the left margin of the document's
+/// <see cref="FlowDocument.Setup"/>, which pages with another left margin are shifted from when rendered.
+/// </param>
 /// <param name="Markers">The markers of the blocks starting on each page.</param>
 /// <param name="Anchors">Where the blocks with bookmarks or ids, and the paragraphs' anchors, are, in document order.</param>
+/// <param name="Frames">Each page's context and setup.</param>
 internal sealed record PaginationResult(
     IReadOnlyList<IReadOnlyList<DrawOperation>> Pages, IReadOnlyList<Placement> Placements, IReadOnlyList<(int Page, object Marker)> Markers,
-    IReadOnlyList<Anchor> Anchors);
+    IReadOnlyList<Anchor> Anchors, IReadOnlyList<PageFrame> Frames);
 
 /// <summary>
 /// Lays blocks out top to bottom and splits them across pages, following CSS block layout and fragmentation:
@@ -48,7 +57,25 @@ internal sealed record PaginationResult(
 /// keeps it with the start of the next one, and boxes split across pages are sliced (top border and padding on
 /// the first fragment, bottom ones on the last).
 /// </summary>
-/// <remarks>All y values here are distances from the top of the page.</remarks>
+/// <remarks>
+/// <para>
+/// Coordinates. All y values here are distances from the top of the page, in that page's own geometry: content starts
+/// at its top margin (<see cref="ContentTop"/>, <see cref="PageTop"/>) and ends above its bottom margin
+/// (<see cref="PageBottom"/>), which may differ per page (<see cref="FlowDocument.PageSetupResolver"/>).
+/// </para>
+/// <para>
+/// X values are layout coordinates, not page coordinates: they are measured as if every page had the left margin of the
+/// document's <see cref="FlowDocument.Setup"/>. The top-level blocks start at <c>Setup.Margins.Left</c> and the content
+/// area of page <c>p</c> spans <c>[Setup.Margins.Left, Setup.Margins.Left + ContentWidthOf(p))</c>.
+/// <see cref="FlowDocument.RenderTo"/> shifts each page's drawing operations by
+/// <c>page.Margins.Left - Setup.Margins.Left</c> (a canvas transform, which links follow), so a page with another left
+/// margin (e.g. mirrored :left/:right margins) moves its content without relaying it out. Placements and anchors keep
+/// layout x values. To convert: page x = layout x + <c>_frames[p].Setup.Margins.Left - _setup.Margins.Left</c>.
+/// Anything recorded in page coordinates (e.g. areas that later content must avoid on a page) must be converted with
+/// that per-page offset; with a single setup (no resolver) the offset is always 0. A static column
+/// (<see cref="LayoutStatic"/>) is never shifted.
+/// </para>
+/// </remarks>
 internal sealed partial class Paginator
 {
     private const double Epsilon = 1e-6;
@@ -59,8 +86,33 @@ internal sealed partial class Paginator
     /// <summary>Height of the virtual page used to lay out content without page breaks (e.g. inside table cells).</summary>
     private const double StaticHeight = 1e7;
 
+    /// <summary>The document's setup (or the static column's), which pages get unless the document resolves one per page.</summary>
     private readonly PageSetup _setup;
+
+    /// <summary>The document whose <see cref="FlowDocument.PageSetupResolver"/> chooses each page's setup; null for static layout.</summary>
+    private readonly FlowDocument? _document;
+
     private readonly bool _static;
+
+    /// <summary>Each page's context and setup, parallel to <see cref="_pages"/>.</summary>
+    private readonly List<PageFrame> _frames = [];
+
+    /// <summary>Setups resolved so far, per context (the resolver is also asked about pages not created yet).</summary>
+    private readonly Dictionary<PageContext, PageSetup> _resolved = [];
+
+    /// <summary>The page name of the block being laid out (its <see cref="Block.PageName"/> or its parent's).</summary>
+    private string? _pageName;
+
+    /// <summary>
+    /// Laying out the block flow of the document (not flex items or table cells): page names and left/right breaks apply.
+    /// </summary>
+    private bool _blockFlow = true;
+
+    /// <summary>
+    /// The width blocks are laid out in follows the content width of the page they start on: no ancestor has a width of
+    /// its own (CSS <c>width</c> or <c>max-width</c>) and none is a flex item or a table cell.
+    /// </summary>
+    private bool _fluid = true;
     private readonly List<PageOperations> _pages = [];
     private readonly List<Placement> _placements = [];
     private readonly List<(int Page, object Marker)> _markers = [];
@@ -76,21 +128,62 @@ internal sealed partial class Paginator
     /// <summary>Space kept free at the bottom of pages from a page on, e.g. for a table's repeated footer rows.</summary>
     private readonly List<(int FromPage, double Height)> _bottomReserves = [];
 
-    private Paginator(PageSetup setup, bool isStatic = false)
+    private Paginator(PageSetup setup, FlowDocument? document = null, bool isStatic = false)
     {
         _setup = setup;
+        _document = document;
         _static = isStatic;
         NewPage(forced: true); // The first page keeps top margins, like the start of a CSS document.
     }
 
-    private double ContentTop => _setup.Margins.Top;
+    private double ContentTop => _frames[PageIndex].Setup.Margins.Top;
+
+    /// <summary>The content width of a page.</summary>
+    private double ContentWidthOf(int page) => _frames[page].Setup.ContentWidth;
+
+    /// <summary>The content height of the current page.</summary>
+    private double ContentHeight => _frames[PageIndex].Setup.ContentHeight;
+
+    /// <summary>The content height of the next page (to know whether content would fit at the top of a fresh page).</summary>
+    private double NextPageContentHeight
+    {
+        get
+        {
+            if (PageIndex + 1 < _frames.Count)
+            {
+                return _frames[PageIndex + 1].Setup.ContentHeight;
+            }
+
+            var current = _frames[PageIndex].Context;
+            return Resolve(new PageContext(PageIndex + 2, current.Name, Opposite(current.Side), IsBlank: false)).ContentHeight;
+        }
+    }
+
+    /// <summary>The setup of a page with this context.</summary>
+    private PageSetup Resolve(PageContext context)
+    {
+        if (_document?.PageSetupResolver is null)
+        {
+            return _setup;
+        }
+
+        if (!_resolved.TryGetValue(context, out var setup))
+        {
+            _resolved[context] = setup = _document.ResolveSetup(context);
+        }
+
+        return setup;
+    }
+
+    private static PageSide Opposite(PageSide side) => side == PageSide.Left ? PageSide.Right : PageSide.Left;
 
     private double ContentBottom => PageBottom(PageIndex);
 
     /// <summary>Where a page's flowing content ends: above space reserved for repeated table footers, if any.</summary>
     private double PageBottom(int page)
     {
-        var bottom = _setup.Size.Height - _setup.Margins.Bottom;
+        var setup = _frames[page].Setup;
+        var bottom = setup.Size.Height - setup.Margins.Bottom;
         foreach (var (fromPage, height) in _bottomReserves)
         {
             if (page >= fromPage)
@@ -120,10 +213,10 @@ internal sealed partial class Paginator
 
     public static PaginationResult Paginate(FlowDocument document)
     {
-        var paginator = new Paginator(document.Setup);
+        var paginator = new Paginator(document.Setup, document);
         var pendingMargin = new CollapsedMargin();
-        paginator.LayoutChildren(document.Blocks, document.Setup.Margins.Left, document.Setup.ContentWidth, ref pendingMargin, firstTopMarginApplied: false);
-        return new PaginationResult(paginator.GroupedPages(), paginator._placements, paginator._markers, paginator._anchors);
+        paginator.LayoutChildren(document.Blocks, document.Setup.Margins.Left, paginator.ContentWidthOf(0), ref pendingMargin, firstTopMarginApplied: false);
+        return new PaginationResult(paginator.GroupedPages(), paginator._placements, paginator._markers, paginator._anchors, paginator._frames);
     }
 
     /// <summary>
@@ -211,19 +304,28 @@ internal sealed partial class Paginator
         return (Math.Max(0, (style.MinWidth ?? 0) - decoration), style.MaxWidth is { } max ? Math.Max(1e-3, max - decoration) : 0);
     }
 
-    /// <summary>Moves to the next page, creating it unless a side-by-side flex item already did.</summary>
-    private void NewPage(bool forced = false)
+    /// <summary>Moves to the next page, creating it unless a side-by-side flex item already did. It keeps the page name.</summary>
+    private void NewPage(bool forced = false) => NewPage(forced, _frames.Count > 0 ? _frames[PageIndex].Context.Name : null, blank: false);
+
+    /// <summary>
+    /// Moves to the next page, creating it (with the page name, on the side after the last page's) unless a side-by-side
+    /// flex item already did. A blank page gets no repeated content (table headers).
+    /// </summary>
+    private void NewPage(bool forced, string? name, bool blank)
     {
         _pageIndex++;
         var created = _pageIndex == _pages.Count;
         if (created)
         {
+            var side = _frames.Count > 0 ? Opposite(_frames[^1].Context.Side) : PageSide.Right; // Left-to-right: starts on a right page.
+            var context = new PageContext(_pageIndex + 1, name, side, blank);
+            _frames.Add(new PageFrame(context, Resolve(context)));
             _pages.Add(new PageOperations(this));
         }
 
         Y = ContentTop;
         TruncateMargins = !forced;
-        if (created && _pageStartHooks.Count > 0)
+        if (created && !blank && _pageStartHooks.Count > 0)
         {
             foreach (var hook in _pageStartHooks.ToList())
             {
@@ -238,23 +340,126 @@ internal sealed partial class Paginator
         }
     }
 
+    /// <summary>Nothing has been placed on the current page.</summary>
+    private bool PageIsEmpty => AtPageTop && _pages[PageIndex].Count == 0;
+
+    /// <summary>
+    /// A forced break before content with page name <paramref name="name"/>, which must start on a page of
+    /// <paramref name="side"/> (if given): a new page, after a blank one if the next page is on the other side. An empty
+    /// page is not left empty: it takes the name (and, at the start of the document, the side), or becomes the blank page.
+    /// Outside the block flow, names and sides do not apply.
+    /// </summary>
+    private void ForcedBreak(string? name, PageSide? side)
+    {
+        var current = _frames[PageIndex].Context;
+        if (!_blockFlow)
+        {
+            if (!PageIsEmpty)
+            {
+                NewPage(forced: true);
+            }
+
+            return;
+        }
+
+        if (PageIsEmpty)
+        {
+            if (_pages.Count == 1)
+            {
+                // The start of the document: the first page takes the content's name and side.
+                if (name != current.Name || (side is { } first && first != current.Side))
+                {
+                    Reframe(name, side ?? current.Side, blank: false);
+                }
+            }
+            else if (side is { } wanted && wanted != current.Side)
+            {
+                Reframe(name, current.Side, blank: true);
+                NewPage(forced: true, name, blank: false);
+            }
+            else if (name != current.Name)
+            {
+                Reframe(name, current.Side, blank: false);
+            }
+
+            return;
+        }
+
+        if (side is { } required && Opposite(current.Side) != required)
+        {
+            NewPage(forced: true, name, blank: true);
+        }
+
+        NewPage(forced: true, name, blank: false);
+    }
+
+    /// <summary>Gives the current (empty) page another name, side or blankness, and so maybe another setup.</summary>
+    private void Reframe(string? name, PageSide side, bool blank)
+    {
+        var context = new PageContext(PageIndex + 1, name, side, blank);
+        _frames[PageIndex] = new PageFrame(context, Resolve(context));
+        Y = PageTop(PageIndex);
+    }
+
+    /// <summary>Whether a break value forces a page break.</summary>
+    private static bool IsForced(PageBreak value) => value is PageBreak.Page or PageBreak.Left or PageBreak.Right;
+
+    /// <summary>The side a forced break requires the next page to be on, if any.</summary>
+    private static PageSide? SideOf(PageBreak value) => value switch
+    {
+        PageBreak.Left => PageSide.Left,
+        PageBreak.Right => PageSide.Right,
+        _ => null,
+    };
+
+    /// <summary>
+    /// An empty block without border or padding takes no space: its margins collapse through it (CSS 2.1 section 8.3.1),
+    /// so it only records its marker where the next content will start.
+    /// </summary>
+    private static bool TakesNoSpace(Block block)
+    {
+        var style = block.Style;
+        return block is ContainerBlock { Children.Count: 0 } && !HasTopEdge(style) && !HasBottomEdge(style) && style.Background is null
+            && style.Height is not > 0 && style.MinHeight is not > 0 && !IsForced(style.BreakBefore) && !IsForced(style.BreakAfter);
+    }
+
+    /// <summary>
+    /// The page name a block starts with (CSS start page value): its own or its parent's, or, for a container, its first
+    /// child's.
+    /// </summary>
+    private static string? StartName(Block block, string? inherited)
+    {
+        var name = block.PageName ?? inherited;
+        if (block is ContainerBlock container)
+        {
+            foreach (var child in container.Children)
+            {
+                if (!TakesNoSpace(child))
+                {
+                    return StartName(child, name);
+                }
+            }
+        }
+
+        return name;
+    }
+
     /// <summary>
     /// Lays out sibling blocks. <paramref name="pending"/> carries the collapsed margin above the next block in and
     /// the margin below the last block out (so it can collapse through a parent without bottom border or padding).
     /// </summary>
     private void LayoutChildren(IReadOnlyList<Block> blocks, double x, double width, ref CollapsedMargin pending, bool firstTopMarginApplied)
     {
+        // Blocks follow the content width of the page they start on: the width is given for the current page.
+        var fluid = _fluid && !_static;
+        var entryWidth = ContentWidthOf(PageIndex);
         for (var i = 0; i < blocks.Count; i++)
         {
             var block = blocks[i];
             var next = i + 1 < blocks.Count ? blocks[i + 1] : null;
             var style = block.Style;
 
-            // An empty block without border or padding takes no space: its margins collapse through it (CSS 2.1
-            // section 8.3.1), so it only records its marker where the next content will start.
-            if (block is ContainerBlock { Children.Count: 0 } && !HasTopEdge(style) && !HasBottomEdge(style) && style.Background is null
-                && style.Height is not > 0 && style.MinHeight is not > 0
-                && style.BreakBefore != PageBreak.Page && style.BreakAfter != PageBreak.Page)
+            if (TakesNoSpace(block))
             {
                 pending.Add(style.Margin.Top);
                 pending.Add(style.Margin.Bottom);
@@ -271,13 +476,22 @@ internal sealed partial class Paginator
                 continue;
             }
 
-            // Forced break before this block, or after the previous one.
-            var forced = style.BreakBefore == PageBreak.Page || (i > 0 && blocks[i - 1].Style.BreakAfter == PageBreak.Page);
-            if (forced && !_static && !(AtPageTop && _pages[PageIndex].Count == 0))
+            // Forced break before this block, or after the previous one, or between pages of different names. A left or
+            // right break before the block wins over one after the previous block (CSS Fragmentation section 3.1).
+            var previousBreak = i > 0 ? blocks[i - 1].Style.BreakAfter : PageBreak.Auto;
+            var startName = _blockFlow && !_static ? StartName(block, _pageName) : null;
+            var renamed = _blockFlow && !_static && !string.Equals(startName, _frames[PageIndex].Context.Name, StringComparison.Ordinal);
+            if (!_static && (renamed || IsForced(style.BreakBefore) || IsForced(previousBreak)))
             {
-                NewPage(forced: true);
-                pending = default; // The previous block's bottom margin ends with its page; this block keeps its top margin.
+                var pageBefore = PageIndex;
+                ForcedBreak(startName, SideOf(style.BreakBefore) ?? SideOf(previousBreak));
+                if (PageIndex != pageBefore)
+                {
+                    pending = default; // The previous block's bottom margin ends with its page; this block keeps its top margin.
+                }
             }
+
+            var available = fluid ? Math.Max(MinimumContentWidth, width + ContentWidthOf(PageIndex) - entryWidth) : width;
 
             if (!(i == 0 && firstTopMarginApplied))
             {
@@ -287,20 +501,24 @@ internal sealed partial class Paginator
 
             // Move to a new page when the start of the block (and, for break-after: avoid, the start of the
             // next block) would not fit here but would fit at the top of a fresh page.
-            var needed = MinimumStartHeight(block, width);
+            var needed = MinimumStartHeight(block, available);
             if (style.BreakInside == PageBreakInside.Avoid)
             {
-                needed = Math.Max(needed, MeasureHeight(block, width));
+                needed = Math.Max(needed, MeasureHeight(block, available));
             }
 
             if (style.BreakAfter == PageBreak.Avoid && next is not null)
             {
-                needed = Math.Max(needed, MeasureHeight(block, width) + Math.Max(style.Margin.Bottom, next.Style.Margin.Top) + MinimumStartHeight(next, width));
+                needed = Math.Max(needed, MeasureHeight(block, available) + Math.Max(style.Margin.Bottom, next.Style.Margin.Top) + MinimumStartHeight(next, available));
             }
 
-            if (!AtPageTop && needed + pending.Value > Remaining + Epsilon && needed <= _setup.ContentHeight + Epsilon)
+            if (!AtPageTop && needed + pending.Value > Remaining + Epsilon && needed <= NextPageContentHeight + Epsilon)
             {
                 NewPage();
+                if (fluid)
+                {
+                    available = Math.Max(MinimumContentWidth, width + ContentWidthOf(PageIndex) - entryWidth);
+                }
             }
 
             if (!(AtPageTop && TruncateMargins))
@@ -311,7 +529,7 @@ internal sealed partial class Paginator
             pending = default;
 
             var boxX = x + style.Margin.Left;
-            var boxWidth = BoxWidth(block, width);
+            var boxWidth = BoxWidth(block, available);
             var alignment = block switch
             {
                 ImageBlock { Style.Width: null } image => image.Alignment,
@@ -321,7 +539,7 @@ internal sealed partial class Paginator
             if (alignment != TextAlignment.Left)
             {
                 // Images and tables shrink to their content; the alignment then positions the whole box.
-                var free = Math.Max(0, width - style.Margin.Horizontal - boxWidth);
+                var free = Math.Max(0, available - style.Margin.Horizontal - boxWidth);
                 boxX += alignment switch
                 {
                     TextAlignment.Center => free / 2,
@@ -366,6 +584,25 @@ internal sealed partial class Paginator
 
     /// <summary>Lays out one block in its opacity scope (see <see cref="LayoutBlock"/>).</summary>
     private CollapsedMargin LayoutBlockInScope(Block block, double x, double width, BoxSizing sizing)
+    {
+        // The children of a container in the block flow stay in it; those of a container without a width of its own
+        // follow the page's content width.
+        var (outerName, outerFlow, outerFluid) = (_pageName, _blockFlow, _fluid);
+        var inFlow = block is ContainerBlock && !sizing.Isolated;
+        _pageName = block.PageName ?? _pageName;
+        _blockFlow = outerFlow && inFlow;
+        _fluid = outerFluid && inFlow && block.Style is { Width: null, MaxWidth: null };
+        try
+        {
+            return LayoutBlockContent(block, x, width, sizing);
+        }
+        finally
+        {
+            (_pageName, _blockFlow, _fluid) = (outerName, outerFlow, outerFluid);
+        }
+    }
+
+    private CollapsedMargin LayoutBlockContent(Block block, double x, double width, BoxSizing sizing)
     {
         var trailing = default(CollapsedMargin);
         var anchor = BeginAnchor(block, x);
@@ -478,6 +715,10 @@ internal sealed partial class Paginator
         var startY = Y;
         var insertAt = _pages[startPage].Count;
 
+        // A box that follows the page's content width is as much wider or narrower on each page as that page.
+        var fluid = _fluid && !_static;
+        var startWidth = ContentWidthOf(startPage);
+
         Y += border.Top + style.Padding.Top;
         layoutContent(x + border.Left + style.Padding.Left, Math.Max(MinimumContentWidth, width - border.Horizontal - style.Padding.Horizontal));
         Y += style.Padding.Bottom + border.Bottom;
@@ -491,7 +732,12 @@ internal sealed partial class Paginator
         else
         {
             // A box split across pages: its fragments add up to the height; only growing it is possible here.
-            var total = ContentBottom - startY + ((PageIndex - startPage - 1) * _setup.ContentHeight) + (Y - PageTop(PageIndex));
+            var total = ContentBottom - startY + (Y - PageTop(PageIndex));
+            for (var page = startPage + 1; page < PageIndex; page++)
+            {
+                total += _frames[page].Setup.ContentHeight;
+            }
+
             var target = Math.Max(Math.Min(fixedHeight ?? total, maxHeight), minHeight);
             if (target > total)
             {
@@ -536,17 +782,18 @@ internal sealed partial class Paginator
                 var last = page == endPage;
                 var top = first ? startY : PageTop(page);
                 var bottom = last ? endY : PageBottom(page);
+                var fragmentWidth = fluid ? Math.Max(0, width + ContentWidthOf(page) - startWidth) : width;
                 if (decorated)
                 {
                     var index = first ? insertAt : 0; // Pages created inside the box: under everything on them.
-                    var fragment = corners.Fragment(first, last, width, bottom - top);
-                    _pages[page].Insert(index, (canvas, pageHeight) => DrawBox(canvas, pageHeight, style, x, top, width, bottom - top, first, last, fragment));
-                    _placements.Add(new Placement(page, block, top, bottom, -1, -1, x, width));
+                    var fragment = corners.Fragment(first, last, fragmentWidth, bottom - top);
+                    _pages[page].Insert(index, (canvas, pageHeight) => DrawBox(canvas, pageHeight, style, x, top, fragmentWidth, bottom - top, first, last, fragment));
+                    _placements.Add(new Placement(page, block, top, bottom, -1, -1, x, fragmentWidth));
                 }
 
                 if (link is not null)
                 {
-                    _pages[page].Add((canvas, pageHeight) => link.AddTo(canvas, x, pageHeight - bottom, width, bottom - top));
+                    _pages[page].Add((canvas, pageHeight) => link.AddTo(canvas, x, pageHeight - bottom, fragmentWidth, bottom - top));
                 }
             }
         }
@@ -672,7 +919,7 @@ internal sealed partial class Paginator
 
     /// <summary>An image is scaled down to fit on one page together with its own border and padding.</summary>
     private double ImageMaxHeight(Block block) =>
-        Math.Max(1, _setup.ContentHeight - block.Style.Border.Widths.Vertical - block.Style.Padding.Vertical);
+        Math.Max(1, ContentHeight - block.Style.Border.Widths.Vertical - block.Style.Padding.Vertical);
 
     private void LayoutParagraph(ParagraphBlock block, double x, double width)
     {
@@ -811,7 +1058,7 @@ internal sealed partial class Paginator
         var startPage = PageIndex;
         var placementsBefore = _placements.Count;
         var footerHeight = layout.FooterRows > 0 ? layout.Height(footerStart, table.Rows.Count) : 0;
-        var repeatFooter = !_static && layout.FooterRows > 0 && footerHeight <= _setup.ContentHeight / 4;
+        var repeatFooter = !_static && layout.FooterRows > 0 && footerHeight <= ContentHeight / 4;
         var reserve = (startPage, footerHeight + (2 * layout.SpacingY));
 
         StartPage();
@@ -1101,7 +1348,7 @@ internal sealed partial class Paginator
                 var tableLayout = TableLayouter.Layout(table, 0, contentWidth);
                 var footerStart = table.Rows.Count - tableLayout.FooterRows;
                 var footerHeight = tableLayout.FooterRows > 0 ? tableLayout.Height(footerStart, table.Rows.Count) : 0;
-                var footer = footerHeight > 0 && footerHeight <= _setup.ContentHeight / 4 ? footerHeight + tableLayout.SpacingY : 0;
+                var footer = footerHeight > 0 && footerHeight <= ContentHeight / 4 ? footerHeight + tableLayout.SpacingY : 0;
                 var firstGroup = tableLayout.Groups.FirstOrDefault(g => g.End > tableLayout.HeaderRows, tableLayout.Groups[^1]);
                 var firstEnd = Math.Max(Math.Min(firstGroup.End, footerStart), tableLayout.HeaderRows);
                 var firstBody = Math.Max(firstGroup.Start, tableLayout.HeaderRows);

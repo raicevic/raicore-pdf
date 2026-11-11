@@ -109,6 +109,15 @@ public enum PageBreak
 
     /// <summary>Avoid a break here, e.g. to keep a heading with the paragraph that follows.</summary>
     Avoid,
+
+    /// <summary>
+    /// Start a new page that is a left page, inserting a blank page if needed (CSS <c>left</c>; <c>verso</c> in
+    /// left-to-right documents). Before the first content of the document, it makes the first page a left page.
+    /// </summary>
+    Left,
+
+    /// <summary>Start a new page that is a right page, inserting a blank page if needed (CSS <c>right</c>; <c>recto</c>).</summary>
+    Right,
 }
 
 /// <summary>Page break behavior inside a block (CSS <c>break-inside</c>).</summary>

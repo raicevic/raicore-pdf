@@ -276,7 +276,7 @@ internal sealed partial class Paginator
                 needed = Math.Max(needed, placed.MarginTop + start);
             }
 
-            if (!_static && !AtPageTop && needed > Remaining + Epsilon && needed <= _setup.ContentHeight + Epsilon)
+            if (!_static && !AtPageTop && needed > Remaining + Epsilon && needed <= NextPageContentHeight + Epsilon)
             {
                 NewPage();
             }
@@ -557,7 +557,7 @@ internal sealed partial class Paginator
         {
             var content = placed.Item.Content;
             var style = content.Style;
-            var forced = style.BreakBefore == PageBreak.Page || previous?.Style.BreakAfter == PageBreak.Page;
+            var forced = IsForced(style.BreakBefore) || (previous is not null && IsForced(previous.Style.BreakAfter));
             if (forced && !_static && !(AtPageTop && _pages[PageIndex].Count == 0))
             {
                 NewPage(forced: true);
@@ -569,7 +569,7 @@ internal sealed partial class Paginator
 
             cursor = placed.Top + placed.MarginTop + placed.Height + placed.MarginBottom;
             var needed = style.BreakInside == PageBreakInside.Avoid || style.Height is not null ? placed.Height : MinimumStartBox(content, placed.Width);
-            if (!_static && !AtPageTop && needed > Remaining + Epsilon && needed <= _setup.ContentHeight + Epsilon)
+            if (!_static && !AtPageTop && needed > Remaining + Epsilon && needed <= NextPageContentHeight + Epsilon)
             {
                 NewPage();
             }

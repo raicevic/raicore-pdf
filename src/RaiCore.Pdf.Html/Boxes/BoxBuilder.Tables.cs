@@ -171,7 +171,10 @@ internal sealed partial class BoxBuilder
 
         var content = new List<Block>();
         var collector = new InlineCollector(this, style, contentWidth);
-        AddChildren(td, style, contentWidth, content, collector);
+        WithPageWidthFluid(false, () =>
+        {
+            AddChildren(td, style, contentWidth, content, collector);
+        });
         Flush(collector, content);
 
         var width = style.Width.IsAuto ? Dimension(td.GetAttribute("width")) : style.Width;

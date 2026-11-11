@@ -23,8 +23,11 @@ flow.Render().Save("report.pdf");
   patterns for a dozen languages, see `Hyphenator`), orphans and widows; inline images
   and inline boxes (any block as one item of a line, like CSS `inline-block`).
 - Blocks: margins (with collapsing), borders in every CSS style, rounded corners (circular, elliptical or percentage
-  radii), padding, backgrounds, widths and heights with min/max limits, forced and avoided page breaks, and opacity
-  (`BoxStyle.Opacity`, drawn as a transparency group on every page the block is on).
+  radii), padding, backgrounds, widths and heights with min/max limits, forced and avoided page breaks (including
+  left/right breaks with blank pages), and opacity (`BoxStyle.Opacity`, drawn as a transparency group on every page
+  the block is on).
+- Pages: a size and margins per page (`FlowDocument.PageSetupResolver`, by page number, name, side and blankness),
+  e.g. landscape pages for wide tables (`Block.PageName`) or mirrored margins.
 - Tables: automatic and fixed layout, spans, header and footer rows repeated on every page, rows split across pages,
   separate or collapsed borders.
 - Flexbox (`FlexBlock`): rows and columns, wrapping, grow/shrink/basis, justification, alignment including baselines,
