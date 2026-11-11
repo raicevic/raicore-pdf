@@ -485,3 +485,4 @@ $RECYCLE.BIN/
 .packages/
 smoke-output/
 smoke-publish/
+docs/docker/packages/

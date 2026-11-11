@@ -17,9 +17,9 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | 🟡 Toward 1.0 |
 | `RaiCore.Pdf.Docx`, `.Xlsx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ After 1.0 |
 
-All packages target .NET 10 and run on Windows, Linux and macOS (x64 and Arm64) with no native dependencies beyond
-HarfBuzz, which ships in the packages. Apps using them can be trimmed and published with Native AOT (see
-[below](#trimming-and-native-aot)).
+All packages target .NET 10 and run on Windows, Linux (glibc and musl, so Alpine too) and macOS, x64 and Arm64, with
+no native dependencies beyond HarfBuzz, which ships in the packages. Apps using them can be trimmed and published with
+Native AOT, and run in containers (see [below](#trimming-and-native-aot)).
 
 ## Installation
 
@@ -51,6 +51,20 @@ component as an annotated (`[DynamicallyAccessedMembers]`) type and child compon
 away. Test your components in the published app. If you build with `TreatWarningsAsErrors`, set
 `ILLinkTreatWarningsAsErrors` (trimming) or `IlcTreatWarningsAsErrors` (Native AOT) to `false` to keep these
 warnings from failing the publish.
+
+### Docker and Linux containers
+
+CI runs the package smoke test (also trimmed and Native AOT) in Alpine and Debian containers on x64 and Arm64.
+[docs/docker/Dockerfile](docs/docker/Dockerfile) builds and runs a small HTML-to-PDF app on Alpine. What an image
+needs:
+- No fonts and no fontconfig: `RaiCore.Pdf.Fonts` bundles the Liberation fonts (for Arial, Helvetica, Times New
+  Roman, Courier New and the generic families); other fonts come from `@font-face` or files you load.
+- HarfBuzz ships for `linux-x64`, `linux-arm64`, `linux-musl-x64` and `linux-musl-arm64` and needs `libstdc++`,
+  which the .NET images have (on a bare `alpine` base for a self-contained or Native AOT app: `apk add libstdc++`).
+- ICU is optional. In globalization-invariant mode (the default in the Alpine runtime images) the PDFs come out the
+  same, except that AES-256 passwords are not NFKC-normalized, so use ASCII passwords or ICU there. The `-extra`
+  images include ICU, or `apk add icu-libs` and set `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false`.
+- Encryption uses OpenSSL on Linux (`libssl`, also in the .NET images).
 
 ## Quick start
 
