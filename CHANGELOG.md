@@ -79,6 +79,9 @@ change at any time, and this section lists what the packages can do so far.
 - `FontCollection` with CSS font matching, system font discovery and metric-compatible substitutes.
 
 ### RaiCore.Pdf.Layout
+- The package includes the Unicode License v3 notice (`licenses/unicode.txt`) for its bidi and line break tables,
+  generated from the Unicode Character Database, and its license expression names `Unicode-3.0`. All third-party
+  material is listed in `THIRD-PARTY-NOTICES.md`.
 - HarfBuzz text shaping (kerning, ligatures, Arabic joining, Indic reordering, mark positioning) with per-character
   font fallback.
 - Unicode line breaking (UAX #14, passing the full conformance test) and paragraphs with alignment, justification,
