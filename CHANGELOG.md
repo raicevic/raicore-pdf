@@ -55,6 +55,14 @@ change at any time, and this section lists what the packages can do so far.
   date) is written as `/ModDate`, and `PdfDocumentInfo.CustomProperties` as custom Info entries (text strings) and in
   Adobe's `pdfx:` XMP namespace, as Acrobat does.
 - Document language: `PdfDocument.Language` (a BCP 47 tag) is written as the catalog's `/Lang` and as `dc:language`.
+- Encryption (the standard security handler): `PdfDocument.Encryption = new PdfEncryption { ... }` with a user
+  password (to open the file), an owner password (full access; random when left out) and `PdfPermissions` (print,
+  high-quality print, modify, copy, annotate, fill forms, accessibility extraction, assemble). AES-256 (PDF 2.0,
+  revision 6, `/AESV3`, SHA-2 password hashing; written as Adobe extension level 8 of PDF 1.7) by default, AES-128
+  (revision 4, `/AESV2`) for old readers. Every string and stream of every object is AES-CBC encrypted with a random
+  IV, after compression; `EncryptMetadata = false` leaves the XMP metadata stream readable. With only an owner password
+  the file opens without one and the viewer enforces the permissions. Passwords go through a simplified SASLprep and
+  are cut to 127 UTF-8 bytes. Verified with qpdf, pypdf and PDFium.
 - Reading existing PDFs: `PdfReader.Open` (file, stream or bytes) parses classic cross-reference tables,
   cross-reference streams, object streams, hybrid files and incremental updates (the newest revision wins), and
   repairs damaged files by scanning for objects when the cross-reference data is missing or wrong
@@ -333,6 +341,7 @@ change at any time, and this section lists what the packages can do so far.
   `<meta http-equiv="content-language">` pragma), and `<meta name="author|description|keywords|generator">` as the
   author, subject, keywords and creator. `HtmlConverterOptions.Title`, `Author`, `Subject`, `Keywords`, `Creator` and
   `Language` override them.
+- `HtmlConverterOptions.Encryption` encrypts the converted PDF (Razor conversion included).
 
 ### RaiCore.Pdf.Razor
 - Razor components to PDF with Blazor's static `HtmlRenderer`: `RazorToPdf` for the simple case, `RazorPdfRenderer`
@@ -395,13 +404,18 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   another content width (after an automatic break) keeps the width it started with, and `page` is ignored inside flex
   items, table cells and inline boxes. Page progression is left to right (`recto` is a right page). Inline elements
   cannot be bookmarks.
-- No tagged PDF, PDF/A or encryption.
+- No tagged PDF or PDF/A.
 - Metadata: the XMP has no PDF/A or PDF/UA identification and no extension schema for the `pdfx:` custom properties
   yet (PDF/A will add them); custom property names that are not XML names are encoded (`_x0020_` for a space).
   Keywords and the author are plain text (`dc:creator` holds one entry). Language alternatives are written with
   `x-default` only, and the language is not checked against BCP 47. `HtmlToPdf.CreateFlowDocument` returns no
   metadata: set `PdfDocument.Info` and `Language` on the document you render it into. XMP in images and other
   objects is not written.
+- Encryption: no RC4 (40/128-bit), no deprecated AES-256 revision 5 and no public-key (certificate) security. The
+  SASLprep for AES-256 passwords is simplified: unassigned code points and the bidirectional rule are not checked.
+  AES-128 passwords must be printable Latin-1. Encrypted output is not reproducible byte for byte (random keys, salts
+  and IVs). Permissions are advisory, as in every PDF: viewers enforce them, but they are not a protection against
+  a determined user who can open the file.
 - Reading PDFs: encrypted files are rejected (`NotSupportedException`); decryption will follow encryption. Imports
   do not copy the source's interactive form (`/AcroForm`: widgets keep their appearance but are not fields of the
   new document), structure tree (tagged PDF), optional content configuration, named destinations, JavaScript or

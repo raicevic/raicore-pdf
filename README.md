@@ -221,6 +221,16 @@ var pdf = HtmlToPdf.Convert(html, new HtmlConverterOptions { Title = "Invoice 20
 Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowDocument` returns the laid-out document
 before rendering, e.g. to set your own page decorator.
 
+`HtmlConverterOptions.Encryption` password-protects the PDF or restricts permissions (see
+[Drawing directly](#drawing-directly) for `PdfEncryption`); Razor conversion takes the same options:
+
+```csharp
+var pdf = HtmlToPdf.ConvertToBytes(html, new HtmlConverterOptions
+{
+    Encryption = new PdfEncryption { OwnerPassword = "admin", Permissions = PdfPermissions.Print },
+});
+```
+
 Not yet: grid layout (rendered as blocks), `@page :nth()` and document counters in margin
 boxes (use `string-set`). `overflow` other than `visible` clips to the padding box (rounded corners included), and
 `text-overflow: ellipsis` ends a line that does not fit with "…". The size of an image in text (`max-width: 100%` on an
@@ -357,6 +367,25 @@ page.AddLink(72, 680, 120, 14, "appendix");                           // a named
 doc.NamedDestinations["appendix"] = new PdfDestination(lastPage, top: lastPage.Height - 72);
 page.Canvas.AddLink(0, 0, 50, 20, new PdfDestination(firstPage));     // in the canvas's transformed coordinates
 ```
+
+Encryption protects a document with a password, or lets anyone open it but restricts what they may do (permissions
+are enforced by the viewer). AES-256 (PDF 2.0, security handler revision 6) is the default; AES-128 (revision 4) is
+there for old readers:
+
+```csharp
+doc.Encryption = new PdfEncryption
+{
+    UserPassword = "open sesame",                 // leave out to open without a password
+    OwnerPassword = "full access",                // leave out for a random one (nobody can lift the restrictions)
+    Permissions = PdfPermissions.Print | PdfPermissions.PrintHighQuality,   // default: PdfPermissions.All
+    // Algorithm = PdfEncryptionAlgorithm.Aes128,
+};
+```
+
+Every string and stream is encrypted (the XMP metadata stream optionally not: `EncryptMetadata = false`). Passwords
+are prepared with a simplified SASLprep (non-ASCII spaces become spaces, NFKC normalization, prohibited characters
+are rejected) and cut to 127 UTF-8 bytes; AES-128 passwords must be Latin-1. Encrypted output is not byte-for-byte
+reproducible, because keys and IVs are random.
 
 ### Existing PDFs
 

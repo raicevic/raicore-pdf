@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using RaiCore.Pdf.Security;
 
 namespace RaiCore.Pdf.IO;
 
@@ -25,6 +26,29 @@ internal sealed class PdfOutput : IDisposable
 
     /// <summary>Number of bytes written so far.</summary>
     public long Position { get; private set; }
+
+    /// <summary>
+    /// The security handler that encrypts the strings and streams of the indirect object being written, or <c>null</c>
+    /// when they are written as they are (no encryption, the <c>/Encrypt</c> dictionary itself, or the trailer).
+    /// </summary>
+    public StandardSecurityHandler? Encryption { get; private set; }
+
+    /// <summary>The number of the indirect object being written; with <see cref="Generation"/> it selects the object key.</summary>
+    public int ObjectNumber { get; private set; }
+
+    /// <summary>The generation of the indirect object being written.</summary>
+    public int Generation { get; private set; }
+
+    /// <summary>Starts writing indirect object <paramref name="objectNumber"/>, encrypted with <paramref name="encryption"/> if not <c>null</c>.</summary>
+    public void BeginObject(int objectNumber, int generation, StandardSecurityHandler? encryption)
+    {
+        ObjectNumber = objectNumber;
+        Generation = generation;
+        Encryption = encryption;
+    }
+
+    /// <summary>Ends the indirect object: what follows (such as the trailer) is not encrypted.</summary>
+    public void EndObject() => BeginObject(0, 0, null);
 
     public void Write(ReadOnlySpan<byte> bytes)
     {

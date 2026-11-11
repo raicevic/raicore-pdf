@@ -2,6 +2,7 @@ using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Import;
 using RaiCore.Pdf.IO;
 using RaiCore.Pdf.Objects;
+using RaiCore.Pdf.Security;
 
 namespace RaiCore.Pdf;
 
@@ -49,6 +50,12 @@ public sealed partial class PdfDocument
     /// </summary>
     public IDictionary<string, PdfDestination> NamedDestinations { get; } = new Dictionary<string, PdfDestination>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Password protection and permissions. <c>null</c> (the default) writes an unencrypted document. See
+    /// <see cref="PdfEncryption"/>.
+    /// </summary>
+    public PdfEncryption? Encryption { get; set; }
+
     /// <summary>Appends a new, empty page.</summary>
     public PdfPage AddPage(PdfPageSize size)
     {
@@ -81,6 +88,8 @@ public sealed partial class PdfDocument
             throw new InvalidOperationException("A PDF document must contain at least one page.");
         }
 
+        // Created first, so invalid passwords or permissions fail before any work is done.
+        var security = Encryption is null ? null : StandardSecurityHandler.Create(Encryption);
         var writer = new PdfFileWriter();
 
         var catalog = new PdfDictionary { ["Type"] = new PdfName("Catalog") };
@@ -204,8 +213,9 @@ public sealed partial class PdfDocument
             catalog["PageMode"] = new PdfName("UseOutlines");
         }
 
+        security?.AddCatalogEntries(catalog);
         var infoRef = WriteMetadata(writer, catalog);
-        writer.Write(stream, catalogRef, infoRef);
+        writer.Write(stream, catalogRef, infoRef, security: security);
     }
 
     /// <summary>Returns the document as a byte array.</summary>
