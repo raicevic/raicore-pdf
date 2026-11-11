@@ -35,6 +35,16 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y qpdf poppler-utils
 
+      # veraPDF (PDF/A and PDF/UA validation) runs from its pinned Docker image behind a wrapper on PATH,
+      # so ExternalTools finds it like any other tool. The wrapper mounts the temp folder the tests write to.
+      - name: Install veraPDF (PDF/A and PDF/UA validator)
+        if: runner.os == 'Linux'
+        run: |
+          docker pull --quiet verapdf/cli:v1.30.3
+          printf '#!/bin/sh\ntmp="${TMPDIR:-/tmp}"\nexec docker run --rm -v "$tmp:$tmp" verapdf/cli:v1.30.3 "$@"\n' | sudo tee /usr/local/bin/verapdf
+          sudo chmod +x /usr/local/bin/verapdf
+          verapdf --version
+
       - name: Restore
         run: dotnet restore
 
