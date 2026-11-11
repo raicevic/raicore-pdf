@@ -48,7 +48,7 @@ internal enum CssWhiteSpace
 /// The computed style of one element, converted from AngleSharp's strings into typed values. Lengths are in points,
 /// except percentages and <c>auto</c>, which depend on the containing block and are resolved during box building.
 /// </summary>
-internal sealed record ComputedStyle
+internal sealed partial record ComputedStyle
 {
     public CssDisplay Display { get; init; } = CssDisplay.Inline;
 
@@ -278,6 +278,9 @@ internal sealed record ComputedStyle
             TextIndent = Length("text-indent"),
             LetterSpacing = Length("letter-spacing").Resolve(fontSize),
             WordSpacing = Length("word-spacing").Resolve(fontSize),
+            Hyphens = ParseHyphens(Get("hyphens")),
+            HyphenateCharacter = ParseHyphenateCharacter(Get("hyphenate-character")),
+            HyphenationLimits = ParseHyphenationLimits(Get(CssAliases.HyphenateLimitChars)),
             WhiteSpace = Get("white-space") switch
             {
                 "nowrap" => CssWhiteSpace.NoWrap,

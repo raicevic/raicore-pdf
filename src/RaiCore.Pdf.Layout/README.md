@@ -19,7 +19,8 @@ flow.PageDecorator = (canvas, page) => { /* headers, footers, "Page {page.Number
 flow.Render().Save("report.pdf");
 ```
 
-- Paragraphs: alignment and justification, line heights, indents, soft hyphens, orphans and widows; inline images
+- Paragraphs: alignment and justification, line heights, indents, soft hyphens and automatic hyphenation (Liang
+  patterns for a dozen languages, see `Hyphenator`), orphans and widows; inline images
   and inline boxes (any block as one item of a line, like CSS `inline-block`).
 - Blocks: margins (with collapsing), borders in every CSS style, rounded corners (circular, elliptical or percentage
   radii), padding, backgrounds, widths and heights with min/max limits, forced and avoided page breaks, and opacity

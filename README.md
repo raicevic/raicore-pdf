@@ -67,6 +67,12 @@ own engine. Supported today:
 - `text-decoration`: underline, overline and line-through in every style (solid, double, dotted, dashed, wavy), with
   color, thickness and `text-underline-offset`, propagated to descendants and placed with the font's own metrics.
 - `letter-spacing` and `word-spacing`, also with justified text.
+- Hyphenation: `hyphens` (`manual`, the default, breaks only at soft hyphens `&shy;`; `none` not even there; `auto`
+  adds the hyphenation points of the text's `lang`), `hyphenate-character` and `hyphenate-limit-chars`. Patterns for
+  English (US and UK), German, Danish, Dutch, French, Spanish, Italian, Portuguese, Polish and Norwegian (Bokmål and
+  Nynorsk) are bundled, from [hyph-utf8](https://github.com/hyphenation/tex-hyphen) under their own permissive
+  licences (MIT, BSD or similar, see
+  [the list](src/RaiCore.Pdf.Layout/Text/Hyphenation/Patterns/LICENSES.md)).
 - Bidirectional text (the Unicode bidi algorithm, UAX #9): `direction`, `unicode-bidi`, the `dir` attribute (also
   `auto`), `<bdi>` and `<bdo>`; right-to-left paragraphs start on the right, and `text-align: start`/`end` follow the
   direction. Right-to-left tables put their first column on the right, flex rows and the cross axis of flex columns
@@ -376,7 +382,17 @@ layout.Draw(page.Canvas, x: 72, top: 770);   // or draw a range of lines per pag
 ```
 
 Supported: left/right/center/justify, `normal`/multiple/absolute line heights with the CSS line-box model,
-first-line indent, hard line breaks, soft hyphens and optional breaking of over-long words.
+first-line indent, hard line breaks, soft hyphens, automatic hyphenation and optional breaking of over-long words.
+
+Hyphenation uses Liang's algorithm (as TeX does) with bundled patterns for a dozen languages; others can be loaded
+from TeX pattern files:
+
+```csharp
+var english = body with { Language = "en-US", Hyphens = Hyphens.Auto };
+new Paragraph(english) { Alignment = TextAlignment.Justify }.Add("Justified text with hyphenation.").Layout(120);
+
+Hyphenator.Register("sv", Hyphenator.FromPatterns(File.ReadLines("hyph-sv.pat.txt"), minBefore: 2, minAfter: 2));
+```
 
 ### Multi-page documents
 

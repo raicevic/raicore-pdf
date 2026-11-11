@@ -60,6 +60,17 @@ change at any time, and this section lists what the packages can do so far.
   as one item of a line, shrink-to-fit, aligned on its last baseline); `InlineAlignment` positions inline text, images
   and boxes vertically (CSS 2.1 section 10.8); `Paragraph.BeginInline`/`EndInline`/`AddInline` give part of the text an
   inline element's box (`InlineDecoration`).
+- Hyphenation: `TextStyle.Hyphens` (`Manual`, the default: only at soft hyphens; `None`: never, not even at soft
+  hyphens; `Auto`: also where the hyphenation patterns of `TextStyle.Language` allow), `HyphenateCharacter` (U+2010 by
+  default, or the hyphen-minus when the font lacks it) and `HyphenationLimits` (the shortest word, and the fewest
+  characters before and after a hyphen; by default 5 and the language's own minimums). A hyphenation point is a break
+  opportunity whose hyphen, shaped in the text's font, counts when fitting and justifying the line, and in min-content
+  widths. Words with a soft hyphen are hyphenated only there, and the style of a word's first letter decides for the
+  whole word. `Hyphenator` implements Liang's algorithm (TeX's) with patterns and exceptions; patterns for en-US,
+  en-GB, de, da, nl, fr, es, it, pt, pl, nb and nn are bundled from hyph-utf8 (compressed, loaded on first use; MIT,
+  BSD-3-Clause or all-permissive licences, listed in `Text/Hyphenation/Patterns/LICENSES.md` and packed as
+  `licenses/hyphenation-patterns.md`), language tags fall back to shorter ones (`de-CH` uses `de`), and
+  `Hyphenator.FromPatterns` with `Register` adds other languages.
 - Bidirectional text: the Unicode Bidirectional Algorithm (UAX #9, passing the full `BidiTest.txt` and
   `BidiCharacterTest.txt` conformance tests) orders mixed left-to-right and right-to-left text on every line, after
   lines are broken in logical order. `Paragraph.Direction` sets the base direction (left to right, right to left, or
@@ -198,6 +209,10 @@ change at any time, and this section lists what the packages can do so far.
 - Translucent colors keep their alpha (`rgba()`, `hsla()`, `#rrggbbaa`, `#rgba`, `transparent`) instead of being
   blended with white, and `opacity` makes an element a transparency group (including inline images); a translucent
   CSS `color` reaches `currentColor` in inline SVG.
+- Hyphenation: `hyphens` (also `-webkit-hyphens`), `hyphenate-character` (also `-webkit-hyphenate-character`) and
+  `hyphenate-limit-chars`, with the language from the nearest `lang` (or `xml:lang`) attribute; the language also
+  reaches HarfBuzz for localized glyph forms. Text with `white-space: nowrap` or `pre` is not hyphenated, not even at
+  soft hyphens.
 - Network access is off unless you supply a `ResourceLoader`.
 
 ### RaiCore.Pdf.Razor
@@ -221,7 +236,11 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   written yet).
 - `unicode-bidi: isolate-override` in author styles (AngleSharp drops it; `<bdo>` works). The logical border
   properties (`border-inline-start` and the like) and `inset-inline` are left to right; in a right-to-left element a
-  logical margin or padding written with `var()` is 0. No hyphenation.
+  logical margin or padding written with `var()` is 0.
+- Hyphenation fills lines greedily, like browsers (no Knuth-Plass paragraph optimization, no
+  `hyphenate-limit-lines`, `hyphenate-limit-zone` or `hyphenate-limit-last`). Text in `::before`/`::after` has no
+  language, so it is not hyphenated automatically. Patterns for languages under the LPPL alone (such as Swedish) or
+  the GPL (Czech) are not bundled, and decomposed (NFD) text may miss hyphenation points.
 - No synthetic bold or italic: a family without a bold or italic face uses its closest face as is.
 - `:first`/`:left`/`:right` cannot change page margins; no named pages. Bookmark labels cannot use counters, and inline
   elements cannot be bookmarks.

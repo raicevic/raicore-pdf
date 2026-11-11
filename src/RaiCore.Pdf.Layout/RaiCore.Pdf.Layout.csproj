@@ -5,6 +5,16 @@
     <Description>Format-neutral layout engine for RaiCore.Pdf: text shaping, line breaking, pagination and tables.</Description>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- The bundled hyphenation patterns have their own permissive licences: see Text/Hyphenation/Patterns/LICENSES.md. -->
+    <PackageLicenseExpression>Apache-2.0 AND MIT AND BSD-3-Clause AND FSFAP</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Text\Hyphenation\Patterns\*.hyph.gz" LogicalName="RaiCore.Pdf.Layout.Hyphenation.%(Filename)%(Extension)" />
+    <None Include="Text\Hyphenation\Patterns\LICENSES.md" Pack="true" PackagePath="licenses/hyphenation-patterns.md" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="HarfBuzzSharp" />
     <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" />
