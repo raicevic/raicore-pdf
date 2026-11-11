@@ -23,11 +23,43 @@ internal static class PeakMemory
             Documents.ReportFlow(BundledFonts.CreateCollection()).RenderTo(document);
             document.EndSave();
         },
+        ["pages-save"] = output =>
+        {
+            var document = new PdfDocument();
+            DrawPages(document, flush: false);
+            document.Save(output);
+        },
+        ["pages-stream"] = output =>
+        {
+            var document = new PdfDocument();
+            document.BeginSave(output);
+            DrawPages(document, flush: true);
+            document.EndSave();
+        },
         ["report-html-save"] = output => HtmlToPdf.Convert(Documents.ReportHtml()).Save(output),
         ["report-html-stream"] = output => HtmlToPdf.ConvertToStream(Documents.ReportHtml(), output),
         ["table-save"] = output => HtmlToPdf.Convert(Documents.TableHtml()).Save(output),
         ["table-stream"] = output => HtmlToPdf.ConvertToStream(Documents.TableHtml(), output),
     };
+
+    /// <summary>1,000 pages of 60 lines of text drawn with the canvas, the case page-by-page writing helps most.</summary>
+    private static void DrawPages(PdfDocument document, bool flush)
+    {
+        var font = BundledFonts.CreateCollection().Find("Liberation Serif")!;
+        for (var p = 0; p < 1000; p++)
+        {
+            var page = document.AddPage(PdfPageSize.A4);
+            for (var line = 0; line < 60; line++)
+            {
+                page.Canvas.DrawText(Documents.Text((p * 60) + line, 12), font, 10, 50, page.Height - 50 - (line * 12));
+            }
+
+            if (flush)
+            {
+                document.FlushPages();
+            }
+        }
+    }
 
     public static void Run(string scenario)
     {
