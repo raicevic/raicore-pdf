@@ -66,6 +66,7 @@ internal sealed partial class BoxBuilder
         _decorations = outerDecorations;
         return new FlexBlock(box, items)
         {
+            Tag = TagFor(element, style),
             Direction = style.FlexDirection,
             RightToLeft = style.Rtl,
             Wrap = style.FlexWrap,

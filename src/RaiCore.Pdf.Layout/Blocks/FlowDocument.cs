@@ -180,6 +180,11 @@ public sealed class FlowDocument
     {
         ArgumentNullException.ThrowIfNull(document);
         var result = Paginator.Paginate(this);
+        if (document.Tagged)
+        {
+            StructureBuilder.Build(Blocks, document.StructureRoot, document.LayoutStructure);
+        }
+
         var pages = result.Pages;
         var rendered = new List<PdfPage>(pages.Count);
         for (var i = 0; i < pages.Count; i++)
@@ -205,8 +210,11 @@ public sealed class FlowDocument
                 page.Canvas.RestoreState();
             }
 
+            // Headers, footers and page numbers repeat on every page: artifacts in a tagged document.
             var markers = result.Markers.Where(m => m.Page == i).Select(m => m.Marker).ToList();
+            LayoutTagging.BeginArtifact(page.Canvas, PdfArtifactKind.Pagination);
             PageDecorator?.Invoke(page.Canvas, new PageInfo(i + 1, pages.Count, setup, markers) { Name = context.Name, Side = context.Side, IsBlank = context.IsBlank });
+            LayoutTagging.End(page.Canvas);
         }
 
         AddOutline(document.Outline, result.Anchors, rendered);

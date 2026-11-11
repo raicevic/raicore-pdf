@@ -78,6 +78,16 @@ public sealed class PdfLink
 
     /// <summary>The explicit destination the link jumps to, or <c>null</c>.</summary>
     public PdfDestination? Destination { get; }
+
+    /// <summary>
+    /// A description of the link (the annotation's <c>/Contents</c>), such as its text or where it goes, which screen
+    /// readers announce. In a <see cref="PdfDocument.Tagged"/> document a link without one is described by its URI or
+    /// destination name, as PDF/UA requires a description.
+    /// </summary>
+    public string? Description { get; set; }
+
+    /// <summary>The Link structure element of a tagged document the annotation belongs to.</summary>
+    internal PdfStructureElement? StructureElement { get; set; }
 }
 
 /// <summary>Writes link annotations and the named destinations tree (ISO 32000-2, sections 12.5.6.5 and 12.3.2.4).</summary>
@@ -85,10 +95,12 @@ internal static class PdfLinkWriter
 {
     /// <summary>
     /// Writes a page's links as annotation objects and returns the page's <c>/Annots</c> array, or <c>null</c> when it
-    /// has none. Links to named destinations the document does not define are left out.
+    /// has none. Links to named destinations the document does not define are left out. <paramref name="written"/> is
+    /// told about each annotation written (for the structure tree of a tagged document).
     /// </summary>
     public static PdfArray? WriteAnnotations(
-        PdfFileWriter writer, PdfPage page, IReadOnlyDictionary<PdfPage, PdfReference> pages, IDictionary<string, PdfDestination> names)
+        PdfFileWriter writer, PdfPage page, IReadOnlyDictionary<PdfPage, PdfReference> pages, IDictionary<string, PdfDestination> names,
+        Action<PdfLink, PdfDictionary, PdfReference>? written = null)
     {
         var annotations = new PdfArray();
         foreach (var link in page.Links)
@@ -101,6 +113,11 @@ internal static class PdfLinkWriter
                 ["Rect"] = PdfArray.OfNumbers(x, y, x + link.Width, y + link.Height),
                 ["Border"] = PdfArray.OfNumbers(0, 0, 0), // No border: the link is the content under it.
             };
+
+            if (link.Description is { Length: > 0 } description)
+            {
+                annotation["Contents"] = PdfString.FromText(description);
+            }
 
             if (link.Uri is { } uri)
             {
@@ -129,7 +146,9 @@ internal static class PdfLinkWriter
                 annotation["Dest"] = destination.ToArray(target);
             }
 
-            annotations.Items.Add(writer.Add(annotation));
+            var reference = writer.Add(annotation);
+            annotations.Items.Add(reference);
+            written?.Invoke(link, annotation, reference);
         }
 
         return annotations.Items.Count > 0 ? annotations : null;

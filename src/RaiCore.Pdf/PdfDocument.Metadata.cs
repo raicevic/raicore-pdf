@@ -104,6 +104,11 @@ public sealed partial class PdfDocument
             pdf.Set("Keywords", info.Keywords);
         }
 
+        if (PdfUA)
+        {
+            xmp.Schema(XmpNamespace.PdfUAIdentification).Set("part", "1");
+        }
+
         var custom = info.SortedCustomProperties().ToList();
         if (custom.Count > 0)
         {

@@ -17,19 +17,19 @@ public sealed partial class PdfCanvas
     /// <summary>Paints fills (and text) with a pattern, such as a gradient (<c>/Pattern cs /P1 scn</c>), at an alpha.</summary>
     internal PdfCanvas SetFillPattern(PdfDictionary pattern, double alpha = 1)
     {
-        Op($"/Pattern cs /{UsePattern(pattern)} scn");
+        StateOp($"/Pattern cs /{UsePattern(pattern)} scn");
         return SetAlpha(alpha, _strokeAlpha);
     }
 
     /// <summary>Paints strokes with a pattern (<c>/Pattern CS /P1 SCN</c>), at an alpha.</summary>
     internal PdfCanvas SetStrokePattern(PdfDictionary pattern, double alpha = 1)
     {
-        Op($"/Pattern CS /{UsePattern(pattern)} SCN");
+        StateOp($"/Pattern CS /{UsePattern(pattern)} SCN");
         return SetAlpha(_fillAlpha, alpha);
     }
 
     /// <summary>Sets the text rendering mode (<c>Tr</c>): 0 fills glyphs, 1 strokes them, 2 does both.</summary>
-    internal PdfCanvas SetTextRenderingMode(int mode) => Op(string.Create(CultureInfo.InvariantCulture, $"{mode} Tr"));
+    internal PdfCanvas SetTextRenderingMode(int mode) => StateOp(string.Create(CultureInfo.InvariantCulture, $"{mode} Tr"));
 
     private string UsePattern(PdfDictionary pattern)
     {

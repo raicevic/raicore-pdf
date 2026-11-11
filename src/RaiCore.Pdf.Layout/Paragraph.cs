@@ -95,6 +95,8 @@ public sealed class Paragraph
     private readonly List<InlineLink> _links = [];
     private readonly Stack<(int Start, LinkTarget Target)> _openLinks = new();
     private readonly List<InlineAnchor> _anchors = [];
+    private readonly List<InlineTag> _tags = [];
+    private readonly Stack<(int Start, StructureTag Tag)> _openTags = new();
     private int _length;
 
     /// <summary>Creates a paragraph. <paramref name="style"/> is the default for spans and sets the minimum line height (the CSS "strut").</summary>
@@ -143,6 +145,38 @@ public sealed class Paragraph
 
     /// <summary>The link destinations in the text (see <see cref="AddAnchor"/>), in order.</summary>
     public IReadOnlyList<InlineAnchor> Anchors => _anchors;
+
+    /// <summary>The tagged runs of the text (see <see cref="BeginTag"/>), in the order they end.</summary>
+    public IReadOnlyList<InlineTag> Tags => _tags;
+
+    /// <summary>
+    /// Starts a run with a structure tag for tagged documents: the text, images and boxes added until the matching
+    /// <see cref="EndTag"/> become a structure element inside the paragraph's (such as a <c>Span</c> in another
+    /// language, a list item's <c>Lbl</c>, or a <c>Figure</c> around an image), or an artifact. Tags nest.
+    /// </summary>
+    public Paragraph BeginTag(StructureTag tag)
+    {
+        ArgumentNullException.ThrowIfNull(tag);
+        _openTags.Push((_length, tag));
+        return this;
+    }
+
+    /// <summary>Ends the innermost run started with <see cref="BeginTag"/>. An empty one is dropped.</summary>
+    public Paragraph EndTag()
+    {
+        if (_openTags.Count == 0)
+        {
+            throw new InvalidOperationException("EndTag without a matching BeginTag.");
+        }
+
+        var (start, tag) = _openTags.Pop();
+        if (_length > start)
+        {
+            _tags.Add(new InlineTag(start, _length, tag));
+        }
+
+        return this;
+    }
 
     /// <summary>
     /// Starts a link: the text, images and boxes added until the matching <see cref="EndLink"/> become clickable. Each

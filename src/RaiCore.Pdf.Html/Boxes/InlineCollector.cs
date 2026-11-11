@@ -113,9 +113,20 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         _hasVisibleContent = true;
     }
 
-    public void AddImage(PdfImage image, double width, double height, InlineAlignment alignment = default, double opacity = 1, CornerRadii borderRadius = default)
+    public void AddImage(PdfImage image, double width, double height, InlineAlignment alignment = default, double opacity = 1, CornerRadii borderRadius = default, StructureTag? tag = null)
     {
-        Paragraph().AddImage(image, width, height, alignment, opacity, borderRadius);
+        var paragraph = Paragraph();
+        if (tag is not null)
+        {
+            paragraph.BeginTag(tag);
+        }
+
+        paragraph.AddImage(image, width, height, alignment, opacity, borderRadius);
+        if (tag is not null)
+        {
+            paragraph.EndTag();
+        }
+
         _afterSpace = false;
         _hasVisibleContent = true;
     }
@@ -240,7 +251,7 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         {
             // An outside marker hangs to the left of the text; an inside marker is just the first piece of text.
             var markerText = marker + "\u00A0";
-            _paragraph.Add(markerText, baseStyle);
+            _paragraph.BeginTag(BoxBuilder.ListLabel).Add(markerText, baseStyle).EndTag();
             if (!blockStyle.ListStyleInside)
             {
                 _paragraph.FirstLineIndent = indent - TextShaper.Shape(markerText, baseStyle.Fonts, baseStyle.Shaping).GetWidth(baseStyle.FontSize);

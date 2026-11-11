@@ -70,6 +70,21 @@ public sealed class HtmlConverterOptions
     /// writes an unencrypted document. Sets <see cref="PdfDocument.Encryption"/> on the converted document.
     /// </summary>
     public PdfEncryption? Encryption { get; init; }
+
+    /// <summary>
+    /// Whether to write a tagged PDF (<see cref="PdfDocument.Tagged"/>): the document's logical structure from the HTML
+    /// semantics (headings, paragraphs, lists, tables with header cells, figures with their <c>alt</c> text, links), so
+    /// that screen readers and reflowing viewers can use it, with decorations, page headers and footers and repeated
+    /// table headers marked as artifacts.
+    /// </summary>
+    public bool Tagged { get; init; }
+
+    /// <summary>
+    /// Whether to write PDF/UA-1 (<see cref="PdfDocument.PdfUA"/>), the accessible PDF standard: a tagged PDF that also
+    /// needs a title (<c>&lt;title&gt;</c> or <see cref="Title"/>) and a language (<c>&lt;html lang&gt;</c> or
+    /// <see cref="Language"/>), and whose images need <c>alt</c> text.
+    /// </summary>
+    public bool PdfUA { get; init; }
 }
 
 /// <summary>Built-in resource loading.</summary>

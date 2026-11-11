@@ -25,6 +25,9 @@ public sealed partial class ParagraphLayout
     /// <summary>Width of the widest line (it can exceed <see cref="AvailableWidth"/> when a word does not fit).</summary>
     public double ContentWidth { get; }
 
+    /// <summary>The paragraph laid out (for its tagged runs and link text).</summary>
+    internal Paragraph? Source { get; init; }
+
     /// <summary>Draws all lines with the paragraph's top-left corner at (<paramref name="x"/>, <paramref name="top"/>).</summary>
     public void Draw(PdfCanvas canvas, double x, double top) => Draw(canvas, x, top, 0, Lines.Count);
 
@@ -44,6 +47,7 @@ public sealed partial class ParagraphLayout
 
         var offset = Lines[firstLine].Top;
         PdfColor? current = null;
+        var tags = canvas.Document is { Tagged: true } && Source is { } source ? new InlineTags(source) : null;
         for (var i = firstLine; i < endLine; i++)
         {
             var line = Lines[i];
@@ -52,7 +56,7 @@ public sealed partial class ParagraphLayout
             // Inline elements' backgrounds and borders go under the line's content.
             foreach (var decoration in line.Decorations)
             {
-                DrawDecoration(canvas, decoration, x + line.X, baseline);
+                LayoutTagging.Decoration(canvas, () => DrawDecoration(canvas, decoration, x + line.X, baseline));
                 current = null;
             }
 
@@ -64,21 +68,40 @@ public sealed partial class ParagraphLayout
                     current = fragment.Style.Color;
                 }
 
+                var owner = tags?.At(fragment.Range.Start);
+                if (owner is not null)
+                {
+                    LayoutTagging.Begin(canvas, owner);
+                }
+
                 canvas.DrawGlyphs(
                     fragment.Glyphs, fragment.Run.Font, fragment.Style.FontSize, x + line.X + fragment.X, baseline + fragment.BaselineShift,
                     fragment.Run.NeedsActualText ? fragment.Run.Text : null);
+                if (owner is not null)
+                {
+                    LayoutTagging.End(canvas);
+                }
             }
 
+            LayoutTagging.BeginArtifact(canvas);
             if (DrawDecorations(canvas, line, x + line.X, baseline))
             {
                 current = null;
             }
+
+            LayoutTagging.End(canvas);
 
             foreach (var image in line.Images)
             {
                 var (left, bottom, width, height) = (x + line.X + image.X, baseline + image.BaselineShift, image.Image.Width, image.Image.Height);
                 var translucent = image.Image.Opacity < 1;
                 var rounded = !image.Image.BorderRadius.IsSquare;
+                var imageOwner = tags?.At(image.Start);
+                if (imageOwner is not null)
+                {
+                    LayoutTagging.Begin(canvas, imageOwner);
+                }
+
                 if (translucent)
                 {
                     canvas.BeginGroup(image.Image.Opacity);
@@ -100,6 +123,11 @@ public sealed partial class ParagraphLayout
                 {
                     canvas.EndGroup();
                 }
+
+                if (imageOwner is not null)
+                {
+                    LayoutTagging.End(canvas);
+                }
             }
 
             foreach (var box in line.Boxes)
@@ -119,7 +147,17 @@ public sealed partial class ParagraphLayout
             // Links cover the whole height of the line, so the rectangles of a wrapped link touch without overlapping.
             foreach (var link in line.Links)
             {
-                link.Link.Target.AddTo(canvas, x + line.X + link.X0, baseline - (line.Height - line.Baseline), link.X1 - link.X0, line.Height);
+                if (tags is not null)
+                {
+                    LayoutTagging.Begin(canvas, link.Link);
+                }
+
+                link.Link.Target.AddTo(
+                    canvas, x + line.X + link.X0, baseline - (line.Height - line.Baseline), link.X1 - link.X0, line.Height, tags?.TextOf(link.Link));
+                if (tags is not null)
+                {
+                    LayoutTagging.End(canvas);
+                }
             }
         }
     }
@@ -128,6 +166,42 @@ public sealed partial class ParagraphLayout
 /// <summary>Drawing helpers for <see cref="ParagraphLayout"/>.</summary>
 public sealed partial class ParagraphLayout
 {
+    /// <summary>
+    /// The tagged runs and links of a paragraph, to find which one a piece of a line belongs to (the innermost one
+    /// covering it) when drawing in a tagged document.
+    /// </summary>
+    private sealed class InlineTags(Paragraph paragraph)
+    {
+        private readonly List<(int Start, int End, object Owner)> _items =
+            [.. paragraph.Tags.Select(t => (t.Start, t.End, (object)t)), .. paragraph.Links.Select(l => (l.Start, l.End, (object)l))];
+
+        private string? _text;
+
+        /// <summary>The innermost tagged run or link at a text position, or <c>null</c> for the paragraph's own content.</summary>
+        public object? At(int position)
+        {
+            object? owner = null;
+            var length = int.MaxValue;
+            foreach (var (start, end, item) in _items)
+            {
+                if (start <= position && position < end && end - start <= length)
+                {
+                    (owner, length) = (item, end - start);
+                }
+            }
+
+            return owner;
+        }
+
+        /// <summary>The text of a link, which describes it to screen readers.</summary>
+        public string? TextOf(InlineLink link)
+        {
+            _text ??= string.Concat(paragraph.Spans.Select(span => span.Text));
+            var text = _text[link.Start..Math.Min(link.End, _text.Length)].Replace("\uFFFC", string.Empty, StringComparison.Ordinal).Trim();
+            return text.Length > 0 ? text : null;
+        }
+    }
+
     /// <summary>
     /// Draws a line's text decorations: each decoration as one segment per run of adjacent fragments that share it.
     /// Returns whether anything was drawn (the fill color changed).
@@ -412,7 +486,11 @@ public sealed class InlineBoxFragment
 /// <param name="Image">The image and its size.</param>
 /// <param name="X">Offset from the start of the line's content.</param>
 /// <param name="BaselineShift">How far the image's bottom is above the line's baseline (CSS <c>vertical-align</c>).</param>
-public sealed record InlineImageFragment(InlineImage Image, double X, double BaselineShift = 0);
+public sealed record InlineImageFragment(InlineImage Image, double X, double BaselineShift = 0)
+{
+    /// <summary>The index of the image's character in the paragraph's text.</summary>
+    internal int Start { get; init; }
+}
 
 /// <summary>A run of glyphs on a line, in one style and font.</summary>
 public sealed class LineFragment
@@ -444,4 +522,7 @@ public sealed class LineFragment
 
     /// <summary>Width in points.</summary>
     public double Width { get; }
+
+    /// <summary>The range of the paragraph's text the fragment shows (for tagging).</summary>
+    internal (int Start, int End) Range { get; init; }
 }

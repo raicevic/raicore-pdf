@@ -186,10 +186,10 @@ internal sealed partial class BoxBuilder
         var pageMarker = _paged?.MarkerFor(element, item => CounterText(element, string.Empty, item));
         if (children is [ParagraphBlock only] && _anonymous.Contains(only))
         {
-            return new ParagraphBlock(only.Paragraph, box) { Marker = pageMarker, Bookmark = BookmarkFor(element), Id = IdFor(element), Link = LinkFor(element) };
+            return new ParagraphBlock(only.Paragraph, box) { Marker = pageMarker, Bookmark = BookmarkFor(element), Id = IdFor(element), Link = LinkFor(element), Tag = TagFor(element, style) };
         }
 
-        return new ContainerBlock(box, children) { Marker = pageMarker, Bookmark = BookmarkFor(element), Id = IdFor(element), Link = LinkFor(element) };
+        return new ContainerBlock(box, children) { Marker = pageMarker, Bookmark = BookmarkFor(element), Id = IdFor(element), Link = LinkFor(element), Tag = TagFor(element, style) };
     }
 
     /// <summary>
@@ -630,14 +630,14 @@ internal sealed partial class BoxBuilder
             Limit(style.MinWidth, isMax: false); // The minimum wins.
 
             AddAnchors(element, collector);
-            collector.AddImage(image, w, h, verticalAlign, style.Opacity, RadiiFor(style, w, h));
+            collector.AddImage(image, w, h, verticalAlign, style.Opacity, RadiiFor(style, w, h), ImageTag(element));
             return;
         }
 
         Flush(collector, children);
         var (box, _) = BoxStyleFor(style with { Width = CssLength.Auto, Height = CssLength.Auto, MinHeight = CssLength.Auto, MaxHeight = CssLength.Auto }, containingWidth);
         var blockStart = children.Count;
-        children.Add(new ImageBlock(image, width, height, box) { Alignment = ShrinkToFitAlignment(style), Id = IdFor(element) });
+        children.Add(new ImageBlock(image, width, height, box) { Alignment = ShrinkToFitAlignment(style), Id = IdFor(element), Tag = ImageTag(element) });
         LinkBlocks(children, blockStart, collector.CurrentLink);
     }
 

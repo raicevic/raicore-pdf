@@ -45,6 +45,9 @@ public sealed class PdfPage
     /// <summary>Draws on the page.</summary>
     public PdfCanvas Canvas { get; }
 
+    /// <summary>The document the page belongs to; <c>null</c> for the drawing surface of an SVG image.</summary>
+    internal PdfDocument? Document { get; init; }
+
     /// <summary>The links on the page (link annotations), in the order they were added.</summary>
     public IReadOnlyList<PdfLink> Links => _links;
 
@@ -127,6 +130,19 @@ public sealed class PdfPage
         // A rectangle with a negative width or height extends to the left or below its corner.
         var link = new PdfLink(Math.Min(x, x + width), Math.Min(y, y + height), Math.Abs(width), Math.Abs(height), uri, name, destination);
         _links.Add(link);
+        if (Document is { Tagged: true } document)
+        {
+            // PDF/UA: every link annotation belongs to a Link element, with the link's text as marked content beside it.
+            var element = Canvas.CurrentElement ?? document.StructureRoot;
+            if (element.Type != PdfStructureTypes.Link)
+            {
+                element = element.AddChild(PdfStructureTypes.Link);
+            }
+
+            link.StructureElement = element;
+            element.AddContent(new AnnotationKid(this, link));
+        }
+
         return link;
     }
 
@@ -182,10 +198,11 @@ public sealed class PdfPage
     /// <param name="content">The group's content stream.</param>
     /// <param name="resources">The names of the resources its content uses.</param>
     /// <param name="matrix">The form matrix, which maps the group's space (the page's) to the space it is drawn in.</param>
-    internal string AddGroup(byte[] content, IReadOnlySet<string> resources, Svg.SvgMatrix matrix)
+    /// <param name="marks">The group's marked content (tagged documents).</param>
+    internal string AddGroup(byte[] content, IReadOnlySet<string> resources, Svg.SvgMatrix matrix, MarkedContentStream? marks = null)
     {
         var name = string.Create(CultureInfo.InvariantCulture, $"Fm{_groups.Count + 1}");
-        _groups.Add(new GroupForm(name, content, resources, matrix));
+        _groups.Add(new GroupForm(name, content, resources, matrix, marks));
         return name;
     }
 
@@ -197,7 +214,8 @@ public sealed class PdfPage
     /// </summary>
     internal PdfDictionary WriteResources(
         PdfFileWriter writer, bool compress, Func<PdfFont, FontUsage, PdfReference> font, Func<PdfImage, PdfReference> image,
-        Func<(double Fill, double Stroke), PdfReference> extGState, Func<PdfReaderPage, PdfReference>? pageForm = null)
+        Func<(double Fill, double Stroke), PdfReference> extGState, Func<PdfReaderPage, PdfReference>? pageForm = null,
+        Action<GroupForm, PdfDictionary, PdfReference>? groupWritten = null)
     {
         var references = new Dictionary<string, PdfReference>(StringComparer.Ordinal);
         PdfReference Resolve(string name, Func<PdfReference> write)
@@ -229,6 +247,7 @@ public sealed class PdfPage
             dictionary["Group"] = TransparencyGroup(isolated: true);
             references[group.Name] = writer.Add(form);
             forms.Add(form);
+            groupWritten?.Invoke(group, dictionary, references[group.Name]);
         }
 
         PdfDictionary Build(IReadOnlySet<string> used)
@@ -407,4 +426,4 @@ public readonly record struct PdfPageSize(double Width, double Height)
 }
 
 /// <summary>A transparency group drawn on a page: a form XObject's content, the resources it uses and its matrix.</summary>
-internal sealed record GroupForm(string Name, byte[] Content, IReadOnlySet<string> Resources, Svg.SvgMatrix Matrix);
+internal sealed record GroupForm(string Name, byte[] Content, IReadOnlySet<string> Resources, Svg.SvgMatrix Matrix, MarkedContentStream? Marks = null);

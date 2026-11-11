@@ -387,6 +387,36 @@ are prepared with a simplified SASLprep (non-ASCII spaces become spaces, NFKC no
 are rejected) and cut to 127 UTF-8 bytes; AES-128 passwords must be Latin-1. Encrypted output is not byte-for-byte
 reproducible, because keys and IVs are random.
 
+### Accessible PDF (tagged PDF and PDF/UA)
+
+`HtmlConverterOptions.Tagged` writes a tagged PDF: the logical structure screen readers, reflowing viewers and
+accessibility checkers use, from the HTML semantics. `PdfUA` also makes it PDF/UA-1 (it needs a `<title>` and
+`<html lang>`, or the `Title`/`Language` options, and `alt` text on images):
+
+```csharp
+var pdf = HtmlToPdf.Convert(html, new HtmlConverterOptions { PdfUA = true });
+```
+
+- Headings `h1`-`h6`, paragraphs (`p`, `pre`, `address`, and text directly in other blocks), `blockquote`, `section`,
+  `article`, captions; lists with a label (`Lbl`, the marker) and body (`LBody`) per item and the numbering style;
+  tables with header, body and footer row groups, header cells with a scope (`scope`, else by position) and spans;
+  images and inline SVG as figures with their `alt` text (an SVG's `<title>` or `aria-label`), `alt=""` as an
+  artifact; links with their text as the annotation's description; `lang` on blocks.
+- Backgrounds, borders, text decorations, `hr`, page margin boxes and table header and footer rows repeated on later
+  pages are artifacts, so screen readers skip them. Reading order is document order.
+- The document title is shown in the viewer's title bar (`/DisplayDocTitle`), and pages use the structure's tab order.
+
+Drawn content is tagged with `PdfDocument.Tagged` and `PdfCanvas.BeginTag`/`EndTag` around structure elements
+(`PdfDocument.StructureRoot.AddChild`), `BeginArtifact` for decorations; content outside any tag becomes an artifact,
+and links get Link elements. Layout blocks take a `Tag` (`StructureTag`), with defaults for paragraphs, images and
+tables:
+
+```csharp
+var doc = new PdfDocument { PdfUA = true, Language = "en", Info = { Title = "Report" } };
+var heading = doc.StructureRoot.AddChild(PdfStructureTypes.Heading1);
+doc.AddPage().Canvas.BeginTag(heading).DrawText("Report", font, 24, 72, 760).EndTag();
+```
+
 ### Existing PDFs
 
 `PdfReader` reads existing PDF files, so a generated document can take pages from them: add a cover page, append

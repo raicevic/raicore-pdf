@@ -41,6 +41,13 @@ public abstract class Block
     /// it starts with (a container starts with its first child's).
     /// </summary>
     public string? PageName { get; init; }
+
+    /// <summary>
+    /// What the block is in a tagged document's logical structure (a heading, a list item, a section), or
+    /// <see cref="StructureTag.Artifact"/>; <c>null</c> (the default) for the default: paragraph blocks are paragraphs,
+    /// image blocks figures, tables tables, and other blocks add no element of their own. See <see cref="StructureTag"/>.
+    /// </summary>
+    public StructureTag? Tag { get; init; }
 }
 
 /// <summary>A block containing one paragraph of text.</summary>

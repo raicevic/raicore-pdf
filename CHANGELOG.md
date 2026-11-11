@@ -88,6 +88,14 @@ change at any time, and this section lists what the packages can do so far.
 - `PdfCanvas.DrawPage` draws a page of a read file as a form XObject, at its size or scaled into a rectangle, as it
   is displayed (crop box, `/Rotate`), e.g. a letterhead under generated content. `PdfRectangle` holds page boxes.
 
+- Tagged PDF and PDF/UA-1: `PdfDocument.Tagged`/`PdfUA`, structure elements (`PdfDocument.StructureRoot`,
+  `PdfStructureElement` with alternate and actual text, language, table scope and spans, list numbering;
+  `PdfStructureTypes`), `PdfCanvas.BeginTag`/`BeginArtifact`/`EndTag`. Marked content is written flat and only around
+  path and painting operators, with its own MCIDs in each transparency group's form; untagged drawing becomes an
+  artifact; links are tagged (`/OBJR`, `/StructParent`, `PdfLink.Description` as `/Contents`); the parent tree,
+  `/MarkInfo`, `/Tabs /S`, `/DisplayDocTitle` and `pdfuaid:part` are written. PDF/UA checks the title, language,
+  XMP and embedded fonts when saving. Untagged documents are unchanged.
+
 ### RaiCore.Pdf.Fonts
 - Bundled Liberation Sans, Serif and Mono (SIL OFL 1.1), metric-compatible with Arial, Times New Roman and Courier New.
 - `FontCollection` with CSS font matching, system font discovery and metric-compatible substitutes.
@@ -229,6 +237,11 @@ change at any time, and this section lists what the packages can do so far.
   what follows it; one that continues on later pages keeps the text there flowing around it. Floats are painted over
   the backgrounds of the blocks around them, as in CSS.
 
+- Tagging: `Block.Tag`, `TableCell.Tag` and `Paragraph.BeginTag`/`EndTag` (`StructureTag`) give layout content its
+  structure elements, created in document order when rendering into a tagged document; paragraphs, images and tables
+  get default tags, table rows their row groups, and links in text Link elements. Backgrounds, borders, text
+  decorations, repeated table header and footer rows and the page decorator are artifacts.
+
 ### RaiCore.Pdf.Html
 - HTML and CSS to PDF via AngleSharp: the cascade, inheritance, `!important`, custom properties and print media
   queries, with browser default styles.
@@ -348,6 +361,9 @@ change at any time, and this section lists what the packages can do so far.
   author, subject, keywords and creator. `HtmlConverterOptions.Title`, `Author`, `Subject`, `Keywords`, `Creator` and
   `Language` override them.
 - `HtmlConverterOptions.Encryption` encrypts the converted PDF (Razor conversion included).
+- `HtmlConverterOptions.Tagged` and `PdfUA`: the structure from HTML semantics (headings, paragraphs, lists with labels
+  and bodies, tables with header cells and scopes, figures with `alt` text, sections, quotations, links, `lang`).
+  Validated with veraPDF (PDF/UA-1) in CI.
 
 ### RaiCore.Pdf.Razor
 - Razor components to PDF with Blazor's static `HtmlRenderer`: `RazorToPdf` for the simple case, `RazorPdfRenderer`
@@ -410,8 +426,12 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   another content width (after an automatic break) keeps the width it started with, and `page` is ignored inside flex
   items, table cells and inline boxes. Page progression is left to right (`recto` is a right page). Inline elements
   cannot be bookmarks.
-- No tagged PDF or PDF/A.
-- Metadata: the XMP has no PDF/A or PDF/UA identification and no extension schema for the `pdfx:` custom properties
+- No PDF/A.
+- Tagging: `lang` on inline elements, abbreviations (`abbr` expansions), `figure`/`figcaption` grouping, description
+  lists as lists, table `headers`/`id` associations, form fields and notes are not tagged yet; a `dl` is a sequence of
+  paragraphs. Flex items are read in document order, not in their visual order (`order`, `row-reverse`). PDF/UA uses only embedded fonts (not the standard 14), and imported pages
+  are not tagged.
+- Metadata: the XMP has no PDF/A identification and no extension schema for the `pdfx:` custom properties
   yet (PDF/A will add them); custom property names that are not XML names are encoded (`_x0020_` for a space).
   Keywords and the author are plain text (`dc:creator` holds one entry). Language alternatives are written with
   `x-default` only, and the language is not checked against BCP 47. `HtmlToPdf.CreateFlowDocument` returns no
