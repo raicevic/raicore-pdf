@@ -109,8 +109,9 @@ What it can and cannot do:
   laying out, with page counts resolved afterwards.
 - What refers across pages is written at the end: the fonts (subset to the glyphs of all pages), the page dictionaries
   with their link annotations (links may point at later pages), the page tree, outline, named destinations, metadata
-  and catalog. The catalog is the last object, so more catalog-level objects (a structure tree, output intents,
-  attachments) can be added there.
+  and catalog, with the structure tree of tagged documents (which may grow while pages are written), the PDF/A output
+  intent and the attachments. Tagged, PDF/UA and PDF/A documents written page by page are byte for byte the saved
+  ones.
 - Pages imported from other PDFs keep what they copy from them until `EndSave`, since their annotations may still
   complete the copied objects.
 - `Save` uses the same writer and flushes each page too, so a document written page by page is byte for byte the file

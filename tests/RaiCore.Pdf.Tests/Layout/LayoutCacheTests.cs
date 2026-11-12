@@ -72,6 +72,15 @@ public class LayoutCacheTests
         Assert.True(cached.AsSpan().SequenceEqual(uncached), "The layout cache changed the output.");
     }
 
+    [Theory]
+    [MemberData(nameof(HtmlDocuments))]
+    public void Tagged_html_documents_are_the_same_without_the_cache(string html)
+    {
+        var options = new HtmlConverterOptions { Tagged = true };
+
+        Assert.True(Html(html, disabled: false, options).AsSpan().SequenceEqual(Html(html, disabled: true, options)), "The layout cache changed the output.");
+    }
+
     [Fact]
     public void Flow_documents_are_the_same_without_the_cache()
     {
@@ -246,12 +255,12 @@ public class LayoutCacheTests
 
     private static TextStyle Style() => new(BundledFonts.CreateCollection().Find("Liberation Sans")!, 11);
 
-    private static byte[] Html(string html, bool disabled)
+    private static byte[] Html(string html, bool disabled, HtmlConverterOptions? options = null)
     {
         LayoutCache.Disabled = disabled;
         try
         {
-            var document = HtmlToPdf.Convert(html);
+            var document = HtmlToPdf.Convert(html, options);
             document.Info.CreationDate = document.Info.ModificationDate = Date;
             return document.ToArray();
         }

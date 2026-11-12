@@ -96,6 +96,11 @@ public sealed partial class PdfDocument
     /// Writes the document to a stream. The stream is left open. Each page's content is written as soon as it is
     /// encoded, so the whole file is never held in memory (unless <paramref name="stream"/> is a memory stream).
     /// </summary>
+    /// <remarks>
+    /// The document's settings (PDF/A, PDF/UA, attachments, passwords) are checked before anything is written; a rule
+    /// that can only be checked while an object is written (such as PDF/A's ban on CMYK images) leaves the stream with
+    /// an incomplete file when it fails.
+    /// </remarks>
     /// <exception cref="InvalidOperationException">
     /// The document has no pages, or it is written page by page (<see cref="BeginSave"/>).
     /// </exception>
@@ -129,9 +134,11 @@ public sealed partial class PdfDocument
     /// outline may still point at any page, and fonts embed the glyphs of all pages. The stream is left open.
     /// </summary>
     /// <remarks>
-    /// <see cref="CompressContent"/> and <see cref="Encryption"/> are read here and cannot be changed afterwards; the
-    /// metadata, outline and named destinations are read by <see cref="EndSave"/>. A flushed page cannot be drawn on
-    /// any more. Pages imported from other files, and pages that draw pages of other files, keep everything they take
+    /// <see cref="CompressContent"/>, <see cref="Encryption"/>, <see cref="Tagged"/>, <see cref="PdfUA"/>,
+    /// <see cref="PdfAConformance"/> and <see cref="StandardFontSubstitute"/> are read here and cannot be changed
+    /// afterwards; the metadata, outline, named destinations, attachments and the structure tree (which may still grow
+    /// while pages are written) are read by <see cref="EndSave"/>. Each page is checked against PDF/A and PDF/UA when it
+    /// is flushed. A flushed page cannot be drawn on any more, and pages cannot be inserted before it. Pages imported from other files, and pages that draw pages of other files, keep everything they take
     /// from those files until <see cref="EndSave"/>.
     /// </remarks>
     /// <example>

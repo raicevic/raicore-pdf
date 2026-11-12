@@ -53,8 +53,17 @@ public static class HtmlToPdf
         ArgumentNullException.ThrowIfNull(output);
         options ??= new HtmlConverterOptions();
         var (flow, metadata) = await LayoutAsync(html, options, cancellationToken).ConfigureAwait(false);
-        var document = new PdfDocument { Encryption = options.Encryption };
+
+        // Everything ConvertAsync sets, but before writing begins: page by page, it is read by BeginSave.
+        var document = new PdfDocument { Tagged = options.Tagged, PdfUA = options.PdfUA };
         metadata.ApplyTo(document, options, HtmlMetadata.DefaultCreator);
+        document.Encryption = options.Encryption;
+        document.PdfAConformance = options.PdfAConformance;
+        if (options.PdfAConformance != PdfAConformance.None)
+        {
+            document.EmbedStandardFonts();
+        }
+
         document.BeginSave(output);
         flow.RenderTo(document);
         document.EndSave();
