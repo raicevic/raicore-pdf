@@ -112,6 +112,11 @@ change at any time, and this section lists what the packages can do so far.
   artifact; links are tagged (`/OBJR`, `/StructParent`, `PdfLink.Description` as `/Contents`); the parent tree,
   `/MarkInfo`, `/Tabs /S`, `/DisplayDocTitle` and `pdfuaid:part` are written. PDF/UA checks the title, language,
   XMP and embedded fonts when saving. Untagged documents are unchanged.
+- Writing page by page: `PdfDocument.BeginSave(stream)`, `FlushPages()` (writes the pages so far and frees their
+  content) and `EndSave()`. Fonts, page dictionaries, links, outline, named destinations, attachments, the structure
+  tree and metadata are written at the end, so links may point at any page; tagged, PDF/UA and PDF/A documents can be
+  written page by page too. `Save` writes each page's content as it goes too; object numbers changed
+  (fonts and page dictionaries now follow the content).
 
 ### RaiCore.Pdf.Fonts
 - Bundled Liberation Sans, Serif and Mono (SIL OFL 1.1), metric-compatible with Arial, Times New Roman and Courier New.
@@ -269,6 +274,10 @@ change at any time, and this section lists what the packages can do so far.
   structure elements, created in document order when rendering into a tagged document; paragraphs, images and tables
   get default tags, table rows their row groups, and links in text Link elements. Backgrounds, borders, text
   decorations, repeated table header and footer rows and the page decorator are artifacts.
+- Faster layout: paragraph layouts (by width), intrinsic widths and short shaped texts are cached for one layout pass
+  (never across threads or documents; the output is byte for byte the same), clusters' scripts are looked up once per
+  code point, one-character glyph texts are shared, and long tables no longer scan every cell on every page.
+  `FlowDocument.RenderTo` flushes each page as soon as it is drawn into a document written page by page.
 
 ### RaiCore.Pdf.Html
 - HTML and CSS to PDF via AngleSharp: the cascade, inheritance, `!important`, custom properties and print media
@@ -394,6 +403,10 @@ change at any time, and this section lists what the packages can do so far.
   Validated with veraPDF (PDF/UA-1) in CI.
 - `HtmlConverterOptions.PdfAConformance` writes PDF/A-2b or PDF/A-3b, with Liberation embedded for SVG text in the
   standard fonts.
+- Styles are computed with one AngleSharp style collection instead of one per element, which made styling quadratic in
+  the size of the document: a 10,000-row table converts in about 10 s instead of 208 s.
+- `HtmlToPdf.ConvertToStream(Async)` writes the PDF to a stream page by page.
+- Style sheets with rules AngleSharp cannot parse the selector of (such as `li::marker`) no longer fail the conversion.
 
 ### RaiCore.Pdf.Razor
 - Razor components to PDF with Blazor's static `HtmlRenderer`: `RazorToPdf` for the simple case, `RazorPdfRenderer`
@@ -511,3 +524,6 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   blends the others with white towards it (exact on white only). `opacity` on a `tspan` is ignored. A clip path made of
   several shapes uses the first one's clip rule; text in clip paths is ignored. HTML style sheets do not style
   the inside of inline `<svg>` (its own `<style>` and attributes do).
+- Writing page by page saves the memory of the drawn content only: `FlowDocument` and HTML lay out every page before
+  drawing the first (page counts, `target-counter()`), so their peak memory is the layout's and hardly changes.
+  Pages imported from other PDFs keep what they copy until `EndSave`.

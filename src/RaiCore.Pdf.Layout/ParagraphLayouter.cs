@@ -34,7 +34,10 @@ internal static partial class ParagraphLayouter
     /// The CSS intrinsic widths: min-content is the widest piece that cannot be broken (between two break opportunities),
     /// max-content is the widest line when only hard breaks are used.
     /// </summary>
-    public static (double Min, double Max) MeasureIntrinsic(Paragraph paragraph)
+    public static (double Min, double Max) MeasureIntrinsic(Paragraph paragraph) =>
+        LayoutCache.Current is { } cache ? cache.Intrinsic(paragraph, MeasureIntrinsicUncached) : MeasureIntrinsicUncached(paragraph);
+
+    private static (double Min, double Max) MeasureIntrinsicUncached(Paragraph paragraph)
     {
         var (text, spanStarts) = Concatenate(paragraph.Spans);
         if (text.Length == 0)
@@ -84,7 +87,12 @@ internal static partial class ParagraphLayouter
     /// <param name="space">
     /// Where each line goes when floats leave less room (see <see cref="LineSpace"/>); <c>null</c> for the full width.
     /// </param>
-    public static ParagraphLayout Layout(Paragraph paragraph, double width, LineSpace? space = null)
+    public static ParagraphLayout Layout(Paragraph paragraph, double width, LineSpace? space = null) =>
+        space is null && LayoutCache.Current is { } cache
+            ? cache.Layout(paragraph, width, static (p, w) => LayoutUncached(p, w, null)) // Beside floats, lines depend on more than the width.
+            : LayoutUncached(paragraph, width, space);
+
+    private static ParagraphLayout LayoutUncached(Paragraph paragraph, double width, LineSpace? space)
     {
         var spans = paragraph.Spans;
         var (text, spanStarts) = Concatenate(spans);

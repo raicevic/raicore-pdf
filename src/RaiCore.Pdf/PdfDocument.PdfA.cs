@@ -66,8 +66,8 @@ public sealed partial class PdfDocument
     /// <summary>XMP properties that standards add (e.g. Factur-X's <c>fx:</c>), described in an extension schema under PDF/A.</summary>
     internal List<XmpExtension> XmpExtensions { get; } = [];
 
-    /// <summary>Checks the document-wide PDF/A rules before anything is written.</summary>
-    private void CheckPdfA()
+    /// <summary>Checks the document-wide PDF/A rules, and those of <paramref name="pages"/>, before they are written.</summary>
+    private void CheckPdfA(IEnumerable<PdfPage> pages)
     {
         if (PdfAConformance == PdfAConformance.None)
         {
@@ -84,7 +84,7 @@ public sealed partial class PdfDocument
             throw new InvalidOperationException("PDF/A requires XMP metadata: IncludeXmpMetadata cannot be turned off.");
         }
 
-        if (_pages.Any(page => page.Source is not null || page.DrawsOtherFiles))
+        if (pages.Any(page => page.Source is not null || page.DrawsOtherFiles))
         {
             throw new InvalidOperationException(
                 "Pages imported from (or drawn from) other PDF files cannot be written as PDF/A: their content cannot be checked against its rules.");

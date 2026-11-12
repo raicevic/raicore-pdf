@@ -673,6 +673,22 @@ var pdfs = await Task.WhenAll(invoices.Select(i => Task.Run(() => HtmlToPdf.Conv
 | `PdfDocument`, `PdfPage`, `PdfCanvas`, `FlowDocument`, `Paragraph` | Not thread-safe: build and save each document on one thread at a time (different documents in parallel). |
 | `PdfReader` | Not thread-safe, and documents importing its pages read it when they are saved: open a reader per thread. |
 
+## Performance
+
+A one-page invoice converts in about 25 ms and a 100-page report in about 0.3 s on an Apple M2; the
+[benchmarks](benchmarks/README.md) have the numbers and how to run them. Long documents can be written page by page,
+so the drawn content of finished pages is not kept in memory:
+
+```csharp
+using var file = File.Create("report.pdf");
+var document = new PdfDocument();
+document.BeginSave(file);
+flow.RenderTo(document);           // Each page is written as soon as it is drawn; or call document.FlushPages().
+document.EndSave();                // Fonts, links, outline and metadata, which need all pages.
+
+HtmlToPdf.ConvertToStream(html, file); // The same for HTML.
+```
+
 ## Architecture
 
 ```

@@ -150,8 +150,11 @@ public abstract class PdfFont
     /// <summary>Encodes text for a <c>Tj</c> operator and records the glyphs used.</summary>
     internal abstract PdfString EncodeText(string text, FontUsage usage);
 
-    /// <summary>Writes the font's PDF objects, embedding only the glyphs in <paramref name="usage"/>.</summary>
-    internal abstract PdfReference WriteTo(PdfFileWriter writer, FontUsage usage);
+    /// <summary>
+    /// Writes the font's PDF objects, embedding only the glyphs in <paramref name="usage"/>. The font dictionary gets
+    /// the <paramref name="reference"/> reserved for it, or a new one.
+    /// </summary>
+    internal abstract PdfReference WriteTo(PdfFileWriter writer, FontUsage usage, PdfReference? reference = null);
 }
 
 /// <summary>
@@ -249,7 +252,7 @@ internal sealed class StandardPdfFont(StandardFont font) : PdfFont
         return new(codes);
     }
 
-    internal override PdfReference WriteTo(PdfFileWriter writer, FontUsage usage)
+    internal override PdfReference WriteTo(PdfFileWriter writer, FontUsage usage, PdfReference? reference = null)
     {
         // Embedded in place of the standard font: a (metric-compatible) TrueType font with the same WinAnsi codes.
         if (StandardFontInfo.UsesWinAnsi(Font) && writer.StandardFontSubstitute?.Invoke(Font) is { } substitute)
@@ -261,7 +264,7 @@ internal sealed class StandardPdfFont(StandardFont font) : PdfFont
             }
 
             trueType.EnsureEmbeddable();
-            return EmbeddedStandardFontWriter.Write(writer, trueType.Font, usage);
+            return EmbeddedStandardFontWriter.Write(writer, trueType.Font, usage, reference);
         }
 
         if (writer.PdfA != PdfAConformance.None)
@@ -284,7 +287,7 @@ internal sealed class StandardPdfFont(StandardFont font) : PdfFont
             dict["Encoding"] = new PdfName("WinAnsiEncoding");
         }
 
-        return writer.Add(dict);
+        return writer.Add(dict, reference);
     }
 }
 
@@ -371,8 +374,8 @@ internal sealed class OpenTypePdfFont(OpenTypeFont font, UnicodeRange[]? ranges 
         return new PdfString([.. bytes], hex: true);
     }
 
-    internal override PdfReference WriteTo(PdfFileWriter writer, FontUsage usage) =>
-        CidFontWriter.Write(writer, Font, usage);
+    internal override PdfReference WriteTo(PdfFileWriter writer, FontUsage usage, PdfReference? reference = null) =>
+        CidFontWriter.Write(writer, Font, usage, reference);
 }
 
 /// <summary>An inclusive range of Unicode code points, e.g. <c>U+0000-00FF</c>.</summary>

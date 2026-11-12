@@ -15,7 +15,7 @@ namespace RaiCore.Pdf.Fonts;
 /// </summary>
 internal static class EmbeddedStandardFontWriter
 {
-    public static PdfReference Write(PdfFileWriter writer, OpenTypeFont font, FontUsage usage)
+    public static PdfReference Write(PdfFileWriter writer, OpenTypeFont font, FontUsage usage, PdfReference? reference = null)
     {
         var codes = usage.Glyphs.Keys.Where(code => code is >= 0 and <= 0xFF).ToList();
         if (codes.Count == 0)
@@ -85,7 +85,7 @@ internal static class EmbeddedStandardFontWriter
             ["FontDescriptor"] = writer.Add(descriptor),
             ["Encoding"] = new PdfName("WinAnsiEncoding"),
             ["ToUnicode"] = writer.Add(PdfStreamObject.CreateCompressed(ToUnicodeCMap(codes))),
-        });
+        }, reference);
     }
 
     /// <summary>

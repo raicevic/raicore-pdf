@@ -23,6 +23,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- The benchmark documents, which the layout cache tests render with and without the cache. -->
+  <ItemGroup>
+    <Compile Include="..\..\benchmarks\RaiCore.Pdf.Benchmarks\Documents.cs" Link="Benchmarks\Documents.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <None Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\src\RaiCore.Pdf.Fonts\Liberation\*.ttf" Link="Fixtures\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />

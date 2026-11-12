@@ -16,6 +16,11 @@ internal readonly record struct TextItem(int Start, int Length, OpenTypePdfFont 
 /// </summary>
 internal static class TextItemizer
 {
+    /// <summary>The scripts of code points asked for so far (see <see cref="ScriptOf"/>), 256 per block; 0 when not known yet.</summary>
+    private static readonly uint[]?[] ScriptBlocks = new uint[]?[0x110000 >> 8];
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Script, TextDirection> Directions = new();
+
     public static IReadOnlyList<TextItem> Itemize(string text, IReadOnlyList<OpenTypePdfFont> fonts, TextDirection? direction = null)
     {
         var items = new List<TextItem>();
@@ -50,13 +55,15 @@ internal static class TextItemizer
         return items;
     }
 
-    private static List<(int Start, int Length)> GetClusters(string text)
+    /// <summary>The grapheme clusters (extended, UAX #29), without allocating a string for each as a text element enumerator does.</summary>
+    internal static List<(int Start, int Length)> GetClusters(string text)
     {
-        var clusters = new List<(int, int)>();
-        var enumerator = StringInfo.GetTextElementEnumerator(text);
-        while (enumerator.MoveNext())
+        var clusters = new List<(int, int)>(text.Length);
+        for (var start = 0; start < text.Length;)
         {
-            clusters.Add((enumerator.ElementIndex, ((string)enumerator.Current).Length));
+            var length = StringInfo.GetNextTextElementLength(text.AsSpan(start));
+            clusters.Add((start, length));
+            start += length;
         }
 
         return clusters;
@@ -70,11 +77,9 @@ internal static class TextItemizer
     {
         var scripts = new Script[clusters.Count];
         neutral = new bool[clusters.Count];
-        var unicode = UnicodeFunctions.Default;
         for (var c = 0; c < clusters.Count; c++)
         {
-            var rune = Rune.GetRuneAt(text, clusters[c].Start);
-            scripts[c] = unicode.GetScript(rune.Value);
+            scripts[c] = ScriptOf(Rune.GetRuneAt(text, clusters[c].Start).Value);
         }
 
         var last = Script.Invalid;
@@ -105,7 +110,30 @@ internal static class TextItemizer
         script == Script.Common || script == Script.Inherited || script == Script.Unknown || script == Script.Invalid;
 
     private static TextDirection DirectionOf(Script script) =>
-        script.HorizontalDirection == Direction.RightToLeft ? TextDirection.RightToLeft : TextDirection.LeftToRight;
+        Directions.GetOrAdd(script, static s => s.HorizontalDirection == Direction.RightToLeft ? TextDirection.RightToLeft : TextDirection.LeftToRight);
+
+    /// <summary>
+    /// The Unicode script of a code point. HarfBuzz is asked once per code point (a native call), and the answer is kept
+    /// in blocks of 256 code points, allocated when first used. Threads may race to fill an entry; they write the same value.
+    /// </summary>
+    internal static Script ScriptOf(int codePoint)
+    {
+        var block = Volatile.Read(ref ScriptBlocks[codePoint >> 8]);
+        if (block is null)
+        {
+            block = new uint[256];
+            block = Interlocked.CompareExchange(ref ScriptBlocks[codePoint >> 8], block, null) ?? block;
+        }
+
+        var tag = block[codePoint & 0xFF];
+        if (tag == 0)
+        {
+            tag = UnicodeFunctions.Default.GetScript(codePoint);
+            block[codePoint & 0xFF] = tag;
+        }
+
+        return tag;
+    }
 
     private static OpenTypePdfFont ChooseFont(ReadOnlySpan<char> cluster, IReadOnlyList<OpenTypePdfFont> fonts, OpenTypePdfFont? previous, bool neutral)
     {

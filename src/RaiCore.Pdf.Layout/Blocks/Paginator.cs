@@ -219,6 +219,7 @@ internal sealed partial class Paginator
 
     public static PaginationResult Paginate(FlowDocument document)
     {
+        using var cache = LayoutCache.Enter();
         var paginator = new Paginator(document.Setup, document);
         var pendingMargin = new CollapsedMargin();
         paginator.LayoutChildren(document.Blocks, document.Setup.Margins.Left, paginator.ContentWidthOf(0), ref pendingMargin, firstTopMarginApplied: false);
@@ -233,6 +234,7 @@ internal sealed partial class Paginator
     /// </summary>
     public static (double Height, IReadOnlyList<DrawOperation> Content, IReadOnlyList<Anchor> Anchors) LayoutStatic(IReadOnlyList<Block> blocks, double x, double width)
     {
+        using var cache = LayoutCache.Enter();
         var setup = new PageSetup(new PdfPageSize(x + width + 1, StaticHeight), new Thickness(0, 1, 0, x));
         var paginator = new Paginator(setup, isStatic: true);
         var pending = default(CollapsedMargin);
@@ -247,6 +249,7 @@ internal sealed partial class Paginator
     /// <summary>A block's min-content and max-content widths, including its margins (CSS intrinsic sizes).</summary>
     public static (double Min, double Max) MeasureIntrinsic(Block block)
     {
+        using var cache = LayoutCache.Enter();
         var style = block.Style.Intrinsic();
         var (min, max) = IntrinsicBorderBox(block);
         return (min + style.Margin.Horizontal, max + style.Margin.Horizontal);
@@ -1445,9 +1448,9 @@ internal sealed partial class Paginator
     /// </summary>
     private void AddCellAnchors(TableLayout layout, double top, int start, int end, HashSet<CellLayout> anchored)
     {
-        foreach (var cell in layout.Cells)
+        foreach (var cell in layout.AnchoredCells) // Not every cell: this runs for every page a table is on.
         {
-            if (cell.Anchors.Count == 0 || cell.Grid.Row < start || cell.Grid.Row >= end || !anchored.Add(cell))
+            if (cell.Grid.Row < start || cell.Grid.Row >= end || !anchored.Add(cell))
             {
                 continue;
             }

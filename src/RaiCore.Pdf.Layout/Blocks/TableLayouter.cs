@@ -50,9 +50,28 @@ internal sealed class TableLayout
 
     public double SpacingY => Table.BorderCollapse == BorderCollapse.Separate ? Table.VerticalSpacing : 0;
 
+    /// <summary>The cells with anchors in their content, found on first use.</summary>
+    public IReadOnlyList<CellLayout> AnchoredCells => _anchoredCells ??= [.. Cells.Where(cell => cell.Anchors.Count > 0)];
+
+    private CellLayout[]? _anchoredCells;
+
     /// <summary>Height of rows [start, end), including the spacing between them (not around them).</summary>
-    public double Height(int start, int end) =>
-        end <= start ? 0 : RowHeights[start..end].Sum() + (SpacingY * (end - start - 1));
+    public double Height(int start, int end)
+    {
+        if (end <= start)
+        {
+            return 0;
+        }
+
+        // Summed in order, as Sum() over a copy of the range did, without the copy (tables can have thousands of rows).
+        var sum = 0.0;
+        for (var row = start; row < end; row++)
+        {
+            sum += RowHeights[row];
+        }
+
+        return sum + (SpacingY * (end - start - 1));
+    }
 }
 
 /// <summary>

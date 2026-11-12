@@ -150,6 +150,16 @@ public sealed class PdfPage
         return link;
     }
 
+    /// <summary>
+    /// Frees what was drawn once the page has been written page by page (<see cref="PdfDocument.FlushPages"/>): the
+    /// content and the transparency groups. Its links stay, for the end of the file.
+    /// </summary>
+    internal void Release()
+    {
+        Canvas.Release();
+        _groups.Clear();
+    }
+
     /// <summary>Returns the page-local resource name (e.g. <c>Im1</c>) for an image, registering it on first use.</summary>
     internal string UseImage(PdfImage image)
     {

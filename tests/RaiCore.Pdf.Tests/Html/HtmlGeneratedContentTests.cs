@@ -12,6 +12,15 @@ public class HtmlGeneratedContentTests
     private const string Pixel = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
     [Fact]
+    public void Rules_with_selectors_AngleSharp_cannot_parse_are_ignored()
+    {
+        // AngleSharp gives ::marker rules no selector text, which crashed the search for elements with pseudo-elements.
+        var texts = Texts("<ol><li class='n'>a</li></ol>", "li::marker { color: red } .n::before { content: '> ' }");
+
+        Assert.EndsWith("> a", Assert.Single(texts), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Inline_before_and_after_wrap_the_content_of_blocks_and_inline_elements()
     {
         var texts = Texts(

@@ -15,7 +15,7 @@ namespace RaiCore.Pdf.Fonts;
 /// </summary>
 internal static class CidFontWriter
 {
-    public static PdfReference Write(PdfFileWriter writer, OpenTypeFont font, FontUsage usage)
+    public static PdfReference Write(PdfFileWriter writer, OpenTypeFont font, FontUsage usage, PdfReference? reference = null)
     {
         if (writer.PdfA != PdfAConformance.None && usage.Glyphs.TryGetValue(0, out var missing))
         {
@@ -81,7 +81,7 @@ internal static class CidFontWriter
             ["Encoding"] = new PdfName("Identity-H"),
             ["DescendantFonts"] = new PdfArray(writer.Add(cidFont)),
             ["ToUnicode"] = writer.Add(PdfStreamObject.CreateCompressed(ToUnicodeCMap(usage))),
-        });
+        }, reference);
     }
 
     /// <summary>Width array in the compact form <c>[first [w1 w2 ...] first [w ...] ...]</c>.</summary>

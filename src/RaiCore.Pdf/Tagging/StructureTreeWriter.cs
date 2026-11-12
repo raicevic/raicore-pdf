@@ -8,12 +8,21 @@ namespace RaiCore.Pdf;
 /// that maps marked content and annotations back to their elements, and the catalog entries. Pages, transparency group
 /// forms and link annotations are registered as they are written; <see cref="Write"/> then links everything up.
 /// </summary>
+/// <remarks>
+/// A document may be written page by page while its structure is still being built, and the content streams written
+/// early refer to elements (through the parent tree) that are only complete at the end. So an element's object number
+/// is reserved when it is first referred to, and its dictionary is built and set by <see cref="Write"/>, when the tree
+/// is complete; elements without content are left out then.
+/// </remarks>
 internal sealed class StructureTreeWriter
 {
     private readonly PdfFileWriter _writer;
     private readonly PdfStructureElement _root;
-    private readonly Dictionary<PdfStructureElement, (PdfDictionary Dictionary, PdfReference Reference)> _elements =
-        new(ReferenceEqualityComparer.Instance);
+    /// <summary>The reserved object of each element referred to so far (see <see cref="Reference"/>).</summary>
+    private readonly Dictionary<PdfStructureElement, PdfReference> _references = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>Whether each element has content (marked content, an annotation, or a child that has); see <see cref="HasContent"/>.</summary>
+    private readonly Dictionary<PdfStructureElement, bool> _hasContent = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>The parent tree's entries: a stream's MCIDs → elements, or an annotation → its element.</summary>
     private readonly List<(int Key, PdfObject Value)> _parentTree = [];
@@ -25,36 +34,10 @@ internal sealed class StructureTreeWriter
 
     private int _nextKey;
 
-    /// <summary>Allocates an object for every element that has content (empty elements are left out).</summary>
     public StructureTreeWriter(PdfFileWriter writer, PdfStructureElement root)
     {
         _writer = writer;
         _root = root;
-        var hasContent = new Dictionary<PdfStructureElement, bool>(ReferenceEqualityComparer.Instance);
-        bool HasContent(PdfStructureElement element)
-        {
-            if (!hasContent.TryGetValue(element, out var result))
-            {
-                result = element.Kids.Any(kid => kid is not ElementKid child || HasContent(child.Element));
-                hasContent[element] = result;
-            }
-
-            return result;
-        }
-
-        var pending = new Stack<PdfStructureElement>([root]);
-        while (pending.TryPop(out var element))
-        {
-            if (element == root || HasContent(element))
-            {
-                var dictionary = new PdfDictionary { ["Type"] = new PdfName("StructElem"), ["S"] = new PdfName(element.Type) };
-                _elements[element] = (dictionary, writer.Add(dictionary));
-                foreach (var child in element.Children)
-                {
-                    pending.Push(child);
-                }
-            }
-        }
     }
 
     /// <summary>Gives a page its parent tree entry for the marked content of its content stream, and tab order.</summary>
@@ -81,14 +64,14 @@ internal sealed class StructureTreeWriter
     /// <summary>Gives a link annotation its parent tree entry and a description, as PDF/UA requires.</summary>
     public void RegisterAnnotation(PdfLink link, PdfDictionary annotation, PdfReference reference)
     {
-        if (link.StructureElement is not { } element || !_elements.TryGetValue(element, out var entry))
+        if (link.StructureElement is not { } element || !IsWritten(element))
         {
             return;
         }
 
         var key = _nextKey++;
         annotation["StructParent"] = new PdfInteger(key);
-        _parentTree.Add((key, entry.Reference));
+        _parentTree.Add((key, Reference(element)));
         _annotations[link] = reference;
         if (annotation["Contents"] is null)
         {
@@ -102,11 +85,27 @@ internal sealed class StructureTreeWriter
     {
         var treeRoot = new PdfDictionary { ["Type"] = new PdfName("StructTreeRoot") };
         var treeRootReference = _writer.Add(treeRoot);
-        treeRoot["K"] = _elements[_root].Reference;
+        treeRoot["K"] = Reference(_root);
 
-        foreach (var (element, (dictionary, _)) in _elements)
+        // The elements with content (and the root), parents before children.
+        var elements = new List<PdfStructureElement>();
+        var pending = new Stack<PdfStructureElement>([_root]);
+        while (pending.TryPop(out var next))
         {
-            dictionary["P"] = element.Parent is { } parent ? _elements[parent].Reference : treeRootReference;
+            if (IsWritten(next))
+            {
+                elements.Add(next);
+                foreach (var child in next.Children)
+                {
+                    pending.Push(child);
+                }
+            }
+        }
+
+        foreach (var element in elements)
+        {
+            var dictionary = new PdfDictionary { ["Type"] = new PdfName("StructElem"), ["S"] = new PdfName(element.Type) };
+            dictionary["P"] = element.Parent is { } parent ? Reference(parent) : treeRootReference;
             var kids = new PdfArray();
             foreach (var kid in element.Kids)
             {
@@ -126,6 +125,8 @@ internal sealed class StructureTreeWriter
             {
                 dictionary["A"] = attributes;
             }
+
+            _writer.Set(Reference(element), dictionary);
         }
 
         var nums = new PdfArray();
@@ -150,14 +151,40 @@ internal sealed class StructureTreeWriter
         }
 
         var key = _nextKey++;
-        _parentTree.Add((key, new PdfArray([.. marks.Owners.Select(owner => (PdfObject)_elements[owner].Reference)])));
+        _parentTree.Add((key, new PdfArray([.. marks.Owners.Select(owner => (PdfObject)Reference(owner))])));
         return key;
+    }
+
+    /// <summary>The object of an element, reserved when it is first referred to and written by <see cref="Write"/>.</summary>
+    private PdfReference Reference(PdfStructureElement element)
+    {
+        if (!_references.TryGetValue(element, out var reference))
+        {
+            reference = _writer.Reserve();
+            _references[element] = reference;
+        }
+
+        return reference;
+    }
+
+    /// <summary>Whether an element is written: the root, and every element with content (empty elements are left out).</summary>
+    private bool IsWritten(PdfStructureElement element) => element == _root || HasContent(element);
+
+    private bool HasContent(PdfStructureElement element)
+    {
+        if (!_hasContent.TryGetValue(element, out var result))
+        {
+            result = element.Kids.Any(kid => kid is not ElementKid child || HasContent(child.Element));
+            _hasContent[element] = result;
+        }
+
+        return result;
     }
 
     /// <summary>A kid as written in <c>/K</c>: a child element, a marked-content reference or an object reference.</summary>
     private PdfObject? Kid(StructureKid kid, IReadOnlyDictionary<PdfPage, PdfReference> pages) => kid switch
     {
-        ElementKid child => _elements.TryGetValue(child.Element, out var entry) ? entry.Reference : null,
+        ElementKid child => IsWritten(child.Element) ? Reference(child.Element) : null,
         ContentKid content when pages.TryGetValue(content.Page, out var page) => MarkedContentReference(content, page),
         AnnotationKid annotation when _annotations.TryGetValue(annotation.Link, out var reference) && pages.TryGetValue(annotation.Page, out var page) =>
             new PdfDictionary { ["Type"] = new PdfName("OBJR"), ["Pg"] = page, ["Obj"] = reference },
