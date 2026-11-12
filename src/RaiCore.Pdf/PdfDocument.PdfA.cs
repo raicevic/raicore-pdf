@@ -63,6 +63,9 @@ public sealed partial class PdfDocument
     /// </summary>
     public Func<StandardFont, PdfFont?>? StandardFontSubstitute { get; set; }
 
+    /// <summary>XMP properties that standards add (e.g. Factur-X's <c>fx:</c>), described in an extension schema under PDF/A.</summary>
+    internal List<XmpExtension> XmpExtensions { get; } = [];
+
     /// <summary>Checks the document-wide PDF/A rules before anything is written.</summary>
     private void CheckPdfA()
     {
@@ -110,11 +113,21 @@ public sealed partial class PdfDocument
     }
 
     /// <summary>
-    /// Adds the PDF/A identification (<c>pdfaid:part</c>, <c>pdfaid:conformance</c>) and the extension schema that
-    /// describes the custom properties (<c>pdfx:</c>, which PDF/A does not predefine).
+    /// Adds the properties of <see cref="XmpExtensions"/>, and under PDF/A the identification (<c>pdfaid:part</c>,
+    /// <c>pdfaid:conformance</c>) and the extension schemas that describe the custom properties (<c>pdfx:</c>, which
+    /// PDF/A does not predefine) and the <see cref="XmpExtensions"/>.
     /// </summary>
     private void AddPdfAMetadata(XmpMetadata xmp)
     {
+        foreach (var extension in XmpExtensions)
+        {
+            var schema = xmp.Schema(extension.Namespace);
+            foreach (var (property, value) in extension.Properties)
+            {
+                schema.Set(property.Name, value);
+            }
+        }
+
         if (PdfAConformance == PdfAConformance.None)
         {
             return;
@@ -137,6 +150,11 @@ public sealed partial class PdfDocument
                 XmpNamespace.PdfUAIdentification,
                 "PDF/UA identification schema",
                 [new PdfAExtensionProperty("part", "Integer", "internal", "Indicates, which part of ISO 14289 standard is followed")]);
+        }
+
+        foreach (var extension in XmpExtensions)
+        {
+            PdfAExtensionSchema.Add(xmp, extension.Namespace, extension.Description, extension.Properties.Select(p => p.Property));
         }
 
         xmp.Schema(XmpNamespace.PdfAId)

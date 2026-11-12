@@ -62,4 +62,26 @@ public class PdfAVeraPdfTests
         ExternalTools.AssertVeraPdfCompliant(pdf, "2b");
         ExternalTools.AssertVeraPdfCompliant(pdf, "ua1");
     }
+
+    [Fact]
+    public void A_FacturX_invoice_is_PdfA3b_compliant()
+    {
+        ExternalTools.AssertVeraPdfCompliant(PdfAttachmentTests.Invoice().ToArray(), "3b");
+    }
+
+    [Fact]
+    public void A_PdfA3b_document_with_several_attachments_is_compliant()
+    {
+        var doc = PdfASamples.Canvas(PdfAConformance.PdfA3B);
+        doc.Attachments.Add(new PdfAttachment("notes.txt", "Notes"u8, "text/plain") { Description = "Notes", Relationship = PdfAttachmentRelationship.Supplement });
+        doc.Attachments.Add(new PdfAttachment("data.bin", new byte[] { 0, 1, 2, 255 }));
+        ExternalTools.AssertVeraPdfCompliant(doc.ToArray(), "3b");
+    }
+
+    [Fact]
+    public void A_converted_html_invoice_is_compliant()
+    {
+        var doc = PdfASamples.Html(PdfAConformance.PdfA3B).AttachFacturXInvoice(PdfAttachmentTests.InvoiceXml, FacturXProfile.EN16931);
+        ExternalTools.AssertVeraPdfCompliant(doc.ToArray(), "3b");
+    }
 }
