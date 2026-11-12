@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml;
 using RaiCore.Pdf.Images;
 
@@ -63,7 +64,7 @@ internal sealed class SvgElement(string name) : SvgNode
 /// A parsed SVG document: the element tree with styles resolved from presentation attributes, <c>&lt;style&gt;</c>
 /// sheets and <c>style</c> attributes, the elements by id, and the intrinsic size of the root.
 /// </summary>
-internal sealed class SvgDocument
+internal sealed partial class SvgDocument
 {
     private const string XLinkNamespace = "http://www.w3.org/1999/xlink";
 
@@ -142,7 +143,7 @@ internal sealed class SvgDocument
 
         try
         {
-            using var reader = XmlReader.Create(stream, settings, context);
+            using var reader = XmlReader.Create(new StringReader(DecodeText(stream)), settings, context);
             return new SvgDocument(ReadTree(reader));
         }
         catch (XmlException ex)
@@ -150,6 +151,53 @@ internal sealed class SvgDocument
             throw new ImageFormatException($"Invalid SVG: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// Decodes the markup to text before XML parsing, so that the XML reader never switches encodings itself: its
+    /// switch to the encoding an XML declaration names throws <see cref="ArgumentOutOfRangeException"/> on some
+    /// malformed declarations (fuzzing found <c>&lt;?xml version="1.0\xFF...</c>). The encoding is the byte order
+    /// mark's, else the declaration's when .NET knows it, else UTF-8; bytes it cannot decode become U+FFFD.
+    /// </summary>
+    private static string DecodeText(Stream stream)
+    {
+        using var buffer = new MemoryStream();
+        stream.CopyTo(buffer);
+        var data = buffer.GetBuffer().AsSpan(0, (int)buffer.Length);
+        var (encoding, bom) = data switch
+        {
+            [0xEF, 0xBB, 0xBF, ..] => (Encoding.UTF8, 3),
+            [0xFF, 0xFE, 0, 0, ..] => (new UTF32Encoding(bigEndian: false, byteOrderMark: false), 4),
+            [0, 0, 0xFE, 0xFF, ..] => (new UTF32Encoding(bigEndian: true, byteOrderMark: false), 4),
+            [0xFF, 0xFE, ..] => (Encoding.Unicode, 2),
+            [0xFE, 0xFF, ..] => (Encoding.BigEndianUnicode, 2),
+            _ => (DeclaredEncoding(data) ?? Encoding.UTF8, 0),
+        };
+
+        return encoding.GetString(data[bom..]);
+    }
+
+    /// <summary>The encoding named by an XML declaration at the start of ASCII-compatible markup, if .NET has it.</summary>
+    private static Encoding? DeclaredEncoding(ReadOnlySpan<byte> data)
+    {
+        var prolog = Encoding.Latin1.GetString(data[..Math.Min(data.Length, 256)]);
+        if (EncodingDeclarationRegex().Match(prolog) is not { Success: true } match)
+        {
+            return null;
+        }
+
+        try
+        {
+            var encoding = Encoding.GetEncoding(match.Groups[1].Value);
+            return encoding.IsSingleByte || encoding.CodePage == Encoding.UTF8.CodePage ? encoding : null; // A UTF-16 declaration without a byte order mark is not ASCII-compatible: not believed.
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+        {
+            return null;
+        }
+    }
+
+    [GeneratedRegex(@"^<\?xml[^>]*?\sencoding\s*=\s*[""']([A-Za-z][A-Za-z0-9._-]*)[""']")]
+    private static partial Regex EncodingDeclarationRegex();
 
     public SvgElement? GetElementById(string? id) => id is not null && _ids.TryGetValue(id, out var element) ? element : null;
 

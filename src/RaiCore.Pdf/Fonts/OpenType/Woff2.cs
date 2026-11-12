@@ -406,6 +406,12 @@ internal static class Woff2
 
         var numGlyphs = xMins.Length;
         var numberOfHMetrics = BinaryPrimitives.ReadUInt16BigEndian(hhea.AsSpan(34));
+        if (numberOfHMetrics < 1 || numberOfHMetrics > numGlyphs)
+        {
+            // More metrics than glyphs (fuzzing found this) would index past the glyphs' bounding boxes.
+            throw new FontFormatException($"WOFF2 hhea declares {numberOfHMetrics} horizontal metrics for {numGlyphs} glyphs.");
+        }
+
         var r = new BigEndianReader(data);
         var flags = r.ReadByte();
 

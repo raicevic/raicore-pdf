@@ -7,6 +7,41 @@ namespace RaiCore.Pdf.Tests.Images;
 /// <summary>SVG parsing: path data, transforms, styles and intrinsic sizes.</summary>
 public class SvgParsingTests
 {
+    // ---- encodings ----
+
+    [Theory]
+    [InlineData("utf-8", false)]
+    [InlineData("ISO-8859-1", false)]
+    [InlineData("utf-16le", true)]
+    [InlineData("utf-16be", true)]
+    [InlineData("utf-8", true)]
+    public void Markup_is_decoded_by_its_byte_order_mark_or_declaration(string encodingName, bool byteOrderMark)
+    {
+        // Decoded before parsing, so the XML reader never switches encodings (fuzzing found it throwing doing so).
+        var encoding = Encoding.GetEncoding(encodingName);
+        var markup = $"<?xml version=\"1.0\" encoding=\"{encodingName}\"?><svg xmlns=\"http://www.w3.org/2000/svg\"><title>caf\u00E9</title></svg>";
+        var data = (byteOrderMark ? encoding.GetPreamble() : []).Concat(encoding.GetBytes(markup)).ToArray();
+
+        var document = SvgDocument.Parse(new MemoryStream(data));
+
+        var title = Assert.Single(document.Root.Elements, e => e.Name == "title");
+        Assert.Equal("caf\u00E9", Assert.IsType<SvgTextNode>(Assert.Single(title.Children)).Text);
+    }
+
+    [Theory]
+    [InlineData("\"?><svg/>")]
+    [InlineData("\" encoding=\"utf-8\"?><svg/>")]
+    [InlineData("\" encoding=\"no-such-encoding\"?><svg/>")]
+    public void Undecodable_bytes_in_the_xml_declaration_load_or_fail_as_a_format_error(string rest)
+    {
+        // The XML reader's own encoding switch threw ArgumentOutOfRangeException here (found by fuzzing).
+        var data = "<?xml version=\"1.0"u8.ToArray().Concat(Enumerable.Repeat((byte)0xFF, 8)).Concat(Encoding.ASCII.GetBytes(rest)).ToArray();
+
+        var error = Record.Exception(() => PdfImage.Load(data));
+
+        Assert.True(error is null or ImageFormatException, error?.ToString());
+    }
+
     // ---- path data ----
 
     [Fact]
