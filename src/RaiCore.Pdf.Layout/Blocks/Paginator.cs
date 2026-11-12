@@ -274,7 +274,7 @@ internal sealed partial class Paginator
     /// </summary>
     private static (double Min, double Max) IntrinsicContentBorderBox(Block block, BoxStyle? style = null)
     {
-        ResourceLimits.EnsureStack();
+        using var nesting = ResourceLimits.EnterNesting();
         ResourceLimits.Checkpoint();
         style ??= block.Style.Intrinsic();
         var decoration = style.Border.Widths.Horizontal + style.Padding.Horizontal;
@@ -1541,7 +1541,7 @@ internal sealed partial class Paginator
     /// <summary>Height of a block's border box from its content alone, ignoring its height properties.</summary>
     private double MeasureContentBox(Block block, double boxWidth)
     {
-        ResourceLimits.EnsureStack();
+        using var nesting = ResourceLimits.EnterNesting();
         ResourceLimits.Checkpoint();
         var style = StyleOf(block);
         var decoration = style.Border.Widths.Vertical + style.Padding.Vertical;
@@ -1590,7 +1590,7 @@ internal sealed partial class Paginator
     /// <summary>The smallest height a block of a given border-box width needs at the bottom of a page.</summary>
     private double MinimumStartBox(Block block, double boxWidth)
     {
-        ResourceLimits.EnsureStack();
+        using var nesting = ResourceLimits.EnterNesting();
         ResourceLimits.Checkpoint();
         var style = StyleOf(block);
         if (style.Height is not null && block is not TableBlock)

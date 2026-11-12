@@ -230,7 +230,7 @@ internal sealed partial class BoxBuilder
     private void AddChildren(IElement element, ComputedStyle style, double contentWidth, List<Block> children, InlineCollector collector, InlineAlignment inherited = default)
     {
         // Every nested element passes here: stop before deep nesting overflows the stack, and when out of time.
-        ResourceLimits.EnsureStack();
+        using var nesting = ResourceLimits.EnterNesting();
         ResourceLimits.Checkpoint();
         var listIndex = ListStart(element);
         foreach (var node in WithGeneratedContent(element))

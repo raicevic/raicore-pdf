@@ -385,6 +385,31 @@ public class ResourceLimitsTests
     }
 
     [Fact]
+    public void The_stack_is_only_checked_past_the_depth_gate()
+    {
+        // On Alpine's main thread the runtime's check can fail for shallow content (musl reports only the mapped part of
+        // the main thread's stack): simulated here by a check that always fails.
+        ResourceLimits.StackProbe.Value = () => false;
+        try
+        {
+            var shallow = new FlowDocument(PageSetup.A4).Add(Nested(ResourceLimits.StackCheckDepth - 2));
+            Assert.Equal(1, shallow.CountPages());
+            Assert.Equal(0, ResourceLimits.NestingDepth);
+
+            var deep = new FlowDocument(PageSetup.A4).Add(Nested(ResourceLimits.StackCheckDepth + 10));
+            var ex = Assert.Throws<ResourceLimitExceededException>(() => deep.CountPages());
+            Assert.Equal(nameof(ResourceLimits.MaxNestingDepth), ex.LimitName);
+            Assert.Equal(0, ResourceLimits.NestingDepth); // Every level is left, also when one throws.
+        }
+        finally
+        {
+            ResourceLimits.StackProbe.Value = null;
+        }
+
+        Assert.Equal(1, new FlowDocument(PageSetup.A4).Add(Nested(ResourceLimits.StackCheckDepth + 10)).CountPages());
+    }
+
+    [Fact]
     public void A_table_grid_larger_than_the_cell_limit_is_rejected()
     {
         var table = new TableBlock();

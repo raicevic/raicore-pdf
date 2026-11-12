@@ -143,15 +143,49 @@ public sealed record ResourceLimits
     }
 
     /// <summary>
-    /// Throws if the stack is too deep to go on recursing safely (a stack overflow cannot be caught and ends the
-    /// process). Called by recursive layout code, whose depth follows the input's nesting.
+    /// How many nesting levels the stack is checked from (see <see cref="EnterNesting"/>). Below it no content can come
+    /// near the end of a thread's stack, so the check, which can be wrong, is not consulted at all.
     /// </summary>
-    internal static void EnsureStack()
+    internal const int StackCheckDepth = 64;
+
+    /// <summary>The nesting depth of the recursive layout on this thread (see <see cref="EnterNesting"/>).</summary>
+    [ThreadStatic]
+    private static int t_nesting;
+
+    /// <summary>
+    /// Replaces the runtime's stack check, for tests: on this thread and the work it starts (the HTML conversion thread).
+    /// </summary>
+    internal static readonly AsyncLocal<Func<bool>?> StackProbe = new();
+
+    /// <summary>
+    /// Enters one level of recursive layout, whose depth follows the input's nesting; dispose the result to leave it.
+    /// Deeper than <see cref="StackCheckDepth"/> levels, throws the <see cref="MaxNestingDepth"/> exception when the
+    /// stack is too deep to go on safely (a stack overflow cannot be caught and ends the process).
+    /// </summary>
+    /// <remarks>
+    /// The runtime's check (<see cref="RuntimeHelpers.TryEnsureSufficientExecutionStack"/>) is only consulted past that
+    /// depth: on the main thread of musl-based Linux (Alpine) it can report a nearly full stack for shallow content, as
+    /// musl reports only the part of the main thread's stack that is mapped so far.
+    /// </remarks>
+    internal static NestingLevel EnterNesting()
     {
-        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+        var depth = ++t_nesting;
+        if (depth > StackCheckDepth && !(StackProbe.Value ?? RuntimeHelpers.TryEnsureSufficientExecutionStack)())
         {
+            t_nesting--;
             throw new ResourceLimitExceededException(nameof(MaxNestingDepth), Current.MaxNestingDepth, "The content is nested too deeply for the stack space available.");
         }
+
+        return default;
+    }
+
+    /// <summary>The current nesting depth on this thread, for tests.</summary>
+    internal static int NestingDepth => t_nesting;
+
+    /// <summary>One level of recursive layout (see <see cref="EnterNesting"/>); disposing it leaves the level.</summary>
+    internal readonly struct NestingLevel : IDisposable
+    {
+        public void Dispose() => t_nesting--;
     }
 
     private void Validate()

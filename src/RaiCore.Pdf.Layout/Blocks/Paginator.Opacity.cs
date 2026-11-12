@@ -24,7 +24,7 @@ internal sealed partial class Paginator
     private CollapsedMargin LayoutBlock(Block block, double x, double width, BoxSizing sizing = default)
     {
         // Every nested block passes here: stop before deep nesting overflows the stack, and when out of time.
-        ResourceLimits.EnsureStack();
+        using var nesting = ResourceLimits.EnterNesting();
         ResourceLimits.Checkpoint();
         var (outer, outerOwner) = (_scope, _tagOwner);
         _tagOwner = block;

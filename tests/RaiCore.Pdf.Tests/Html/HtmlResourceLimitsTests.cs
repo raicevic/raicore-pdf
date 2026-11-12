@@ -71,6 +71,28 @@ public class HtmlResourceLimitsTests
     }
 
     [Fact]
+    public void Html_conversion_checks_the_stack_only_past_the_depth_gate()
+    {
+        // A stack check that always fails (as on Alpine's main thread) flows into the conversion thread.
+        ResourceLimits.StackProbe.Value = () => false;
+        try
+        {
+            Assert.Single(HtmlToPdf.Convert(Nested("div", 30)).Pages);
+            var ex = Assert.Throws<ResourceLimitExceededException>(() => HtmlToPdf.Convert(Nested("div", 120)));
+            Assert.Contains("stack", ex.Message, StringComparison.Ordinal);
+
+            // Nested inline elements make one flat paragraph: only building the boxes recurses, and checks too.
+            Assert.Throws<ResourceLimitExceededException>(() => HtmlToPdf.Convert(Nested("span", 120)));
+        }
+        finally
+        {
+            ResourceLimits.StackProbe.Value = null;
+        }
+
+        Assert.Single(HtmlToPdf.Convert(Nested("div", 120)).Pages);
+    }
+
+    [Fact]
     public void A_flow_document_rendered_on_a_small_stack_fails_with_an_exception_not_a_crash()
     {
         var flow = HtmlToPdf.CreateFlowDocument(Nested("div", 400), new HtmlConverterOptions { Limits = ResourceLimits.Default with { MaxNestingDepth = 600 } });
