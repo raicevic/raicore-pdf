@@ -64,17 +64,23 @@ public partial class PdfStreamingStandardsTests
         Assert.Contains("/StructTreeRoot", Encoding.Latin1.GetString(expected), StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void HtmlToPdf_converts_to_a_stream_like_Convert_with_tagging_and_PdfA()
+    [Theory]
+    [InlineData(true, false, PdfAConformance.None)]
+    [InlineData(true, true, PdfAConformance.PdfA3B)]
+    [InlineData(false, false, PdfAConformance.PdfA2B)]
+    public void HtmlToPdf_converts_to_a_stream_like_Convert_with_tagging_and_PdfA(bool tagged, bool pdfUA, PdfAConformance level)
     {
-        var html = Documents.InvoiceHtml();
-        var options = new HtmlConverterOptions { Tagged = true, PdfUA = true, PdfAConformance = PdfAConformance.PdfA3B };
+        // With SVG text in a standard font, which PDF/A embeds as Liberation.
+        var html = Documents.InvoiceHtml().Replace(
+            "<footer>", "<svg width=\"200\" height=\"30\" aria-label=\"Paid\"><text x=\"5\" y=\"20\" font-family=\"serif\">Paid</text></svg><footer>", StringComparison.Ordinal);
+        var options = new HtmlConverterOptions { Tagged = tagged, PdfUA = pdfUA, PdfAConformance = level };
         var converted = HtmlToPdf.Convert(html, options).ToArray();
         using var output = new MemoryStream();
         HtmlToPdf.ConvertToStream(html, output, options);
 
         // The same file, but for the time it was written (in the Info dictionary and XMP) and the /ID derived from it.
         Assert.Equal(WithoutDates(converted), WithoutDates(output.ToArray()));
+        Assert.Equal(tagged, Encoding.Latin1.GetString(converted).Contains("/StructTreeRoot", StringComparison.Ordinal));
     }
 
     [Theory]
