@@ -32,9 +32,9 @@ internal static class SfntBuilder
         {
             var tag = tags[i];
             var data = tables[tag];
-            if (tag == "head")
+            if (tag == "head" && data.Length >= 12)
             {
-                headOffset = offset;
+                headOffset = offset; // A head table too short for checkSumAdjustment (fuzzing found one) is left as it is.
             }
 
             data.CopyTo(span[offset..]);

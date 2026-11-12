@@ -168,7 +168,10 @@ internal sealed class WebFonts
 
         try
         {
-            return PdfFont.Load(data);
+            var font = PdfFont.Load(data);
+
+            // A font whose license forbids embedding cannot be drawn: fall back as for one that cannot be read.
+            return font is OpenTypePdfFont { Font.EmbeddingRestricted: true } ? null : font;
         }
         catch (FontFormatException)
         {
@@ -285,7 +288,7 @@ internal sealed class WebFonts
             {
                 "NORMAL" => 400,
                 "BOLD" => 700,
-                _ => double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) ? (int)Math.Clamp(number, 1, 1000) : 400,
+                _ => double.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) && double.IsFinite(number) ? (int)Math.Clamp(number, 1, 1000) : 400,
             }).ToList();
             return weights.Count switch
             {

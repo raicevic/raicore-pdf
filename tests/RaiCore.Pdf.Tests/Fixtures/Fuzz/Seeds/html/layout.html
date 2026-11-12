@@ -1,0 +1,5 @@
+<style>@page{size:A5;margin:1cm;@top-center{content:"Page " counter(page) " of " counter(pages)}}.f{float:left;width:30%}.x{display:flex;gap:4px;flex-wrap:wrap}.x>div{flex:1 1 50px}
+.r{position:relative;top:2px}.a{position:absolute;right:0}.ib{display:inline-block;width:40px;border:1px solid;border-radius:4px}h2{break-before:page;string-set:t content()}</style>
+<div class="f">float</div><p>text beside the float <span class="ib">ib</span> <span class="r">rel</span></p><div class="x"><div>a</div><div style="order:-1">b</div><div>c</div></div>
+<h2>Second</h2><div style="position:relative;height:40px"><div class="a">abs</div></div><p style="column-count:2;text-align:justify;hyphens:auto" lang="en">Hyphenation and justification of a longer paragraph of text.</p>
+<a href="#x">to x</a><p id="x">target <span style="content:target-counter('#x', page)"></span></p>

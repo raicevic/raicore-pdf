@@ -181,7 +181,7 @@ internal static class PngDecoder
 
             return output.ToArray();
         }
-        catch (InvalidDataException ex)
+        catch (Exception ex) when (ex is InvalidDataException or IOException) // ZLibException is an IOException.
         {
             throw new ImageFormatException("Corrupt PNG image data.", ex);
         }

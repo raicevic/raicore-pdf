@@ -1,6 +1,7 @@
 using System.Text;
 using AngleSharp;
 using AngleSharp.Css;
+using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html.Boxes;
@@ -24,7 +25,7 @@ namespace RaiCore.Pdf.Html;
 /// pdf.Save("invoice.pdf");
 /// </code>
 /// </example>
-public static class HtmlToPdf
+public static partial class HtmlToPdf
 {
     /// <summary>
     /// How many times a document with page cross-references is laid out at most: once with placeholders, then with
@@ -223,6 +224,7 @@ public static class HtmlToPdf
         CheckStructure(document, options.Limits);
 
         var styleSheets = PrepareStyles(document, options);
+        SanitizeStyles(document);
         var cssTexts = styleSheets.Select(s => s.Css).ToList();
         var pageRules = PageRules.Load(options.Page, cssTexts);
         var setup = pageRules.Setup;
@@ -427,8 +429,79 @@ public static class HtmlToPdf
         return cssTexts;
     }
 
+    /// <summary>
+    /// Removes what AngleSharp throws <see cref="NullReferenceException"/> on while it computes styles (fuzzing found
+    /// several kinds of malformed CSS): style rules whose selector it could not read but which have nested rules
+    /// (<c>:{&amp;{}}</c>), and declarations whose value it cannot write back as text (<c>width: clamp(1,(,0)</c>).
+    /// Neither can apply to an element anyway.
+    /// </summary>
+    private static void SanitizeStyles(IDocument document)
+    {
+        foreach (var sheet in document.StyleSheets.OfType<ICssStyleSheet>())
+        {
+            Sanitize(sheet.Rules, sheet.RemoveAt);
+        }
+
+        foreach (var element in document.QuerySelectorAll("[style]"))
+        {
+            SanitizeDeclarations(element.GetStyle());
+        }
+
+        static void Sanitize(ICssRuleList rules, Action<int> removeAt)
+        {
+            for (var i = rules.Length - 1; i >= 0; i--)
+            {
+                switch (rules[i])
+                {
+                    case ICssStyleRule { SelectorText: null }:
+                        removeAt(i);
+                        break;
+                    case ICssStyleRule style:
+                        SanitizeDeclarations(style.Style);
+                        break;
+                    case ICssGroupingRule group:
+                        Sanitize(group.Rules, group.RemoveAt);
+                        break;
+                }
+            }
+        }
+
+        // Only rewritten when one is broken: removing it would read it too, so the others are written back as text.
+        static void SanitizeDeclarations(ICssStyleDeclaration declarations)
+        {
+            var kept = new List<string>();
+            var broken = false;
+            foreach (var property in declarations)
+            {
+                try
+                {
+                    kept.Add($"{property.Name}: {property.Value}{(property.IsImportant ? " !important" : string.Empty)}");
+                }
+                catch (NullReferenceException)
+                {
+                    broken = true;
+                }
+            }
+
+            if (broken)
+            {
+                declarations.CssText = string.Join("; ", kept);
+            }
+        }
+    }
+
     /// <summary>Rewrites CSS that AngleSharp would misread before it is parsed (see LegacyBreaks and LogicalSides).</summary>
-    private static string RewriteCss(string css) => CssBackgrounds.RewriteShorthand(LogicalSides.Rewrite(LegacyBreaks.Rewrite(css)));
+    private static string RewriteCss(string css) => CssBackgrounds.RewriteShorthand(LogicalSides.Rewrite(LegacyBreaks.Rewrite(StripShadows(css))));
+
+    /// <summary>
+    /// Removes <c>box-shadow</c> and <c>text-shadow</c>, which are not drawn: AngleSharp throws a
+    /// <see cref="NullReferenceException"/> computing some malformed ones (fuzzing found <c>box-shadow: 1px1px</c>).
+    /// </summary>
+    private static string StripShadows(string css) =>
+        css.Contains("shadow", StringComparison.OrdinalIgnoreCase) ? ShadowRegex().Replace(css, string.Empty) : css;
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"(?<![\w-])(?:box|text)-shadow\s*:[^;}]*;?", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex ShadowRegex();
 
     private static Uri? ResolveUri(Uri? baseUri, string reference) =>
         Uri.TryCreate(reference, UriKind.Absolute, out var absolute) ? absolute

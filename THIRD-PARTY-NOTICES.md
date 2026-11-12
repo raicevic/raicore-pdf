@@ -29,3 +29,5 @@ These files are in the repository but in no package.
 
 The other test fixtures (the `RaiCoreTest*` fonts, and the BMP, WebP, JPEG, GIF, SVG, PDF and invoice XML files) are made for this
 project by the scripts in `tools/` or by hand, and are under its Apache License 2.0.
+So are the fuzzing seeds and the inputs fuzzing found (`tests/RaiCore.Pdf.Tests/Fixtures/Fuzz`): written by hand,
+converted from the `RaiCoreTest*` fonts, or mutated from those and from the fixtures above.

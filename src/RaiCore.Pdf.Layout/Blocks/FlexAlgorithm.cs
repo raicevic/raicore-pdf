@@ -159,6 +159,7 @@ internal static class FlexAlgorithm
                 }
             }
 
+            var froze = false;
             for (var i = 0; i < count; i++)
             {
                 if (frozen[i])
@@ -171,9 +172,24 @@ internal static class FlexAlgorithm
                 if (Math.Abs(total) <= Epsilon || (total > 0 && minViolation) || (total < 0 && maxViolation))
                 {
                     frozen[i] = true;
+                    froze = true;
                 }
 
                 target[i] = clamped[i];
+            }
+
+            if (!froze)
+            {
+                // Every round freezes an item, unless the sizes are not numbers (infinite or NaN factors or sizes):
+                // stop then instead of looping forever, at sizes that are numbers.
+                for (var i = 0; i < count; i++)
+                {
+                    if (!frozen[i])
+                    {
+                        frozen[i] = true;
+                        target[i] = double.IsFinite(target[i]) ? target[i] : items[i].Hypothetical;
+                    }
+                }
             }
         }
 

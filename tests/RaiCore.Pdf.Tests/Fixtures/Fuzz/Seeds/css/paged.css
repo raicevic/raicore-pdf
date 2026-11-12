@@ -1,0 +1,5 @@
+@page { size: 300px 200px landscape; margin: 20px; @bottom-right { content: counter(page); } @top-left { content: string(t, first); } }
+@page wide { size: A4 landscape; } h1 { page: wide; string-set: t content(); bookmark-label: content(); bookmark-state: closed; }
+p { orphans: 3; widows: 2; break-inside: avoid; } .a { break-after: right; } li::marker { color: red; }
+@font-face { font-family: X; src: local(Arial), url(data:font/woff2;base64,AAAA) format("woff2"); unicode-range: U+0-7F, U+4??; }
+.b { font-family: X, "Liberation Mono", monospace; font-feature-settings: "liga" 0, "kern"; hyphenate-character: "="; }

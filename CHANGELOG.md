@@ -110,6 +110,12 @@ change at any time, and this section lists what the packages can do so far.
   and WOFF2, the PDF reader, layout); `limits.Enforce(cancellationToken)` applies others to the work in its scope, with
   a time limit and cancellation checked between pages, blocks, table rows and lines. Deep nesting stops with that
   exception instead of overflowing the stack. PNG data is inflated only as far as the image needs.
+- Fuzzed (#53): the HTML/CSS converter (plain, tagged, PDF/UA, PDF/A and streamed output), the image decoders, the font
+  parsers (OpenType, TTC, WOFF, WOFF2) and the PDF reader, nightly with libFuzzer and locally with a managed mutation
+  fuzzer (`tests/RaiCore.Pdf.Fuzz`). Malformed input now fails only with the documented exceptions: corrupt zlib and
+  Brotli data, out-of-range WOFF2 values and short `head` tables throw `FontFormatException`, fonts without a `name`
+  table embed, and zlib errors in PDF streams and PNG data no longer escape. Every input fuzzing found is replayed by
+  the unit tests.
 
 - Tagged PDF and PDF/UA-1: `PdfDocument.Tagged`/`PdfUA`, structure elements (`PdfDocument.StructureRoot`,
   `PdfStructureElement` with alternate and actual text, language, table scope and spans, list numbering;
@@ -419,6 +425,11 @@ change at any time, and this section lists what the packages can do so far.
   `ConvertAsync` observes its cancellation token throughout. Conversions run on a thread of their own with a large
   stack, so deeply nested documents do not overflow it. `colspan`, `rowspan` and `<col span>` are clamped as HTML
   says (1000, 65534 and 1000).
+- Hostile CSS no longer fails a conversion with an exception (found by fuzzing): numbers must be finite and lengths
+  are clamped to 1,000,000 points (`flex-grow: 1e3082` looped forever), image sizes to 14,400 points, `@page`
+  margins that leave no room are dropped, declarations and rules AngleSharp cannot read are removed and an element
+  whose style it cannot compute takes its parent's (it threw `NullReferenceException` on them), `box-shadow` and `text-shadow` (not drawn) are ignored, invalid
+  `font-feature-settings` are skipped, and web fonts whose license forbids embedding fall back to other fonts.
 
 ### RaiCore.Pdf.Razor
 - Razor components to PDF with Blazor's static `HtmlRenderer`: `RazorToPdf` for the simple case, `RazorPdfRenderer`
@@ -525,8 +536,7 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   new document), structure tree (tagged PDF), optional content configuration, named destinations, JavaScript or
   page labels; a page imported twice has its annotations on its first copy only. `DrawPage` draws a page's content
   without its annotations. Decoding is needed only for cross-reference and object streams and for pages drawn with
-  several content streams, so the image filters (DCT, JPX, JBIG2, CCITT) are never decoded. Not fuzzed yet beyond a
-  seeded smoke test.
+  several content streams, so the image filters (DCT, JPX, JBIG2, CCITT) are never decoded.
 - Thread safety: fonts declared with `@font-face` are loaded per conversion (put fonts shared by many documents in the
   `FontCollection`); a loaded font's data stays in memory as long as the `PdfFont` (and a collection that found it) is
   referenced.

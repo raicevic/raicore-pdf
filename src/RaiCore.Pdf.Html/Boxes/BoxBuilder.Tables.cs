@@ -240,7 +240,7 @@ internal sealed partial class BoxBuilder
         }
 
         value = value.Trim();
-        if (value.EndsWith('%') && double.TryParse(value[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out var percent))
+        if (value.EndsWith('%') && double.TryParse(value[..^1], NumberStyles.Float, CultureInfo.InvariantCulture, out var percent) && double.IsFinite(percent))
         {
             return new CssLength(percent, CssLengthKind.Percent);
         }
@@ -249,7 +249,7 @@ internal sealed partial class BoxBuilder
     }
 
     private static double? Pixels(string? value) =>
-        double.TryParse(value?.Trim().TrimEnd('p', 'x'), NumberStyles.Float, CultureInfo.InvariantCulture, out var pixels) && pixels >= 0
+        double.TryParse(value?.Trim().TrimEnd('p', 'x'), NumberStyles.Float, CultureInfo.InvariantCulture, out var pixels) && pixels >= 0 && double.IsFinite(pixels)
             ? pixels * CssValues.PointsPerPixel
             : null;
 

@@ -1,0 +1,8 @@
+body { font: 13px/1.4 serif; color: rgb(10 20 30 / 50%); margin: 1em calc(2% + 3px); }
+.a { border: 2px dashed hsl(120, 50%, 50%); padding: 1ex 2ch; border-radius: 5px 10% / 3px; background: url(data:,) repeat-x, #eee; }
+.b::after { content: " [" attr(class) "]" counter(c, upper-roman); counter-increment: c 5; }
+.c { list-style: square inside; text-transform: uppercase; letter-spacing: 0.1em; word-spacing: -2px; text-decoration: underline wavy red; }
+.d { width: min(50%, 100px); max-width: clamp(10px, 5vw, 200px); vertical-align: super; transform: rotate(10deg); }
+table { border-spacing: 2px 4px; table-layout: fixed; } td:nth-child(2n+1) { text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media print { h1 { font-size: 2em; font-weight: 900; font-variant: small-caps; } } @page :first { margin-top: 3cm; }
+:root { --x: 4px; } div[style] > div:first-child { margin: var(--x) auto; flex: 2 0 auto; align-self: center; }

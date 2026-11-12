@@ -70,8 +70,8 @@ internal abstract partial class CssCalc
     /// <summary>A plain length or percentage when the expression folded to one, otherwise a calc length.</summary>
     public CssLength ToLength() => this switch
     {
-        Term { Percent: 0 } term => new(term.Points, CssLengthKind.Points),
-        Term { Points: 0 } term => new(term.Percent, CssLengthKind.Percent),
+        Term { Percent: 0 } term => new(CssValues.Bounded(term.Points), CssLengthKind.Points),
+        Term { Points: 0 } term => new(CssValues.Bounded(term.Percent), CssLengthKind.Percent),
         _ => CssLength.FromCalc(this),
     };
 
@@ -284,7 +284,7 @@ internal abstract partial class CssCalc
             }
 
             var match = NumberRegex().Match(text, _position);
-            if (!match.Success || !double.TryParse(match.Groups[1].ValueSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
+            if (!match.Success || !double.TryParse(match.Groups[1].ValueSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number))
             {
                 return null;
             }

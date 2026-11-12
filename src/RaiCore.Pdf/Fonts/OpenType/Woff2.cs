@@ -22,6 +22,19 @@ internal static class Woff2
 
     public static byte[] Decode(byte[] data)
     {
+        try
+        {
+            return DecodeChecked(data);
+        }
+        catch (OverflowException ex)
+        {
+            // Sizes and coordinates are computed with checked arithmetic: values out of range are malformed data.
+            throw new FontFormatException("WOFF2 data has values out of range.", ex);
+        }
+    }
+
+    private static byte[] DecodeChecked(byte[] data)
+    {
         var r = new BigEndianReader(data);
         r.Skip(4); // signature
         var flavor = r.ReadUInt32();
@@ -109,6 +122,10 @@ internal static class Woff2
         catch (EndOfStreamException ex)
         {
             throw new FontFormatException("WOFF2 data decompresses to less than the declared table sizes.", ex);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new FontFormatException("WOFF2 data is not valid Brotli.", ex); // BrotliStream's error for corrupt data.
         }
 
         return output;
@@ -389,6 +406,12 @@ internal static class Woff2
 
         var numGlyphs = xMins.Length;
         var numberOfHMetrics = BinaryPrimitives.ReadUInt16BigEndian(hhea.AsSpan(34));
+        if (numberOfHMetrics < 1 || numberOfHMetrics > numGlyphs)
+        {
+            // More metrics than glyphs (fuzzing found this) would index past the glyphs' bounding boxes.
+            throw new FontFormatException($"WOFF2 hhea declares {numberOfHMetrics} horizontal metrics for {numGlyphs} glyphs.");
+        }
+
         var r = new BigEndianReader(data);
         var flags = r.ReadByte();
 
