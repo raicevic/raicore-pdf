@@ -141,14 +141,21 @@ internal sealed partial class BoxBuilder
         var scanned = _paged?.ContentFor(element, pseudo); // Content values AngleSharp drops (target-counter(), leader()...).
         if (!NoGeneratedContent.Contains(element.LocalName) && (scanned is not null || PseudoCandidates().Contains(element)))
         {
-            var css = ComputeStyle(element, "::" + pseudo);
-            if (ContentValue.Parse(scanned ?? css.GetPropertyValue("content") ?? string.Empty) is { } content)
+            try
             {
-                var style = ComputedStyle.From(css, _rootFontSize, _viewport);
-                if (style.Display != CssDisplay.None)
+                var css = ComputeStyle(element, "::" + pseudo);
+                if (ContentValue.Parse(scanned ?? css.GetPropertyValue("content") ?? string.Empty) is { } content)
                 {
-                    result = (content, style with { Display = GeneratedDisplay(style.Display) }, Quotes(css.GetPropertyValue("quotes") ?? string.Empty));
+                    var style = ComputedStyle.From(css, _rootFontSize, _viewport);
+                    if (style.Display != CssDisplay.None)
+                    {
+                        result = (content, style with { Display = GeneratedDisplay(style.Display) }, Quotes(css.GetPropertyValue("quotes") ?? string.Empty));
+                    }
                 }
+            }
+            catch (NullReferenceException)
+            {
+                // AngleSharp cannot compute the pseudo-element's style (malformed CSS, see ComputeStyle): no content.
             }
         }
 

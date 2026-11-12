@@ -1,4 +1,5 @@
 using System.Globalization;
+using AngleSharp;
 using AngleSharp.Css;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
@@ -100,7 +101,7 @@ internal sealed partial class BoxBuilder
     {
         if (!_styles.TryGetValue(element, out var style))
         {
-            style = ComputedStyle.From(ComputeStyle(element), _rootFontSize, _viewport) with { Language = LanguageOf(element) };
+            style = ComputedStyleOf(element) with { Language = LanguageOf(element) };
             style = style with { ContainerRtl = element.ParentElement is { } parent ? Style(parent).Rtl : style.Rtl };
             if (style.BackgroundValues is { } backgrounds)
             {
@@ -130,6 +131,39 @@ internal sealed partial class BoxBuilder
     {
         _styleCollection ??= _window.GetStyleCollection(Document.Context.GetService<AngleSharp.Css.IRenderDevice>() ?? new AngleSharp.Css.DefaultRenderDevice());
         return _styleCollection.ComputeDeclarations(element, pseudo);
+    }
+
+    /// <summary>
+    /// The element's computed style. AngleSharp throws <see cref="NullReferenceException"/> computing some malformed
+    /// values (fuzzing found <c>box-shadow: 1px1px</c> and <c>font: 3px/4 e,</c>); the element then takes its parent's
+    /// style, as if its own declarations did not apply, with the display its tag has by default.
+    /// </summary>
+    private ComputedStyle ComputedStyleOf(IElement element)
+    {
+        try
+        {
+            return ComputedStyle.From(ComputeStyle(element), _rootFontSize, _viewport);
+        }
+        catch (NullReferenceException)
+        {
+            var display = element.LocalName switch
+            {
+                "head" or "script" or "style" or "title" or "meta" or "link" or "template" => CssDisplay.None,
+                "html" or "body" or "div" or "p" or "section" or "article" or "header" or "footer" or "nav" or "main" or "aside"
+                    or "h1" or "h2" or "h3" or "h4" or "h5" or "h6" or "ul" or "ol" or "li" or "dl" or "dt" or "dd" or "table"
+                    or "tr" or "td" or "th" or "thead" or "tbody" or "tfoot" or "caption" or "pre" or "blockquote" or "figure"
+                    or "form" or "fieldset" or "address" or "hr" => CssDisplay.Block,
+                _ => CssDisplay.Inline,
+            };
+            return (element.ParentElement is { } parent ? Style(parent) : UnstyledRoot()) with { Display = display };
+        }
+    }
+
+    /// <summary>The style of a root element without author styles, for when the document's own cannot be computed.</summary>
+    private ComputedStyle UnstyledRoot()
+    {
+        using var clean = BrowsingContext.New(Configuration.Default.WithCss()).OpenNewAsync().GetAwaiter().GetResult();
+        return ComputedStyle.From(clean.DefaultView!.GetComputedStyle(clean.DocumentElement), _rootFontSize, _viewport);
     }
 
     public TextStyle TextStyleFor(ComputedStyle style)

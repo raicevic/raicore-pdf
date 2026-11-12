@@ -426,8 +426,8 @@ change at any time, and this section lists what the packages can do so far.
   says (1000, 65534 and 1000).
 - Hostile CSS no longer fails a conversion with an exception (found by fuzzing): numbers must be finite and lengths
   are clamped to 1,000,000 points (`flex-grow: 1e3082` looped forever), image sizes to 14,400 points, `@page`
-  margins that leave no room are dropped, declarations and rules AngleSharp cannot read are removed (it threw
-  `NullReferenceException` on them), `box-shadow` and `text-shadow` (not drawn) are ignored, invalid
+  margins that leave no room are dropped, declarations and rules AngleSharp cannot read are removed and an element
+  whose style it cannot compute takes its parent's (it threw `NullReferenceException` on them), `box-shadow` and `text-shadow` (not drawn) are ignored, invalid
   `font-feature-settings` are skipped, and web fonts whose license forbids embedding fall back to other fonts.
 
 ### RaiCore.Pdf.Razor
