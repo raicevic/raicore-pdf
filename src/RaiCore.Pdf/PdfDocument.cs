@@ -1,7 +1,3 @@
-using RaiCore.Pdf.Fonts;
-using RaiCore.Pdf.Import;
-using RaiCore.Pdf.IO;
-using RaiCore.Pdf.Objects;
 using RaiCore.Pdf.Security;
 
 namespace RaiCore.Pdf;
@@ -108,7 +104,7 @@ public sealed partial class PdfDocument
         ArgumentNullException.ThrowIfNull(stream);
         if (_saving is not null || _saved)
         {
-            throw new InvalidOperationException("The document is written page by page (BeginSave); finish it with EndSave.");
+            throw new InvalidOperationException("The document is written page by page (BeginSave and EndSave), not with Save.");
         }
 
         if (_pages.Count == 0)

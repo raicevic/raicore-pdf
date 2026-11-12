@@ -1,0 +1,57 @@
+name: Benchmarks
+
+# Not part of CI: runs weekly and on demand, and keeps each run's results as an artifact, so numbers can be compared
+# over time (download two runs' artifacts, or read them in the run summary). Shared runners are noisy, so compare
+# allocations exactly and times only roughly; benchmarks/README.md has the numbers measured on a quiet machine.
+on:
+  schedule:
+    - cron: "0 4 * * 1" # Mondays.
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: BenchmarkDotNet filter, e.g. *Invoice* (default all)
+        required: false
+        default: "*"
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  benchmarks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Run benchmarks
+        env:
+          FILTER: ${{ inputs.filter || '*' }}
+        run: >
+          dotnet run --configuration Release --project benchmarks/RaiCore.Pdf.Benchmarks --
+          --filter "$FILTER" --job short --exporters json github
+          --artifacts benchmark-results
+
+      - name: Peak memory, saved at once and page by page
+        run: |
+          for scenario in pages-save pages-stream report-flow-save report-flow-stream report-html-save report-html-stream; do
+            dotnet benchmarks/RaiCore.Pdf.Benchmarks/bin/Release/net10.0/RaiCore.Pdf.Benchmarks.dll memory "$scenario"
+          done | tee benchmark-results/peak-memory.txt
+
+      - name: Summary
+        run: |
+          cat benchmark-results/results/*-report-github.md >> "$GITHUB_STEP_SUMMARY"
+          printf '\n```\n%s\n```\n' "$(cat benchmark-results/peak-memory.txt)" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmarks-${{ github.sha }}
+          path: benchmark-results
+          retention-days: 90
