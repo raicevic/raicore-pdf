@@ -36,6 +36,18 @@ internal sealed record XmpNamespace
     /// <summary>PDF/UA identification: <c>pdfuaid:part</c>, the part of ISO 14289 the document conforms to.</summary>
     public static readonly XmpNamespace PdfUAIdentification = new("pdfuaid", "http://www.aiim.org/pdfua/ns/id/");
 
+    /// <summary>PDF/A identification: <c>pdfaid:part</c> and <c>pdfaid:conformance</c> (ISO 19005).</summary>
+    public static readonly XmpNamespace PdfAId = new("pdfaid", "http://www.aiim.org/pdfa/ns/id/");
+
+    /// <summary>The PDF/A extension schema container: <c>pdfaExtension:schemas</c> describes every schema PDF/A does not predefine.</summary>
+    public static readonly XmpNamespace PdfAExtension = new("pdfaExtension", "http://www.aiim.org/pdfa/ns/extension/");
+
+    /// <summary>The fields of a schema description in a PDF/A extension schema.</summary>
+    public static readonly XmpNamespace PdfASchema = new("pdfaSchema", "http://www.aiim.org/pdfa/ns/schema#");
+
+    /// <summary>The fields of a property description in a PDF/A extension schema.</summary>
+    public static readonly XmpNamespace PdfAProperty = new("pdfaProperty", "http://www.aiim.org/pdfa/ns/property#");
+
     /// <summary>The <c>rdf:</c> namespace; reserved for the packet's own structure.</summary>
     public static readonly XmpNamespace Rdf = new("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
 }

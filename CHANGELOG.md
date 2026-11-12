@@ -69,6 +69,14 @@ change at any time, and this section lists what the packages can do so far.
   IV, after compression; `EncryptMetadata = false` leaves the XMP metadata stream readable. With only an owner password
   the file opens without one and the viewer enforces the permissions. Passwords go through a simplified SASLprep and
   are cut to 127 UTF-8 bytes. Verified with qpdf, pypdf and PDFium.
+- PDF/A-2b and PDF/A-3b (ISO 19005-2/-3, level B) for archiving: `PdfDocument.PdfAConformance`. The document gets an
+  sRGB output intent (a 456-byte ICC v2 profile, CC0), `pdfaid:part`/`conformance` in its XMP and a PDF/A extension
+  schema for the `pdfx:` custom properties; links get the Print flag. Saving enforces the rules the library could
+  break, with an `InvalidOperationException` that names the problem: every font embedded, no .notdef glyph (text a
+  font has no glyph for), no encryption, no CMYK images, no pages imported or drawn from other PDF files, XMP on.
+  `PdfDocument.StandardFontSubstitute` embeds a TrueType font in place of the standard fonts (a simple font with
+  WinAnsi encoding and a (3,1) `cmap`, so the codes already drawn keep working); `EmbedStandardFonts()` from
+  RaiCore.Pdf.Fonts uses Liberation. Validated with veraPDF in CI.
 - Reading existing PDFs: `PdfReader.Open` (file, stream or bytes) parses classic cross-reference tables,
   cross-reference streams, object streams, hybrid files and incremental updates (the newest revision wins), and
   repairs damaged files by scanning for objects when the cross-reference data is missing or wrong
@@ -98,6 +106,8 @@ change at any time, and this section lists what the packages can do so far.
 
 ### RaiCore.Pdf.Fonts
 - Bundled Liberation Sans, Serif and Mono (SIL OFL 1.1), metric-compatible with Arial, Times New Roman and Courier New.
+- `StandardFontSubstitutes`: the Liberation face for each standard font (`Get`), and `PdfDocument.EmbedStandardFonts()`,
+  which embeds them in place of Helvetica, Times and Courier (as PDF/A requires).
 - `FontCollection` with CSS font matching, system font discovery and metric-compatible substitutes.
 - Thread safety: `PdfFont`, `FontCollection`, `BundledFonts`, `PdfImage`, `TextShaper`, `Hyphenator`, `HtmlToPdf`,
   `RazorToPdf` and `RazorPdfRenderer` are thread-safe; documents, pages, canvases, flow documents and `PdfReader` are
@@ -373,6 +383,8 @@ change at any time, and this section lists what the packages can do so far.
 - `HtmlConverterOptions.Tagged` and `PdfUA`: the structure from HTML semantics (headings, paragraphs, lists with labels
   and bodies, tables with header cells and scopes, figures with `alt` text, sections, quotations, links, `lang`).
   Validated with veraPDF (PDF/UA-1) in CI.
+- `HtmlConverterOptions.PdfAConformance` writes PDF/A-2b or PDF/A-3b, with Liberation embedded for SVG text in the
+  standard fonts.
 
 ### RaiCore.Pdf.Razor
 - Razor components to PDF with Blazor's static `HtmlRenderer`: `RazorToPdf` for the simple case, `RazorPdfRenderer`
@@ -426,8 +438,7 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   on. A line is checked against floats at its strut's height, so a taller line (a large font or image) may overlap a
   float that starts lower down.
 - `opacity` on inline elements (other than images and inline boxes) and on table rows and cells is ignored; where
-  translucent collapsed table borders cross, they are painted twice. PDF/A-1 forbids transparency (PDF/A is not
-  written yet).
+  translucent collapsed table borders cross, they are painted twice.
 - `unicode-bidi: isolate-override` in author styles (AngleSharp drops it; `<bdo>` works). The logical border
   properties (`border-inline-start` and the like) and `inset-inline` are left to right; in a right-to-left element a
   logical margin or padding written with `var()` is 0.
@@ -448,13 +459,16 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   another content width (after an automatic break) keeps the width it started with, and `page` is ignored inside flex
   items, table cells and inline boxes. Page progression is left to right (`recto` is a right page). Inline elements
   cannot be bookmarks.
-- No PDF/A.
+- PDF/A: only level B of parts 2 and 3 (no PDF/A-1, no levels A and U), always with the sRGB output intent, so
+  CMYK JPEG images are rejected rather than converted. Pages imported from other PDFs are rejected, even when they are
+  PDF/A themselves. Text in characters no font has fails under PDF/A instead of showing the missing-glyph box. Symbol
+  and ZapfDingbats have no substitute. The nesting limit of 28 `q` levels is not checked.
 - Tagging: `lang` on inline elements, abbreviations (`abbr` expansions), `figure`/`figcaption` grouping, description
   lists as lists, table `headers`/`id` associations, form fields and notes are not tagged yet; a `dl` is a sequence of
-  paragraphs. Flex items are read in document order, not in their visual order (`order`, `row-reverse`). PDF/UA uses only embedded fonts (not the standard 14), and imported pages
-  are not tagged.
-- Metadata: the XMP has no PDF/A identification and no extension schema for the `pdfx:` custom properties
-  yet (PDF/A will add them); custom property names that are not XML names are encoded (`_x0020_` for a space).
+  paragraphs. Flex items are read in document order, not in their visual order (`order`, `row-reverse`). PDF/UA needs
+  embedded fonts (a standard font only with a `StandardFontSubstitute`, such as `EmbedStandardFonts()`), and imported
+  pages are not tagged.
+- Metadata: custom property names that are not XML names are encoded (`_x0020_` for a space).
   Keywords and the author are plain text (`dc:creator` holds one entry). Language alternatives are written with
   `x-default` only, and the language is not checked against BCP 47. `HtmlToPdf.CreateFlowDocument` returns no
   metadata: set `PdfDocument.Info` and `Language` on the document you render it into. XMP in images and other

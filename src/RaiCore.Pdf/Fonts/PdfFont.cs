@@ -236,11 +236,43 @@ internal sealed class StandardPdfFont(StandardFont font) : PdfFont
         return _metrics.Widths[code] / 1000.0;
     }
 
-    internal override PdfString EncodeText(string text, FontUsage usage) =>
-        new(StandardFontInfo.UsesWinAnsi(Font) ? WinAnsiEncoding.Encode(text) : Encoding.Latin1.GetBytes(text));
+    internal override PdfString EncodeText(string text, FontUsage usage)
+    {
+        var codes = StandardFontInfo.UsesWinAnsi(Font) ? WinAnsiEncoding.Encode(text) : Encoding.Latin1.GetBytes(text);
+
+        // The codes used, for when a substitute font is embedded in this one's place.
+        foreach (var code in codes)
+        {
+            usage.Add(code, null);
+        }
+
+        return new(codes);
+    }
 
     internal override PdfReference WriteTo(PdfFileWriter writer, FontUsage usage)
     {
+        // Embedded in place of the standard font: a (metric-compatible) TrueType font with the same WinAnsi codes.
+        if (StandardFontInfo.UsesWinAnsi(Font) && writer.StandardFontSubstitute?.Invoke(Font) is { } substitute)
+        {
+            if (substitute.EmbeddedFont is not OpenTypePdfFont { Font.Outlines: OutlineFormat.TrueType } trueType)
+            {
+                throw new NotSupportedException(
+                    $"The font embedded in place of {PostScriptName} must have TrueType outlines (a .ttf font); {substitute.PostScriptName} does not.");
+            }
+
+            trueType.EnsureEmbeddable();
+            return EmbeddedStandardFontWriter.Write(writer, trueType.Font, usage);
+        }
+
+        if (writer.PdfA != PdfAConformance.None)
+        {
+            throw new InvalidOperationException(StandardFontInfo.UsesWinAnsi(Font)
+                ? $"PDF/A requires every font to be embedded, but the standard font {PostScriptName} is not. Set PdfDocument.StandardFontSubstitute "
+                    + "(EmbedStandardFonts() from the RaiCore.Pdf.Fonts package embeds the bundled Liberation fonts in place of Helvetica, Times and Courier) "
+                    + "or draw the text with an embedded font."
+                : $"PDF/A requires every font to be embedded, and the standard font {PostScriptName} has no embeddable substitute; draw the text with an embedded font that has its symbols.");
+        }
+
         var dict = new PdfDictionary
         {
             ["Type"] = new PdfName("Font"),

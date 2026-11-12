@@ -94,9 +94,10 @@ public sealed partial class PdfDocument
             throw new InvalidOperationException("A PDF document must contain at least one page.");
         }
 
-        // Created first, so invalid passwords or permissions fail before any work is done.
+        // Checked first, so invalid passwords, permissions or PDF/A settings fail before any work is done.
+        CheckPdfA();
         var security = Encryption is null ? null : StandardSecurityHandler.Create(Encryption);
-        var writer = new PdfFileWriter();
+        var writer = new PdfFileWriter { PdfA = PdfAConformance, StandardFontSubstitute = StandardFontSubstitute };
 
         var catalog = new PdfDictionary { ["Type"] = new PdfName("Catalog") };
         var catalogRef = writer.Add(catalog);
@@ -223,6 +224,7 @@ public sealed partial class PdfDocument
             catalog["PageMode"] = new PdfName("UseOutlines");
         }
 
+        WriteOutputIntent(writer, catalog);
         structure?.Write(catalog, pageRefs);
         if (PdfUA)
         {

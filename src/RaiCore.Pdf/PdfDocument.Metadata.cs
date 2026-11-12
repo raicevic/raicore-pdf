@@ -41,7 +41,9 @@ public sealed partial class PdfDocument
         if (IncludeXmpMetadata)
         {
             // PDF/A and PDF/UA add their identification and extension schemas to this metadata before it is written.
-            catalog["Metadata"] = writer.Add(XmpWriter.CreateStream(CreateXmpMetadata(created, modified)));
+            var xmp = CreateXmpMetadata(created, modified);
+            AddPdfAMetadata(xmp);
+            catalog["Metadata"] = writer.Add(XmpWriter.CreateStream(xmp));
         }
 
         return writer.Add(Info.ToDictionary(created, modified));

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using RaiCore.Pdf.Fonts.OpenType;
@@ -16,6 +17,11 @@ internal static class CidFontWriter
 {
     public static PdfReference Write(PdfFileWriter writer, OpenTypeFont font, FontUsage usage)
     {
+        if (writer.PdfA != PdfAConformance.None && usage.Glyphs.TryGetValue(0, out var missing))
+        {
+            throw NotdefException(font, missing);
+        }
+
         var isTrueType = font.Outlines == OutlineFormat.TrueType;
         var glyphIds = font.NoSubsetting ? Enumerable.Range(0, font.NumGlyphs) : usage.Glyphs.Keys;
 
@@ -44,22 +50,8 @@ internal static class CidFontWriter
         var baseFont = subset ? $"{SubsetTag(font, usage)}+{font.PostScriptName}" : font.PostScriptName;
         var scale = 1000.0 / font.UnitsPerEm;
 
-        var descriptor = new PdfDictionary
-        {
-            ["Type"] = new PdfName("FontDescriptor"),
-            ["FontName"] = new PdfName(baseFont),
-            ["FontFamily"] = PdfString.FromText(font.FamilyName),
-            ["Flags"] = new PdfInteger(Flags(font)),
-            ["FontBBox"] = PdfArray.OfNumbers(
-                Math.Round(font.XMin * scale), Math.Round(font.YMin * scale), Math.Round(font.XMax * scale), Math.Round(font.YMax * scale)),
-            ["ItalicAngle"] = new PdfReal(font.ItalicAngle),
-            ["Ascent"] = new PdfReal(Math.Round(font.Ascender * scale)),
-            ["Descent"] = new PdfReal(Math.Round(font.Descender * scale)),
-            ["CapHeight"] = new PdfReal(Math.Round(font.CapHeight * scale)),
-            ["XHeight"] = new PdfReal(Math.Round(font.XHeight * scale)),
-            ["StemV"] = new PdfReal(Math.Round(10 + (220 * Math.Pow((font.WeightClass - 50) / 900.0, 2)))),
-            [isTrueType ? "FontFile2" : "FontFile3"] = writer.Add(fontFile),
-        };
+        var descriptor = Descriptor(font, baseFont, Flags(font, symbolic: true));
+        descriptor[isTrueType ? "FontFile2" : "FontFile3"] = writer.Add(fontFile);
 
         var cidFont = new PdfDictionary
         {
@@ -114,9 +106,45 @@ internal static class CidFontWriter
         return result;
     }
 
-    private static int Flags(OpenTypeFont font)
+    /// <summary>The font descriptor, without the font program.</summary>
+    internal static PdfDictionary Descriptor(OpenTypeFont font, string baseFont, int flags)
     {
-        var flags = 4; // Symbolic: glyphs are addressed by ID, not by a standard Latin encoding.
+        var scale = 1000.0 / font.UnitsPerEm;
+        return new PdfDictionary
+        {
+            ["Type"] = new PdfName("FontDescriptor"),
+            ["FontName"] = new PdfName(baseFont),
+            ["FontFamily"] = PdfString.FromText(font.FamilyName),
+            ["Flags"] = new PdfInteger(flags),
+            ["FontBBox"] = PdfArray.OfNumbers(
+                Math.Round(font.XMin * scale), Math.Round(font.YMin * scale), Math.Round(font.XMax * scale), Math.Round(font.YMax * scale)),
+            ["ItalicAngle"] = new PdfReal(font.ItalicAngle),
+            ["Ascent"] = new PdfReal(Math.Round(font.Ascender * scale)),
+            ["Descent"] = new PdfReal(Math.Round(font.Descender * scale)),
+            ["CapHeight"] = new PdfReal(Math.Round(font.CapHeight * scale)),
+            ["XHeight"] = new PdfReal(Math.Round(font.XHeight * scale)),
+            ["StemV"] = new PdfReal(Math.Round(10 + (220 * Math.Pow((font.WeightClass - 50) / 900.0, 2)))),
+        };
+    }
+
+    /// <summary>
+    /// The error for drawing the .notdef glyph (glyph 0, the "missing glyph" box) under PDF/A, which forbids it.
+    /// <paramref name="text"/> is the text it stood for, if known.
+    /// </summary>
+    internal static InvalidOperationException NotdefException(OpenTypeFont font, string? text)
+    {
+        var what = string.IsNullOrEmpty(text)
+            ? "some of the text"
+            : $"'{text}' ({string.Join(' ', text.EnumerateRunes().Select(r => string.Create(CultureInfo.InvariantCulture, $"U+{r.Value:X4}")))})";
+        return new InvalidOperationException(
+            $"PDF/A does not allow the .notdef (missing glyph) glyph, but the font '{font.FullName}' has no glyph for {what}. "
+            + "Use a font that covers these characters, for instance as a fallback font.");
+    }
+
+    internal static int Flags(OpenTypeFont font, bool symbolic)
+    {
+        // Symbolic: glyphs are addressed by ID, not by a standard Latin encoding. Nonsymbolic (32) otherwise.
+        var flags = symbolic ? 4 : 32;
         if (font.IsFixedPitch)
         {
             flags |= 1;
@@ -131,7 +159,7 @@ internal static class CidFontWriter
     }
 
     /// <summary>Six uppercase letters identifying the subset, derived from its content so output is deterministic.</summary>
-    private static string SubsetTag(OpenTypeFont font, FontUsage usage)
+    internal static string SubsetTag(OpenTypeFont font, FontUsage usage)
     {
         var input = new StringBuilder(font.PostScriptName);
         foreach (var gid in usage.Glyphs.Keys)

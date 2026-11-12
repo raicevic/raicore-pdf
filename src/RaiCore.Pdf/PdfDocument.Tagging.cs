@@ -65,10 +65,13 @@ public sealed partial class PdfDocument
             throw new InvalidOperationException("PDF/UA requires XMP metadata (PdfDocument.IncludeXmpMetadata).");
         }
 
-        if (fonts.FirstOrDefault(font => font is Fonts.StandardPdfFont) is { } standard)
+        // A standard font is fine when a substitute is embedded in its place (only Helvetica, Times and Courier can be).
+        if (fonts.FirstOrDefault(font => font is Fonts.StandardPdfFont standard
+                && !(Fonts.StandardFontInfo.UsesWinAnsi(standard.Font) && StandardFontSubstitute?.Invoke(standard.Font) is not null)) is { } unembedded)
         {
             throw new InvalidOperationException(
-                $"PDF/UA requires embedded fonts, but the standard font {standard} is not embedded. Load a font file with PdfFont.Load instead.");
+                $"PDF/UA requires embedded fonts, but the standard font {unembedded} is not embedded. Load a font file with PdfFont.Load, "
+                + "or set PdfDocument.StandardFontSubstitute (EmbedStandardFonts() from RaiCore.Pdf.Fonts) for Helvetica, Times and Courier.");
         }
     }
 }

@@ -264,6 +264,13 @@ var pdf = HtmlToPdf.ConvertToBytes(html, new HtmlConverterOptions
 });
 ```
 
+`HtmlConverterOptions.PdfAConformance` writes PDF/A-2b or PDF/A-3b for archiving (see [PDF/A](#pdfa)); the
+conversion throws if the document breaks a rule, e.g. text that no font has a glyph for:
+
+```csharp
+var pdf = HtmlToPdf.ConvertToBytes(html, new HtmlConverterOptions { PdfAConformance = PdfAConformance.PdfA3B });
+```
+
 Not yet: grid layout (rendered as blocks), `@page :nth()` and document counters in margin
 boxes (use `string-set`). `overflow` other than `visible` clips to the padding box (rounded corners included), and
 `text-overflow: ellipsis` ends a line that does not fit with "…". The size of an image in text (`max-width: 100%` on an
@@ -448,6 +455,20 @@ tables:
 var doc = new PdfDocument { PdfUA = true, Language = "en", Info = { Title = "Report" } };
 var heading = doc.StructureRoot.AddChild(PdfStructureTypes.Heading1);
 doc.AddPage().Canvas.BeginTag(heading).DrawText("Report", font, 24, 72, 760).EndTag();
+```
+
+### PDF/A
+
+`PdfAConformance.PdfA2B` and `PdfA3B` write PDF/A (ISO 19005-2 and -3, level B) for long-term archiving: the
+document gets an sRGB output intent and XMP that identifies it as PDF/A, and saving checks the rules, throwing an
+`InvalidOperationException` that names the problem. Every font must be embedded: `EmbedStandardFonts()` (in
+RaiCore.Pdf.Fonts) embeds the metric-compatible Liberation fonts in place of Helvetica, Times and Courier, also for
+SVG text. Encryption, CMYK images, text that the font has no glyph for, and pages taken from other PDF files are
+rejected. CI validates the output with [veraPDF](https://verapdf.org).
+
+```csharp
+var doc = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B }.EmbedStandardFonts();
+doc.AddPage().Canvas.DrawText("Archived", StandardFont.Helvetica, 12, 72, 720);
 ```
 
 ### Existing PDFs

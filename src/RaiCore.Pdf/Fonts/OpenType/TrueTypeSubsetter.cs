@@ -12,7 +12,8 @@ internal static class TrueTypeSubsetter
     // Tables a PDF consumer needs to rasterize a CIDFontType2 with an identity CIDToGIDMap.
     private static readonly string[] CopiedTables = ["cvt ", "fpgm", "prep", "gasp"];
 
-    public static byte[] Subset(OpenTypeFont font, IEnumerable<int> glyphIds)
+    /// <summary>Subsets the font. <paramref name="extraTables"/> are added as they are (e.g. a <c>cmap</c> for a simple font).</summary>
+    public static byte[] Subset(OpenTypeFont font, IEnumerable<int> glyphIds, IReadOnlyDictionary<string, byte[]>? extraTables = null)
     {
         if (font.Outlines != OutlineFormat.TrueType)
         {
@@ -78,6 +79,11 @@ internal static class TrueTypeSubsetter
             {
                 tables[tag] = font.GetTable(tag).ToArray();
             }
+        }
+
+        foreach (var (tag, data) in extraTables ?? new Dictionary<string, byte[]>())
+        {
+            tables[tag] = data;
         }
 
         return SfntBuilder.Build(0x00010000, tables);
