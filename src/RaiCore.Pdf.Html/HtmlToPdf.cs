@@ -224,7 +224,7 @@ public static partial class HtmlToPdf
         CheckStructure(document, options.Limits);
 
         var styleSheets = PrepareStyles(document, options);
-        RemoveUnmatchableRules(document);
+        SanitizeStyles(document);
         var cssTexts = styleSheets.Select(s => s.Css).ToList();
         var pageRules = PageRules.Load(options.Page, cssTexts);
         var setup = pageRules.Setup;
@@ -430,18 +430,24 @@ public static partial class HtmlToPdf
     }
 
     /// <summary>
-    /// Removes style rules whose selector AngleSharp could not read: it keeps them, and throws
-    /// <see cref="NullReferenceException"/> matching the rules nested in them (fuzzing found <c>:{&amp;{}}</c>). They
-    /// cannot match an element anyway.
+    /// Removes what AngleSharp throws <see cref="NullReferenceException"/> on while it computes styles (fuzzing found
+    /// several kinds of malformed CSS): style rules whose selector it could not read but which have nested rules
+    /// (<c>:{&amp;{}}</c>), and declarations whose value it cannot write back as text (<c>width: clamp(1,(,0)</c>).
+    /// Neither can apply to an element anyway.
     /// </summary>
-    private static void RemoveUnmatchableRules(IDocument document)
+    private static void SanitizeStyles(IDocument document)
     {
         foreach (var sheet in document.StyleSheets.OfType<ICssStyleSheet>())
         {
-            Remove(sheet.Rules, sheet.RemoveAt);
+            Sanitize(sheet.Rules, sheet.RemoveAt);
         }
 
-        static void Remove(ICssRuleList rules, Action<int> removeAt)
+        foreach (var element in document.QuerySelectorAll("[style]"))
+        {
+            SanitizeDeclarations(element.GetStyle());
+        }
+
+        static void Sanitize(ICssRuleList rules, Action<int> removeAt)
         {
             for (var i = rules.Length - 1; i >= 0; i--)
             {
@@ -450,10 +456,36 @@ public static partial class HtmlToPdf
                     case ICssStyleRule { SelectorText: null }:
                         removeAt(i);
                         break;
+                    case ICssStyleRule style:
+                        SanitizeDeclarations(style.Style);
+                        break;
                     case ICssGroupingRule group:
-                        Remove(group.Rules, group.RemoveAt);
+                        Sanitize(group.Rules, group.RemoveAt);
                         break;
                 }
+            }
+        }
+
+        // Only rewritten when one is broken: removing it would read it too, so the others are written back as text.
+        static void SanitizeDeclarations(ICssStyleDeclaration declarations)
+        {
+            var kept = new List<string>();
+            var broken = false;
+            foreach (var property in declarations)
+            {
+                try
+                {
+                    kept.Add($"{property.Name}: {property.Value}{(property.IsImportant ? " !important" : string.Empty)}");
+                }
+                catch (NullReferenceException)
+                {
+                    broken = true;
+                }
+            }
+
+            if (broken)
+            {
+                declarations.CssText = string.Join("; ", kept);
             }
         }
     }

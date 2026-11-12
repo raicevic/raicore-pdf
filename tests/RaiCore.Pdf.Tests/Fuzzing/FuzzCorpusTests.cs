@@ -97,7 +97,20 @@ public class FuzzCorpusTests
     {
         var flow = HtmlToPdf.CreateFlowDocument("<div style='display: flex'><div style='flex: 1e3082 0 auto'>a</div><div>b</div></div>");
 
+        var flex = flow.Blocks.SelectMany(Flatten).OfType<FlexBlock>().Single();
+        Assert.Equal(0, flex.Items[0].Grow); // Not a number CSS can use: the initial value.
         Assert.NotEmpty(flow.Render().Pages);
+    }
+
+    [Fact]
+    public void Declarations_the_css_parser_cannot_read_are_dropped_and_the_others_kept()
+    {
+        // Found by fuzzing CSS: AngleSharp throws reading such a value, which failed the conversion.
+        var flow = HtmlToPdf.CreateFlowDocument("<style>p { width: clamp(1,(,0); color: red }</style><p style='height: clamp(1,(,0); margin-left: 7pt'>Text</p>");
+        var paragraph = flow.Blocks.SelectMany(Flatten).OfType<ParagraphBlock>().First();
+
+        Assert.Equal(PdfColor.FromRgb(255, 0, 0), paragraph.Paragraph.Spans[0].Style.Color);
+        Assert.Equal(7, paragraph.Style.Margin.Left, 3);
     }
 
     private static IEnumerable<Block> Flatten(Block block) =>
