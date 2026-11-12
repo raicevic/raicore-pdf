@@ -47,6 +47,81 @@ public class FuzzCorpusTests
         Assert.Null(error);
     }
 
+    public static TheoryData<string, string, OutputMode> HtmlInputs()
+    {
+        var data = new TheoryData<string, string, OutputMode>();
+        foreach (var row in Inputs())
+        {
+            var (target, input) = row.Data;
+            if (target is "html" or "css")
+            {
+                foreach (var mode in Enum.GetValues<OutputMode>())
+                {
+                    data.Add(target, input, mode);
+                }
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(HtmlInputs))]
+    public void Html_and_css_inputs_fail_only_with_documented_exceptions_in_every_output_mode(string target, string input, OutputMode mode)
+    {
+        // The fuzzer picks the mode from the input's last byte; here every input is replayed tagged, as PDF/UA and as PDF/A too.
+        var data = File.ReadAllBytes(Fixtures.Path(Path.Combine("Fuzz", input)));
+        Exception? error = null;
+        var thread = new Thread(
+            () => error = Record.Exception(() =>
+            {
+                using (FuzzTargets.Limits.Enforce(CancellationToken.None))
+                {
+                    if (target == "html")
+                    {
+                        FuzzTargets.Html(data, mode);
+                    }
+                    else
+                    {
+                        FuzzTargets.Css(data, mode);
+                    }
+                }
+            }),
+            1024 * 1024);
+        thread.Start();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(60)), $"{input} hangs.");
+
+        Assert.True(error is null || FuzzTargets.IsExpected(error), error?.ToString());
+    }
+
+    [Theory]
+    [InlineData(OutputMode.Plain, null)]
+    [InlineData(OutputMode.Tagged, "/StructTreeRoot")]
+    [InlineData(OutputMode.PdfUA, "pdfuaid:part")]
+    [InlineData(OutputMode.PdfA, "pdfaid:part")]
+    public void The_output_modes_write_what_they_say(OutputMode mode, string? marker)
+    {
+        // The table seed breaks no rule of PDF/UA or PDF/A, so it converts in every mode.
+        var html = File.ReadAllText(Fixtures.Path(Path.Combine("Fuzz", "Seeds", "html", "table.html")));
+        string text;
+        using (FuzzTargets.Limits.Enforce(CancellationToken.None))
+        {
+            text = System.Text.Encoding.Latin1.GetString(FuzzTargets.ConvertStrictly(html, mode));
+        }
+
+        Assert.Contains("%PDF", text, StringComparison.Ordinal);
+        if (marker is not null)
+        {
+            Assert.Contains(marker, text, StringComparison.Ordinal);
+        }
+        else
+        {
+            Assert.DoesNotContain("/StructTreeRoot", text, StringComparison.Ordinal);
+        }
+
+        Assert.Equal([OutputMode.Plain, OutputMode.Tagged, OutputMode.PdfUA, OutputMode.PdfA], Enumerable.Range(4, 4).Select(n => FuzzTargets.ModeOf(new byte[n])));
+    }
+
     [Fact]
     public void Every_target_has_seeds()
     {

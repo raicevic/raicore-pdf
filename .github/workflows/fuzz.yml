@@ -1,11 +1,17 @@
 name: Fuzz
 
 # Coverage-guided fuzzing of the parsers and decoders with libFuzzer (libfuzzer-dotnet) and SharpFuzz. Runs nightly and
-# on demand, not on pull requests (the corpus replay test in the unit tests covers those). Crashes and hangs are
+# on demand, and briefly (a minute per target) on pull requests that change the fuzzing itself; other pull requests rely
+# on the corpus replay test in the unit tests. Its jobs are not required checks. Crashes and hangs are
 # uploaded as artifacts; each one found becomes a regression input in tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Crashes,
 # replayed by FuzzCorpusTests on every build.
 
 on:
+  pull_request:
+    paths:
+      - tests/RaiCore.Pdf.Fuzz/**
+      - tests/RaiCore.Pdf.Tests/Fuzzing/**
+      - .github/workflows/fuzz.yml
   schedule:
     - cron: "0 4 * * *"
   workflow_dispatch:
@@ -21,6 +27,9 @@ env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   LIBFUZZER_DOTNET: https://github.com/Metalnem/libfuzzer-dotnet/releases/download/v2025.05.02.0904/libfuzzer-dotnet-ubuntu
+  LIBFUZZER_DOTNET_SHA256: c2c2a90d94c409a4af339a0d4f244e0442c5a5d249be0f1252ba07871f285958
+  # Seconds per target: short on pull requests, the input's value (or 5 minutes) otherwise.
+  FUZZ_SECONDS: ${{ github.event_name == 'pull_request' && '60' || inputs.seconds || '300' }}
 
 jobs:
   fuzz:
@@ -42,6 +51,7 @@ jobs:
         run: |
           dotnet tool install --global SharpFuzz.CommandLine --version 2.3.0
           curl -sSfL -o libfuzzer-dotnet "$LIBFUZZER_DOTNET"
+          echo "$LIBFUZZER_DOTNET_SHA256  libfuzzer-dotnet" | sha256sum -c -
           chmod +x libfuzzer-dotnet
 
       - name: Build and instrument
@@ -58,7 +68,7 @@ jobs:
         run: |
           mkdir -p crashes
           ./libfuzzer-dotnet --target_path=fuzz-out/RaiCore.Pdf.Fuzz --target_arg="${{ matrix.target }}" \
-            -max_total_time="${{ inputs.seconds || '300' }}" -timeout=30 -rss_limit_mb=4096 -max_len=1048576 \
+            -max_total_time="$FUZZ_SECONDS" -timeout=30 -rss_limit_mb=4096 -max_len=1048576 \
             -artifact_prefix="crashes/${{ matrix.target }}-" corpus
 
       - uses: actions/upload-artifact@v4

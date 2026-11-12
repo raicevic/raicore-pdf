@@ -69,10 +69,17 @@ public static class FuzzTargets
         or PdfFormatException or ResourceLimitExceededException or OperationCanceledException or NotSupportedException;
 
     /// <summary>HTML conversion, with no resources loaded (data: URIs only).</summary>
-    public static void Html(byte[] input) => Convert(Encoding.UTF8.GetString(input));
+    public static void Html(byte[] input) => Html(input, ModeOf(input));
+
+    /// <summary>HTML conversion in the given output mode.</summary>
+    public static void Html(byte[] input, OutputMode mode) => Convert(Encoding.UTF8.GetString(input), mode);
 
     /// <summary>CSS: the input as a style sheet for a document that uses most kinds of boxes.</summary>
-    public static void Css(byte[] input) => Convert($"""
+    public static void Css(byte[] input) => Css(input, ModeOf(input));
+
+    /// <summary>CSS in the given output mode.</summary>
+    public static void Css(byte[] input, OutputMode mode) => Convert(
+        $"""
         <style>{Encoding.UTF8.GetString(input)}</style>
         <h1 id="t">Title</h1>
         <div class="a"><p class="b">Some <span>inline <b>text</b></span> and <a href="#t">a link</a>.</p>
@@ -80,7 +87,8 @@ public static class FuzzTargets
         <table><tr><th>H</th><td>1</td></tr><tr><td colspan="2">2</td></tr></table>
         <div style="display: flex"><div>a</div><div>b</div></div>
         <span class="d" style="display: inline-block">box</span></div>
-        """);
+        """,
+        mode);
 
     /// <summary>An image of any supported format, drawn on a page and written.</summary>
     public static void Image(byte[] input)
@@ -159,6 +167,58 @@ public static class FuzzTargets
         return ~crc;
     }
 
-    private static void Convert(string html) =>
-        HtmlToPdf.ConvertToBytes(html, new HtmlConverterOptions { Limits = Limits, ResourceLoader = _ => null });
+    /// <summary>
+    /// The output mode of an HTML or CSS input, from its length, so that the fuzzer varies it along with the input (most
+    /// mutations change the length): plain, tagged, PDF/UA or PDF/A-2b.
+    /// </summary>
+    public static OutputMode ModeOf(byte[] input) => (OutputMode)(input.Length % 4);
+
+    private static void Convert(string html, OutputMode mode)
+    {
+        try
+        {
+            ConvertStrictly(html, mode);
+        }
+        catch (InvalidOperationException ex) when (mode is OutputMode.PdfUA or OutputMode.PdfA
+            && (ex.Message.Contains("PDF/A", StringComparison.Ordinal) || ex.Message.Contains("PDF/UA", StringComparison.Ordinal)))
+        {
+            // A document breaking a rule of the standard (a character no font has, a standard font in SVG text):
+            // documented, and not what is fuzzed here.
+        }
+    }
+
+    /// <summary>Converts in the given mode; a document breaking a rule of PDF/UA or PDF/A throws.</summary>
+    public static byte[] ConvertStrictly(string html, OutputMode mode)
+    {
+        var options = new HtmlConverterOptions
+        {
+            Limits = Limits,
+            ResourceLoader = _ => null,
+            Tagged = mode is OutputMode.Tagged or OutputMode.PdfUA,
+            PdfUA = mode == OutputMode.PdfUA,
+            PdfAConformance = mode == OutputMode.PdfA ? PdfAConformance.PdfA2B : PdfAConformance.None,
+
+            // PDF/UA needs a title and a language: given here, so that the document's structure is what is checked.
+            Title = mode == OutputMode.PdfUA ? "Fuzz" : null,
+            Language = mode == OutputMode.PdfUA ? "en" : null,
+        };
+
+        return HtmlToPdf.ConvertToBytes(html, options);
+    }
+}
+
+/// <summary>How a fuzzed HTML or CSS input is written.</summary>
+public enum OutputMode
+{
+    /// <summary>A plain PDF.</summary>
+    Plain,
+
+    /// <summary>A tagged PDF.</summary>
+    Tagged,
+
+    /// <summary>PDF/UA-1 (tagged).</summary>
+    PdfUA,
+
+    /// <summary>PDF/A-2b.</summary>
+    PdfA,
 }

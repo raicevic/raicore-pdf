@@ -43,10 +43,11 @@ publish only the trimmed app.
 
 `tests/RaiCore.Pdf.Fuzz` fuzzes the parsers and decoders: HTML and CSS conversion, PNG, JPEG, GIF, BMP, WebP and SVG,
 OpenType/TrueType/TTC, WOFF and WOFF2, and the PDF reader (the targets are in
-`tests/RaiCore.Pdf.Tests/Fuzzing/FuzzTargets.cs`). An input may only make a target fail with a documented exception
-(a format exception, `ResourceLimitExceededException`, cancellation); anything else, a hang or a stack overflow is a
-bug. The [Fuzz workflow](.github/workflows/fuzz.yml) runs every target nightly with libFuzzer (libfuzzer-dotnet and
-SharpFuzz) and uploads what it finds. Without native tools, the project has a managed mutation fuzzer:
+`tests/RaiCore.Pdf.Tests/Fuzzing/FuzzTargets.cs`; the HTML and CSS targets write plain, tagged, PDF/UA or PDF/A
+output, chosen by the input's length). An input may only make a target fail with a documented exception (a format
+exception, `ResourceLimitExceededException`, cancellation, a broken PDF/UA or PDF/A rule); anything else, a hang or a
+stack overflow is a bug. The [Fuzz workflow](.github/workflows/fuzz.yml) runs every target nightly with libFuzzer
+(libfuzzer-dotnet and SharpFuzz), for a minute on pull requests that change the fuzzing, and uploads what it finds. Without native tools, the project has a managed mutation fuzzer:
 
 ```sh
 tests/RaiCore.Pdf.Fuzz/seed-corpus.sh png /tmp/png
