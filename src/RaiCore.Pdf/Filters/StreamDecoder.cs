@@ -8,20 +8,18 @@ namespace RaiCore.Pdf.Filters;
 /// (with PNG and TIFF predictors), <c>/ASCIIHexDecode</c>, <c>/ASCII85Decode</c> and <c>/RunLengthDecode</c>. Image
 /// codecs (<c>/DCTDecode</c>, <c>/JPXDecode</c>, <c>/JBIG2Decode</c>, <c>/CCITTFaxDecode</c>) are not decoded:
 /// imported images keep their data as it is. Damaged data decodes as far as it goes, as viewers do. Output larger than
-/// <see cref="MaxDecodedLength"/> is an error, so a small hostile stream cannot exhaust memory.
+/// <see cref="ResourceLimits.MaxDecompressedBytes"/> is an error, so a small hostile stream cannot exhaust memory.
 /// </summary>
 internal static class StreamDecoder
 {
-    /// <summary>The largest decoded stream accepted (256 MB).</summary>
-    public const int MaxDecodedLength = 256 * 1024 * 1024;
-
     /// <summary>The most filters one stream may chain.</summary>
     private const int MaxFilters = 16;
 
     /// <summary>Decodes a stream's data, applying its filters in order.</summary>
     /// <param name="stream">The stream.</param>
     /// <param name="resolve">Resolves indirect references in the stream dictionary.</param>
-    /// <exception cref="PdfFormatException">A filter is unknown or not decodable, or the data is too large.</exception>
+    /// <exception cref="PdfFormatException">A filter is unknown or not decodable.</exception>
+    /// <exception cref="ResourceLimitExceededException">The data decodes to more than <see cref="ResourceLimits.MaxDecompressedBytes"/>.</exception>
     public static byte[] Decode(PdfStreamObject stream, Func<PdfObject?, PdfObject?> resolve)
     {
         var filters = resolve(stream.Dictionary["Filter"]) switch
@@ -443,11 +441,5 @@ internal static class StreamDecoder
             _ => null,
         };
 
-    private static void CheckLength(long length)
-    {
-        if (length > MaxDecodedLength)
-        {
-            throw new PdfFormatException($"A stream decodes to more than {MaxDecodedLength / (1024 * 1024)} MB.");
-        }
-    }
+    private static void CheckLength(long length) => ResourceLimits.CheckDecompressedBytes(length);
 }

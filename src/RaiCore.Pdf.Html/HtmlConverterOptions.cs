@@ -98,12 +98,24 @@ public sealed class HtmlConverterOptions
     /// a CMYK JPEG image, or <see cref="Encryption"/>. Defaults to <see cref="PdfAConformance.None"/>.
     /// </summary>
     public PdfAConformance PdfAConformance { get; init; }
+
+    /// <summary>
+    /// Limits on what the document may make the conversion do (nesting depth, element and table cell counts, image
+    /// pixels, resource and font sizes, pages and time), for converting untrusted HTML safely. Defaults to
+    /// <see cref="ResourceLimits.Default"/>. Exceeding a structural limit (depth, elements, table cells, pages, time)
+    /// throws <see cref="ResourceLimitExceededException"/>; an image, stylesheet or web font over a size limit is
+    /// skipped like one that cannot be loaded.
+    /// </summary>
+    public ResourceLimits Limits { get; init; } = ResourceLimits.Default;
 }
 
 /// <summary>Built-in resource loading.</summary>
 public static class Resources
 {
-    /// <summary>Loads <c>data:</c> and <c>file:</c> URIs; everything else returns <c>null</c>.</summary>
+    /// <summary>
+    /// Loads <c>data:</c> and <c>file:</c> URIs; everything else returns <c>null</c>. Files larger than the
+    /// <see cref="ResourceLimits.MaxResourceBytes"/> in effect are not read.
+    /// </summary>
     public static byte[]? Default(Uri uri)
     {
         ArgumentNullException.ThrowIfNull(uri);
@@ -114,11 +126,61 @@ public static class Resources
 
         if (uri.IsFile && File.Exists(uri.LocalPath))
         {
-            return File.ReadAllBytes(uri.LocalPath);
+            return ReadFile(uri.LocalPath, ResourceLimits.Current.MaxResourceBytes);
         }
 
         return null;
     }
+
+    /// <summary>
+    /// Reads a file, or returns <c>null</c> if it is larger than <paramref name="maxBytes"/>: also for files of unknown
+    /// length (devices and pipes), which are read only that far.
+    /// </summary>
+    private static byte[]? ReadFile(string path, long maxBytes)
+    {
+        using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        if (file.CanSeek && file.Length > maxBytes)
+        {
+            return null;
+        }
+
+        using var buffer = new MemoryStream();
+        var chunk = new byte[81920];
+        int read;
+        while ((read = file.Read(chunk, 0, chunk.Length)) > 0)
+        {
+            if (buffer.Length + read > maxBytes)
+            {
+                return null;
+            }
+
+            buffer.Write(chunk, 0, read);
+        }
+
+        return buffer.ToArray();
+    }
+
+    /// <summary>
+    /// Loads a resource with <paramref name="loader"/>; <c>null</c> when it cannot be loaded or is larger than
+    /// <see cref="ResourceLimits.MaxResourceBytes"/>, so it is skipped like a missing one.
+    /// </summary>
+    internal static byte[]? Load(ResourceLoader loader, Uri uri)
+    {
+        var data = Limit(loader(uri));
+        ResourceLimits.Checkpoint(); // Loading may have taken a while.
+        return data;
+    }
+
+    /// <summary>The data, or <c>null</c> when it is larger than <see cref="ResourceLimits.MaxResourceBytes"/>.</summary>
+    internal static byte[]? Limit(byte[]? data) => data is not null && data.LongLength > ResourceLimits.Current.MaxResourceBytes ? null : data;
+
+    /// <summary>
+    /// Whether the exception is about a single resource being too large (it is then skipped, like a broken one) rather
+    /// than about the whole conversion (which then fails).
+    /// </summary>
+    internal static bool IsPerResource(ResourceLimitExceededException exception) =>
+        exception.LimitName is nameof(ResourceLimits.MaxImagePixels) or nameof(ResourceLimits.MaxResourceBytes)
+            or nameof(ResourceLimits.MaxFontBytes) or nameof(ResourceLimits.MaxDecompressedBytes);
 
     /// <summary>Decodes a <c>data:[mediatype][;base64],payload</c> URI.</summary>
     public static byte[]? DecodeDataUri(string uri)

@@ -87,6 +87,8 @@ internal static class TableLayouter
         var occupied = new List<bool[]>();
         var cells = new List<GridCell>();
         var columns = 0;
+        var maxCells = ResourceLimits.Current.MaxTableCells;
+        var covered = 0L;
         for (var r = 0; r < rows; r++)
         {
             var c = 0;
@@ -99,6 +101,14 @@ internal static class TableLayouter
 
                 var rowSpan = Math.Clamp(cell.RowSpan, 1, rows - r);
                 var columnSpan = Math.Max(1, cell.ColumnSpan);
+
+                // The slots cells cover (and the grid, rows times columns) grow with the spans: check before filling them.
+                covered += (long)rowSpan * columnSpan;
+                if (covered > maxCells || (long)rows * (c + columnSpan) > maxCells)
+                {
+                    throw new ResourceLimitExceededException(nameof(ResourceLimits.MaxTableCells), maxCells, $"The table has more than the limit of {maxCells} cells.");
+                }
+
                 for (var dr = 0; dr < rowSpan; dr++)
                 {
                     for (var dc = 0; dc < columnSpan; dc++)
@@ -114,6 +124,10 @@ internal static class TableLayouter
         }
 
         columns = Math.Max(columns, table.ColumnWidths.Count);
+        if ((long)Math.Max(1, rows) * columns > maxCells)
+        {
+            throw new ResourceLimitExceededException(nameof(ResourceLimits.MaxTableCells), maxCells, $"The table has more than the limit of {maxCells} cells.");
+        }
         if (table.RightToLeft)
         {
             // A right-to-left table's first column is on the right (CSS 2.1 section 17.5): the grid is mirrored, so

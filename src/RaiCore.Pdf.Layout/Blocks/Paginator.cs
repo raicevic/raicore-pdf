@@ -94,6 +94,9 @@ internal sealed partial class Paginator
 
     private readonly bool _static;
 
+    /// <summary>The most pages the document may have (<see cref="ResourceLimits.MaxPages"/>).</summary>
+    private readonly int _maxPages;
+
     /// <summary>Each page's context and setup, parallel to <see cref="_pages"/>.</summary>
     private readonly List<PageFrame> _frames = [];
 
@@ -136,6 +139,7 @@ internal sealed partial class Paginator
 
     private Paginator(PageSetup setup, FlowDocument? document = null, bool isStatic = false)
     {
+        _maxPages = ResourceLimits.Current.MaxPages;
         _setup = setup;
         _document = document;
         _static = isStatic;
@@ -219,6 +223,7 @@ internal sealed partial class Paginator
 
     public static PaginationResult Paginate(FlowDocument document)
     {
+        BlockDepth.Check(document.Blocks);
         using var cache = LayoutCache.Enter();
         var paginator = new Paginator(document.Setup, document);
         var pendingMargin = new CollapsedMargin();
@@ -269,6 +274,8 @@ internal sealed partial class Paginator
     /// </summary>
     private static (double Min, double Max) IntrinsicContentBorderBox(Block block, BoxStyle? style = null)
     {
+        using var nesting = ResourceLimits.EnterNesting();
+        ResourceLimits.Checkpoint();
         style ??= block.Style.Intrinsic();
         var decoration = style.Border.Widths.Horizontal + style.Padding.Horizontal;
         var (min, max) = block switch
@@ -365,6 +372,12 @@ internal sealed partial class Paginator
         var created = _pageIndex == _pages.Count;
         if (created)
         {
+            if (!_static && _pages.Count >= _maxPages)
+            {
+                throw new ResourceLimitExceededException(nameof(ResourceLimits.MaxPages), _maxPages, $"The document needs more than the limit of {_maxPages} pages.");
+            }
+
+            ResourceLimits.Checkpoint();
             var side = _frames.Count > 0 ? Opposite(_frames[^1].Context.Side) : PageSide.Right; // Left-to-right: starts on a right page.
             var context = new PageContext(_pageIndex + 1, name, side, blank);
             _frames.Add(new PageFrame(context, Resolve(context)));
@@ -1135,6 +1148,7 @@ internal sealed partial class Paginator
 
         while (i < lines.Count)
         {
+            ResourceLimits.Checkpoint();
             var fit = CountFittingLines(lines, i, from, Remaining);
             var rest = lines.Count - i;
             if (fit >= rest)
@@ -1289,6 +1303,7 @@ internal sealed partial class Paginator
         {
             foreach (var (start, groupEnd) in layout.Groups.Where(g => g.End > headerEnd && g.Start < footerStart))
             {
+                ResourceLimits.Checkpoint();
                 var groupStart = Math.Max(start, headerEnd);
                 var end = Math.Min(groupEnd, footerStart);
                 var height = layout.Height(groupStart, end);
@@ -1526,6 +1541,8 @@ internal sealed partial class Paginator
     /// <summary>Height of a block's border box from its content alone, ignoring its height properties.</summary>
     private double MeasureContentBox(Block block, double boxWidth)
     {
+        using var nesting = ResourceLimits.EnterNesting();
+        ResourceLimits.Checkpoint();
         var style = StyleOf(block);
         var decoration = style.Border.Widths.Vertical + style.Padding.Vertical;
         var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
@@ -1573,6 +1590,8 @@ internal sealed partial class Paginator
     /// <summary>The smallest height a block of a given border-box width needs at the bottom of a page.</summary>
     private double MinimumStartBox(Block block, double boxWidth)
     {
+        using var nesting = ResourceLimits.EnterNesting();
+        ResourceLimits.Checkpoint();
         var style = StyleOf(block);
         if (style.Height is not null && block is not TableBlock)
         {

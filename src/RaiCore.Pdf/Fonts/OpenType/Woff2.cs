@@ -97,10 +97,7 @@ internal static class Woff2
 
     private static byte[] Decompress(ReadOnlySpan<byte> compressed, long expectedLength)
     {
-        if (expectedLength > 512L * 1024 * 1024)
-        {
-            throw new FontFormatException("WOFF2 font is unreasonably large.");
-        }
+        ResourceLimits.CheckFontBytes(expectedLength); // Before decompressing: a tiny file can declare gigabytes.
 
         var output = new byte[expectedLength];
         using var input = new MemoryStream(compressed.ToArray());

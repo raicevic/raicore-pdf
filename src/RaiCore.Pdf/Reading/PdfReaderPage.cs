@@ -85,10 +85,7 @@ public sealed class PdfReaderPage
         foreach (var stream in streams)
         {
             var data = Reader.Store.Decode(stream);
-            if (content.Length + data.Length > Filters.StreamDecoder.MaxDecodedLength)
-            {
-                throw new PdfFormatException("The page content is too large.");
-            }
+            ResourceLimits.CheckDecompressedBytes(content.Length + (long)data.Length);
 
             content.Write(data);
             content.WriteByte((byte)'\n'); // Content may be split between streams anywhere between tokens.

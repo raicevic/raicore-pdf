@@ -182,8 +182,8 @@ internal sealed partial class BoxBuilder
         {
             Tag = CellTag(td, headerGroup),
             Style = new BoxStyle { Padding = box.Padding, Border = box.Border, Background = box.Background, BackgroundClip = box.BackgroundClip, BorderRadius = box.BorderRadius },
-            ColumnSpan = Math.Max(1, Integer(td.GetAttribute("colspan")) ?? 1),
-            RowSpan = Math.Max(1, Integer(td.GetAttribute("rowspan")) ?? 1),
+            ColumnSpan = Math.Clamp(Integer(td.GetAttribute("colspan")) ?? 1, 1, MaxColumnSpan),
+            RowSpan = Math.Clamp(Integer(td.GetAttribute("rowspan")) ?? 1, 1, MaxRowSpan),
             VerticalAlignment = valign switch
             {
                 "TOP" or "BASELINE" or "TEXT-TOP" => VerticalAlignment.Top,
@@ -216,12 +216,18 @@ internal sealed partial class BoxBuilder
             var style = Style(col);
             var length = style.Width.IsAuto ? Dimension(col.GetAttribute("width")) : style.Width;
             var width = TableWidthFor(length, tableWidth);
-            for (var i = 0; i < Math.Max(1, Integer(col.GetAttribute("span")) ?? 1); i++)
+            for (var i = 0; i < Math.Clamp(Integer(col.GetAttribute("span")) ?? 1, 1, MaxColumnSpan); i++)
             {
                 table.ColumnWidths.Add(width);
             }
         }
     }
+
+    /// <summary>The largest <c>colspan</c> and <c>span</c>: larger values count as this (HTML's table processing model).</summary>
+    private const int MaxColumnSpan = 1000;
+
+    /// <summary>The largest <c>rowspan</c>: larger values count as this (HTML's table processing model).</summary>
+    private const int MaxRowSpan = 65534;
 
     private static readonly PdfColor Gray = PdfColor.FromRgb(128, 128, 128);
 

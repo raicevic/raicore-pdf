@@ -57,10 +57,7 @@ internal static class WebPDecoder
         var flags = data[header.Offset];
         var canvasWidth = ReadUInt24(data, header.Offset + 4) + 1;
         var canvasHeight = ReadUInt24(data, header.Offset + 7) + 1;
-        if ((long)canvasWidth * canvasHeight > 200_000_000)
-        {
-            throw new ImageFormatException("WebP image is too large.");
-        }
+        ResourceLimits.CheckImagePixels(canvasWidth, canvasHeight);
 
         if ((flags & AnimationFlag) != 0)
         {

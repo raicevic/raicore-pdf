@@ -247,6 +247,7 @@ internal static partial class ParagraphLayouter
         var b = 0;
         while (lineStart < text.Length)
         {
+            ResourceLimits.Checkpoint(); // A long paragraph takes a while: stop when out of time.
             while (b < breaks.Count && breaks[b].Position <= lineStart)
             {
                 b++;

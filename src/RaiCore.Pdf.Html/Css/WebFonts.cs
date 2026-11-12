@@ -151,14 +151,14 @@ internal sealed class WebFonts
         byte[]? data;
         if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
         {
-            data = Resources.DecodeDataUri(url);
+            data = Resources.Limit(Resources.DecodeDataUri(url));
         }
         else
         {
             var uri = Uri.TryCreate(url, UriKind.Absolute, out var absolute) ? absolute
                 : face.BaseUri is not null && Uri.TryCreate(face.BaseUri, url, out var relative) ? relative
                 : null;
-            data = uri is null ? null : _loader(uri);
+            data = uri is null ? null : Resources.Load(_loader, uri);
         }
 
         if (data is null)
@@ -177,6 +177,10 @@ internal sealed class WebFonts
         catch (NotSupportedException)
         {
             return null;
+        }
+        catch (ResourceLimitExceededException ex) when (Resources.IsPerResource(ex))
+        {
+            return null; // A WOFF or WOFF2 file that decompresses to too much.
         }
     }
 

@@ -15,6 +15,7 @@ internal static class Woff
         r.Position = 44;
 
         var tables = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        var total = 0L;
         for (var i = 0; i < numTables; i++)
         {
             var tag = r.ReadTag();
@@ -28,6 +29,8 @@ internal static class Woff
                 throw new FontFormatException($"WOFF table '{tag}' lies outside the file.");
             }
 
+            total += origLength;
+            ResourceLimits.CheckFontBytes(total); // Before inflating: a tiny file can declare gigabytes.
             var compressed = data.AsSpan(offset, compLength);
             tables[tag] = compLength == origLength ? compressed.ToArray() : Inflate(compressed, origLength, tag);
         }
