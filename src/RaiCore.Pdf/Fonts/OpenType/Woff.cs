@@ -43,10 +43,18 @@ internal static class Woff
         using var input = new MemoryStream(compressed.ToArray());
         using var zlib = new ZLibStream(input, CompressionMode.Decompress);
         var output = new byte[expectedLength];
-        zlib.ReadExactly(output);
-        if (zlib.ReadByte() != -1)
+        try
         {
-            throw new FontFormatException($"WOFF table '{tag}' decompresses to more than its declared length.");
+            zlib.ReadExactly(output);
+            if (zlib.ReadByte() != -1)
+            {
+                throw new FontFormatException($"WOFF table '{tag}' decompresses to more than its declared length.");
+            }
+        }
+        catch (Exception ex) when (ex is InvalidDataException or IOException)
+        {
+            // Corrupt or short zlib data (ZLibException and EndOfStreamException are IOExceptions).
+            throw new FontFormatException($"WOFF table '{tag}' has corrupt compressed data.", ex);
         }
 
         return output;

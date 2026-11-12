@@ -93,7 +93,7 @@ internal static class StreamDecoder
                 output.Write(buffer, 0, read);
             }
         }
-        catch (InvalidDataException)
+        catch (Exception ex) when (ex is InvalidDataException or IOException) // zlib errors are IOExceptions (ZLibException).
         {
             // Keep what was decoded before the damage.
         }

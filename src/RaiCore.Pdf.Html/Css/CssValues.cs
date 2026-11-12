@@ -26,7 +26,7 @@ internal readonly record struct CssLength(double Value, CssLengthKind Kind)
     {
         CssLengthKind.Points => Value,
         CssLengthKind.Percent => Value / 100 * reference,
-        CssLengthKind.Calc => Calc?.Evaluate(reference) ?? 0,
+        CssLengthKind.Calc => CssValues.Bounded(Calc?.Evaluate(reference) ?? 0),
         _ => 0,
     };
 
@@ -108,18 +108,27 @@ internal static partial class CssValues
         }
 
         var match = LengthRegex().Match(value);
-        if (!match.Success || !double.TryParse(match.Groups[1].ValueSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
+        if (!match.Success || !double.TryParse(match.Groups[1].ValueSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number))
         {
             return null;
         }
 
         return match.Groups[2].Value switch
         {
-            "" => new(number * PointsPerPixel, CssLengthKind.Points),
-            "%" => new(number, CssLengthKind.Percent),
-            var unit => ToPoints(number, unit, fontSize, rootFontSize, viewport) is { } points ? new(points, CssLengthKind.Points) : null,
+            "" => new(Bounded(number * PointsPerPixel), CssLengthKind.Points),
+            "%" => new(Bounded(number), CssLengthKind.Percent),
+            var unit => ToPoints(number, unit, fontSize, rootFontSize, viewport) is { } points ? new(Bounded(points), CssLengthKind.Points) : null,
         };
     }
+
+    /// <summary>
+    /// The largest length (in points) or percentage used: larger values are clamped to it, so that sums of them stay
+    /// finite (fuzzing found <c>letter-spacing: .1e308em</c> adding up to infinity). About 350 meters.
+    /// </summary>
+    public const double MaxLength = 1e6;
+
+    /// <summary>A length or percentage within plus or minus <see cref="MaxLength"/>; 0 for NaN.</summary>
+    public static double Bounded(double value) => double.IsNaN(value) ? 0 : Math.Clamp(value, -MaxLength, MaxLength);
 
     /// <summary>Converts a number with a length unit to points; <c>null</c> for unknown units (or viewport units without a viewport).</summary>
     public static double? ToPoints(double number, string unit, double fontSize, double rootFontSize, CssViewport viewport) => unit.ToUpperInvariant() switch

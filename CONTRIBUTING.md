@@ -39,6 +39,24 @@ trimmed and with Native AOT, runs both binaries and fails on unexpected trim or 
 platform's C toolchain (clang on Linux, Xcode on macOS, Visual Studio's C++ tools on Windows); pass `trimmed` to
 publish only the trimmed app.
 
+### Fuzzing
+
+`tests/RaiCore.Pdf.Fuzz` fuzzes the parsers and decoders: HTML and CSS conversion, PNG, JPEG, GIF, BMP, WebP and SVG,
+OpenType/TrueType/TTC, WOFF and WOFF2, and the PDF reader (the targets are in
+`tests/RaiCore.Pdf.Tests/Fuzzing/FuzzTargets.cs`). An input may only make a target fail with a documented exception
+(a format exception, `ResourceLimitExceededException`, cancellation); anything else, a hang or a stack overflow is a
+bug. The [Fuzz workflow](.github/workflows/fuzz.yml) runs every target nightly with libFuzzer (libfuzzer-dotnet and
+SharpFuzz) and uploads what it finds. Without native tools, the project has a managed mutation fuzzer:
+
+```sh
+tests/RaiCore.Pdf.Fuzz/seed-corpus.sh png /tmp/png
+dotnet run -c Release --project tests/RaiCore.Pdf.Fuzz -- local png 100000 1 /tmp/png-out /tmp/png
+dotnet run -c Release --project tests/RaiCore.Pdf.Fuzz -- minimize png /tmp/png-out/<input> /tmp/small.png
+```
+
+Fix what it finds and add the minimized input to `tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Crashes/<target>`:
+`FuzzCorpusTests` replays the seeds and all those inputs on every test run.
+
 ## Guidelines
 
 - One feature per pull request, with tests that fail without the change.

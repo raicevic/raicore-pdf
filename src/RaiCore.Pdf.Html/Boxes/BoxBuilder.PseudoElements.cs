@@ -229,8 +229,8 @@ internal sealed partial class BoxBuilder
                 case ICssStyleRule style when style.SelectorText is { } text && PseudoElementRegex().IsMatch(text): // Null when AngleSharp cannot parse it (li::marker).
                     // "p::before" selects p; a bare "::before" (or "ul > ::after") selects any element.
                     var selector = PseudoElementRegex().Replace(
-                        style.SelectorText,
-                        match => match.Index == 0 || style.SelectorText[match.Index - 1] is ' ' or ',' or '>' or '+' or '~' or '(' ? "*" : string.Empty);
+                        text,
+                        match => match.Index == 0 || text[match.Index - 1] is ' ' or ',' or '>' or '+' or '~' or '(' ? "*" : string.Empty);
                     try
                     {
                         candidates.UnionWith(Document.QuerySelectorAll(selector));

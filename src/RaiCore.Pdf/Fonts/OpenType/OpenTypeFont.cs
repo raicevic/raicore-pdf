@@ -434,6 +434,7 @@ internal sealed class OpenTypeFont
     {
         if (!_tables.TryGetValue("name", out var t))
         {
+            PostScriptName = "Font"; // Embedded fonts need a name (fuzzing found fonts without a name table).
             return;
         }
 

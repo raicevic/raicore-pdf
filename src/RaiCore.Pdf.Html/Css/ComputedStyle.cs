@@ -581,7 +581,9 @@ internal sealed partial record ComputedStyle
     };
 
     private static double ParseNumber(string value, double fallback) =>
-        double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number) ? number : fallback;
+        double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number) && double.IsFinite(number)
+            ? number
+            : fallback; // 1e999 parses as infinity, which no layout can use (fuzzing found flex-grow: 1e3082).
 
     private static LineHeight ParseLineHeight(string value, double fontSize, double rootFontSize, CssViewport viewport)
     {
@@ -590,7 +592,7 @@ internal sealed partial record ComputedStyle
             return LineHeight.Normal;
         }
 
-        if (double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var factor))
+        if (double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var factor) && double.IsFinite(factor))
         {
             return LineHeight.Multiple(Math.Max(0, factor));
         }

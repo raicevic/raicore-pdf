@@ -1,6 +1,7 @@
 using System.Text;
 using AngleSharp;
 using AngleSharp.Css;
+using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html.Boxes;
@@ -24,7 +25,7 @@ namespace RaiCore.Pdf.Html;
 /// pdf.Save("invoice.pdf");
 /// </code>
 /// </example>
-public static class HtmlToPdf
+public static partial class HtmlToPdf
 {
     /// <summary>
     /// How many times a document with page cross-references is laid out at most: once with placeholders, then with
@@ -223,6 +224,7 @@ public static class HtmlToPdf
         CheckStructure(document, options.Limits);
 
         var styleSheets = PrepareStyles(document, options);
+        RemoveUnmatchableRules(document);
         var cssTexts = styleSheets.Select(s => s.Css).ToList();
         var pageRules = PageRules.Load(options.Page, cssTexts);
         var setup = pageRules.Setup;
@@ -427,8 +429,47 @@ public static class HtmlToPdf
         return cssTexts;
     }
 
+    /// <summary>
+    /// Removes style rules whose selector AngleSharp could not read: it keeps them, and throws
+    /// <see cref="NullReferenceException"/> matching the rules nested in them (fuzzing found <c>:{&amp;{}}</c>). They
+    /// cannot match an element anyway.
+    /// </summary>
+    private static void RemoveUnmatchableRules(IDocument document)
+    {
+        foreach (var sheet in document.StyleSheets.OfType<ICssStyleSheet>())
+        {
+            Remove(sheet.Rules, sheet.RemoveAt);
+        }
+
+        static void Remove(ICssRuleList rules, Action<int> removeAt)
+        {
+            for (var i = rules.Length - 1; i >= 0; i--)
+            {
+                switch (rules[i])
+                {
+                    case ICssStyleRule { SelectorText: null }:
+                        removeAt(i);
+                        break;
+                    case ICssGroupingRule group:
+                        Remove(group.Rules, group.RemoveAt);
+                        break;
+                }
+            }
+        }
+    }
+
     /// <summary>Rewrites CSS that AngleSharp would misread before it is parsed (see LegacyBreaks and LogicalSides).</summary>
-    private static string RewriteCss(string css) => CssBackgrounds.RewriteShorthand(LogicalSides.Rewrite(LegacyBreaks.Rewrite(css)));
+    private static string RewriteCss(string css) => CssBackgrounds.RewriteShorthand(LogicalSides.Rewrite(LegacyBreaks.Rewrite(StripShadows(css))));
+
+    /// <summary>
+    /// Removes <c>box-shadow</c> and <c>text-shadow</c>, which are not drawn: AngleSharp throws a
+    /// <see cref="NullReferenceException"/> computing some malformed ones (fuzzing found <c>box-shadow: 1px1px</c>).
+    /// </summary>
+    private static string StripShadows(string css) =>
+        css.Contains("shadow", StringComparison.OrdinalIgnoreCase) ? ShadowRegex().Replace(css, string.Empty) : css;
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"(?<![\w-])(?:box|text)-shadow\s*:[^;}]*;?", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex ShadowRegex();
 
     private static Uri? ResolveUri(Uri? baseUri, string reference) =>
         Uri.TryCreate(reference, UriKind.Absolute, out var absolute) ? absolute

@@ -1,0 +1,68 @@
+name: Fuzz
+
+# Coverage-guided fuzzing of the parsers and decoders with libFuzzer (libfuzzer-dotnet) and SharpFuzz. Runs nightly and
+# on demand, not on pull requests (the corpus replay test in the unit tests covers those). Crashes and hangs are
+# uploaded as artifacts; each one found becomes a regression input in tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Crashes,
+# replayed by FuzzCorpusTests on every build.
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Seconds to fuzz each target
+        default: "300"
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  LIBFUZZER_DOTNET: https://github.com/Metalnem/libfuzzer-dotnet/releases/download/v2025.05.02.0904/libfuzzer-dotnet-ubuntu
+
+jobs:
+  fuzz:
+    name: fuzz ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [html, css, png, jpeg, gif, bmp, webp, svg, font, woff, woff2, pdf]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Install SharpFuzz and libfuzzer-dotnet
+        run: |
+          dotnet tool install --global SharpFuzz.CommandLine --version 2.3.0
+          curl -sSfL -o libfuzzer-dotnet "$LIBFUZZER_DOTNET"
+          chmod +x libfuzzer-dotnet
+
+      - name: Build and instrument
+        run: |
+          dotnet publish tests/RaiCore.Pdf.Fuzz --configuration Release --output fuzz-out
+          for assembly in RaiCore.Pdf RaiCore.Pdf.Layout RaiCore.Pdf.Html; do
+            sharpfuzz "fuzz-out/$assembly.dll"
+          done
+
+      - name: Seed corpus
+        run: tests/RaiCore.Pdf.Fuzz/seed-corpus.sh "${{ matrix.target }}" corpus
+
+      - name: Fuzz
+        run: |
+          mkdir -p crashes
+          ./libfuzzer-dotnet --target_path=fuzz-out/RaiCore.Pdf.Fuzz --target_arg="${{ matrix.target }}" \
+            -max_total_time="${{ inputs.seconds || '300' }}" -timeout=30 -rss_limit_mb=4096 -max_len=1048576 \
+            -artifact_prefix="crashes/${{ matrix.target }}-" corpus
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: crashes-${{ matrix.target }}
+          path: crashes/

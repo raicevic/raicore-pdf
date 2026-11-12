@@ -1386,6 +1386,11 @@ internal sealed partial class Paginator
 
     private static void DrawRowsTagged(PdfCanvas canvas, double pageHeight, TableLayout layout, double x, double top, int start, int end)
     {
+        if (end <= start)
+        {
+            return; // No rows (fuzzing found a header whose rows span into the footer, leaving none to repeat).
+        }
+
         var table = layout.Table;
         var collapse = table.BorderCollapse == BorderCollapse.Collapse;
         var rowTop = new double[end - start + 1];

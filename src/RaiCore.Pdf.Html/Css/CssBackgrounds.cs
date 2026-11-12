@@ -542,7 +542,7 @@ internal static partial class CssBackgrounds
     private static double? ParseAngle(string value)
     {
         var match = AngleRegex().Match(value.Trim());
-        if (!match.Success || !double.TryParse(match.Groups[1].ValueSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
+        if (!match.Success || !double.TryParse(match.Groups[1].ValueSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) || !double.IsFinite(number))
         {
             return null;
         }

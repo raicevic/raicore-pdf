@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Fuzz targets for libFuzzer (via SharpFuzz) and a managed mutation fuzzer: see Program.cs and .github/workflows/fuzz.yml. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SharpFuzz" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\RaiCore.Pdf\RaiCore.Pdf.csproj" />
+    <ProjectReference Include="..\..\src\RaiCore.Pdf.Layout\RaiCore.Pdf.Layout.csproj" />
+    <ProjectReference Include="..\..\src\RaiCore.Pdf.Html\RaiCore.Pdf.Html.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The targets live with the unit tests, which replay the corpus through them on every build. -->
+    <Compile Include="..\RaiCore.Pdf.Tests\Fuzzing\FuzzTargets.cs" Link="FuzzTargets.cs" />
+  </ItemGroup>
+
+</Project>

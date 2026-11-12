@@ -89,6 +89,23 @@ internal sealed partial class PageRules
             }
         }
 
+        // A page too small for its margins (fuzzing found "size: 5") or of no usable size keeps the content area
+        // positive: margins that leave no room are dropped, sizes that are not numbers are not used.
+        if (!(size.Width > 0 && size.Height > 0 && double.IsFinite(size.Width) && double.IsFinite(size.Height)))
+        {
+            size = _defaults.Size;
+        }
+
+        if (!(size.Width - margins.Horizontal > 0) || !double.IsFinite(margins.Horizontal))
+        {
+            margins = margins with { Left = 0, Right = 0 };
+        }
+
+        if (!(size.Height - margins.Vertical > 0) || !double.IsFinite(margins.Vertical))
+        {
+            margins = margins with { Top = 0, Bottom = 0 };
+        }
+
         return new PageSetup(size, margins);
     }
 

@@ -701,18 +701,24 @@ internal sealed partial class BoxBuilder
     {
         if (css.Kind == CssLengthKind.Points && css.Value > 0)
         {
-            return css.Value;
+            return Math.Min(css.Value, MaxImageSize);
         }
 
         if (css.HasPercentage && reference > 0 && css.Resolve(reference) is var resolved && resolved > 0)
         {
-            return resolved;
+            return Math.Min(resolved, MaxImageSize);
         }
 
-        return double.TryParse(attribute, NumberStyles.Float, CultureInfo.InvariantCulture, out var pixels) && pixels > 0
-            ? pixels * CssValues.PointsPerPixel
+        return double.TryParse(attribute, NumberStyles.Float, CultureInfo.InvariantCulture, out var pixels) && pixels > 0 && double.IsFinite(pixels)
+            ? Math.Min(pixels * CssValues.PointsPerPixel, MaxImageSize)
             : null;
     }
+
+    /// <summary>
+    /// The largest image size in points (200 inches, the largest PDF page): larger sizes (fuzzing found
+    /// <c>width="1e308"</c>) overflow to infinity when the image is scaled.
+    /// </summary>
+    private const double MaxImageSize = 14_400;
 
     /// <summary>
     /// Where a block that shrinks to its content (a table, an image) goes in a wider containing block: auto margins
@@ -971,12 +977,16 @@ internal sealed partial class BoxBuilder
         {
             var tokens = part.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var tag = tokens[0].Trim('"', '\'');
-            if (tag.Length != 4)
+            var value = tokens.Length > 1 ? tokens[1] : "1";
+
+            // A tag is four printable ASCII letters and a value a number; anything else is invalid and ignored (HarfBuzz
+            // would throw on it: fuzzing found an unterminated string).
+            if (tag.Length != 4 || !tag.All(c => c is >= '!' and <= '~' and not ('"' or '\'' or '=' or '[' or ']' or ','))
+                || !(value is "on" or "off" || (value.Length <= 9 && value.All(char.IsAsciiDigit))))
             {
                 continue;
             }
 
-            var value = tokens.Length > 1 ? tokens[1] : "1";
             features.Add(value switch
             {
                 "0" or "off" => "-" + tag,
