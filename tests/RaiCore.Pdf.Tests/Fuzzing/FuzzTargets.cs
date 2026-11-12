@@ -19,8 +19,15 @@ namespace RaiCore.Pdf.Tests.Fuzzing;
 /// </remarks>
 public static class FuzzTargets
 {
+    private static ResourceLimits? _limits;
+
     /// <summary>Tight limits, so that one input stays fast: hostile input must hit them, not stall the fuzzer.</summary>
-    public static readonly ResourceLimits Limits = ResourceLimits.Default with
+    /// <remarks>
+    /// Built on first use, not in a static initializer: under libFuzzer the library is instrumented, and instrumented
+    /// code must not run before <c>Fuzzer.LibFuzzer.Run</c> has set up its coverage map (it crashes with an access
+    /// violation). Choosing a target by name (<see cref="All"/>) runs no library code.
+    /// </remarks>
+    public static ResourceLimits Limits => _limits ??= ResourceLimits.Default with
     {
         MaxElements = 20_000,
         MaxTableCells = 100_000,
@@ -169,9 +176,9 @@ public static class FuzzTargets
 
     /// <summary>
     /// The output mode of an HTML or CSS input, from its length, so that the fuzzer varies it along with the input (most
-    /// mutations change the length): plain, tagged, PDF/UA or PDF/A-2b.
+    /// mutations change the length): plain, tagged, PDF/UA, PDF/A-2b, or tagged and written page by page to a stream.
     /// </summary>
-    public static OutputMode ModeOf(byte[] input) => (OutputMode)(input.Length % 4);
+    public static OutputMode ModeOf(byte[] input) => (OutputMode)(input.Length % 5);
 
     private static void Convert(string html, OutputMode mode)
     {
@@ -194,7 +201,7 @@ public static class FuzzTargets
         {
             Limits = Limits,
             ResourceLoader = _ => null,
-            Tagged = mode is OutputMode.Tagged or OutputMode.PdfUA,
+            Tagged = mode is OutputMode.Tagged or OutputMode.PdfUA or OutputMode.TaggedStream,
             PdfUA = mode == OutputMode.PdfUA,
             PdfAConformance = mode == OutputMode.PdfA ? PdfAConformance.PdfA2B : PdfAConformance.None,
 
@@ -203,7 +210,14 @@ public static class FuzzTargets
             Language = mode == OutputMode.PdfUA ? "en" : null,
         };
 
-        return HtmlToPdf.ConvertToBytes(html, options);
+        if (mode != OutputMode.TaggedStream)
+        {
+            return HtmlToPdf.ConvertToBytes(html, options);
+        }
+
+        using var output = new MemoryStream();
+        HtmlToPdf.ConvertToStream(html, output, options);
+        return output.ToArray();
     }
 }
 
@@ -221,4 +235,7 @@ public enum OutputMode
 
     /// <summary>PDF/A-2b.</summary>
     PdfA,
+
+    /// <summary>A tagged PDF written page by page with <see cref="HtmlToPdf.ConvertToStream"/>.</summary>
+    TaggedStream,
 }

@@ -12,6 +12,8 @@ using SharpFuzz;
 //   tests/RaiCore.Pdf.Fuzz/seed-corpus.sh png /tmp/png
 //   dotnet run -c Release --project tests/RaiCore.Pdf.Fuzz -- local png 100000 1 /tmp/png-out /tmp/png
 // An input that fails becomes a regression input in tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Crashes/<target>.
+// Under libFuzzer, nothing may run library code (which is instrumented) before LibFuzzer.Run sets up the coverage map:
+// the target is chosen by name only, and everything else happens inside the callback.
 if (args.Length == 1 && FuzzTargets.All.ContainsKey(args[0]))
 {
     var name = args[0];

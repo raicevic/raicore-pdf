@@ -99,6 +99,7 @@ public class FuzzCorpusTests
     [InlineData(OutputMode.Tagged, "/StructTreeRoot")]
     [InlineData(OutputMode.PdfUA, "pdfuaid:part")]
     [InlineData(OutputMode.PdfA, "pdfaid:part")]
+    [InlineData(OutputMode.TaggedStream, "/StructTreeRoot")]
     public void The_output_modes_write_what_they_say(OutputMode mode, string? marker)
     {
         // The table seed breaks no rule of PDF/UA or PDF/A, so it converts in every mode.
@@ -119,7 +120,31 @@ public class FuzzCorpusTests
             Assert.DoesNotContain("/StructTreeRoot", text, StringComparison.Ordinal);
         }
 
-        Assert.Equal([OutputMode.Plain, OutputMode.Tagged, OutputMode.PdfUA, OutputMode.PdfA], Enumerable.Range(4, 4).Select(n => FuzzTargets.ModeOf(new byte[n])));
+        Assert.Equal(Enum.GetValues<OutputMode>(), Enumerable.Range(5, 5).Select(n => FuzzTargets.ModeOf(new byte[n])));
+    }
+
+    [Fact]
+    public void Choosing_a_target_runs_no_library_code()
+    {
+        // Under libFuzzer the library is instrumented, and instrumented code crashes before LibFuzzer.Run sets up its
+        // coverage map: initializing the targets (as choosing one by name does) must create no library objects. A fresh
+        // copy of the type is initialized in a load context of its own, since this process has used it already.
+        var context = new System.Runtime.Loader.AssemblyLoadContext("fuzz-targets", isCollectible: true);
+        try
+        {
+            var type = context.LoadFromAssemblyPath(typeof(FuzzTargets).Assembly.Location).GetType(typeof(FuzzTargets).FullName!)!;
+            System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+            var fields = type.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
+                .Where(f => f.FieldType.Assembly.GetName().Name!.StartsWith("RaiCore.Pdf", StringComparison.Ordinal))
+                .ToList();
+
+            Assert.NotEmpty(fields); // The lazily built limits.
+            Assert.All(fields, f => Assert.Null(f.GetValue(null)));
+        }
+        finally
+        {
+            context.Unload();
+        }
     }
 
     [Fact]

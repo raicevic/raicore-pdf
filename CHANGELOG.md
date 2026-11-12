@@ -110,7 +110,7 @@ change at any time, and this section lists what the packages can do so far.
   and WOFF2, the PDF reader, layout); `limits.Enforce(cancellationToken)` applies others to the work in its scope, with
   a time limit and cancellation checked between pages, blocks, table rows and lines. Deep nesting stops with that
   exception instead of overflowing the stack. PNG data is inflated only as far as the image needs.
-- Fuzzed (#53): the HTML/CSS converter (plain, tagged, PDF/UA and PDF/A output), the image decoders, the font
+- Fuzzed (#53): the HTML/CSS converter (plain, tagged, PDF/UA, PDF/A and streamed output), the image decoders, the font
   parsers (OpenType, TTC, WOFF, WOFF2) and the PDF reader, nightly with libFuzzer and locally with a managed mutation
   fuzzer (`tests/RaiCore.Pdf.Fuzz`). Malformed input now fails only with the documented exceptions: corrupt zlib and
   Brotli data, out-of-range WOFF2 values and short `head` tables throw `FontFormatException`, fonts without a `name`
