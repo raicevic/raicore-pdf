@@ -56,7 +56,7 @@ internal static class TextItemizer
     }
 
     /// <summary>The grapheme clusters (extended, UAX #29), without allocating a string for each as a text element enumerator does.</summary>
-    private static List<(int Start, int Length)> GetClusters(string text)
+    internal static List<(int Start, int Length)> GetClusters(string text)
     {
         var clusters = new List<(int, int)>(text.Length);
         for (var start = 0; start < text.Length;)
@@ -116,7 +116,7 @@ internal static class TextItemizer
     /// The Unicode script of a code point. HarfBuzz is asked once per code point (a native call), and the answer is kept
     /// in blocks of 256 code points, allocated when first used. Threads may race to fill an entry; they write the same value.
     /// </summary>
-    private static Script ScriptOf(int codePoint)
+    internal static Script ScriptOf(int codePoint)
     {
         var block = Volatile.Read(ref ScriptBlocks[codePoint >> 8]);
         if (block is null)

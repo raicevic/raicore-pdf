@@ -141,6 +141,8 @@ public class PdfStreamingTests
         using var output = new MemoryStream();
         streamed.BeginSave(output);
         streamed.FlushPages();
+        // Only the first page's content: from the first import on, everything is kept for the end.
+        Assert.Single(Regex.Matches(Encoding.Latin1.GetString(output.ToArray()), "endobj"));
         streamed.EndSave();
 
         Assert.True(saved.AsSpan().SequenceEqual(output.ToArray()));
@@ -160,6 +162,25 @@ public class PdfStreamingTests
         Assert.True(Conversion.GetPageCount(streamed) > 3);
         AssertSameRendering(converted, streamed, password: null, page: 3);
         Assert.Contains("/Outlines", Encoding.Latin1.GetString(streamed), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Only_reserved_objects_that_are_unset_can_be_set()
+    {
+        var writer = new IO.PdfFileWriter();
+        var added = writer.Add(new Objects.PdfDictionary());
+        var reserved = writer.Reserve();
+
+        Assert.Throws<InvalidOperationException>(() => writer.Set(added, new Objects.PdfDictionary()));
+        Assert.Throws<InvalidOperationException>(() => writer.Set(new Objects.PdfReference(3), new Objects.PdfDictionary()));
+        writer.Set(reserved, new Objects.PdfDictionary());
+        Assert.Throws<InvalidOperationException>(() => writer.Set(reserved, new Objects.PdfDictionary()));
+
+        using var output = new MemoryStream();
+        var unset = writer.Reserve();
+        writer.Begin(output);
+        Assert.Throws<InvalidOperationException>(() => writer.Finish(added, null)); // Object 3 was never set.
+        Assert.Equal(3, unset.ObjectNumber);
     }
 
     [Fact]

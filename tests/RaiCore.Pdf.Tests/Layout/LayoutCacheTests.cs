@@ -201,6 +201,20 @@ public class LayoutCacheTests
     }
 
     [Fact]
+    public void Shape_keys_compare_every_font_of_the_list()
+    {
+        var fonts = BundledFonts.CreateCollection();
+        var sans = fonts.Find("Liberation Sans")!;
+        var serif = fonts.Find("Liberation Serif")!;
+        LayoutCache.ShapeKey Key(params PdfFont[] list) => new("office", list, ShapingOptions.Default, null);
+
+        Assert.True(Key(sans, serif).Equals(Key(sans, serif))); // Equal lists, different instances.
+        Assert.False(Key(sans, serif).Equals(Key(sans, sans)));
+        Assert.False(Key(sans).Equals(Key(serif)));
+        Assert.False(Key(sans).Equals(Key(sans, serif)));
+    }
+
+    [Fact]
     public void Passes_on_different_threads_have_their_own_caches()
     {
         using (LayoutCache.Enter())

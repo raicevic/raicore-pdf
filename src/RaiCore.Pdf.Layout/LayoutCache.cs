@@ -149,7 +149,7 @@ internal sealed class LayoutCache
     }
 
     /// <summary>What shaping depends on. Fonts are compared by instance, features and language by value.</summary>
-    private readonly struct ShapeKey(string text, IReadOnlyList<PdfFont> fonts, ShapingOptions options, TextDirection? direction) : IEquatable<ShapeKey>
+    internal readonly struct ShapeKey(string text, IReadOnlyList<PdfFont> fonts, ShapingOptions options, TextDirection? direction) : IEquatable<ShapeKey>
     {
         private readonly string _text = text;
         private readonly IReadOnlyList<PdfFont> _fonts = fonts;
