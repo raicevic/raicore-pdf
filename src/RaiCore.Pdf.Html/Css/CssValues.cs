@@ -236,13 +236,33 @@ internal static partial class CssValues
                 return null;
             }
 
-            double Channel(string s) => s.EndsWith('%')
-                ? double.Parse(s.TrimEnd('%'), CultureInfo.InvariantCulture) * 2.55
-                : double.Parse(s, CultureInfo.InvariantCulture);
-            var a = parts.Length > 3
-                ? parts[3].EndsWith('%') ? double.Parse(parts[3].TrimEnd('%'), CultureInfo.InvariantCulture) / 100 : double.Parse(parts[3], CultureInfo.InvariantCulture)
-                : 1;
-            return PdfColor.FromRgba(ClampByte(Channel(parts[0])), ClampByte(Channel(parts[1])), ClampByte(Channel(parts[2])), a);
+            // Declarations that AngleSharp does not compute (such as those of @page margin boxes) arrive as written, so a
+            // channel may be anything: a value that is not a finite number makes the whole color invalid.
+            static double? Number(string s, double percent)
+            {
+                var isPercent = s.EndsWith('%');
+                return double.TryParse(isPercent ? s[..^1] : s, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) && double.IsFinite(number)
+                    ? isPercent ? number * percent : number
+                    : null;
+            }
+
+            if (Number(parts[0], 2.55) is not { } red || Number(parts[1], 2.55) is not { } green || Number(parts[2], 2.55) is not { } blue)
+            {
+                return null;
+            }
+
+            var a = 1.0;
+            if (parts.Length > 3)
+            {
+                if (Number(parts[3], 0.01) is not { } alpha)
+                {
+                    return null;
+                }
+
+                a = alpha;
+            }
+
+            return PdfColor.FromRgba(ClampByte(red), ClampByte(green), ClampByte(blue), a);
         }
 
         return value switch
