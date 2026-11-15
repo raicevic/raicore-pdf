@@ -113,6 +113,13 @@ public sealed class HtmlConverterOptions
     /// skipped like one that cannot be loaded.
     /// </summary>
     public ResourceLimits Limits { get; init; } = ResourceLimits.Default;
+
+    /// <summary>
+    /// The clock that dates the PDF (<see cref="PdfDocument.TimeProvider"/>): the creation and modification dates are
+    /// its local time when the document is written. Set a fixed clock for reproducible output: the same HTML and
+    /// options then give the same bytes. Defaults to <see cref="TimeProvider.System"/>.
+    /// </summary>
+    public TimeProvider TimeProvider { get; init; } = TimeProvider.System;
 }
 
 /// <summary>Built-in resource loading.</summary>

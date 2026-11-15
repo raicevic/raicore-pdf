@@ -76,7 +76,7 @@ public static partial class HtmlToPdf
                 var (flow, metadata) = Layout(html, options, cancellationToken);
 
                 // Everything ConvertAsync sets, but before writing begins: page by page, it is read by BeginSave.
-                var document = new PdfDocument { Tagged = options.Tagged, PdfUA = options.PdfUA, StrictTagging = options.StrictTagging };
+                var document = new PdfDocument { Tagged = options.Tagged, PdfUA = options.PdfUA, StrictTagging = options.StrictTagging, TimeProvider = options.TimeProvider };
                 metadata.ApplyTo(document, options, HtmlMetadata.DefaultCreator);
                 document.Encryption = options.Encryption;
                 document.PdfAConformance = options.PdfAConformance;
@@ -122,7 +122,7 @@ public static partial class HtmlToPdf
             () =>
             {
                 var (flow, metadata) = Layout(html, options, cancellationToken);
-                var document = new PdfDocument { Tagged = options.Tagged, PdfUA = options.PdfUA, StrictTagging = options.StrictTagging };
+                var document = new PdfDocument { Tagged = options.Tagged, PdfUA = options.PdfUA, StrictTagging = options.StrictTagging, TimeProvider = options.TimeProvider };
                 flow.RenderTo(document);
                 metadata.ApplyTo(document, options, defaultCreator);
                 document.Encryption = options.Encryption;

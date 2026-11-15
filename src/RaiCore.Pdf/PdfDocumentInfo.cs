@@ -38,8 +38,8 @@ public sealed class PdfDocumentInfo
     public string Producer { get; set; } = "RaiCore.Pdf";
 
     /// <summary>
-    /// Creation date (XMP <c>xmp:CreateDate</c>), to the second. Defaults to the time the document is saved; set it for
-    /// reproducible output.
+    /// Creation date (XMP <c>xmp:CreateDate</c>), to the second. Defaults to the time the document is saved (by
+    /// <see cref="PdfDocument.TimeProvider"/>); set it, or that clock, for reproducible output.
     /// </summary>
     public DateTimeOffset? CreationDate { get; set; }
 

@@ -700,6 +700,27 @@ var pdfs = await Task.WhenAll(invoices.Select(i => Task.Run(() => HtmlToPdf.Conv
 | `PdfDocument`, `PdfPage`, `PdfCanvas`, `FlowDocument`, `Paragraph` | Not thread-safe: build and save each document on one thread at a time (different documents in parallel). |
 | `PdfReader` | Not thread-safe, and documents importing its pages read it when they are saved: open a reader per thread. |
 
+### Deterministic output
+
+The same input gives the same bytes: an unencrypted document with the same content, options and dates is written
+identically every time, page by page or at once, on any thread, in any culture or time zone. That makes golden-file
+tests possible. The `/ID` is a hash of the content, the XMP has no random identifiers, and objects and resources are
+written in a fixed order. Dates are the only input taken from outside: set `PdfDocument.TimeProvider` (or
+`HtmlConverterOptions.TimeProvider`) to a fixed clock, or set `Info.CreationDate`. Encrypted documents differ on
+every save, since their keys and salts are random by design. Flate compression comes from the .NET runtime's zlib;
+CI checks that Linux, Windows and macOS write the same bytes.
+
+```csharp
+var options = new HtmlConverterOptions { TimeProvider = new FixedClock(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)) };
+byte[] pdf = HtmlToPdf.ConvertToBytes(html, options); // The same bytes every time.
+
+sealed class FixedClock(DateTimeOffset now) : TimeProvider
+{
+    public override DateTimeOffset GetUtcNow() => now;
+    public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
+}
+```
+
 ## Performance
 
 A one-page invoice converts in about 25 ms and a 100-page report in about 0.3 s on an Apple M2; the
