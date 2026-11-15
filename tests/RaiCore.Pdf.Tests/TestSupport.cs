@@ -48,10 +48,12 @@ internal static class ExternalTools
         }
     }
 
-    /// <summary>Asserts that qpdf finds no structural problems.</summary>
-    public static void AssertQpdfClean(byte[] pdf)
+    /// <summary>Asserts that qpdf finds no structural problems (opening an encrypted file with <paramref name="password"/>).</summary>
+    public static void AssertQpdfClean(byte[] pdf, string? password = null)
     {
-        var (exitCode, output) = RunOnPdf("qpdf", pdf, "--check", "{pdf}");
+        var (exitCode, output) = password is null
+            ? RunOnPdf("qpdf", pdf, "--check", "{pdf}")
+            : RunOnPdf("qpdf", pdf, $"--password={password}", "--check", "{pdf}");
         Assert.True(exitCode == 0, output);
         Assert.Contains("No syntax or stream encoding errors found", output, StringComparison.Ordinal);
     }

@@ -158,7 +158,7 @@ public class EncryptedReadingTests
         Assert.Equal(3, copy.Pages.Count);
         Assert.Contains("(One) Tj", Encoding.Latin1.GetString(copy.Pages[0].GetContent()), StringComparison.Ordinal);
         Assert.Contains("(Two) Tj", Encoding.Latin1.GetString(copy.Pages[1].GetContent()), StringComparison.Ordinal);
-        ExternalTools.AssertQpdfClean(doc.ToArray());
+        ExternalTools.AssertQpdfClean(doc.ToArray(), "new");
     }
 
     [Fact]
