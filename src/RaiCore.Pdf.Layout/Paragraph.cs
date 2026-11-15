@@ -25,6 +25,89 @@ public sealed record InlineImage(PdfImage Image, double Width, double Height, In
 
     /// <summary>Rounded corners the image is clipped to (CSS <c>border-radius</c>); percentages are of its width and height.</summary>
     public CornerRadii BorderRadius { get; init; }
+
+    /// <summary>
+    /// Sizes that depend on the paragraph's width (see <see cref="InlineImageSizing"/>); <c>null</c> (the default) for
+    /// an image of exactly <see cref="Width"/> by <see cref="Height"/>.
+    /// </summary>
+    public InlineImageSizing? Sizing { get; init; }
+
+    /// <summary>The image as laid out in a paragraph of <paramref name="width"/>: its sizing resolved, if it has one.</summary>
+    internal InlineImage At(double width)
+    {
+        if (Sizing is null)
+        {
+            return this;
+        }
+
+        var (w, h) = Sizing.Resolve(Image, width);
+        return this with { Width = w, Height = h };
+    }
+
+    /// <summary>
+    /// What the image adds to its paragraph's min-content width: nothing when its width or maximum width is a
+    /// percentage (it shrinks with its container, like a CSS "compressible" replaced element) beyond a fixed minimum.
+    /// </summary>
+    internal double MinContentWidth => Sizing switch
+    {
+        null => Width,
+        { IsCompressible: true } sizing => sizing.MinWidth is { Percent: 0 } min ? Math.Max(0, min.Points) : 0,
+        var sizing => sizing.Resolve(Image, null).Width,
+    };
+
+    /// <summary>What the image adds to its paragraph's max-content width: its size with percentages treated as auto.</summary>
+    internal double MaxContentWidth => Sizing is null ? Width : Sizing.Resolve(Image, null).Width;
+}
+
+/// <summary>
+/// The CSS sizing of an inline image whose width depends on its paragraph's (a percentage <c>width</c>,
+/// <c>min-width</c> or <c>max-width</c>, such as the common <c>max-width: 100%</c>): resolved when the paragraph is
+/// laid out, against the width its lines are broken to. So an image in a flex item that shrinks, or in a table cell,
+/// follows the final width. Without a width or height the image has its natural size; with one of them, its aspect
+/// ratio; the limits then scale it, keeping the aspect ratio unless both sizes are given.
+/// </summary>
+/// <param name="Width">The width, or <c>null</c> for auto.</param>
+/// <param name="Height">The height in points, or <c>null</c> for auto.</param>
+/// <param name="MinWidth">The minimum width (it wins over the maximum), or <c>null</c> for none.</param>
+/// <param name="MaxWidth">The maximum width, or <c>null</c> for none.</param>
+public sealed record InlineImageSizing(BoxLength? Width = null, double? Height = null, BoxLength? MinWidth = null, BoxLength? MaxWidth = null)
+{
+    /// <summary>Whether the width or maximum width is a percentage, so that the image can shrink to nothing for min-content.</summary>
+    internal bool IsCompressible => Width is { Percent: not 0 } || MaxWidth is { Percent: not 0 };
+
+    /// <summary>
+    /// The image's width and height in a paragraph of <paramref name="containingWidth"/>, or (for <c>null</c>) with
+    /// percentages treated as auto, as for its max-content contribution.
+    /// </summary>
+    internal (double Width, double Height) Resolve(PdfImage image, double? containingWidth)
+    {
+        double? Length(BoxLength? length) =>
+            length is not { } value || (value.Percent != 0 && containingWidth is null) ? null : value.Resolve(containingWidth ?? 0);
+
+        double? width = Length(Width) is > 0 and var resolved ? resolved : null;
+        double? height = Height is > 0 ? Height : null;
+        var (w, h) = (width, height) switch
+        {
+            ({ } fw, { } fh) => (fw, fh),
+            ({ } fw, null) => (fw, fw * image.NaturalHeight / image.NaturalWidth),
+            (null, { } fh) => (fh * image.NaturalWidth / image.NaturalHeight, fh),
+            _ => (image.NaturalWidth, image.NaturalHeight),
+        };
+
+        var stretched = width is not null && height is not null;
+        void Limit(BoxLength? limit, bool isMax)
+        {
+            if (Length(limit) is { } value && Math.Max(value, 1e-3) is var bound && (isMax ? w > bound : w < bound))
+            {
+                h = stretched ? h : h * bound / w;
+                w = bound;
+            }
+        }
+
+        Limit(MaxWidth, isMax: true);
+        Limit(MinWidth, isMax: false); // The minimum wins.
+        return (w, h);
+    }
 }
 
 /// <summary>
@@ -334,7 +417,12 @@ public sealed class Paragraph
     /// <param name="alignment">Its vertical position in the line (CSS <c>vertical-align</c>).</param>
     /// <param name="opacity">Its opacity, from 0 (invisible) to 1 (opaque).</param>
     /// <param name="borderRadius">Rounded corners to clip it to (see <see cref="InlineImage.BorderRadius"/>).</param>
-    public Paragraph AddImage(PdfImage image, double width, double height, InlineAlignment alignment = default, double opacity = 1, CornerRadii borderRadius = default)
+    /// <param name="sizing">
+    /// Sizes relative to the paragraph's width, resolved when it is laid out (see <see cref="InlineImageSizing"/>);
+    /// <paramref name="width"/> and <paramref name="height"/> are then only used before that.
+    /// </param>
+    public Paragraph AddImage(
+        PdfImage image, double width, double height, InlineAlignment alignment = default, double opacity = 1, CornerRadii borderRadius = default, InlineImageSizing? sizing = null)
     {
         ArgumentNullException.ThrowIfNull(image);
         ArgumentOutOfRangeException.ThrowIfNegative(width);
@@ -343,6 +431,7 @@ public sealed class Paragraph
         {
             Opacity = Math.Clamp(double.IsNaN(opacity) ? 1 : opacity, 0, 1),
             BorderRadius = borderRadius,
+            Sizing = sizing,
         }));
         _length++;
         Version++;

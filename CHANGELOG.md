@@ -220,6 +220,10 @@ change at any time, and this section lists what the packages can do so far.
   inline box, an absolute box's containing block. Min-content and max-content widths treat a percentage width as
   auto, and an image with a percentage width or max-width can shrink with its container (CSS Sizing 3 section 5.2).
   `FlexBasis.Percent` also applies to rows.
+- Inline images sized relative to their paragraph (#112): `InlineImageSizing` (`InlineImage.Sizing`,
+  `Paragraph.AddImage(..., sizing)`) keeps a percentage width, min-width or max-width until layout, so an inline
+  `<img style="max-width: 100%">` or `width: 50%` follows a flex item that shrinks or a table column, like a block
+  image. Such images add nothing to min-content (beyond a fixed minimum) and their natural size to max-content.
 - Tables: automatic and fixed layout, `colspan`/`rowspan`, separate and collapsed borders. Header rows repeat at the
   top of every page and footer rows (`TableRow.IsFooter`) right below the body; footers taller than a quarter of the
   page are not repeated, as in Chrome. Rows that do not fit are split like browsers do, each cell continuing on the

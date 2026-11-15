@@ -113,7 +113,9 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         _hasVisibleContent = true;
     }
 
-    public void AddImage(PdfImage image, double width, double height, InlineAlignment alignment = default, double opacity = 1, CornerRadii borderRadius = default, StructureTag? tag = null)
+    public void AddImage(
+        PdfImage image, double width, double height, InlineAlignment alignment = default, double opacity = 1, CornerRadii borderRadius = default, StructureTag? tag = null,
+        InlineImageSizing? sizing = null)
     {
         var paragraph = Paragraph();
         if (tag is not null)
@@ -121,7 +123,7 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
             paragraph.BeginTag(tag);
         }
 
-        paragraph.AddImage(image, width, height, alignment, opacity, borderRadius);
+        paragraph.AddImage(image, width, height, alignment, opacity, borderRadius, sizing);
         if (tag is not null)
         {
             paragraph.EndTag();
