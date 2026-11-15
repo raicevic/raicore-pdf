@@ -40,12 +40,16 @@ internal sealed class StructureTreeWriter
         _root = root;
     }
 
-    /// <summary>Gives a page its parent tree entry for the marked content of its content stream, and tab order.</summary>
-    public void RegisterPage(PdfPage page, PdfDictionary dictionary)
+    /// <summary>
+    /// Gives a page its parent tree entry for the marked content of its content stream, and tab order. When the page's
+    /// drawing went into a form of its own (<paramref name="drawnInForm"/>: an imported page, see
+    /// <see cref="RegisterForm"/>), the form has the entry instead.
+    /// </summary>
+    public void RegisterPage(PdfPage page, PdfDictionary dictionary, bool drawnInForm = false)
     {
         // PDF/UA: annotations are visited in the order of the structure tree.
         dictionary["Tabs"] = new PdfName("S");
-        if (ParentTreeArray(page.Canvas.PageMarks) is { } key)
+        if (!drawnInForm && ParentTreeArray(page.Canvas.PageMarks) is { } key)
         {
             dictionary["StructParents"] = new PdfInteger(key);
         }
@@ -54,7 +58,19 @@ internal sealed class StructureTreeWriter
     /// <summary>Gives a transparency group's form its parent tree entry, if its content is marked.</summary>
     public void RegisterGroup(GroupForm group, PdfDictionary form, PdfReference reference)
     {
-        if (group.Marks is { } marks && ParentTreeArray(marks) is { } key)
+        if (group.Marks is { } marks)
+        {
+            RegisterForm(marks, form, reference);
+        }
+    }
+
+    /// <summary>
+    /// Gives a form XObject holding marked content its parent tree entry (<c>/StructParents</c>); marked-content
+    /// references into it then name it (<c>/Stm</c>).
+    /// </summary>
+    public void RegisterForm(MarkedContentStream marks, PdfDictionary form, PdfReference reference)
+    {
+        if (ParentTreeArray(marks) is { } key)
         {
             form["StructParents"] = new PdfInteger(key);
             _forms[marks] = reference;

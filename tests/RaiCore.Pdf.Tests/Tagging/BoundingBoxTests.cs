@@ -149,13 +149,10 @@ public class BoundingBoxTests
         imported.Canvas.BeginTag(stamp).DrawPage(source.Pages[0], 10, 20, 30, 30).EndTag()
             .BeginTag(mark).Rectangle(0, 0, 50, 50).Fill().EndTag();
 
-        doc.CompressContent = false;
+        var root = TaggedPdfInspector.Inspect(doc.ToArray());
 
-        // Read from the file: the imported page's own content is not marked, which the inspector refuses.
-        var text = System.Text.Encoding.Latin1.GetString(doc.ToArray());
-
-        Assert.Contains("/BBox [110 220 140 250]", text, StringComparison.Ordinal);
-        Assert.Contains("/BBox [100 200 150 250]", text, StringComparison.Ordinal);
+        AssertBox([110, 220, 140, 250], BBox(root.Children[0]));
+        AssertBox([100, 200, 150, 250], BBox(root.Children[1]));
     }
 
     [Fact]

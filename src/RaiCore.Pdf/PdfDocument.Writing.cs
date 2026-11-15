@@ -87,9 +87,22 @@ public sealed partial class PdfDocument
                 _writer, _compress, (font, _) => _fonts[font].Reference, Image, ExtGState, _imports.WritePageForm, _structure is null ? null : _structure.RegisterGroup);
             var pageRef = _writer.Reserve();
             PdfDictionary dictionary;
+            var drawnInForm = false;
             if (page.Source is not null)
             {
-                dictionary = _imports.WritePage(page, _pageTreeRef, content, resources);
+                // In a tagged document, what is drawn on an imported page is marked content of the form it goes in.
+                var structure = _structure;
+                dictionary = _imports.WritePage(
+                    page,
+                    _pageTreeRef,
+                    content,
+                    resources,
+                    tagged: structure is not null,
+                    structure is null ? null : (form, reference) =>
+                    {
+                        structure.RegisterForm(page.Canvas.PageMarks, form, reference);
+                        drawnInForm = true;
+                    });
             }
             else
             {
@@ -110,7 +123,7 @@ public sealed partial class PdfDocument
                 }
             }
 
-            _structure?.RegisterPage(page, dictionary);
+            _structure?.RegisterPage(page, dictionary, drawnInForm);
             if (release)
             {
                 page.Release();

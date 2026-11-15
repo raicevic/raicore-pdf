@@ -108,8 +108,12 @@ internal sealed class PdfImportWriter(PdfFileWriter writer, bool compress)
     /// attributes. When something was drawn on the page (<paramref name="drawing"/> is not empty), the drawing goes in
     /// a form XObject of its own, painted after the original content, so that its resource names cannot clash with
     /// the page's; the original content is wrapped in <c>q</c>/<c>Q</c> so that its graphics state does not leak into it.
+    /// In a tagged document (<paramref name="tagged"/>), the original content is an artifact (<c>/Artifact BMC</c>
+    /// ... <c>EMC</c>): the source's own structure is not taken over, and a letterhead or background is decoration.
+    /// The drawing's form is then given to <paramref name="registerDrawing"/>, as it holds the page's marked content.
     /// </summary>
-    public PdfDictionary WritePage(PdfPage page, PdfReference parent, byte[] drawing, PdfDictionary drawingResources)
+    public PdfDictionary WritePage(
+        PdfPage page, PdfReference parent, byte[] drawing, PdfDictionary drawingResources, bool tagged = false, Action<PdfDictionary, PdfReference>? registerDrawing = null)
     {
         var source = page.Source!;
         var copier = CopierFor(source.Reader);
@@ -142,13 +146,18 @@ internal sealed class PdfImportWriter(PdfFileWriter writer, bool compress)
 
         var resources = copier.Copy(source.ResourcesObject);
         var contents = copier.Copy(source.Dictionary["Contents"]);
-        if (drawing.Length == 0)
+        if (drawing.Length == 0 && !tagged)
         {
             dictionary["Resources"] = resources ?? new PdfDictionary();
             if (contents is not null)
             {
                 dictionary["Contents"] = contents;
             }
+        }
+        else if (drawing.Length == 0)
+        {
+            dictionary["Resources"] = resources ?? new PdfDictionary();
+            dictionary["Contents"] = WrappedContents(writer, copier, contents, "/Artifact BMC\nq\n"u8, "\nQ\nEMC\n"u8);
         }
         else
         {
@@ -166,26 +175,14 @@ internal sealed class PdfImportWriter(PdfFileWriter writer, bool compress)
             stamp.Dictionary["Subtype"] = new PdfName("Form");
             stamp.Dictionary["BBox"] = PdfArray.OfNumbers(media.X, media.Y, media.Right, media.Top);
             stamp.Dictionary["Resources"] = drawingResources;
-            xobjects[name] = writer.Add(stamp);
+            var stampReference = writer.Add(stamp);
+            xobjects[name] = stampReference;
+            registerDrawing?.Invoke(stamp.Dictionary, stampReference);
             dictionary["Resources"] = merged;
 
-            var parts = new PdfArray(writer.Add(new PdfStreamObject("q\n"u8.ToArray())));
-            switch (copier.Target(contents))
-            {
-                case PdfArray array:
-                    foreach (var item in array.Items)
-                    {
-                        parts.Items.Add(item);
-                    }
-
-                    break;
-                case PdfStreamObject:
-                    parts.Items.Add(contents!);
-                    break;
-            }
-
-            parts.Items.Add(writer.Add(new PdfStreamObject(Encoding.ASCII.GetBytes($"\nQ\nq /{name} Do Q\n"))));
-            dictionary["Contents"] = parts;
+            var (before, after) = tagged ? ("/Artifact BMC\nq\n", "\nQ\nEMC\n") : ("q\n", "\nQ\n");
+            dictionary["Contents"] = WrappedContents(
+                writer, copier, contents, Encoding.ASCII.GetBytes(before), Encoding.ASCII.GetBytes($"{after}q /{name} Do Q\n"));
         }
 
         if (page.UsesTransparency && dictionary["Group"] is null)
@@ -194,6 +191,28 @@ internal sealed class PdfImportWriter(PdfFileWriter writer, bool compress)
         }
 
         return dictionary;
+    }
+
+    /// <summary>The page's (copied) content streams between two streams of their own.</summary>
+    private static PdfArray WrappedContents(PdfFileWriter writer, PdfObjectCopier copier, PdfObject? contents, ReadOnlySpan<byte> before, ReadOnlySpan<byte> after)
+    {
+        var parts = new PdfArray(writer.Add(new PdfStreamObject(before.ToArray())));
+        switch (copier.Target(contents))
+        {
+            case PdfArray array:
+                foreach (var item in array.Items)
+                {
+                    parts.Items.Add(item);
+                }
+
+                break;
+            case PdfStreamObject:
+                parts.Items.Add(contents!);
+                break;
+        }
+
+        parts.Items.Add(writer.Add(new PdfStreamObject(after.ToArray())));
+        return parts;
     }
 
     /// <summary>
