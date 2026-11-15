@@ -128,6 +128,9 @@ public abstract class PdfFont
         return true;
     }
 
+    /// <summary>Whether <see cref="MeasureText"/> works: not for the symbolic standard fonts, which have no width table here.</summary>
+    internal virtual bool CanMeasure => true;
+
     /// <summary>Width of <paramref name="text"/> in points at <paramref name="fontSize"/>, without kerning.</summary>
     public double MeasureText(string text, double fontSize)
     {
@@ -227,6 +230,8 @@ internal sealed class StandardPdfFont(StandardFont font) : PdfFont
         StandardFontInfo.UsesWinAnsi(Font)
             ? codePoint <= 0xFFFF && WinAnsiEncoding.CanEncode((char)codePoint)
             : codePoint is >= 0x20 and <= 0xFF;
+
+    internal override bool CanMeasure => _metrics is not null;
 
     internal override double GetAdvance(int codePoint)
     {

@@ -124,6 +124,12 @@ change at any time, and this section lists what the packages can do so far.
   artifact; links are tagged (`/OBJR`, `/StructParent`, `PdfLink.Description` as `/Contents`); the parent tree,
   `/MarkInfo`, `/Tabs /S`, `/DisplayDocTitle` and `pdfuaid:part` are written. PDF/UA checks the title, language,
   XMP and embedded fonts when saving. Untagged documents are unchanged.
+- Bounding boxes for tagged figures, formulas, forms and tables (#123): each one drawn on a single page gets the
+  Layout attribute `/BBox`, measured from what is painted for it and its descendants (exact curve extents, strokes,
+  text, images, imported pages and gradients, cut to the clip, through transformations and transparency groups), so
+  core, Layout and HTML output all get it. `PdfStructureElement.BoundingBox` sets one by hand, for any element.
+- Strict tagging (#123): `PdfDocument.StrictTagging` makes painting outside both a structure element and an artifact
+  throw (naming the page) instead of quietly becoming an artifact. Layout and HTML output are tested under it.
 - Writing page by page: `PdfDocument.BeginSave(stream)`, `FlushPages()` (writes the pages so far and frees their
   content) and `EndSave()`. Fonts, page dictionaries, links, outline, named destinations, attachments, the structure
   tree and metadata are written at the end, so links may point at any page; tagged, PDF/UA and PDF/A documents can be

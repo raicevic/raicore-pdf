@@ -52,7 +52,7 @@ public sealed partial class PdfCanvas
         // The group's form numbers its marked content on its own; the page's open sequence ends before the form is
         // painted, so that the form's content is not also inside it.
         CloseMarkedContent();
-        _groups.Push(new GroupFrame(_ops, _resources, RoundAlpha(opacity), _savedTransforms.Count, _fillAlpha, _strokeAlpha, _transform, _marks));
+        _groups.Push(new GroupFrame(_ops, _resources, RoundAlpha(opacity), _savedTransforms.Count, _fillAlpha, _strokeAlpha, _transform, _marks, _lineWidth, _clip));
         _ops = new StringBuilder();
         _marks = new MarkedContentStream();
         _resources = new HashSet<string>(StringComparer.Ordinal);
@@ -89,8 +89,8 @@ public sealed partial class PdfCanvas
         var (resources, marks) = (_resources, _marks);
 
         // Transformations and clips inside the group end with it, like the alpha it started with.
-        (_ops, _resources, _fillAlpha, _strokeAlpha, _transform, _marks) =
-            (frame.Ops, frame.Resources, frame.FillAlpha, frame.StrokeAlpha, frame.Transform, frame.Marks);
+        (_ops, _resources, _fillAlpha, _strokeAlpha, _transform, _marks, _lineWidth, _clip) =
+            (frame.Ops, frame.Resources, frame.FillAlpha, frame.StrokeAlpha, frame.Transform, frame.Marks, frame.LineWidth, frame.Clip);
         if (frame.Transform.Invert() is not { } inverse)
         {
             return this; // A singular transformation: nothing drawn would be visible.
@@ -141,12 +141,14 @@ public sealed partial class PdfCanvas
     private void PushState()
     {
         PushTransform();
+        PushBounds();
         _savedAlphas.Push((_fillAlpha, _strokeAlpha));
     }
 
     private void PopState()
     {
         PopTransform();
+        PopBounds();
         if (_savedAlphas.TryPop(out var alphas))
         {
             (_fillAlpha, _strokeAlpha) = alphas;
@@ -165,5 +167,5 @@ public sealed partial class PdfCanvas
     /// <summary>What <see cref="BeginGroup"/> set aside: the enclosing content and its state, restored by <see cref="EndGroup"/>.</summary>
     private sealed record GroupFrame(
         StringBuilder Ops, HashSet<string> Resources, double Opacity, int SavedStates, double FillAlpha, double StrokeAlpha, SvgMatrix Transform,
-        MarkedContentStream Marks);
+        MarkedContentStream Marks, double LineWidth, PdfRectangle? Clip);
 }

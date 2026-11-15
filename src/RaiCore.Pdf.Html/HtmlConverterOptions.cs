@@ -92,6 +92,12 @@ public sealed class HtmlConverterOptions
     public bool PdfUA { get; init; }
 
     /// <summary>
+    /// Whether the converter checks its own tagging (<see cref="PdfDocument.StrictTagging"/>): anything it paints outside a
+    /// structure element or an artifact throws. For the engine's tests; HTML gives users nothing to fix there.
+    /// </summary>
+    internal bool StrictTagging { get; init; }
+
+    /// <summary>
     /// Writes the PDF as PDF/A-2b or PDF/A-3b for archiving (see <see cref="PdfDocument.PdfAConformance"/>). The bundled
     /// Liberation fonts are then embedded in place of the standard fonts (used for SVG text), and converting throws
     /// <see cref="InvalidOperationException"/> when the document breaks a rule, such as text in characters no font has,
