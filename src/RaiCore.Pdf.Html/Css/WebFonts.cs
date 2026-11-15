@@ -1,6 +1,7 @@
 using System.Globalization;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Fonts.OpenType;
+using RaiCore.Pdf.Html.Diagnostics;
 
 namespace RaiCore.Pdf.Html.Css;
 
@@ -24,15 +25,18 @@ internal sealed class WebFonts
     private readonly ResourceLoader _loader;
     private readonly FontCollection _local;
 
-    private WebFonts(List<Face> faces, ResourceLoader loader, FontCollection local)
+    private readonly DiagnosticCollector _diagnostics;
+
+    private WebFonts(List<Face> faces, ResourceLoader loader, FontCollection local, DiagnosticCollector diagnostics)
     {
         _faces = faces;
         _loader = loader;
         _local = local;
+        _diagnostics = diagnostics;
     }
 
     /// <summary>Reads the <c>@font-face</c> rules of the stylesheets; fonts are loaded later, when text needs them.</summary>
-    public static WebFonts Load(IEnumerable<StyleSheetText> styleSheets, ResourceLoader loader, FontCollection local)
+    public static WebFonts Load(IEnumerable<StyleSheetText> styleSheets, ResourceLoader loader, FontCollection local, DiagnosticCollector? diagnostics = null)
     {
         var faces = new List<Face>();
         foreach (var sheet in styleSheets)
@@ -46,7 +50,7 @@ internal sealed class WebFonts
             }
         }
 
-        return new WebFonts(faces, loader, local);
+        return new WebFonts(faces, loader, local, diagnostics ?? DiagnosticCollector.None);
     }
 
     /// <summary>Whether a <c>@font-face</c> rule declares the family (it then hides installed fonts of that name).</summary>
@@ -123,20 +127,30 @@ internal sealed class WebFonts
         }
 
         face.Loaded = true;
+        (HtmlDiagnosticKind Kind, string Subject, string Message)? failure = null;
         foreach (var source in face.Sources)
         {
-            if (LoadSource(face, source) is { } font)
+            if (LoadSource(face, source, out var sourceFailure) is { } font)
             {
                 face.Font = face.Ranges is { } ranges ? font.WithUnicodeRanges(ranges) : font;
                 return face.Font;
             }
+
+            failure = sourceFailure ?? failure;
+        }
+
+        // Only a face none of whose sources loaded is worth reporting: trying the next source is what src lists are for.
+        if (failure is { } failed)
+        {
+            _diagnostics.Report(failed.Kind, HtmlDiagnosticSeverity.Warning, failed.Subject, $"The font-family \"{face.Family}\" falls back to another font. {failed.Message}");
         }
 
         return null;
     }
 
-    private PdfFont? LoadSource(Face face, FontSource source)
+    private PdfFont? LoadSource(Face face, FontSource source, out (HtmlDiagnosticKind Kind, string Subject, string Message)? failure)
     {
+        failure = null;
         if (source.Local is { } name)
         {
             return _local.Find(name, face.MinWeight, face.Italic); // An installed or configured font.
@@ -148,21 +162,15 @@ internal sealed class WebFonts
         }
 
         var url = source.Url!;
-        byte[]? data;
-        if (url.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
-        {
-            data = Resources.Limit(Resources.DecodeDataUri(url));
-        }
-        else
-        {
-            var uri = Uri.TryCreate(url, UriKind.Absolute, out var absolute) ? absolute
-                : face.BaseUri is not null && Uri.TryCreate(face.BaseUri, url, out var relative) ? relative
-                : null;
-            data = uri is null ? null : Resources.Load(_loader, uri);
-        }
-
+        var subject = Resources.Subject(url);
+        var uri = url.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ? null
+            : Uri.TryCreate(url, UriKind.Absolute, out var absolute) ? absolute
+            : face.BaseUri is not null && Uri.TryCreate(face.BaseUri, url, out var relative) ? relative
+            : null;
+        var data = Resources.Fetch(_loader, url, uri, "font", out var fetchFailure);
         if (data is null)
         {
+            failure = fetchFailure is { } f ? (f.Kind, subject, f.Message) : null;
             return null;
         }
 
@@ -171,19 +179,31 @@ internal sealed class WebFonts
             var font = PdfFont.Load(data);
 
             // A font whose license forbids embedding cannot be drawn: fall back as for one that cannot be read.
-            return font is OpenTypePdfFont { Font.EmbeddingRestricted: true } ? null : font;
+            if (font is OpenTypePdfFont { Font.EmbeddingRestricted: true })
+            {
+                failure = (HtmlDiagnosticKind.FontNotEmbeddable, subject, $"The font {subject} may not be embedded: its license (OS/2 fsType) forbids it.");
+                return null;
+            }
+
+            return font;
         }
-        catch (FontFormatException)
+        catch (FontFormatException ex)
         {
-            return null; // Not a font we can read, or one whose license forbids embedding.
+            // Not a font we can read, or one whose license forbids embedding.
+            failure = (ex.Message.Contains("embed", StringComparison.OrdinalIgnoreCase) ? HtmlDiagnosticKind.FontNotEmbeddable : HtmlDiagnosticKind.ResourceInvalid,
+                subject, $"The font {subject} cannot be used: {ex.Message}");
+            return null;
         }
-        catch (NotSupportedException)
+        catch (NotSupportedException ex)
         {
+            failure = (HtmlDiagnosticKind.ResourceInvalid, subject, $"The font {subject} cannot be used: {ex.Message}");
             return null;
         }
         catch (ResourceLimitExceededException ex) when (Resources.IsPerResource(ex))
         {
-            return null; // A WOFF or WOFF2 file that decompresses to too much.
+            // A WOFF or WOFF2 file that decompresses to too much.
+            failure = (HtmlDiagnosticKind.ResourceTooLarge, subject, $"The font {subject} is too large: {ex.Message}");
+            return null;
         }
     }
 

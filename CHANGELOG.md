@@ -457,6 +457,12 @@ change at any time, and this section lists what the packages can do so far.
   margins that leave no room are dropped, declarations and rules AngleSharp cannot read are removed and an element
   whose style it cannot compute takes its parent's (it threw `NullReferenceException` on them), `box-shadow` and `text-shadow` (not drawn) are ignored, invalid
   `font-feature-settings` are skipped, and web fonts whose license forbids embedding fall back to other fonts.
+- Diagnostics (#59): `HtmlConverterOptions.Diagnostics` receives `HtmlDiagnostic`s for images (`img`, CSS `url()`),
+  inline SVGs, linked style sheets and web fonts that did not load, telling apart nothing loaded (with a hint for
+  relative URLs without a base URI), unreadable data, a per-resource limit and fonts that may not be embedded. Each
+  issue is reported once per conversion, after rendering, with the first element's path
+  (`html > body > div.card:nth-of-type(2) > img#logo`) and the number of elements it concerns; a web font only when
+  none of its sources loaded.
 
 ### RaiCore.Pdf.Razor
 - Razor components to PDF with Blazor's static `HtmlRenderer`: `RazorToPdf` for the simple case, `RazorPdfRenderer`

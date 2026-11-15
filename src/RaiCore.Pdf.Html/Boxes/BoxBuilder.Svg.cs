@@ -20,6 +20,11 @@ internal sealed partial class BoxBuilder
         var key = "svg:" + markup; // Image sources are URLs and never start with markup.
         if (_images.TryGetValue(key, out var cached))
         {
+            if (cached is null && _imageFailures.TryGetValue(key, out var known))
+            {
+                Diagnostics.Report(known.Kind, HtmlDiagnosticSeverity.Warning, "<svg>", known.Message, svg);
+            }
+
             return cached;
         }
 
@@ -28,13 +33,17 @@ internal sealed partial class BoxBuilder
         {
             image = PdfImage.LoadSvg(markup);
         }
-        catch (ImageFormatException)
+        catch (ImageFormatException ex)
         {
             // An unreadable SVG is skipped, as browsers do.
+            _imageFailures[key] = (HtmlDiagnosticKind.ResourceInvalid, $"An inline SVG cannot be read: {ex.Message}");
+            Diagnostics.Report(HtmlDiagnosticKind.ResourceInvalid, HtmlDiagnosticSeverity.Warning, "<svg>", _imageFailures[key].Message, svg);
         }
         catch (ResourceLimitExceededException ex) when (Resources.IsPerResource(ex))
         {
             // So is one with a raster image that is too large.
+            _imageFailures[key] = (HtmlDiagnosticKind.ResourceTooLarge, $"An inline SVG is too large: {ex.Message}");
+            Diagnostics.Report(HtmlDiagnosticKind.ResourceTooLarge, HtmlDiagnosticSeverity.Warning, "<svg>", _imageFailures[key].Message, svg);
         }
 
         _images[key] = image;

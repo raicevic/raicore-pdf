@@ -5,6 +5,7 @@ using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html.Css;
+using RaiCore.Pdf.Html.Diagnostics;
 using RaiCore.Pdf.Images;
 using RaiCore.Pdf.Layout;
 using RaiCore.Pdf.Layout.Blocks;
@@ -34,6 +35,9 @@ internal sealed partial class BoxBuilder
     private readonly Dictionary<string, IReadOnlyList<PdfFont>> _fontLists = new(StringComparer.Ordinal);
     private readonly Dictionary<ComputedStyle, TextStyle> _textStyles = [];
     private readonly Dictionary<string, PdfImage?> _images = new(StringComparer.Ordinal);
+
+    /// <summary>Why each image in <see cref="_images"/> that is <c>null</c> failed, to report it again where it is used again.</summary>
+    private readonly Dictionary<string, (HtmlDiagnosticKind Kind, string Message)> _imageFailures = new(StringComparer.Ordinal);
     private readonly HashSet<Block> _anonymous = new(ReferenceEqualityComparer.Instance);
     private readonly double _rootFontSize;
     private readonly CssViewport _viewport;
@@ -77,6 +81,9 @@ internal sealed partial class BoxBuilder
 
     public IDocument Document { get; }
 
+    /// <summary>Where resources that fail to load and other issues are reported.</summary>
+    public DiagnosticCollector Diagnostics { get; init; } = DiagnosticCollector.None;
+
     public List<Block> Build(double contentWidth, double? contentHeight = null)
     {
         _pageContentWidth = contentWidth;
@@ -105,7 +112,7 @@ internal sealed partial class BoxBuilder
             style = style with { ContainerRtl = element.ParentElement is { } parent ? Style(parent).Rtl : style.Rtl };
             if (style.BackgroundValues is { } backgrounds)
             {
-                style = style with { BackgroundLayers = CssBackgrounds.Layers(backgrounds, style.FontSize, _rootFontSize, LoadImage) };
+                style = style with { BackgroundLayers = CssBackgrounds.Layers(backgrounds, style.FontSize, _rootFontSize, src => LoadImage(src, element)) };
             }
 
             var dir = element.GetAttribute("dir")?.Trim().ToLowerInvariant();
@@ -642,7 +649,7 @@ internal sealed partial class BoxBuilder
         var src = element.GetAttribute("src");
         var image = element.LocalName == "svg" ? LoadInlineSvg(element, style)
             : string.IsNullOrWhiteSpace(src) ? null
-            : LoadImage(src);
+            : LoadImage(src, element);
         if (image is null)
         {
             AddAnchors(element, collector);
@@ -707,31 +714,47 @@ internal sealed partial class BoxBuilder
         LinkBlocks(children, blockStart, collector.CurrentLink);
     }
 
-    private PdfImage? LoadImage(string src)
+    /// <summary>
+    /// Loads an image by URL (an <c>img</c>'s <c>src</c>, a CSS <c>url()</c>), once per URL. One that cannot be loaded
+    /// or read is skipped, as browsers do, and reported for <paramref name="element"/>.
+    /// </summary>
+    private PdfImage? LoadImage(string src, IElement? element)
     {
         if (_images.TryGetValue(src, out var cached))
         {
+            if (cached is null && _imageFailures.TryGetValue(src, out var known))
+            {
+                Diagnostics.Report(known.Kind, HtmlDiagnosticSeverity.Warning, Resources.Subject(src), known.Message, element);
+            }
+
             return cached;
         }
 
         PdfImage? image = null;
+        (HtmlDiagnosticKind Kind, string Message)? failure;
         try
         {
-            var data = src.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
-                ? Resources.Limit(Resources.DecodeDataUri(src))
-                : ResolveUri(src) is { } uri ? Resources.Load(_options.ResourceLoader, uri) : null;
+            var data = Resources.Fetch(_options.ResourceLoader, src, src.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ? null : ResolveUri(src), "image", out failure);
             image = data is null ? null : PdfImage.Load(data);
         }
-        catch (ImageFormatException)
+        catch (ImageFormatException ex)
         {
             // A broken image is skipped (its alt text is shown), as browsers do.
+            failure = (HtmlDiagnosticKind.ResourceInvalid, $"The image {Resources.Subject(src)} cannot be read: {ex.Message}");
         }
         catch (ResourceLimitExceededException ex) when (Resources.IsPerResource(ex))
         {
             // So is one that is too large (a decompression bomb).
+            failure = (HtmlDiagnosticKind.ResourceTooLarge, $"The image {Resources.Subject(src)} is too large: {ex.Message}");
         }
 
         _images[src] = image;
+        if (failure is { } failed)
+        {
+            _imageFailures[src] = failed;
+            Diagnostics.Report(failed.Kind, HtmlDiagnosticSeverity.Warning, Resources.Subject(src), failed.Message, element);
+        }
+
         return image;
     }
 
