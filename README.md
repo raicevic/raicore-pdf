@@ -475,7 +475,9 @@ var pdf = HtmlToPdf.Convert(html, new HtmlConverterOptions { PdfUA = true });
 Drawn content is tagged with `PdfDocument.Tagged` and `PdfCanvas.BeginTag`/`EndTag` around structure elements
 (`PdfDocument.StructureRoot.AddChild`), `BeginArtifact` for decorations; content outside any tag becomes an artifact
 (or, with `PdfDocument.StrictTagging`, throws), and links get Link elements. Figures, formulas and tables drawn on one
-page get a `/BBox` computed from what is drawn for them. Layout blocks take a `Tag` (`StructureTag`), with defaults for paragraphs, images and
+page get a `/BBox` computed from what is drawn for them. Pages imported from other files keep their own content as
+an artifact (their structure is not taken over); what is drawn on them is tagged as usual. For PDF/UA, their fonts
+must still be embedded. Layout blocks take a `Tag` (`StructureTag`), with defaults for paragraphs, images and
 tables:
 
 ```csharp
