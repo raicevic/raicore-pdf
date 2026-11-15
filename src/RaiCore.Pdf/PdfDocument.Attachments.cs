@@ -49,7 +49,7 @@ public sealed partial class PdfDocument
             return;
         }
 
-        var defaultDate = Info.ModificationDate ?? Info.CreationDate ?? DateTimeOffset.Now;
+        var defaultDate = Info.ModificationDate ?? Info.CreationDate ?? TimeProvider.GetLocalNow();
         var tree = new List<(PdfString Key, PdfReference FileSpec)>();
         var associated = new PdfArray();
         foreach (var attachment in Attachments)

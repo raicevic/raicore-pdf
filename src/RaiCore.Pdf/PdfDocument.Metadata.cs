@@ -29,7 +29,7 @@ public sealed partial class PdfDocument
     /// </summary>
     private PdfReference WriteMetadata(PdfFileWriter writer, PdfDictionary catalog)
     {
-        var created = Info.CreationDate ?? DateTimeOffset.Now;
+        var created = Info.CreationDate ?? TimeProvider.GetLocalNow();
         var modified = Info.ModificationDate ?? created;
 
         var language = Language?.Trim();

@@ -128,6 +128,10 @@ change at any time, and this section lists what the packages can do so far.
   Layout attribute `/BBox`, measured from what is painted for it and its descendants (exact curve extents, strokes,
   text, images, imported pages and gradients, cut to the clip, through transformations and transparency groups), so
   core, Layout and HTML output all get it. `PdfStructureElement.BoundingBox` sets one by hand, for any element.
+- Deterministic output (#124): `PdfDocument.TimeProvider` and `HtmlConverterOptions.TimeProvider` supply the dates
+  that are not set (creation, modification, attachments), so the same input and a fixed clock give the same bytes,
+  also page by page, on other threads and in other cultures and time zones. CI compares samples written on Linux,
+  Windows and macOS.
 - Strict tagging (#123): `PdfDocument.StrictTagging` makes painting outside both a structure element and an artifact
   throw (naming the page) instead of quietly becoming an artifact. Layout and HTML output are tested under it.
 - Writing page by page: `PdfDocument.BeginSave(stream)`, `FlushPages()` (writes the pages so far and frees their

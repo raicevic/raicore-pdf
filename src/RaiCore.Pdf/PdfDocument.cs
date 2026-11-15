@@ -38,6 +38,25 @@ public sealed partial class PdfDocument
     /// <summary>Document metadata, written to the Info dictionary and the XMP metadata stream.</summary>
     public PdfDocumentInfo Info { get; } = new();
 
+    /// <summary>
+    /// The clock that dates the document when <see cref="PdfDocumentInfo.CreationDate"/> is not set: its local time
+    /// when the document is saved becomes the creation (and modification) date, and the default date of attachments.
+    /// Defaults to <see cref="TimeProvider.System"/>.
+    /// </summary>
+    /// <remarks>
+    /// The output is deterministic: an unencrypted document saved twice with the same content, options and dates
+    /// (fixed here or in <see cref="Info"/>) has the same bytes, also page by page and on other threads. Its
+    /// <c>/ID</c> is a hash of the content, the XMP has no random identifiers, and objects, dictionaries and resources
+    /// are written in a fixed order. Encryption is the exception: its keys and salts are random by design. Flate
+    /// compression comes from the runtime's zlib, so byte-identical output across operating systems or processor
+    /// architectures also needs the same zlib build (CI compares Linux, Windows and macOS).
+    /// </remarks>
+    public TimeProvider TimeProvider
+    {
+        get;
+        set => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = TimeProvider.System;
+
     /// <summary>Whether content streams are Flate-compressed. Turn off to inspect output by eye.</summary>
     public bool CompressContent { get; set; } = true;
 

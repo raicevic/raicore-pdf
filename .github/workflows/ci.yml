@@ -53,6 +53,15 @@ jobs:
 
       - name: Test
         run: dotnet test --no-build --configuration Release
+        env:
+          # DeterminismTests write their samples here; the determinism job compares them across the three OSes.
+          RAICORE_DETERMINISM_OUTPUT: ${{ runner.temp }}/determinism
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: determinism-${{ matrix.os }}
+          path: ${{ runner.temp }}/determinism
+          if-no-files-found: error
 
       - name: Pack
         run: dotnet pack --no-build --configuration Release --output artifacts
@@ -75,6 +84,42 @@ jobs:
         with:
           name: smoke-test-pdfs
           path: smoke-output/*.pdf
+
+  # The same input must give the same bytes everywhere (PdfDocument.TimeProvider documents the contract): compares the
+  # samples DeterminismTests wrote on Linux, Windows and macOS. Not a required check.
+  determinism:
+    name: determinism
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: determinism-*
+          path: determinism
+
+      - name: Compare the samples across operating systems
+        shell: bash
+        run: |
+          status=0
+          for sample in determinism/determinism-ubuntu-latest/*.pdf; do
+            name=$(basename "$sample")
+            echo "== $name"
+            hashes=""
+            for os in ubuntu-latest windows-latest macos-latest; do
+              file="determinism/determinism-$os/$name"
+              hash=$(sha256sum "$file" | cut -d' ' -f1)
+              echo "  $os  $hash  $(stat -c %s "$file") bytes"
+              hashes="$hashes$hash\n"
+            done
+            if [ "$(printf "$hashes" | sort -u | wc -l)" -ne 1 ]; then
+              echo "::error::$name differs between operating systems"
+              for os in windows-latest macos-latest; do
+                cmp "$sample" "determinism/determinism-$os/$name" | head -1 || true
+              done
+              status=1
+            fi
+          done
+          exit $status
 
   # Publishes the package smoke test trimmed and with Native AOT and runs the binaries (README: "Trimming and Native
   # AOT"). Not a required check; it takes a few minutes, so it runs on pull requests too.
