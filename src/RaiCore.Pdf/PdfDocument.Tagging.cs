@@ -33,6 +33,14 @@ public sealed partial class PdfDocument
     public bool PdfUA { get; set; }
 
     /// <summary>
+    /// Whether painting outside both a structure element and an artifact throws, in a <see cref="Tagged"/> document.
+    /// By default such content quietly becomes an artifact, which hides it from screen readers; in strict mode,
+    /// forgetting to tag text (or a shape, an image) is an <see cref="InvalidOperationException"/> naming the page instead.
+    /// Building paths and clipping are not painting and need no tag.
+    /// </summary>
+    public bool StrictTagging { get; set; }
+
+    /// <summary>
     /// The root of the logical structure: the <see cref="PdfStructureTypes.Document"/> element that the document's
     /// headings, paragraphs, tables and figures are added to.
     /// </summary>

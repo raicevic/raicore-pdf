@@ -49,7 +49,7 @@ public class HtmlTaggingTests
     private static readonly PageSetup SmallPage = new(new PdfPageSize(300, 200), Thickness.All(20));
 
     private static byte[] Convert(string html, bool pdfUA = false, PageSetup? page = null) =>
-        HtmlToPdf.ConvertAsync(html, new HtmlConverterOptions { Tagged = true, PdfUA = pdfUA, Page = page ?? PageSetup.A4 }).GetAwaiter().GetResult().ToArray();
+        HtmlToPdf.ConvertAsync(html, new HtmlConverterOptions { Tagged = true, PdfUA = pdfUA, Page = page ?? PageSetup.A4, StrictTagging = true }).GetAwaiter().GetResult().ToArray();
 
     private static byte[] ConvertUntagged(string html) => HtmlToPdf.ConvertAsync(html).GetAwaiter().GetResult().ToArray();
 
@@ -149,7 +149,7 @@ public class HtmlTaggingTests
         flow.Add(new ContainerBlock(new BoxStyle(), new ParagraphBlock(new Paragraph(style).Add("Decor"))) { Tag = StructureTag.Artifact });
         flow.Add(new TableBlock().Add(new TableRow(new TableCell(new Paragraph(style).Add("Head"))) { IsHeader = true }).Add(new TableRow(new TableCell(new Paragraph(style).Add("Cell")))));
         flow.PageDecorator = (canvas, info) => canvas.DrawText($"{info.Number}", style.Fonts[0], 8, 140, 10);
-        var doc = new PdfDocument { Tagged = true, CompressContent = false };
+        var doc = new PdfDocument { Tagged = true, CompressContent = false, StrictTagging = true };
         flow.RenderTo(doc);
 
         var root = TaggedPdfInspector.Inspect(doc.ToArray());

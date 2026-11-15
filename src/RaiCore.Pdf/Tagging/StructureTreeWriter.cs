@@ -202,7 +202,7 @@ internal sealed class StructureTreeWriter
         return reference;
     }
 
-    /// <summary>The element's attributes (<c>/A</c>): the Table and List attributes that are set.</summary>
+    /// <summary>The element's attributes (<c>/A</c>): the Table, Layout and List attributes that are set.</summary>
     private static PdfObject? Attributes(PdfStructureElement element)
     {
         var table = new PdfDictionary { ["O"] = new PdfName("Table") };
@@ -227,6 +227,11 @@ internal sealed class StructureTreeWriter
             attributes.Add(table);
         }
 
+        if (BoundingBox(element) is { } box)
+        {
+            attributes.Add(new PdfDictionary { ["O"] = new PdfName("Layout"), ["BBox"] = PdfArray.OfNumbers(box.X, box.Y, box.Right, box.Top) });
+        }
+
         if (element.ListNumbering is { } numbering)
         {
             attributes.Add(new PdfDictionary { ["O"] = new PdfName("List"), ["ListNumbering"] = new PdfName(numbering == PdfListNumbering.DecimalDigits ? "Decimal" : numbering.ToString()) });
@@ -239,6 +244,10 @@ internal sealed class StructureTreeWriter
             _ => new PdfArray(attributes),
         };
     }
+
+    /// <summary>The element's <c>/BBox</c>: the one set, else for an illustration or table drawn on one page, the drawn area.</summary>
+    private static PdfRectangle? BoundingBox(PdfStructureElement element) =>
+        element.BoundingBox ?? (PdfStructureElement.TakesBoundingBox(element.Type) && !element.DrawnOnSeveralPages ? element.DrawnBounds : null);
 
     private static void AddText(PdfDictionary dictionary, string key, string? text)
     {

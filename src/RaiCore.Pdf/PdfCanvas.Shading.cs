@@ -39,6 +39,8 @@ public sealed partial class PdfCanvas
             return this;
         }
 
+        // A shading fills the clip: the whole page, cut to the clip like everything painted.
+        Painting("a gradient", new PdfRectangle(0, 0, _page.Width, _page.Height));
         var colors = Shading(geometry, Function(stops, color => [color.Red, color.Green, color.Blue]), "DeviceRGB");
         var name = string.Create(CultureInfo.InvariantCulture, $"Sh{_shadings.Count + 1}");
         _shadings.Add((colors, name));

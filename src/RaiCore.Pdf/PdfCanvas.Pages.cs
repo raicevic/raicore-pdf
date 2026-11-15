@@ -36,6 +36,7 @@ public sealed partial class PdfCanvas
         }
 
         var name = UseResource(_page.UsePageForm(page));
+        Painting("a page", TracksBounds ? PageBounds(x, y, width, height) : null);
         return Op($"q {OpaqueImagePrefix()}{N(width / page.Width)} 0 0 {N(height / page.Height)} {N(x)} {N(y)} cm /{name} Do Q");
     }
 }

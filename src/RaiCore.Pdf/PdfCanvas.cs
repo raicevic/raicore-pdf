@@ -92,7 +92,11 @@ public sealed partial class PdfCanvas
     }
 
     /// <summary>Sets the stroke line width in points.</summary>
-    public PdfCanvas SetLineWidth(double width) => StateOp($"{N(width)} w");
+    public PdfCanvas SetLineWidth(double width)
+    {
+        _lineWidth = width;
+        return StateOp($"{N(width)} w");
+    }
 
     /// <summary>
     /// Sets the dash pattern for strokes: lengths of alternating dashes and gaps in points, starting
@@ -133,45 +137,71 @@ public sealed partial class PdfCanvas
     }
 
     /// <summary>Starts a new subpath at the given point.</summary>
-    public PdfCanvas MoveTo(double x, double y) => Op($"{N(x)} {N(y)} m");
+    public PdfCanvas MoveTo(double x, double y)
+    {
+        IncludePathPoint(x, y, move: true);
+        return Op($"{N(x)} {N(y)} m");
+    }
 
     /// <summary>Adds a straight line to the current subpath.</summary>
-    public PdfCanvas LineTo(double x, double y) => Op($"{N(x)} {N(y)} l");
+    public PdfCanvas LineTo(double x, double y)
+    {
+        IncludePathPoint(x, y);
+        return Op($"{N(x)} {N(y)} l");
+    }
 
     /// <summary>Adds a cubic Bézier curve to the current subpath.</summary>
-    public PdfCanvas CurveTo(double x1, double y1, double x2, double y2, double x3, double y3) =>
-        Op($"{N(x1)} {N(y1)} {N(x2)} {N(y2)} {N(x3)} {N(y3)} c");
+    public PdfCanvas CurveTo(double x1, double y1, double x2, double y2, double x3, double y3)
+    {
+        IncludeCurve(x1, y1, x2, y2, x3, y3);
+        return Op($"{N(x1)} {N(y1)} {N(x2)} {N(y2)} {N(x3)} {N(y3)} c");
+    }
 
     /// <summary>Closes the current subpath.</summary>
-    public PdfCanvas ClosePath() => Op("h");
+    public PdfCanvas ClosePath()
+    {
+        ClosePathBounds();
+        return Op("h");
+    }
 
     /// <summary>Adds a rectangle with its bottom-left corner at (<paramref name="x"/>, <paramref name="y"/>).</summary>
-    public PdfCanvas Rectangle(double x, double y, double width, double height) =>
-        Op($"{N(x)} {N(y)} {N(width)} {N(height)} re");
+    public PdfCanvas Rectangle(double x, double y, double width, double height)
+    {
+        IncludePathRectangle(x, y, width, height);
+        return Op($"{N(x)} {N(y)} {N(width)} {N(height)} re");
+    }
 
     /// <summary>Fills the current path (nonzero winding rule).</summary>
-    public PdfCanvas Fill() => Op("f");
+    public PdfCanvas Fill() => PaintPath("f", stroke: false);
 
     /// <summary>Strokes the current path.</summary>
-    public PdfCanvas Stroke() => Op("S");
+    public PdfCanvas Stroke() => PaintPath("S", stroke: true);
 
     /// <summary>Fills and then strokes the current path.</summary>
-    public PdfCanvas FillAndStroke() => Op("B");
+    public PdfCanvas FillAndStroke() => PaintPath("B", stroke: true);
 
     /// <summary>Fills the current path with the even-odd rule (holes where subpaths overlap an even number of times).</summary>
-    public PdfCanvas FillEvenOdd() => Op("f*");
+    public PdfCanvas FillEvenOdd() => PaintPath("f*", stroke: false);
 
     /// <summary>Fills the current path with the even-odd rule and then strokes it.</summary>
-    public PdfCanvas FillAndStrokeEvenOdd() => Op("B*");
+    public PdfCanvas FillAndStrokeEvenOdd() => PaintPath("B*", stroke: true);
 
     /// <summary>
     /// Intersects the clipping region with the current path and ends the path without painting it. Everything drawn
     /// afterwards is clipped until <see cref="RestoreState"/>.
     /// </summary>
-    public PdfCanvas Clip(bool evenOdd = false) => Op(evenOdd ? "W* n" : "W n");
+    public PdfCanvas Clip(bool evenOdd = false)
+    {
+        ClipToPath();
+        return Op(evenOdd ? "W* n" : "W n");
+    }
 
     /// <summary>Ends the current path without painting it.</summary>
-    public PdfCanvas EndPath() => Op("n");
+    public PdfCanvas EndPath()
+    {
+        EndPathBounds();
+        return Op("n");
+    }
 
     /// <summary>
     /// Draws a single line of text with its baseline starting at (<paramref name="x"/>, <paramref name="y"/>),
@@ -184,6 +214,7 @@ public sealed partial class PdfCanvas
         var (resourceName, usage) = _page.UseFont(font);
         UseResource(resourceName);
         var operand = font.EncodeText(text, usage).ToString();
+        Painting("text", TracksBounds ? TextBounds(font, size, x, y, 0, TextWidth(text, font, size)) : null);
         return Op($"BT /{resourceName} {N(size)} Tf {N(x)} {N(y)} Td {operand} Tj ET");
     }
 
@@ -202,6 +233,7 @@ public sealed partial class PdfCanvas
         ArgumentNullException.ThrowIfNull(image);
         var name = UseResource(_page.UseImage(image));
         var (a, b, c, d, e, f) = image.GetMatrix(x, y, width, height);
+        Painting("an image", TracksBounds ? PageBounds(x, y, width, height) : null);
         return Op($"q {OpaqueImagePrefix()}{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} cm /{name} Do Q");
     }
 
@@ -227,6 +259,7 @@ public sealed partial class PdfCanvas
         }
 
         openType.EnsureEmbeddable();
+        Painting("text", TracksBounds ? GlyphBounds(glyphs, font, size, x, y) : null);
         var (resourceName, usage) = _page.UseFont(font);
         UseResource(resourceName);
         var op = new StringBuilder();
@@ -282,6 +315,35 @@ public sealed partial class PdfCanvas
         }
 
         return Op(op.ToString());
+    }
+
+    /// <summary>Paints the current path: checks strict tagging and records the painted area first.</summary>
+    private PdfCanvas PaintPath(string op, bool stroke)
+    {
+        Painting(stroke ? "a stroked path" : "a filled path", TakePathBounds(stroke));
+        return Op(op);
+    }
+
+    /// <summary>The bounding box, in page coordinates, of shaped glyphs drawn from the pen position (x, y).</summary>
+    private PdfRectangle? GlyphBounds(IReadOnlyList<PositionedGlyph> glyphs, PdfFont font, double size, double x, double y)
+    {
+        if (glyphs.Count == 0)
+        {
+            return null;
+        }
+
+        double pen = 0, left = 0, right = 0, low = 0, high = 0;
+        foreach (var glyph in glyphs)
+        {
+            var start = pen + (glyph.OffsetX * size);
+            left = Math.Min(left, Math.Min(start, start + (glyph.Advance * size)));
+            right = Math.Max(right, Math.Max(start, start + (glyph.Advance * size)));
+            low = Math.Min(low, glyph.OffsetY * size);
+            high = Math.Max(high, glyph.OffsetY * size);
+            pen += glyph.Advance * size;
+        }
+
+        return TextBounds(font, size, x, y, left, right, low, high);
     }
 
     /// <summary>The page's content stream.</summary>

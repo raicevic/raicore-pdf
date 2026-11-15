@@ -72,8 +72,52 @@ public sealed class PdfStructureElement
     /// <summary>For a list (<c>L</c>): how its items are numbered or bulleted (the List attribute <c>/ListNumbering</c>).</summary>
     public PdfListNumbering? ListNumbering { get; set; }
 
+    /// <summary>
+    /// The element's bounding box in default user space of the page it is on (the Layout attribute <c>/BBox</c>): the
+    /// rectangle that encloses its visible content. ISO 32000-1 asks for it on illustrations (<c>Figure</c>,
+    /// <c>Formula</c>, <c>Form</c>) and tables that lie on a single page.
+    /// </summary>
+    /// <remarks>
+    /// Usually left <c>null</c>: a figure, formula, form or table that is drawn on one page then gets the box of
+    /// everything drawn while it (or one of its descendants) is the current tag, cut to the clip. Set it to give
+    /// another box, or a box to an element of any other type; it is written as given, wherever the element is drawn.
+    /// </remarks>
+    public PdfRectangle? BoundingBox { get; set; }
+
+    /// <summary>The page this element's drawn content is on, while it is all on one page.</summary>
+    internal PdfPage? DrawnPage { get; private set; }
+
+    /// <summary>The bounding box of what was drawn for the element, in default user space of <see cref="DrawnPage"/>.</summary>
+    internal PdfRectangle? DrawnBounds { get; private set; }
+
+    /// <summary>Whether content of the element was drawn on more than one page (so it gets no computed box).</summary>
+    internal bool DrawnOnSeveralPages { get; private set; }
+
     /// <summary>The document the element belongs to.</summary>
     internal PdfDocument Document { get; }
+
+    /// <summary>Whether the element's type gets a computed bounding box: illustrations and tables (ISO 32000-1, 14.8.5.4.3).</summary>
+    internal static bool TakesBoundingBox(string type) =>
+        type is PdfStructureTypes.Figure or PdfStructureTypes.Formula or PdfStructureTypes.Form or PdfStructureTypes.Table;
+
+    /// <summary>Adds an area drawn for the element on a page (see <see cref="BoundingBox"/>).</summary>
+    internal void IncludeDrawn(PdfPage page, PdfRectangle bounds)
+    {
+        if (DrawnOnSeveralPages)
+        {
+            return;
+        }
+
+        if (DrawnPage is not null && !ReferenceEquals(DrawnPage, page))
+        {
+            DrawnOnSeveralPages = true;
+            DrawnBounds = null;
+            return;
+        }
+
+        DrawnPage = page;
+        DrawnBounds = DrawnBounds is { } drawn ? PdfCanvas.Union(drawn, bounds) : bounds;
+    }
 
     /// <summary>The element's content (marked content, annotations) and child elements, in reading order.</summary>
     internal IReadOnlyList<StructureKid> Kids => _kids;

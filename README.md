@@ -473,8 +473,9 @@ var pdf = HtmlToPdf.Convert(html, new HtmlConverterOptions { PdfUA = true });
 - The document title is shown in the viewer's title bar (`/DisplayDocTitle`), and pages use the structure's tab order.
 
 Drawn content is tagged with `PdfDocument.Tagged` and `PdfCanvas.BeginTag`/`EndTag` around structure elements
-(`PdfDocument.StructureRoot.AddChild`), `BeginArtifact` for decorations; content outside any tag becomes an artifact,
-and links get Link elements. Layout blocks take a `Tag` (`StructureTag`), with defaults for paragraphs, images and
+(`PdfDocument.StructureRoot.AddChild`), `BeginArtifact` for decorations; content outside any tag becomes an artifact
+(or, with `PdfDocument.StrictTagging`, throws), and links get Link elements. Figures, formulas and tables drawn on one
+page get a `/BBox` computed from what is drawn for them. Layout blocks take a `Tag` (`StructureTag`), with defaults for paragraphs, images and
 tables:
 
 ```csharp
