@@ -462,7 +462,11 @@ change at any time, and this section lists what the packages can do so far.
   relative URLs without a base URI), unreadable data, a per-resource limit and fonts that may not be embedded. Each
   issue is reported once per conversion, after rendering, with the first element's path
   (`html > body > div.card:nth-of-type(2) > img#logo`) and the number of elements it concerns; a web font only when
-  none of its sources loaded.
+  none of its sources loaded. Unsupported CSS is reported as written (before the converter's rewrites), only where
+  a rule applies to an element: properties it ignores (`Info` for those with no effect in print and vendor
+  prefixes), values AngleSharp rejects and values laid out differently (`display: grid`, `contents`,
+  `position: sticky`), pseudo-elements it does not generate and selectors it cannot match, and skipped at-rules
+  (`@import`, `@layer`, `@container`; `@keyframes` as `Info`).
 
 ### RaiCore.Pdf.Razor
 - Razor components to PDF with Blazor's static `HtmlRenderer`: `RazorToPdf` for the simple case, `RazorPdfRenderer`

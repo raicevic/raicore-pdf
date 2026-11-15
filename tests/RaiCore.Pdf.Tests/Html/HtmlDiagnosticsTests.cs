@@ -193,6 +193,124 @@ public class HtmlDiagnosticsTests
         Assert.Empty(await Diagnose($"<p>Text <img src='{Pixel}'></p>"));
     }
 
+    [Fact]
+    public async Task Unsupported_properties_are_reported_where_their_rule_applies()
+    {
+        var found = await Diagnose("""
+            <style>
+              .cols { column-count: 2 }
+              .unused { grid-area: main }
+              .raised { box-shadow: 0 1px 2px gray }
+            </style>
+            <p class="cols">One</p><p class="cols">Two</p><p style="text-shadow: 1px 1px red">Three</p><p class="raised">Four</p>
+            """);
+
+        // .unused matches nothing: no effect, no report. Shadows are checked as written, though they are removed before layout.
+        Assert.Equal(["column-count", "box-shadow", "text-shadow"], found.Select(d => d.Subject));
+        Assert.All(found, d => Assert.Equal((HtmlDiagnosticKind.UnsupportedProperty, HtmlDiagnosticSeverity.Warning), (d.Kind, d.Severity)));
+        Assert.Equal("html > body > p.cols:nth-of-type(1)", found[0].ElementPath);
+        Assert.Equal(2, found[0].Count);
+        Assert.Equal("html > body > p:nth-of-type(3)", found[2].ElementPath);
+    }
+
+    [Fact]
+    public async Task Screen_only_and_vendor_prefixed_properties_are_information()
+    {
+        var found = await Diagnose("<p style='cursor: pointer; transition: color 1s; -webkit-box-shadow: 0 0 2px red'>x</p>");
+
+        Assert.Equal(["cursor", "transition", "-webkit-box-shadow"], found.Select(d => d.Subject));
+        Assert.All(found, d => Assert.Equal(HtmlDiagnosticSeverity.Info, d.Severity));
+        Assert.Contains("vendor-prefixed", found[2].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Invalid_values_and_values_laid_out_differently_are_reported()
+    {
+        var found = await Diagnose("""
+            <style>.grid { display: grid !important } .stick { position: sticky }</style>
+            <p style="color: notacolor">a</p><div class="grid">b</div><div class="stick">c</div>
+            """);
+
+        Assert.Equal(["display: grid", "position: sticky", "color: notacolor"], found.Select(d => d.Subject));
+        Assert.All(found, d => Assert.Equal(HtmlDiagnosticKind.UnsupportedValue, d.Kind));
+        Assert.Contains("Grid layout is not supported", found[0].Message, StringComparison.Ordinal);
+        Assert.Contains("ignored", found[2].Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Unsupported_selectors_and_pseudo_elements_are_reported()
+    {
+        var found = await Diagnose("""
+            <style>
+              p::first-letter { font-size: 2em }
+              ::selection { color: red }
+              p::before { content: "> "; column-count: 2 }
+              p:nonsense-pseudo-class { color: red }
+            </style>
+            <p>Text</p>
+            """);
+
+        Assert.Equal(["::first-letter", "::selection", "column-count", "p:nonsense-pseudo-class"], found.Select(d => d.Subject));
+        Assert.Equal([HtmlDiagnosticSeverity.Warning, HtmlDiagnosticSeverity.Info, HtmlDiagnosticSeverity.Warning, HtmlDiagnosticSeverity.Warning], found.Select(d => d.Severity));
+        Assert.Equal("html > body > p", found[2].ElementPath); // A ::before rule's declarations are checked at the element.
+    }
+
+    [Fact]
+    public async Task At_rules_that_are_skipped_are_reported()
+    {
+        var found = await Diagnose("""
+            <style>
+              @import url("other.css");
+              @keyframes spin { to { transform: rotate(1turn) } }
+              @layer base { p { color: red } }
+              @media screen { p { grid-area: a } }
+              @media print { p { column-count: 3 } }
+              @page { @top-center { content: "Header" } }
+            </style>
+            <p>Text</p>
+            """);
+
+        Assert.Equal(["@import", "@keyframes", "@layer", "column-count"], found.Select(d => d.Subject)); // Screen rules are not checked.
+        Assert.Equal([HtmlDiagnosticSeverity.Warning, HtmlDiagnosticSeverity.Info, HtmlDiagnosticSeverity.Warning], found.Take(3).Select(d => d.Severity));
+        Assert.All(found.Take(3), d => Assert.Null(d.ElementPath));
+    }
+
+    [Fact]
+    public async Task A_document_using_supported_css_reports_nothing()
+    {
+        var found = await Diagnose("""
+            <!doctype html><html lang="da"><head><title>T</title><style>
+            @page { size: A4; margin: 2cm; @top-center { content: string(chapter) } @bottom-right { content: counter(page) " / " counter(pages) } }
+            @page wide { size: A4 landscape }
+            :root { --accent: #036; --gap: 8px }
+            body { margin: 0; font: 11pt/1.4 "Liberation Sans", sans-serif; color: var(--accent) }
+            h1 { string-set: chapter content(); bookmark-level: 1; break-before: page; page-break-after: avoid }
+            h2 { counter-increment: sec } h2::before { content: counter(sec) ". " }
+            a::after { content: " (" target-counter(attr(href), page) ")" }
+            .card { background: linear-gradient(90deg, #fde, #def), #fff; border: 1px solid #ccc; border-radius: 6px; padding: calc(var(--gap) * 2); margin-inline-start: 1em; box-sizing: border-box }
+            .row { display: flex; flex-flow: row wrap; gap: var(--gap); justify-content: space-between; align-items: center }
+            .row > * { flex: 1 1 0; min-width: 0 }
+            table { border-collapse: collapse; width: 100%; table-layout: fixed }
+            tr:nth-child(even) td { background-color: rgba(0,0,0,.04); text-align: end; vertical-align: top }
+            p { hyphens: auto; -webkit-hyphens: auto; orphans: 3; widows: 3; text-indent: 1em; letter-spacing: .01em }
+            .wide { page: wide } .clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+            .abs { position: absolute; inset: 0 auto auto 0; z-index: 2 } .float { float: inline-start; clear: both }
+            .big { font-size: clamp(10pt, 2vw, 14pt); text-transform: uppercase; text-decoration: underline wavy red; text-underline-offset: 2px }
+            ul { list-style: square inside } q { quotes: "\201C" "\201D" }
+            @media print { .noprint { display: none } }
+            @supports (display: flex) { .s { display: flex } }
+            @font-face { font-family: X; src: local("Liberation Sans") }
+            </style></head><body>
+            <h1 id="c1">Kapitel</h1><h2>Sek</h2><p class="big">Tekst <q>citat</q> <a href="#c1">link</a></p>
+            <div class="card row"><div class="clip">a</div><div class="float">b</div><div class="abs">c</div></div>
+            <table><tr><td>1</td></tr><tr><td>2</td></tr></table><ul><li>x</li></ul><div class="wide noprint s">w</div>
+            <div style="margin: 0 auto; max-width: 300px; opacity: .8; border-top-left-radius: 4px 8px">inline</div>
+            </body></html>
+            """);
+
+        Assert.Empty(found);
+    }
+
     [Theory]
     [InlineData("<div id='a'><p class='x y z'>t</p></div>", "p", "html > body > div#a > p.x.y")]
     [InlineData("<ul><li>1</li><li>2</li><li id='last'>3</li></ul>", "li:nth-child(2)", "html > body > ul > li:nth-of-type(2)")]

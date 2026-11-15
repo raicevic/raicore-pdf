@@ -235,9 +235,13 @@ public static partial class HtmlToPdf
         using var document = Parse(context, html, options.BaseUri, cancellationToken);
         CheckStructure(document, options.Limits);
 
-        var styleSheets = PrepareStyles(document, options, diagnostics);
+        var originalInlineStyles = new Dictionary<IElement, string>(ReferenceEqualityComparer.Instance);
+        var styleSheets = PrepareStyles(document, options, diagnostics, originalInlineStyles);
         SanitizeStyles(document);
         var cssTexts = styleSheets.Select(s => s.Css).ToList();
+
+        // The CSS as written, not as rewritten for AngleSharp (which drops what is not drawn, such as shadows).
+        CssDiagnostics.Check(document, styleSheets.Where(s => s.Original is not null).Select(s => s.Original!), originalInlineStyles, diagnostics);
         var pageRules = PageRules.Load(options.Page, cssTexts);
         var setup = pageRules.Setup;
 
@@ -363,7 +367,7 @@ public static partial class HtmlToPdf
     /// resource loader) and appends the user stylesheet. Returns all CSS text with the URI its relative URLs resolve
     /// against (a linked stylesheet's own address), for reading the rules AngleSharp does not keep.
     /// </summary>
-    private static List<StyleSheetText> PrepareStyles(IDocument document, HtmlConverterOptions options, DiagnosticCollector diagnostics)
+    private static List<StyleSheetText> PrepareStyles(IDocument document, HtmlConverterOptions options, DiagnosticCollector diagnostics, Dictionary<IElement, string> originalInlineStyles)
     {
         var head = document.Head ?? document.DocumentElement.AppendElement(document.CreateElement("head"));
         var userAgentCss = RewriteCss(UserAgentStyleSheet.Css);
@@ -406,7 +410,8 @@ public static partial class HtmlToPdf
 
         foreach (var style in document.QuerySelectorAll("style").Skip(1))
         {
-            if (style.TextContent is var text && RewriteCss(text) is var rewritten && rewritten != text)
+            var text = style.TextContent;
+            if (RewriteCss(text) is var rewritten && rewritten != text)
             {
                 style.TextContent = rewritten;
             }
@@ -414,7 +419,7 @@ public static partial class HtmlToPdf
             var media = style.GetAttribute("media");
             if (media is null or "" || media.Contains("print", StringComparison.OrdinalIgnoreCase) || media.Contains("all", StringComparison.OrdinalIgnoreCase))
             {
-                cssTexts.Add(new(style.TextContent, linkedBases.GetValueOrDefault(style, options.BaseUri)));
+                cssTexts.Add(new(style.TextContent, linkedBases.GetValueOrDefault(style, options.BaseUri)) { Original = text });
             }
         }
 
@@ -423,6 +428,7 @@ public static partial class HtmlToPdf
             var inline = element.GetAttribute("style")!;
             if (RewriteCss(inline) is var rewritten && rewritten != inline)
             {
+                originalInlineStyles[element] = inline;
                 element.SetAttribute("style", rewritten);
             }
         }

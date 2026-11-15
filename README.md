@@ -255,7 +255,10 @@ Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowD
 before rendering, e.g. to set your own page decorator.
 
 `HtmlConverterOptions.Diagnostics` tells you why the output may differ from the browser's: images, style sheets and
-fonts that did not load (and why: nothing loaded, unreadable, too large, not embeddable). Each issue comes once per
+fonts that did not load (and why: nothing loaded, unreadable, too large, not embeddable), and CSS the converter does
+not support: properties, invalid values and values laid out differently (`display: grid`), selectors and
+pseudo-elements it cannot match (`::first-letter`), and at-rules it skips (`@import`, `@layer`). CSS that has no
+effect in print anyway (`cursor`, `transition`, vendor prefixes) comes as `Info`. Each issue comes once per
 conversion, with the path of the first element it concerns and how many elements it concerns:
 
 ```csharp

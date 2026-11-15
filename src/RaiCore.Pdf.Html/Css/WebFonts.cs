@@ -6,7 +6,11 @@ using RaiCore.Pdf.Html.Diagnostics;
 namespace RaiCore.Pdf.Html.Css;
 
 /// <summary>A stylesheet's CSS text and the URI its relative URLs resolve against.</summary>
-internal readonly record struct StyleSheetText(string Css, Uri? BaseUri);
+internal readonly record struct StyleSheetText(string Css, Uri? BaseUri)
+{
+    /// <summary>The style sheet as written, before the rewrites for AngleSharp (for diagnostics); <c>null</c> for the user agent's.</summary>
+    public string? Original { get; init; }
+}
 
 /// <summary>
 /// Fonts declared with <c>@font-face</c> rules (CSS Fonts 4). Faces are matched by style and weight (weight ranges
