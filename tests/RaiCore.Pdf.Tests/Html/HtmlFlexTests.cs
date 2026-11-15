@@ -233,6 +233,42 @@ public class HtmlFlexTests
         Assert.Contains("End", text, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("flex: 0 1 400px; padding: 0 14px")]
+    [InlineData("flex: 0 1 400px; padding: 0 4px; border-left: 10px solid; border-right: 10px solid")]
+    [InlineData("flex: 0 1 428px; padding: 0 14px; box-sizing: border-box")]
+    public void Shrinking_rows_weigh_items_by_their_content_box(string css)
+    {
+        // 228px to give up between content boxes of 400px and 300px: 4/7 and 3/7 of it, as in Chrome (#132).
+        var (flow, flex) = Flow($"""
+            <div style="display: flex; width: 500px">
+              <div style="{css}; background: #eee">a</div>
+              <div style="flex: 0 1 300px; background: #eee">b</div>
+            </div>
+            """);
+        var placements = flow.Paginate().Placements;
+        var (first, second) = (BoxOf(placements, flex.Items[0].Content), BoxOf(placements, flex.Items[1].Content));
+
+        Assert.Equal((428 - (228 * 4.0 / 7)) * Px, first.Width, 3);
+        Assert.Equal((300 - (228 * 3.0 / 7)) * Px, second.Width, 3);
+    }
+
+    [Fact]
+    public void Shrinking_columns_weigh_items_by_their_content_box()
+    {
+        var (flow, flex) = Flow("""
+            <div style="display: flex; flex-direction: column; height: 500px">
+              <div style="flex: 0 1 400px; padding: 14px 0; background: #eee">a</div>
+              <div style="flex: 0 1 300px; background: #eee">b</div>
+            </div>
+            """);
+        var placements = flow.Paginate().Placements;
+        var (first, second) = (BoxOf(placements, flex.Items[0].Content), BoxOf(placements, flex.Items[1].Content));
+
+        Assert.Equal((428 - (228 * 4.0 / 7)) * Px, first.Bottom - first.Top, 3);
+        Assert.Equal((300 - (228 * 3.0 / 7)) * Px, second.Bottom - second.Top, 3);
+    }
+
     private static FlexBlock Flex(string html) => Flow(html).Flex;
 
     /// <summary>The first box fragment of a block (paragraph blocks also record their text, with line numbers).</summary>

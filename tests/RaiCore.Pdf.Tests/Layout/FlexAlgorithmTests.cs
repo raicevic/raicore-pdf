@@ -4,8 +4,8 @@ namespace RaiCore.Pdf.Tests.Layout;
 
 public class FlexAlgorithmTests
 {
-    private static FlexMainInput Item(double basis, double grow = 0, double shrink = 1, double min = 0, double max = double.PositiveInfinity, double margins = 0) =>
-        new(basis, min, max, grow, shrink, margins);
+    private static FlexMainInput Item(double basis, double grow = 0, double shrink = 1, double min = 0, double max = double.PositiveInfinity, double margins = 0, double decoration = 0) =>
+        new(basis, min, max, grow, shrink, margins, decoration);
 
     [Fact]
     public void Grow_factors_share_the_free_space()
@@ -21,6 +21,33 @@ public class FlexAlgorithmTests
         var sizes = FlexAlgorithm.ResolveFlexibleLengths([Item(50, grow: 1), Item(100, grow: 1)], 250);
 
         Assert.Equal([100, 150], sizes);
+    }
+
+    [Fact]
+    public void Shrinking_is_weighted_by_the_inner_base_size()
+    {
+        // Border-box bases of 428 (400 content + 28 padding) and 300 in 500: 228 to give up, split 400 : 300 (#132).
+        var sizes = FlexAlgorithm.ResolveFlexibleLengths([Item(428, decoration: 28), Item(300)], 500);
+
+        Assert.Equal(428 - (228 * 4.0 / 7), sizes[0], 9);
+        Assert.Equal(300 - (228 * 3.0 / 7), sizes[1], 9);
+    }
+
+    [Fact]
+    public void Growing_is_not_weighted_by_padding()
+    {
+        var sizes = FlexAlgorithm.ResolveFlexibleLengths([Item(128, grow: 1, decoration: 28), Item(100, grow: 1)], 328);
+
+        Assert.Equal([178, 150], sizes);
+    }
+
+    [Fact]
+    public void An_item_that_is_all_padding_does_not_shrink()
+    {
+        Assert.Equal([40, 60], FlexAlgorithm.ResolveFlexibleLengths([Item(40, decoration: 40), Item(100)], 100));
+
+        // A border-box basis smaller than its padding (box-sizing: border-box) has no content to give up either.
+        Assert.Equal([20, 80], FlexAlgorithm.ResolveFlexibleLengths([Item(20, decoration: 40), Item(100)], 100));
     }
 
     [Fact]
