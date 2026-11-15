@@ -7,10 +7,17 @@ namespace RaiCore.Pdf.Layout.Blocks;
 /// <param name="Grow">The flex grow factor.</param>
 /// <param name="Shrink">The flex shrink factor.</param>
 /// <param name="Margins">The sum of the item's non-auto main-axis margins.</param>
-internal readonly record struct FlexMainInput(double BaseSize, double Min, double Max, double Grow, double Shrink, double Margins)
+/// <param name="Decoration">The item's main-axis padding and borders, which are part of its border-box sizes.</param>
+internal readonly record struct FlexMainInput(double BaseSize, double Min, double Max, double Grow, double Shrink, double Margins, double Decoration = 0)
 {
     /// <summary>The base size clamped by the min and max sizes (CSS: hypothetical main size).</summary>
     public double Hypothetical => Math.Clamp(BaseSize, Min, Max);
+
+    /// <summary>
+    /// The scaled flex shrink factor (CSS Flexbox section 9.7): the shrink factor times the inner (content-box) base
+    /// size, so that padding and borders do not make an item give up more of the negative free space.
+    /// </summary>
+    public double ScaledShrink => Shrink * Math.Max(0, BaseSize - Decoration);
 }
 
 /// <summary>The main-axis algorithms of CSS Flexbox Level 1, independent of pagination and drawing.</summary>
@@ -132,7 +139,7 @@ internal static class FlexAlgorithm
                 {
                     if (!frozen[i])
                     {
-                        scaledSum += items[i].Shrink * items[i].BaseSize;
+                        scaledSum += items[i].ScaledShrink;
                     }
                 }
 
@@ -141,7 +148,7 @@ internal static class FlexAlgorithm
                     if (!frozen[i])
                     {
                         target[i] = scaledSum > Epsilon
-                            ? items[i].BaseSize - (Math.Abs(free) * items[i].Shrink * items[i].BaseSize / scaledSum)
+                            ? items[i].BaseSize - (Math.Abs(free) * items[i].ScaledShrink / scaledSum)
                             : items[i].BaseSize;
                     }
                 }

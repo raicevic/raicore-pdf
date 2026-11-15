@@ -130,7 +130,8 @@ internal sealed partial class Paginator
 
         // min-width: auto is the content's min-content width, capped by a specified width and the max width.
         var min = style.MinWidth ?? Math.Min(Math.Min(minContent, specified ?? double.PositiveInfinity), max);
-        return new FlexMainInput(baseSize, min, Math.Max(min, max), Math.Max(0, item.Grow), Math.Max(0, item.Shrink), margins);
+        var decoration = style.Padding.Horizontal + style.Border.Widths.Horizontal;
+        return new FlexMainInput(baseSize, min, Math.Max(min, max), Math.Max(0, item.Grow), Math.Max(0, item.Shrink), margins, decoration);
     }
 
     /// <summary>
@@ -449,7 +450,8 @@ internal sealed partial class Paginator
 
         // min-height: auto keeps a column item at least as tall as its content (capped by a specified height).
         var min = style.MinHeight ?? Math.Min(Math.Min(natural, specified ?? double.PositiveInfinity), max);
-        return new FlexMainInput(baseSize, min, Math.Max(min, max), Math.Max(0, item.Grow), Math.Max(0, item.Shrink), margins);
+        var decoration = style.Padding.Vertical + style.Border.Widths.Vertical;
+        return new FlexMainInput(baseSize, min, Math.Max(min, max), Math.Max(0, item.Grow), Math.Max(0, item.Shrink), margins, decoration);
     }
 
     /// <summary>

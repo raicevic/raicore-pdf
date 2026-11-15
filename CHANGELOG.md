@@ -220,6 +220,8 @@ change at any time, and this section lists what the packages can do so far.
   inline box, an absolute box's containing block. Min-content and max-content widths treat a percentage width as
   auto, and an image with a percentage width or max-width can shrink with its container (CSS Sizing 3 section 5.2).
   `FlexBasis.Percent` also applies to rows.
+- Flex shrinking weighs items by their content box (#132): the negative free space is split by flex-shrink times the
+  inner base size (CSS Flexbox section 9.7), so items with padding or borders shrink as in browsers.
 - Inline images sized relative to their paragraph (#112): `InlineImageSizing` (`InlineImage.Sizing`,
   `Paragraph.AddImage(..., sizing)`) keeps a percentage width, min-width or max-width until layout, so an inline
   `<img style="max-width: 100%">` or `width: 50%` follows a flex item that shrinks or a table column, like a block
