@@ -16,7 +16,7 @@ case "$target" in
   webp) files=("$fixtures"/WebP/*.webp) ;;
   svg) files=("$fixtures"/Svg/*.svg) ;;
   font) files=("$fixtures"/*.ttf "$fixtures"/*.otf "$fixtures"/*.ttc) ;;
-  pdf) files=("$fixtures"/Reader/*.pdf) ;;
+  pdf) files=("$fixtures"/Reader/*.pdf "$fixtures"/Reader/Encrypted/*.pdf) ;;
   *) files=() ;;
 esac
 files+=("$fixtures"/Fuzz/Seeds/"$target"/* "$fixtures"/Fuzz/Crashes/"$target"/*)

@@ -535,7 +535,15 @@ Imported pages keep their content, fonts and images exactly (streams are copied,
 what pages share is written once, also across several imports from one reader and pages drawn with `DrawPage`. Links
 within the file are pointed at the imported pages (links to pages left out are dropped), and the outline can be kept.
 The reader handles classic and cross-reference-stream files, object streams, incremental updates and damaged files
-(it scans for objects when the cross-reference data is missing or wrong). Encrypted files are not supported yet.
+(it scans for objects when the cross-reference data is missing or wrong). Encrypted files open with their password
+(the standard security handler: AES-256, AES-128 and the older RC4 40 and 128-bit); without one, the empty user
+password is tried, which opens files that are only restricted by permissions. A wrong password throws
+`PdfPasswordException`, and `IsEncrypted`, `IsOpenedWithOwnerPassword` and `Permissions` tell what was found; the
+permissions are the author's wishes, which the reader leaves to you to honor.
+
+```csharp
+var report = PdfReader.Open("report.pdf", password: "secret");
+```
 
 ### Fonts
 

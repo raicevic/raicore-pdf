@@ -83,6 +83,21 @@ internal sealed class PdfObjectStore
     /// <summary>Whether the cross-reference data was missing or wrong, and the objects were found by scanning the file.</summary>
     public bool IsRepaired { get; private set; }
 
+    /// <summary>
+    /// Decrypts the objects of an encrypted file as they are loaded; set once the password is known. Setting it forgets
+    /// the objects loaded so far (the catalog, read to check the file), so that they are loaded again, decrypted.
+    /// </summary>
+    public PdfDecryption? Decryption
+    {
+        get;
+        set
+        {
+            field = value;
+            _cache.Clear();
+            _objectStreams.Clear();
+        }
+    }
+
     /// <summary>The numbers of all objects the cross-reference data lists, in ascending order.</summary>
     public IEnumerable<int> ObjectNumbers => _entries.Keys.Order();
 
@@ -144,7 +159,13 @@ internal sealed class PdfObjectStore
     {
         try
         {
-            return entry.IsCompressed ? LoadFromObjectStream(number, entry) : ParseIndirectObject(entry.Offset, number);
+            if (entry.IsCompressed)
+            {
+                return LoadFromObjectStream(number, entry); // Encrypted as part of the object stream, not on its own.
+            }
+
+            var obj = ParseIndirectObject(entry.Offset, number, out var generation);
+            return obj is not null && Decryption is { } decryption ? decryption.Decrypt(obj, number, generation) : obj;
         }
         catch (PdfFormatException)
         {
@@ -153,15 +174,15 @@ internal sealed class PdfObjectStore
     }
 
     /// <summary>Parses the indirect object at <paramref name="offset"/>, or returns <c>null</c> when its header is not <c>number g obj</c>.</summary>
-    private PdfObject? ParseIndirectObject(long offset, int number)
+    private PdfObject? ParseIndirectObject(long offset, int number, out int generation)
     {
-        if (TryParseIndirectObject(offset, out var found, out var obj) && found == number)
+        if (TryParseIndirectObject(offset, out var found, out generation, out var obj, out _) && found == number)
         {
             return obj;
         }
 
         // Some files count offsets from the header, after junk at the start of the file.
-        if (_headerOffset > 0 && TryParseIndirectObject(offset + _headerOffset, out found, out obj) && found == number)
+        if (_headerOffset > 0 && TryParseIndirectObject(offset + _headerOffset, out found, out generation, out obj, out _) && found == number)
         {
             return obj;
         }
@@ -170,12 +191,10 @@ internal sealed class PdfObjectStore
     }
 
     /// <summary>Parses <c>n g obj ... endobj</c> at <paramref name="offset"/>, including the data of a stream.</summary>
-    private bool TryParseIndirectObject(long offset, out int number, out PdfObject? obj) =>
-        TryParseIndirectObject(offset, out number, out obj, out _);
-
-    private bool TryParseIndirectObject(long offset, out int number, out PdfObject? obj, out int end)
+    private bool TryParseIndirectObject(long offset, out int number, out int generation, out PdfObject? obj, out int end)
     {
         number = 0;
+        generation = 0;
         obj = null;
         end = 0;
         if (offset < 0 || offset >= _data.Length)
@@ -194,6 +213,7 @@ internal sealed class PdfObjectStore
         }
 
         number = (int)lexer.GetInteger(first)!.Value;
+        generation = (int)lexer.GetInteger(second)!.Value;
         var parser = new PdfParser(lexer);
         obj = parser.ParseObject() ?? PdfNull.Instance;
         end = lexer.Position;
@@ -411,7 +431,7 @@ internal sealed class PdfObjectStore
     /// <summary>Reads a cross-reference stream at <paramref name="offset"/> and returns its dictionary (the trailer).</summary>
     private PdfDictionary? ReadStream(long offset)
     {
-        if (!TryParseIndirectObject(offset, out _, out var obj) || obj is not PdfStreamObject stream
+        if (!TryParseIndirectObject(offset, out _, out _, out var obj, out _) || obj is not PdfStreamObject stream
             || Resolve(stream.Dictionary["Type"]) is not PdfName { Value: "XRef" })
         {
             return null;
@@ -542,11 +562,12 @@ internal sealed class PdfObjectStore
             }
 
             int number;
+            int generation;
             PdfObject? obj;
             int end;
             try
             {
-                if (!TryParseIndirectObject(start, out number, out obj, out end))
+                if (!TryParseIndirectObject(start, out number, out generation, out obj, out end))
                 {
                     continue;
                 }
@@ -556,7 +577,7 @@ internal sealed class PdfObjectStore
                 continue; // Too deeply nested: skip the object.
             }
 
-            _entries[number] = XrefEntry.InFile(start, 0);
+            _entries[number] = XrefEntry.InFile(start, generation);
             positions[number] = start;
             position = Math.Max(position, end);
             var dictionary = obj switch
