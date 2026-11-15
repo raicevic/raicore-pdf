@@ -201,6 +201,7 @@ public static class FuzzTargets
         {
             Limits = Limits,
             ResourceLoader = _ => null,
+            Diagnostics = _ => { }, // Exercises the diagnostics too (they only run when someone listens).
             Tagged = mode is OutputMode.Tagged or OutputMode.PdfUA or OutputMode.TaggedStream,
             PdfUA = mode == OutputMode.PdfUA,
             PdfAConformance = mode == OutputMode.PdfA ? PdfAConformance.PdfA2B : PdfAConformance.None,

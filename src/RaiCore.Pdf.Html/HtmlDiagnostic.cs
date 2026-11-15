@@ -31,6 +31,18 @@ public enum HtmlDiagnosticKind
 
     /// <summary>A web font that may not be embedded (its license forbids it), so a fallback font was used.</summary>
     FontNotEmbeddable,
+
+    /// <summary>A CSS property the converter ignores (<see cref="HtmlDiagnosticSeverity.Info"/> when it has no effect in print anyway).</summary>
+    UnsupportedProperty,
+
+    /// <summary>A value of a supported property that is invalid, or that the converter lays out differently (such as <c>display: grid</c>).</summary>
+    UnsupportedValue,
+
+    /// <summary>A selector the converter cannot match, or a pseudo-element it does not generate: the rule is ignored.</summary>
+    UnsupportedSelector,
+
+    /// <summary>An at-rule the converter skips, such as <c>@import</c> or <c>@layer</c>.</summary>
+    UnsupportedRule,
 }
 
 /// <summary>How much an <see cref="HtmlDiagnostic"/> matters.</summary>

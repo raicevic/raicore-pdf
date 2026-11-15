@@ -123,7 +123,8 @@ public sealed class HtmlConverterOptions
 
     /// <summary>
     /// Receives what the converter could not render as a browser would: resources that did not load (images, style
-    /// sheets, fonts) and why. Each distinct issue is reported once per conversion, with the path of the first element
+    /// sheets, fonts) and why, and CSS it does not support (properties, values, selectors, at-rules; what has no effect
+    /// in print anyway is reported as <see cref="HtmlDiagnosticSeverity.Info"/>). Each distinct issue is reported once per conversion, with the path of the first element
     /// it concerns and how many elements it concerns, in the order the issues first occurred, on the conversion's own
     /// thread just before the conversion completes. <c>null</c> (the default) collects nothing.
     /// </summary>

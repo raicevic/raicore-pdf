@@ -137,7 +137,7 @@ internal static class CssRuleScanner
         return result;
     }
 
-    private static string StripComments(string css)
+    internal static string StripComments(string css)
     {
         var output = new StringBuilder(css.Length);
         for (var i = 0; i < css.Length; i++)
