@@ -681,8 +681,22 @@ internal sealed partial class BoxBuilder
             Limit(style.MaxWidth, isMax: true);
             Limit(style.MinWidth, isMax: false); // The minimum wins.
 
+            // Percentages are of the line box's width, which a flex item or table cell only gets at layout: the image
+            // is sized again then (and can shrink with it).
+            InlineImageSizing? sizing = null;
+            if (style.Width.HasPercentage || style.MinWidth.HasPercentage || style.MaxWidth.HasPercentage)
+            {
+                static BoxLength? Linear(CssLength length) =>
+                    !length.IsAuto && length.TryLinear(out var points, out var percent) ? new BoxLength(points, percent) : null;
+                sizing = new InlineImageSizing(
+                    style.Width.HasPercentage ? Linear(style.Width) : width is { } fixedWidth ? new BoxLength(fixedWidth) : null,
+                    height,
+                    Linear(style.MinWidth),
+                    Linear(style.MaxWidth));
+            }
+
             AddAnchors(element, collector);
-            collector.AddImage(image, w, h, verticalAlign, style.Opacity, RadiiFor(style, w, h), ImageTag(element));
+            collector.AddImage(image, w, h, verticalAlign, style.Opacity, RadiiFor(style, w, h), ImageTag(element), sizing);
             return;
         }
 

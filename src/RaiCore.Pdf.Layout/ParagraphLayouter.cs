@@ -46,8 +46,9 @@ internal static partial class ParagraphLayouter
         }
 
         // Inline boxes contribute their min-content width to unbreakable pieces and their max-content width to lines.
-        var minPrefix = MeasurePrefix(text, paragraph, spanStarts, box => Paginator.InlineBoxIntrinsic(box.Content).Min);
-        var prefix = MeasurePrefix(text, paragraph, spanStarts, box => Paginator.InlineBoxIntrinsic(box.Content).Max);
+        // Images sized relative to the paragraph count as their max-content size in lines, and may shrink away for min-content.
+        var minPrefix = MeasurePrefix(text, paragraph, paragraph.Spans, spanStarts, box => Paginator.InlineBoxIntrinsic(box.Content).Min, image => image.MinContentWidth);
+        var prefix = MeasurePrefix(text, paragraph, paragraph.Spans, spanStarts, box => Paginator.InlineBoxIntrinsic(box.Content).Max, image => image.MaxContentWidth);
         var indent = paragraph.FirstLineIndent;
         double min = 0, max = 0;
         int segmentStart = 0, lineStart = 0;
@@ -94,12 +95,16 @@ internal static partial class ParagraphLayouter
 
     private static ParagraphLayout LayoutUncached(Paragraph paragraph, double width, LineSpace? space)
     {
-        var spans = paragraph.Spans;
-        var (text, spanStarts) = Concatenate(spans);
+        var (text, spanStarts) = Concatenate(paragraph.Spans);
         if (text.Length == 0)
         {
             return new ParagraphLayout(width, []) { Source = paragraph };
         }
+
+        // Images sized relative to the paragraph get their size at this width.
+        var spans = paragraph.Spans.Any(s => s.Image?.Sizing is not null)
+            ? paragraph.Spans.Select(s => s.Image is { } image ? s with { Image = image.At(width) } : s).ToList()
+            : paragraph.Spans;
 
         // Inline boxes are laid out once at this width; their outer widths take part in line breaking.
         var boxes = new Dictionary<InlineBox, InlineBoxFragment>(ReferenceEqualityComparer.Instance);
@@ -110,7 +115,7 @@ internal static partial class ParagraphLayouter
             boxes[box] = new InlineBoxFragment(box, 0, borderWidth, height, baseline, content);
         }
 
-        var prefix = MeasurePrefix(text, paragraph, spanStarts, box => boxes[box].OuterWidth);
+        var prefix = MeasurePrefix(text, paragraph, spans, spanStarts, box => boxes[box].OuterWidth, image => image.Width);
         double Measure(int from, int to) => prefix[to] - prefix[from];
 
         // The bidi levels of the whole paragraph; lines are broken in logical order and reordered one by one.
@@ -180,16 +185,16 @@ internal static partial class ParagraphLayouter
     }
 
     /// <summary>prefix[i] = width in points of text[0..i), measured by shaping each span.</summary>
-    private static double[] MeasurePrefix(string text, Paragraph paragraph, int[] spanStarts, Func<InlineBox, double> boxWidth)
+    private static double[] MeasurePrefix(
+        string text, Paragraph paragraph, IReadOnlyList<ParagraphSpan> spans, int[] spanStarts, Func<InlineBox, double> boxWidth, Func<InlineImage, double> imageWidth)
     {
-        var spans = paragraph.Spans;
         var advance = new double[text.Length];
         for (var s = 0; s < spans.Count; s++)
         {
             var (spanText, style, image, box) = spans[s];
             if (image is not null)
             {
-                advance[spanStarts[s]] = image.Width;
+                advance[spanStarts[s]] = imageWidth(image);
                 continue;
             }
 
