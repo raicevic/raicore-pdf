@@ -19,6 +19,10 @@ namespace RaiCore.Pdf.Security;
 /// <param name="P">The <c>/P</c> entry: the permission bits as a signed 32-bit integer.</param>
 /// <param name="DocumentId">The first string of the trailer's <c>/ID</c>; revision 4 mixes it into the file key.</param>
 /// <param name="EncryptMetadata">The <c>/EncryptMetadata</c> entry (default <c>true</c>).</param>
+/// <param name="KeyLength">
+/// The file key's length in bytes for revisions 2 to 4: 5 to 16 (<c>/Length</c> / 8; always 5 for revision 2).
+/// Revision 6 keys are 32 bytes.
+/// </param>
 internal sealed record StandardSecurityParameters(
     int Revision,
     byte[] O,
@@ -28,17 +32,27 @@ internal sealed record StandardSecurityParameters(
     byte[]? Perms,
     int P,
     byte[] DocumentId,
-    bool EncryptMetadata);
+    bool EncryptMetadata,
+    int KeyLength = 16);
+
+/// <summary>How a crypt filter encrypts strings or streams: not at all (<c>/Identity</c>, <c>/None</c>), RC4 (<c>/V2</c>) or AES.</summary>
+internal enum CryptMethod
+{
+    None,
+    Rc4,
+    Aes,
+}
 
 /// <summary>
 /// The standard security handler (ISO 32000-2, 7.6.4) for AES-256 (V5/R6, crypt filter <c>/AESV3</c>) and AES-128
 /// (V4/R4, <c>/AESV2</c>): the file key, the password values of the encryption dictionary, password checks, and the
-/// AES-CBC encryption of strings and streams (a random 16-byte IV in front, PKCS#7 padding). RC4 encryption of content
-/// is not supported; revision 4 uses RC4 only inside its <c>/O</c> and <c>/U</c> computations, as the standard requires.
+/// AES-CBC encryption of strings and streams (a random 16-byte IV in front, PKCS#7 padding). For reading older files
+/// it also opens revisions 2 and 3 and RC4-encrypted revision 4 (ISO 32000-1, 7.6.3), and decrypts RC4 content; it
+/// never writes RC4.
 /// </summary>
 /// <remarks>
 /// The writer creates a handler with <see cref="Create"/> and encrypts each string and stream with
-/// <see cref="Encrypt"/>; a reader gets one from <see cref="Authenticate"/> and calls <see cref="Decrypt"/>.
+/// <see cref="Encrypt"/>; a reader gets one from <see cref="Authenticate"/> and calls <see cref="Decrypt(ReadOnlySpan{byte}, int, int, CryptMethod)"/>.
 /// </remarks>
 internal sealed class StandardSecurityHandler
 {
@@ -59,7 +73,7 @@ internal sealed class StandardSecurityHandler
     /// <summary>The encryption dictionary values.</summary>
     public StandardSecurityParameters Parameters { get; }
 
-    /// <summary>The security handler revision: 6 (AES-256) or 4 (AES-128).</summary>
+    /// <summary>The security handler revision: 6 (AES-256) or 4 (AES-128) when writing; 2 to 4 or 6 when reading.</summary>
     public int Revision => Parameters.Revision;
 
     /// <summary>The file encryption key: 32 bytes for revision 6, 16 for revision 4.</summary>
@@ -143,7 +157,7 @@ internal sealed class StandardSecurityHandler
     /// (Algorithm 2.A for revision 6, Algorithms 6 and 7 for revision 4), and returns a handler with the file key, or
     /// <c>null</c> if the password is wrong. A <c>null</c> password is the empty password.
     /// </summary>
-    /// <exception cref="NotSupportedException">The revision is not 4 or 6.</exception>
+    /// <exception cref="NotSupportedException">The revision is not 2, 3, 4 or 6.</exception>
     /// <exception cref="InvalidDataException">The values are malformed, or (revision 6) <c>/Perms</c> does not match <c>/P</c>.</exception>
     public static StandardSecurityHandler? Authenticate(StandardSecurityParameters parameters, string? password)
     {
@@ -151,7 +165,7 @@ internal sealed class StandardSecurityHandler
         return parameters.Revision switch
         {
             6 => AuthenticateR6(parameters, password),
-            4 => AuthenticateR4(parameters, password),
+            2 or 3 or 4 => AuthenticateR4(parameters, password),
             _ => throw new NotSupportedException($"Standard security handler revision {parameters.Revision} is not supported."),
         };
     }
@@ -163,7 +177,7 @@ internal sealed class StandardSecurityHandler
     public byte[] Encrypt(ReadOnlySpan<byte> data, int objectNumber, int generation)
     {
         using var aes = Aes.Create();
-        aes.Key = ObjectKey(objectNumber, generation);
+        aes.Key = ObjectKey(objectNumber, generation, aes: true);
         var result = new byte[16 + aes.GetCiphertextLengthCbc(data.Length, PaddingMode.PKCS7)];
         RandomNumberGenerator.Fill(result.AsSpan(0, 16));
         aes.EncryptCbc(data, result.AsSpan(0, 16), result.AsSpan(16), PaddingMode.PKCS7);
@@ -172,8 +186,22 @@ internal sealed class StandardSecurityHandler
 
     /// <summary>Decrypts what <see cref="Encrypt"/> produced. Empty input gives empty output.</summary>
     /// <exception cref="CryptographicException">The data is not a whole number of AES blocks or its padding is invalid.</exception>
-    public byte[] Decrypt(ReadOnlySpan<byte> data, int objectNumber, int generation)
+    public byte[] Decrypt(ReadOnlySpan<byte> data, int objectNumber, int generation) => Decrypt(data, objectNumber, generation, CryptMethod.Aes);
+
+    /// <summary>Decrypts a string or stream of an object with a crypt filter's method (RC4 or AES; none returns a copy).</summary>
+    /// <exception cref="CryptographicException">AES data is not a whole number of blocks or its padding is invalid.</exception>
+    public byte[] Decrypt(ReadOnlySpan<byte> data, int objectNumber, int generation, CryptMethod method)
     {
+        if (method == CryptMethod.None)
+        {
+            return data.ToArray();
+        }
+
+        if (method == CryptMethod.Rc4)
+        {
+            return Rc4(ObjectKey(objectNumber, generation, aes: false), data);
+        }
+
         if (data.IsEmpty)
         {
             return [];
@@ -185,7 +213,7 @@ internal sealed class StandardSecurityHandler
         }
 
         using var aes = Aes.Create();
-        aes.Key = ObjectKey(objectNumber, generation);
+        aes.Key = ObjectKey(objectNumber, generation, aes: true);
         return aes.DecryptCbc(data[16..], data[..16], PaddingMode.PKCS7);
     }
 
@@ -429,7 +457,14 @@ internal sealed class StandardSecurityHandler
         Rc4Rounds(OwnerKeyR4(paddedOwner), paddedUser, decrypt: false);
 
     /// <summary>Algorithm 2 (revision 4): the 16-byte file key from the padded user password.</summary>
-    internal static byte[] ComputeFileKeyR4(byte[] paddedUser, byte[] o, int p, byte[] documentId, bool encryptMetadata)
+    internal static byte[] ComputeFileKeyR4(byte[] paddedUser, byte[] o, int p, byte[] documentId, bool encryptMetadata) =>
+        ComputeFileKey(4, 16, paddedUser, o, p, documentId, encryptMetadata);
+
+    /// <summary>
+    /// Algorithm 2 (revisions 2 to 4): the file key of <paramref name="length"/> bytes from the padded user password.
+    /// Revision 3 and later hash 50 more times; only revision 4 mixes in that metadata is left unencrypted.
+    /// </summary>
+    internal static byte[] ComputeFileKey(int revision, int length, byte[] paddedUser, byte[] o, int p, byte[] documentId, bool encryptMetadata)
     {
         var input = new List<byte>(32 + 32 + 4 + documentId.Length + 4);
         input.AddRange(paddedUser);
@@ -438,20 +473,23 @@ internal sealed class StandardSecurityHandler
         BinaryPrimitives.WriteInt32LittleEndian(pBytes, p);
         input.AddRange(pBytes);
         input.AddRange(documentId);
-        if (!encryptMetadata)
+        if (!encryptMetadata && revision >= 4)
         {
             input.AddRange([0xFF, 0xFF, 0xFF, 0xFF]);
         }
 
-#pragma warning disable CA5351 // ISO 32000 mandates MD5 for revision 4 key derivation.
+#pragma warning disable CA5351 // ISO 32000 mandates MD5 for revision 2 to 4 key derivation.
         var hash = MD5.HashData([.. input]);
-        for (var i = 0; i < 50; i++)
+        if (revision >= 3)
         {
-            hash = MD5.HashData(hash);
+            for (var i = 0; i < 50; i++)
+            {
+                hash = MD5.HashData(hash.AsSpan(0, length));
+            }
         }
 #pragma warning restore CA5351
 
-        return hash;
+        return hash[..length];
     }
 
     /// <summary>Algorithm 5 (revision 4): the <c>/U</c> value (16 bytes of hash, then 16 bytes of padding).</summary>
@@ -517,11 +555,17 @@ internal sealed class StandardSecurityHandler
         return new StandardSecurityHandler(parameters, fileKey, isOwner);
     }
 
+    /// <summary>Revisions 2 to 4: Algorithms 6 and 7 of ISO 32000-1, with RC4 passes and key lengths by revision.</summary>
     private static StandardSecurityHandler? AuthenticateR4(StandardSecurityParameters parameters, string? password)
     {
-        if (parameters.O.Length < 32 || parameters.U.Length < 16)
+        if (parameters.O.Length < 32 || parameters.U.Length < (parameters.Revision == 2 ? 32 : 16))
         {
-            throw new InvalidDataException("The revision 4 /O or /U entry is too short.");
+            throw new InvalidDataException($"The revision {parameters.Revision} /O or /U entry is too short.");
+        }
+
+        if (parameters.KeyLength is < 5 or > 16 || (parameters.Revision == 2 && parameters.KeyLength != 5))
+        {
+            throw new InvalidDataException($"A {parameters.KeyLength * 8}-bit key is not valid for revision {parameters.Revision}.");
         }
 
         byte[] padded;
@@ -535,10 +579,12 @@ internal sealed class StandardSecurityHandler
         }
 
         // Algorithm 7: as the owner password, /O decrypts to the padded user password.
-        var userFromOwner = Rc4Rounds(OwnerKeyR4(padded), parameters.O.AsSpan(0, 32).ToArray(), decrypt: true);
-        if (TryUserPasswordR4(parameters, userFromOwner) is { } ownerKey)
+        var ownerKey = OwnerKey(padded, parameters.Revision, parameters.KeyLength);
+        var o = parameters.O.AsSpan(0, 32).ToArray();
+        var userFromOwner = parameters.Revision == 2 ? Rc4(ownerKey, o) : Rc4Rounds(ownerKey, o, decrypt: true);
+        if (TryUserPasswordR4(parameters, userFromOwner) is { } ownerFileKey)
         {
-            return new StandardSecurityHandler(parameters, ownerKey, isOwner: true);
+            return new StandardSecurityHandler(parameters, ownerFileKey, isOwner: true);
         }
 
         // Algorithm 6: as the user password.
@@ -549,23 +595,38 @@ internal sealed class StandardSecurityHandler
 
     private static byte[]? TryUserPasswordR4(StandardSecurityParameters parameters, byte[] paddedUser)
     {
-        var fileKey = ComputeFileKeyR4(paddedUser, parameters.O, parameters.P, parameters.DocumentId, parameters.EncryptMetadata);
+        var fileKey = ComputeFileKey(parameters.Revision, parameters.KeyLength, paddedUser, parameters.O, parameters.P, parameters.DocumentId, parameters.EncryptMetadata);
+        if (parameters.Revision == 2)
+        {
+            // Algorithm 4: /U is the padding string encrypted with the file key.
+            return CryptographicOperations.FixedTimeEquals(Rc4(fileKey, PasswordPadding), parameters.U.AsSpan(0, 32)) ? fileKey : null;
+        }
+
         var u = ComputeUserValueR4(fileKey, parameters.DocumentId);
         return CryptographicOperations.FixedTimeEquals(u.AsSpan(0, 16), parameters.U.AsSpan(0, 16)) ? fileKey : null;
     }
 
-    /// <summary>Algorithm 3, steps a-d: the RC4 key from the padded owner password.</summary>
-    private static byte[] OwnerKeyR4(byte[] paddedOwner)
+    /// <summary>Algorithm 3, steps a-d (revision 4): the RC4 key from the padded owner password.</summary>
+    private static byte[] OwnerKeyR4(byte[] paddedOwner) => OwnerKey(paddedOwner, 4, 16);
+
+    /// <summary>
+    /// Algorithm 3, steps a-d: the RC4 key from the padded owner password, the first <paramref name="length"/> bytes of
+    /// its MD5 hash (hashed 50 more times from revision 3 on).
+    /// </summary>
+    private static byte[] OwnerKey(byte[] paddedOwner, int revision, int length)
     {
-#pragma warning disable CA5351 // ISO 32000 mandates MD5 for revision 4 key derivation.
+#pragma warning disable CA5351 // ISO 32000 mandates MD5 for revision 2 to 4 key derivation.
         var hash = MD5.HashData(paddedOwner);
-        for (var i = 0; i < 50; i++)
+        if (revision >= 3)
         {
-            hash = MD5.HashData(hash);
+            for (var i = 0; i < 50; i++)
+            {
+                hash = MD5.HashData(hash);
+            }
         }
 #pragma warning restore CA5351
 
-        return hash;
+        return hash[..length];
     }
 
     /// <summary>
@@ -626,10 +687,11 @@ internal sealed class StandardSecurityHandler
     }
 
     /// <summary>
-    /// The key for one object's strings and streams: the file key for revision 6; for revision 4 (Algorithm 1) the MD5
-    /// of the file key, the low three bytes of the object number, the low two bytes of the generation and "sAlT".
+    /// The key for one object's strings and streams: the file key for revision 6; otherwise (Algorithm 1) the MD5 of the
+    /// file key, the low three bytes of the object number, the low two bytes of the generation and, for AES, "sAlT",
+    /// cut to the file key's length plus 5 bytes (at most 16).
     /// </summary>
-    private byte[] ObjectKey(int objectNumber, int generation)
+    private byte[] ObjectKey(int objectNumber, int generation, bool aes)
     {
         if (Revision == 6)
         {
@@ -641,10 +703,10 @@ internal sealed class StandardSecurityHandler
             .. FileKey,
             (byte)objectNumber, (byte)(objectNumber >> 8), (byte)(objectNumber >> 16),
             (byte)generation, (byte)(generation >> 8),
-            .. "sAlT"u8,
+            .. (aes ? "sAlT"u8 : []),
         ];
-#pragma warning disable CA5351 // ISO 32000 mandates MD5 for revision 4 object keys.
-        return MD5.HashData(input);
+#pragma warning disable CA5351 // ISO 32000 mandates MD5 for revision 2 to 4 object keys.
+        return MD5.HashData(input)[..Math.Min(FileKey.Length + 5, 16)];
 #pragma warning restore CA5351
     }
 

@@ -22,7 +22,11 @@ namespace RaiCore.Pdf;
 /// parallel, open a reader per thread.
 /// </para>
 /// <para>
-/// Encrypted files are not supported yet: <see cref="Open(byte[])"/> throws <see cref="NotSupportedException"/>.
+/// Encrypted files are opened with the standard (password) security handler: AES-256 (revision 6), AES-128 and RC4
+/// (revisions 2 to 4). Pass the user or owner password to <see cref="Open(byte[], string?)"/>; without one, the empty
+/// user password is tried, which opens files that are only restricted by permissions. Strings and streams are
+/// decrypted as they are read, so pages import and draw as from any other file. <see cref="Permissions"/> says what
+/// the author allowed; honoring it is up to the caller.
 /// </para>
 /// </remarks>
 /// <example>
@@ -41,12 +45,15 @@ public sealed class PdfReader
     private readonly Dictionary<int, PdfReaderPage> _pagesByObject = [];
     private Dictionary<string, PdfObject>? _destinationNames;
 
-    private PdfReader(byte[] data)
+    private PdfReader(byte[] data, string? password)
     {
         _store = new PdfObjectStore(data);
         if (_store.Trailer["Encrypt"] is not null)
         {
-            throw new NotSupportedException("The PDF file is encrypted. Reading encrypted files is not supported yet.");
+            _store.Decryption = PdfDecryption.Open(_store, password) ?? throw new PdfPasswordException(
+                string.IsNullOrEmpty(password)
+                    ? "The PDF file is encrypted with a password. Pass the user or owner password to PdfReader.Open."
+                    : "The password is neither the user password nor the owner password of the PDF file.");
         }
 
         Catalog = _store.Resolve(_store.Trailer["Root"]) as PdfDictionary
@@ -87,6 +94,22 @@ public sealed class PdfReader
     /// <summary>The pages in order, with their inherited attributes resolved.</summary>
     public IReadOnlyList<PdfReaderPage> Pages { get; }
 
+    /// <summary>Whether the file is encrypted (it has an <c>/Encrypt</c> dictionary).</summary>
+    public bool IsEncrypted => _store.Decryption is not null;
+
+    /// <summary>
+    /// Whether an encrypted file was opened with its owner password, which grants every permission. <c>false</c> for an
+    /// unencrypted file.
+    /// </summary>
+    public bool IsOpenedWithOwnerPassword => _store.Decryption?.IsOwner ?? false;
+
+    /// <summary>
+    /// What the author allows a user without the owner password to do (the encryption dictionary's <c>/P</c>);
+    /// <see cref="PdfPermissions.All"/> for an unencrypted file. The reader itself does not enforce them: importing
+    /// pages, for example, works whatever they say.
+    /// </summary>
+    public PdfPermissions Permissions => _store.Decryption?.Permissions ?? PdfPermissions.All;
+
     /// <summary>The trailer dictionary (merged over incremental updates). References in it are to objects of this file.</summary>
     public PdfDictionary Trailer => _store.Trailer;
 
@@ -98,29 +121,54 @@ public sealed class PdfReader
 
     internal PdfObjectStore Store => _store;
 
-    /// <summary>Reads a PDF file.</summary>
+    /// <summary>Reads a PDF file; an encrypted one is opened with the empty user password.</summary>
     /// <exception cref="PdfFormatException">The file is not a PDF, or is damaged beyond repair.</exception>
-    /// <exception cref="NotSupportedException">The file is encrypted.</exception>
-    public static PdfReader Open(string path) => Open(File.ReadAllBytes(path));
+    /// <exception cref="PdfPasswordException">The file is encrypted and needs a password.</exception>
+    /// <exception cref="NotSupportedException">The file is encrypted in a way that is not supported (see <see cref="PdfReader"/>).</exception>
+    public static PdfReader Open(string path) => Open(path, null);
 
-    /// <summary>Reads a PDF from a stream. The stream is read to the end and left open.</summary>
+    /// <summary>Reads a PDF file, opening it with <paramref name="password"/> (the user or the owner password) if it is encrypted.</summary>
+    /// <exception cref="PdfFormatException">The file is not a PDF, or is damaged beyond repair.</exception>
+    /// <exception cref="PdfPasswordException">The file is encrypted and the password is wrong.</exception>
+    /// <exception cref="NotSupportedException">The file is encrypted in a way that is not supported (see <see cref="PdfReader"/>).</exception>
+    public static PdfReader Open(string path, string? password) => Open(File.ReadAllBytes(path), password);
+
+    /// <summary>Reads a PDF from a stream (to the end, leaving it open); an encrypted one is opened with the empty user password.</summary>
     /// <exception cref="PdfFormatException">The data is not a PDF, or is damaged beyond repair.</exception>
-    /// <exception cref="NotSupportedException">The file is encrypted.</exception>
-    public static PdfReader Open(Stream stream)
+    /// <exception cref="PdfPasswordException">The file is encrypted and needs a password.</exception>
+    /// <exception cref="NotSupportedException">The file is encrypted in a way that is not supported (see <see cref="PdfReader"/>).</exception>
+    public static PdfReader Open(Stream stream) => Open(stream, null);
+
+    /// <summary>Reads a PDF from a stream (to the end, leaving it open), opening it with <paramref name="password"/> if it is encrypted.</summary>
+    /// <exception cref="PdfFormatException">The data is not a PDF, or is damaged beyond repair.</exception>
+    /// <exception cref="PdfPasswordException">The file is encrypted and the password is wrong.</exception>
+    /// <exception cref="NotSupportedException">The file is encrypted in a way that is not supported (see <see cref="PdfReader"/>).</exception>
+    public static PdfReader Open(Stream stream, string? password)
     {
         ArgumentNullException.ThrowIfNull(stream);
         using var buffer = new MemoryStream();
         stream.CopyTo(buffer);
-        return new PdfReader(buffer.ToArray());
+        return new PdfReader(buffer.ToArray(), password);
     }
 
-    /// <summary>Reads a PDF from bytes. The array must not be modified afterwards.</summary>
+    /// <summary>Reads a PDF from bytes (which must not be modified afterwards); an encrypted one is opened with the empty user password.</summary>
     /// <exception cref="PdfFormatException">The data is not a PDF, or is damaged beyond repair.</exception>
-    /// <exception cref="NotSupportedException">The file is encrypted.</exception>
-    public static PdfReader Open(byte[] data)
+    /// <exception cref="PdfPasswordException">The file is encrypted and needs a password.</exception>
+    /// <exception cref="NotSupportedException">The file is encrypted in a way that is not supported (see <see cref="PdfReader"/>).</exception>
+    public static PdfReader Open(byte[] data) => Open(data, null);
+
+    /// <summary>
+    /// Reads a PDF from bytes (which must not be modified afterwards), opening it with <paramref name="password"/> if it
+    /// is encrypted: the user password, or the owner password (<see cref="IsOpenedWithOwnerPassword"/>). <c>null</c> is the
+    /// empty password; for an unencrypted file the password is ignored.
+    /// </summary>
+    /// <exception cref="PdfFormatException">The data is not a PDF, or is damaged beyond repair.</exception>
+    /// <exception cref="PdfPasswordException">The file is encrypted and the password is wrong.</exception>
+    /// <exception cref="NotSupportedException">The file is encrypted in a way that is not supported (see <see cref="PdfReader"/>).</exception>
+    public static PdfReader Open(byte[] data, string? password)
     {
         ArgumentNullException.ThrowIfNull(data);
-        return new PdfReader(data);
+        return new PdfReader(data, password);
     }
 
     /// <summary>

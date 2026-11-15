@@ -94,6 +94,14 @@ change at any time, and this section lists what the packages can do so far.
   resources, media and crop boxes and rotation resolved; `GetContent()` returns a page's decoded content. Reference
   loops, `/Prev` loops and page tree loops are cut, nesting depth and decoded stream sizes are limited, and malformed
   input throws `PdfFormatException`.
+- Reading encrypted PDFs (#111): `PdfReader.Open(..., password)` opens files of the standard security handler with
+  the user or owner password (AES-256 revision 6, AES-128 and RC4 revision 4, RC4 128-bit revision 3 and 40-bit
+  revision 2), trying the empty user password when none is given. Strings and streams are decrypted as objects load,
+  following the crypt filters (`/StmF`, `/StrF`, `/Identity`, a stream's own `/Crypt` filter) and leaving the
+  encryption dictionary, cross-reference streams, the objects inside object streams and unencrypted metadata alone;
+  imported and drawn pages come out decrypted. A wrong password throws `PdfPasswordException`; `IsEncrypted`,
+  `IsOpenedWithOwnerPassword` and `Permissions` report what was found. Other security handlers (certificates) and
+  revision 5 throw `NotSupportedException`.
 - Merging: `PdfDocument.ImportPages` appends pages of a read file (all, or chosen ones in any order) and
   `InsertPages` inserts them anywhere; `InsertPage` adds a new page anywhere, e.g. a cover. The reachable objects are
   deep-copied once per source file, so fonts and images shared by pages (also across several imports and

@@ -73,7 +73,7 @@ public static class FuzzTargets
 
     /// <summary>Whether an exception is one a target may document for malformed or hostile input.</summary>
     public static bool IsExpected(Exception exception) => exception is ImageFormatException or FontFormatException
-        or PdfFormatException or ResourceLimitExceededException or OperationCanceledException or NotSupportedException;
+        or PdfFormatException or PdfPasswordException or ResourceLimitExceededException or OperationCanceledException or NotSupportedException;
 
     /// <summary>HTML conversion, with no resources loaded (data: URIs only).</summary>
     public static void Html(byte[] input) => Html(input, ModeOf(input));

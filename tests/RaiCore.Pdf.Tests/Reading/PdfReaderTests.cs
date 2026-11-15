@@ -192,10 +192,17 @@ public class PdfReaderTests
     }
 
     [Fact]
-    public void Encrypted_files_are_detected()
+    public void Encrypted_files_with_an_empty_user_password_open_without_one()
     {
-        var exception = Assert.Throws<NotSupportedException>(() => PdfReader.Open(Fixtures.Path("Reader/encrypted.pdf")));
-        Assert.Contains("encrypted", exception.Message, StringComparison.Ordinal);
+        // Written by qpdf: AES-128 (revision 4), restricted from assembling (/P -1028), no user password.
+        var reader = PdfReader.Open(Fixtures.Path("Reader/encrypted.pdf"));
+
+        Assert.True(reader.IsEncrypted);
+        Assert.False(reader.IsOpenedWithOwnerPassword);
+        Assert.Equal(PdfPermissions.All & ~PdfPermissions.Assemble, reader.Permissions);
+        Assert.Equal(2, reader.Pages.Count);
+        Assert.StartsWith("1 0 0 rg 100 600 200 100 re f", Encoding.ASCII.GetString(reader.Pages[0].GetContent()), StringComparison.Ordinal);
+        Assert.Contains("(Two) Tj", Encoding.ASCII.GetString(reader.Pages[1].GetContent()), StringComparison.Ordinal);
     }
 
     [Fact]
