@@ -254,6 +254,17 @@ var pdf = HtmlToPdf.Convert(html, new HtmlConverterOptions { Title = "Invoice 20
 Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowDocument` returns the laid-out document
 before rendering, e.g. to set your own page decorator.
 
+`HtmlConverterOptions.Diagnostics` tells you why the output may differ from the browser's: images, style sheets and
+fonts that did not load (and why: nothing loaded, unreadable, too large, not embeddable). Each issue comes once per
+conversion, with the path of the first element it concerns and how many elements it concerns:
+
+```csharp
+var options = new HtmlConverterOptions
+{
+    Diagnostics = d => logger.LogWarning("{Kind} {Subject} at {Path} ({Count}x): {Message}", d.Kind, d.Subject, d.ElementPath, d.Count, d.Message),
+};
+```
+
 `HtmlConverterOptions.Encryption` password-protects the PDF or restricts permissions (see
 [Drawing directly](#drawing-directly) for `PdfEncryption`); Razor conversion takes the same options:
 

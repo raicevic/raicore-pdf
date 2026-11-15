@@ -6,6 +6,7 @@ using AngleSharp.Dom;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html.Boxes;
 using RaiCore.Pdf.Html.Css;
+using RaiCore.Pdf.Html.Diagnostics;
 using RaiCore.Pdf.Layout.Blocks;
 
 namespace RaiCore.Pdf.Html;
@@ -73,7 +74,7 @@ public static partial class HtmlToPdf
             options,
             () =>
             {
-                var (flow, metadata) = Layout(html, options, cancellationToken);
+                var (flow, metadata, diagnostics) = Layout(html, options, cancellationToken);
 
                 // Everything ConvertAsync sets, but before writing begins: page by page, it is read by BeginSave.
                 var document = new PdfDocument { Tagged = options.Tagged, PdfUA = options.PdfUA, StrictTagging = options.StrictTagging, TimeProvider = options.TimeProvider };
@@ -88,6 +89,7 @@ public static partial class HtmlToPdf
                 document.BeginSave(output);
                 flow.RenderTo(document);
                 document.EndSave();
+                diagnostics.Deliver();
                 return true;
             },
             cancellationToken);
@@ -121,9 +123,10 @@ public static partial class HtmlToPdf
             options,
             () =>
             {
-                var (flow, metadata) = Layout(html, options, cancellationToken);
+                var (flow, metadata, diagnostics) = Layout(html, options, cancellationToken);
                 var document = new PdfDocument { Tagged = options.Tagged, PdfUA = options.PdfUA, StrictTagging = options.StrictTagging, TimeProvider = options.TimeProvider };
                 flow.RenderTo(document);
+                diagnostics.Deliver();
                 metadata.ApplyTo(document, options, defaultCreator);
                 document.Encryption = options.Encryption;
                 document.PdfAConformance = options.PdfAConformance;
@@ -151,7 +154,15 @@ public static partial class HtmlToPdf
     {
         ArgumentNullException.ThrowIfNull(html);
         options ??= new HtmlConverterOptions();
-        return RunLimited(options, () => Layout(html, options, CancellationToken.None).Flow, CancellationToken.None).GetAwaiter().GetResult();
+        return RunLimited(
+            options,
+            () =>
+            {
+                var (flow, _, diagnostics) = Layout(html, options, CancellationToken.None);
+                diagnostics.Deliver();
+                return flow;
+            },
+            CancellationToken.None).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -205,9 +216,10 @@ public static partial class HtmlToPdf
         return completion.Task;
     }
 
-    private static (FlowDocument Flow, HtmlMetadata Metadata) Layout(string html, HtmlConverterOptions options, CancellationToken cancellationToken)
+    private static (FlowDocument Flow, HtmlMetadata Metadata, DiagnosticCollector Diagnostics) Layout(string html, HtmlConverterOptions options, CancellationToken cancellationToken)
     {
         var fonts = options.Fonts ?? BundledFonts.CreateCollection();
+        var diagnostics = new DiagnosticCollector(options.Diagnostics);
 
         // A print device; the viewport (needed to compute relative units such as background-position) is the
         // page's content area, as in browsers' print layout.
@@ -223,7 +235,7 @@ public static partial class HtmlToPdf
         using var document = Parse(context, html, options.BaseUri, cancellationToken);
         CheckStructure(document, options.Limits);
 
-        var styleSheets = PrepareStyles(document, options);
+        var styleSheets = PrepareStyles(document, options, diagnostics);
         SanitizeStyles(document);
         var cssTexts = styleSheets.Select(s => s.Css).ToList();
         var pageRules = PageRules.Load(options.Page, cssTexts);
@@ -234,13 +246,14 @@ public static partial class HtmlToPdf
         device.ViewPortHeight = (int)(setup.ContentHeight / CssValues.PointsPerPixel);
 
         var paged = Paged.PagedMedia.Load(document, cssTexts);
-        var webFonts = WebFonts.Load(styleSheets, options.ResourceLoader, fonts);
+        var webFonts = WebFonts.Load(styleSheets, options.ResourceLoader, fonts, diagnostics);
         ResourceLimits.Checkpoint();
 
         // Named pages and @page :first/:left/:right/:blank can give pages their own size and margins. Percentages in a
         // named page resolve against its content width (that of a right page that is not the first).
         var builder = new BoxBuilder(document, options, fonts, options.BaseUri, paged, webFonts)
         {
+            Diagnostics = diagnostics,
             PageContentWidth = pageRules.VariesPerPage ? name => pageRules.Resolve(new PageContext(3, name, PageSide.Right, IsBlank: false)).ContentWidth : null,
         };
         var flow = Build(builder, setup, pageRules);
@@ -263,7 +276,7 @@ public static partial class HtmlToPdf
             flow.PageDecorator = paged.CreateDecorator(builder, builder.Style(root));
         }
 
-        return (flow, HtmlMetadata.Read(document));
+        return (flow, HtmlMetadata.Read(document), diagnostics);
     }
 
     /// <summary>
@@ -350,7 +363,7 @@ public static partial class HtmlToPdf
     /// resource loader) and appends the user stylesheet. Returns all CSS text with the URI its relative URLs resolve
     /// against (a linked stylesheet's own address), for reading the rules AngleSharp does not keep.
     /// </summary>
-    private static List<StyleSheetText> PrepareStyles(IDocument document, HtmlConverterOptions options)
+    private static List<StyleSheetText> PrepareStyles(IDocument document, HtmlConverterOptions options, DiagnosticCollector diagnostics)
     {
         var head = document.Head ?? document.DocumentElement.AppendElement(document.CreateElement("head"));
         var userAgentCss = RewriteCss(UserAgentStyleSheet.Css);
@@ -369,18 +382,14 @@ public static partial class HtmlToPdf
             var sheetUri = options.BaseUri;
             if (media is null or "" || media.Contains("print", StringComparison.OrdinalIgnoreCase) || media.Contains("all", StringComparison.OrdinalIgnoreCase))
             {
-                byte[]? data = null;
-                if (href.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
-                {
-                    data = Resources.Limit(Resources.DecodeDataUri(href));
-                }
-                else if (ResolveUri(options.BaseUri, href) is { } uri)
-                {
-                    data = Resources.Load(options.ResourceLoader, uri);
-                    sheetUri = uri;
-                }
-
+                var uri = href.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ? null : ResolveUri(options.BaseUri, href);
+                sheetUri = uri ?? sheetUri;
+                var data = Resources.Fetch(options.ResourceLoader, href, uri, "style sheet", out var failure);
                 css = data is null ? null : Encoding.UTF8.GetString(data);
+                if (failure is { } failed)
+                {
+                    diagnostics.Report(failed.Kind, HtmlDiagnosticSeverity.Warning, Resources.Subject(href), failed.Message, link);
+                }
             }
 
             if (css is null)

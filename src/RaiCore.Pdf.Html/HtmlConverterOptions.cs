@@ -120,6 +120,19 @@ public sealed class HtmlConverterOptions
     /// options then give the same bytes. Defaults to <see cref="TimeProvider.System"/>.
     /// </summary>
     public TimeProvider TimeProvider { get; init; } = TimeProvider.System;
+
+    /// <summary>
+    /// Receives what the converter could not render as a browser would: resources that did not load (images, style
+    /// sheets, fonts) and why. Each distinct issue is reported once per conversion, with the path of the first element
+    /// it concerns and how many elements it concerns, in the order the issues first occurred, on the conversion's own
+    /// thread just before the conversion completes. <c>null</c> (the default) collects nothing.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var options = new HtmlConverterOptions { Diagnostics = d => logger.LogWarning("{Subject}: {Message} ({Path})", d.Subject, d.Message, d.ElementPath) };
+    /// </code>
+    /// </example>
+    public Action<HtmlDiagnostic>? Diagnostics { get; init; }
 }
 
 /// <summary>Built-in resource loading.</summary>
@@ -174,18 +187,59 @@ public static class Resources
     }
 
     /// <summary>
-    /// Loads a resource with <paramref name="loader"/>; <c>null</c> when it cannot be loaded or is larger than
-    /// <see cref="ResourceLimits.MaxResourceBytes"/>, so it is skipped like a missing one.
+    /// Loads a resource referenced by <paramref name="reference"/> (a <c>data:</c> URI, or a URL that resolved to
+    /// <paramref name="uri"/>), and on failure says why, for diagnostics.
     /// </summary>
-    internal static byte[]? Load(ResourceLoader loader, Uri uri)
+    /// <param name="loader">The resource loader.</param>
+    /// <param name="reference">The reference as written.</param>
+    /// <param name="uri">The resolved URL; <c>null</c> when it is relative and there is no base URI.</param>
+    /// <param name="what">What the resource is, for the message ("image", "style sheet", "font").</param>
+    /// <param name="failure">Why nothing was loaded, or <c>null</c>.</param>
+    internal static byte[]? Fetch(ResourceLoader loader, string reference, Uri? uri, string what, out (HtmlDiagnosticKind Kind, string Message)? failure)
     {
-        var data = Limit(loader(uri));
-        ResourceLimits.Checkpoint(); // Loading may have taken a while.
+        failure = null;
+        byte[]? data;
+        var subject = Subject(reference);
+        if (reference.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            data = DecodeDataUri(reference);
+            if (data is null)
+            {
+                failure = (HtmlDiagnosticKind.ResourceNotLoaded, $"The data: URI of the {what} is malformed.");
+                return null;
+            }
+        }
+        else if (uri is null)
+        {
+            failure = (HtmlDiagnosticKind.ResourceNotLoaded,
+                $"The {what} {subject} is a relative URL and there is no base URI to resolve it against (HtmlConverterOptions.BaseUri).");
+            return null;
+        }
+        else
+        {
+            data = loader(uri);
+            ResourceLimits.Checkpoint(); // Loading may have taken a while.
+            if (data is null)
+            {
+                failure = (HtmlDiagnosticKind.ResourceNotLoaded,
+                    $"The {what} {subject} could not be loaded: the resource loader returned nothing (the default one loads only file: and data: URIs, and no files larger than ResourceLimits.MaxResourceBytes).");
+                return null;
+            }
+        }
+
+        var max = ResourceLimits.Current.MaxResourceBytes;
+        if (data.LongLength > max)
+        {
+            failure = (HtmlDiagnosticKind.ResourceTooLarge, $"The {what} {subject} is {data.LongLength} bytes, more than ResourceLimits.MaxResourceBytes ({max}).");
+            return null;
+        }
+
         return data;
     }
 
-    /// <summary>The data, or <c>null</c> when it is larger than <see cref="ResourceLimits.MaxResourceBytes"/>.</summary>
-    internal static byte[]? Limit(byte[]? data) => data is not null && data.LongLength > ResourceLimits.Current.MaxResourceBytes ? null : data;
+    /// <summary>A reference as a diagnostic's subject: a long <c>data:</c> URI is cut after its media type and a few characters.</summary>
+    internal static string Subject(string reference) =>
+        reference.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && reference.Length > 48 ? string.Concat(reference.AsSpan(0, 48), "\u2026") : reference;
 
     /// <summary>
     /// Whether the exception is about a single resource being too large (it is then skipped, like a broken one) rather
