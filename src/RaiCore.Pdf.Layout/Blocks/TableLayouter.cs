@@ -236,10 +236,10 @@ internal static class TableLayouter
     /// <summary>Space between a cell's edge and its content: padding plus its border (half of a collapsed line).</summary>
     private static (double Left, double Right, double Top, double Bottom) Insets(GridCell cell, GridLine[,]? horizontal, GridLine[,]? vertical)
     {
-        var padding = cell.Cell.Style.Padding;
+        var padding = cell.Cell.Style.Padding.Fixed;
         if (horizontal is null || vertical is null)
         {
-            var border = cell.Cell.Style.Border.Widths;
+            var border = cell.Cell.Style.Border.Widths.Fixed;
             return (padding.Left + border.Left, padding.Right + border.Right, padding.Top + border.Top, padding.Bottom + border.Bottom);
         }
 
@@ -253,7 +253,7 @@ internal static class TableLayouter
     }
 
     /// <summary>The width specification of a grid column, which counts from the right in a right-to-left table.</summary>
-    private static TableWidth? ColumnWidth(TableBlock table, int columns, int column)
+    private static Length? ColumnWidth(TableBlock table, int columns, int column)
     {
         var index = table.Direction == TextDirection.RightToLeft ? columns - 1 - column : column;
         return index < table.ColumnWidths.Count ? table.ColumnWidths[index] : null;
@@ -271,11 +271,11 @@ internal static class TableLayouter
         {
             switch (ColumnWidth(table, columns, c))
             {
-                case { IsPercent: true } p:
-                    percent[c] = p.Value;
+                case { HasPercent: true } p: // A percentage column (any points in a calc() are ignored).
+                    percent[c] = p.Percent;
                     break;
                 case { } w:
-                    min[c] = max[c] = w.Value;
+                    min[c] = max[c] = w.Points;
                     isFixed[c] = true;
                     break;
             }
@@ -288,9 +288,9 @@ internal static class TableLayouter
             var c = cell.Column;
             min[c] = Math.Max(min[c], cellMin);
             max[c] = isFixed[c] ? Math.Max(max[c], cellMin) : Math.Max(max[c], cellMax);
-            if (cell.Cell.Width is { IsPercent: true } p)
+            if (cell.Cell.Width is { HasPercent: true } p)
             {
-                percent[c] = Math.Max(percent[c] ?? 0, p.Value);
+                percent[c] = Math.Max(percent[c] ?? 0, p.Percent);
             }
         }
 
@@ -330,7 +330,7 @@ internal static class TableLayouter
     private static (double Min, double Max) CellIntrinsic(GridCell cell, (GridLine[,] H, GridLine[,] V)? collapsed)
     {
         var style = cell.Cell.Style;
-        var decoration = style.Padding.Horizontal + (collapsed is null ? style.Border.Widths.Horizontal : (style.Border.Left.Width + style.Border.Right.Width) / 2);
+        var decoration = style.Padding.Fixed.Horizontal + (collapsed is null ? style.Border.Widths.Fixed.Horizontal : (style.Border.Left.Width + style.Border.Right.Width) / 2);
         double min = 0, max = 0;
         foreach (var block in cell.Cell.Content)
         {
@@ -339,10 +339,10 @@ internal static class TableLayouter
             max = Math.Max(max, blockMax);
         }
 
-        if (cell.Cell.Width is { IsPercent: false } fixedWidth)
+        if (cell.Cell.Width is { HasPercent: false } fixedWidth)
         {
-            min = Math.Max(min, fixedWidth.Value);
-            max = Math.Max(min, fixedWidth.Value);
+            min = Math.Max(min, fixedWidth.Points);
+            max = Math.Max(min, fixedWidth.Points);
         }
 
         return (min + decoration, max + decoration);

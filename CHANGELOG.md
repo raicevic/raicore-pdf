@@ -185,6 +185,11 @@ change at any time, and this section lists what the packages can do so far.
   gradient is `LinearGradient.ToCorner(GradientCorner, ...)`. `FlowDocument.DrawBlocks` takes `top` as a PDF y
   coordinate and no page height. `PageInfo` is `(Context, Count, Setup, Markers)`, with `Number` from the context.
   `LinkTarget.Destination` is `DestinationName`.
+- API review (#60), breaking: one `Length` type (points plus a percentage, with an implicit conversion from a number
+  of points) replaces `BoxLength`, `Inset`, `TableWidth` and `RadiusLength`. `Thickness` is four `Length`s, and
+  `BoxStyle.Width`, `MinWidth` and `MaxWidth` are `Length?`: percentages go straight into the style, so
+  `BoxStyle.Percentages`, `BoxPercentages` and `RelativeThickness` are gone. `PageSetup.Margins` may hold percentages
+  of the page's width (left, right) or height (top, bottom).
 - The package includes the Unicode License v3 notice (`licenses/unicode.txt`) for its bidi and line break tables,
   generated from the Unicode Character Database, and its license expression names `Unicode-3.0`. All third-party
   material is listed in `THIRD-PARTY-NOTICES.md`.
@@ -240,7 +245,7 @@ change at any time, and this section lists what the packages can do so far.
   columns) and to intrinsic widths; the minimum wins over the maximum, as in CSS. Images scale to them, keeping their
   aspect ratio unless both a width and a height are given; a table without a width does not get narrower than its
   content. They replace `FlexItem.MinWidth`/`MaxWidth`.
-- Percentage sizes (`BoxStyle.Percentages`, `BoxPercentages`, `BoxLength`, `RelativeThickness`): a width, min/max
+- Percentage sizes (`Length` in `BoxStyle.Width`, `MinWidth`, `MaxWidth`, `Margin` and `Padding`): a width, min/max
   width, margins and padding of points plus a percentage of the containing block's width, resolved in layout against
   the width that block actually gets: a flex item after it grew or shrank, a table column, a shrink-to-fit float or
   inline box, an absolute box's containing block. Min-content and max-content widths treat a percentage width as

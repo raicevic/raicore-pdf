@@ -50,7 +50,7 @@ internal sealed partial class BoxBuilder
 
         var (box, contentWidth) = BoxStyleFor(style, containingWidth);
         var captions = new List<Block>();
-        var columnWidths = new List<TableWidth?>(); // Filled from colgroup and col below.
+        var columnWidths = new List<Length?>(); // Filled from colgroup and col below.
         var table = new TableBlock(box)
         {
             ColumnWidths = columnWidths,
@@ -191,15 +191,15 @@ internal sealed partial class BoxBuilder
     }
 
     /// <summary>A cell or column width; calc() with a percentage is resolved against the table's content width.</summary>
-    private static TableWidth? TableWidthFor(CssLength? length, double tableWidth) => length switch
+    private static Length? TableWidthFor(CssLength? length, double tableWidth) => length switch
     {
-        { Kind: CssLengthKind.Points } points => TableWidth.Points(points.Value),
-        { Kind: CssLengthKind.Percent } percent => TableWidth.Percent(percent.Value),
-        { Kind: CssLengthKind.Calc } calc => TableWidth.Points(Math.Max(0, calc.Resolve(tableWidth))),
+        { Kind: CssLengthKind.Points } points => Length.FromPoints(points.Value),
+        { Kind: CssLengthKind.Percent } percent => Length.FromPercent(percent.Value),
+        { Kind: CssLengthKind.Calc } calc => Length.FromPoints(Math.Max(0, calc.Resolve(tableWidth))),
         _ => null,
     };
 
-    private void AddColumns(List<TableWidth?> columnWidths, IElement element, double tableWidth)
+    private void AddColumns(List<Length?> columnWidths, IElement element, double tableWidth)
     {
         IEnumerable<IElement> cols = element.LocalName == "col" ? [element] : element.Children.Where(c => c.LocalName == "col");
         if (element.LocalName == "colgroup" && !element.Children.Any(c => c.LocalName == "col"))

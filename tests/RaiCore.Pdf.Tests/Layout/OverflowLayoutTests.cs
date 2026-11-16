@@ -112,7 +112,7 @@ public class OverflowLayoutTests
     public void A_relative_clipping_box_clips_where_it_is_drawn()
     {
         var box = new ContainerBlock(
-            new BoxStyle { Position = Positioning.Relative, Insets = new BoxInsets(Top: Inset.Points(20)), Height = 30, ClipOverflow = true }, RedRect(60));
+            new BoxStyle { Position = Positioning.Relative, Insets = new BoxInsets(Top: Length.FromPoints(20)), Height = 30, ClipOverflow = true }, RedRect(60));
         using var bitmap = Render(new FlowDocument(Small).Add(box));
 
         Assert.Equal(Red, bitmap.GetPixel(100, 65)); // Moved down 20: the box is y 40-70.

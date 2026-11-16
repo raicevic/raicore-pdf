@@ -193,7 +193,7 @@ internal static partial class BorderPainter
     }
 
     /// <summary>
-    /// The color of a 3D-style band. Inset darkens the top and left sides and outset the bottom and right; groove is
+    /// The color of a 3D-style band. Length darkens the top and left sides and outset the bottom and right; groove is
     /// inset outside and outset inside, ridge the reverse. As in Chrome, the darker shade takes a third of full
     /// brightness off the color (each channel scaled by (max - 1/3) / max, max being the brightest channel) and the
     /// lighter shade is the color itself; colors too dark to darken (brightest channel below 1/3, such as black) keep

@@ -9,10 +9,14 @@ public sealed record PageSetup(PdfPageSize Size, Thickness Margins)
     public static PageSetup A4 { get; } = new(PdfPageSize.A4, Thickness.All(56.69));
 
     /// <summary>The content area's width.</summary>
-    public double ContentWidth => Size.Width - Margins.Horizontal;
+    public double ContentWidth => Size.Width - UsedMargins.Horizontal;
 
     /// <summary>The content area's height.</summary>
-    public double ContentHeight => Size.Height - Margins.Vertical;
+    public double ContentHeight => Size.Height - UsedMargins.Vertical;
+
+    /// <summary>The margins in points: percentages are of the page's width (left, right) or height (top, bottom).</summary>
+    internal Sides UsedMargins =>
+        new(Margins.Top.Resolve(Size.Height), Margins.Right.Resolve(Size.Width), Margins.Bottom.Resolve(Size.Height), Margins.Left.Resolve(Size.Width));
 }
 
 /// <summary>Which side of a spread a page is on. In left-to-right documents the first page is a right page.</summary>
@@ -221,7 +225,7 @@ public sealed class FlowDocument
             rendered.Add(page);
 
             // Content is laid out from the left margin of the document's setup; pages with another left margin shift it.
-            var shift = setup.Margins.Left - Setup.Margins.Left;
+            var shift = setup.UsedMargins.Left - Setup.UsedMargins.Left;
             if (shift != 0)
             {
                 page.Canvas.SaveState().Transform(1, 0, 0, 1, shift, 0);

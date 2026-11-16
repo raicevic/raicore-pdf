@@ -76,8 +76,8 @@ public class RazorConversionTests
         var flow = await new RazorPdfRenderer().CreateFlowDocumentAsync<InvoiceDocument>(
             Params(nameof(InvoiceDocument.Invoice), SampleInvoice(3)), cancellationToken: Ct);
 
-        Assert.Equal(25 * Mm, flow.Setup.Margins.Top, 2);
-        Assert.Equal(20 * Mm, flow.Setup.Margins.Left, 2);
+        Assert.Equal(25 * Mm, flow.Setup.Margins.Top.Points, 2);
+        Assert.Equal(20 * Mm, flow.Setup.Margins.Left.Points, 2);
         Assert.NotNull(flow.PageDecorator); // @bottom-right margin box
         var heading = Flatten(flow.Blocks).OfType<ParagraphBlock>().First(p => Text(p) == "Invoice 2026-0042");
         Assert.Equal(PdfColor.FromRgb(0x1a, 0x4f, 0x8b), heading.Paragraph.Spans[0].Style.Color);

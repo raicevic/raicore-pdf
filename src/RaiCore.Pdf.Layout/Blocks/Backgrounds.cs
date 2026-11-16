@@ -36,7 +36,7 @@ public enum BackgroundSizeKind
 /// <param name="Kind">How it is sized.</param>
 /// <param name="Width">For <see cref="BackgroundSizeKind.Explicit"/>: the width (percentages of the origin box), or <c>null</c> for auto.</param>
 /// <param name="Height">For <see cref="BackgroundSizeKind.Explicit"/>: the height, or <c>null</c> for auto.</param>
-public readonly record struct BackgroundSize(BackgroundSizeKind Kind, Inset? Width = null, Inset? Height = null);
+public readonly record struct BackgroundSize(BackgroundSizeKind Kind, Length? Width = null, Length? Height = null);
 
 /// <summary>
 /// Where a background image goes along one axis (CSS <c>background-position</c>): an offset from the start edge of the
@@ -45,18 +45,18 @@ public readonly record struct BackgroundSize(BackgroundSizeKind Kind, Inset? Wid
 /// </summary>
 /// <param name="Offset">The offset.</param>
 /// <param name="FromEnd">Whether the offset is from the right or bottom edge.</param>
-public readonly record struct BackgroundPosition(Inset Offset, bool FromEnd = false)
+public readonly record struct BackgroundPosition(Length Offset, bool FromEnd = false)
 {
     /// <summary>The start edge (the default).</summary>
-    public static BackgroundPosition Start { get; } = new(Inset.Percent(0));
+    public static BackgroundPosition Start { get; } = new(Length.FromPercent(0));
 
     /// <summary>Centered.</summary>
-    public static BackgroundPosition Center { get; } = new(Inset.Percent(50));
+    public static BackgroundPosition Center { get; } = new(Length.FromPercent(50));
 
     /// <summary>Where the image's start edge goes, from the box's start edge, for a box and an image of these sizes.</summary>
     internal double Resolve(double box, double image)
     {
-        var offset = Offset.IsPercent ? Offset.Value / 100 * (box - image) : Offset.Value;
+        var offset = Offset.Resolve(box - image);
         return FromEnd ? box - image - offset : offset;
     }
 }
@@ -86,7 +86,7 @@ public sealed class ImageBackground : BackgroundImage
 /// <summary>A gradient color stop: a color and, optionally, where it is (points or a percentage of the gradient line).</summary>
 /// <param name="Color">The color (with alpha).</param>
 /// <param name="Position">Where it is; <c>null</c> spaces it evenly between its neighbors (first 0%, last 100%).</param>
-public readonly record struct GradientStop(PdfColor Color, Inset? Position = null);
+public readonly record struct GradientStop(PdfColor Color, Length? Position = null);
 
 /// <summary>Colors that blend along a line or out from a center (CSS gradients).</summary>
 public abstract class Gradient : BackgroundImage
@@ -200,10 +200,10 @@ public sealed class RadialGradient : Gradient
     public RadialExtent Extent { get; init; }
 
     /// <summary>The horizontal radius (for a circle, the radius); percentages of the box's width. <c>null</c> uses <see cref="Extent"/>.</summary>
-    public Inset? RadiusX { get; init; }
+    public Length? RadiusX { get; init; }
 
     /// <summary>The vertical radius of an ellipse; percentages of the box's height.</summary>
-    public Inset? RadiusY { get; init; }
+    public Length? RadiusY { get; init; }
 
     /// <summary>The center's horizontal position (percentages of the box's width); the default is the middle.</summary>
     public BackgroundPosition CenterX { get; init; } = BackgroundPosition.Center;

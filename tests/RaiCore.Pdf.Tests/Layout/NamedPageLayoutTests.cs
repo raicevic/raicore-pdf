@@ -42,7 +42,7 @@ public class NamedPageLayoutTests
 
         Assert.Equal([null, "wide", null], result.Frames.Select(f => f.Context.Name));
         Assert.Equal([0, 1, 2], new[] { before, wide, after }.Select(b => result.Placements.Single(p => p.Block == b).Page));
-        Assert.Equal(Wide.Margins.Top, result.Placements.Single(p => p.Block == wide).Top, 6);
+        Assert.Equal(Wide.Margins.Top.Points, result.Placements.Single(p => p.Block == wide).Top, 6);
 
         var pdf = flow.Render();
         Assert.Equal([Small.Size, Wide.Size, Small.Size], pdf.Pages.Select(p => p.Size));

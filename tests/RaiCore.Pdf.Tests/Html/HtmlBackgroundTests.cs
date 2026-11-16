@@ -26,9 +26,9 @@ public class HtmlBackgroundTests
         var image = layers[0];
         Assert.IsType<ImageBackground>(image.Image);
         Assert.Equal((BackgroundRepeat.NoRepeat, BackgroundRepeat.NoRepeat), (image.RepeatX, image.RepeatY));
-        Assert.Equal(new BackgroundPosition(Inset.Points(10 * Px), FromEnd: true), image.PositionX);
-        Assert.Equal(new BackgroundPosition(Inset.Percent(20)), image.PositionY);
-        Assert.Equal(new BackgroundSize(BackgroundSizeKind.Explicit, Inset.Percent(50)), image.Size);
+        Assert.Equal(new BackgroundPosition(Length.FromPoints(10 * Px), FromEnd: true), image.PositionX);
+        Assert.Equal(new BackgroundPosition(Length.FromPercent(20)), image.PositionY);
+        Assert.Equal(new BackgroundSize(BackgroundSizeKind.Explicit, Length.FromPercent(50)), image.Size);
         Assert.Equal((BackgroundClip.ContentBox, BackgroundClip.PaddingBox), (image.Origin, image.Clip));
         Assert.IsType<LinearGradient>(layers[1].Image);
         Assert.Equal((BackgroundClip.PaddingBox, BackgroundClip.BorderBox), (layers[1].Origin, layers[1].Clip)); // The initial values.
@@ -83,7 +83,7 @@ public class HtmlBackgroundTests
     {
         var layer = Assert.Single(Layers($"background-image: linear-gradient(red, blue); background-position: {position}"));
 
-        Assert.Equal((x, y), (layer.PositionX.Offset.Value, layer.PositionY.Offset.Value));
+        Assert.Equal((x, y), (layer.PositionX.Offset.Percent, layer.PositionY.Offset.Percent));
         Assert.Equal(position is "right bottom" or "bottom right", layer.PositionX.FromEnd);
         Assert.Equal(position is "right bottom" or "bottom right", layer.PositionY.FromEnd);
     }
@@ -126,7 +126,7 @@ public class HtmlBackgroundTests
     {
         var gradient = Assert.IsType<LinearGradient>(Assert.Single(Layers("background-image: linear-gradient(red 0 20%, 40%, blue 80%)")).Image);
 
-        Assert.Equal([Inset.Points(0), Inset.Percent(20), Inset.Percent(80)], gradient.Stops.Select(s => s.Position!.Value));
+        Assert.Equal([Length.FromPoints(0), Length.FromPercent(20), Length.FromPercent(80)], gradient.Stops.Select(s => s.Position!.Value));
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public class HtmlBackgroundTests
         var gradient = Assert.IsType<RadialGradient>(Assert.Single(Layers("background-image: repeating-radial-gradient(circle closest-side at 30% 40%, red, blue 20px)")).Image);
 
         Assert.Equal((RadialShape.Circle, RadialExtent.ClosestSide, true), (gradient.Shape, gradient.Extent, gradient.Repeating));
-        Assert.Equal((30.0, 40.0), (gradient.CenterX.Offset.Value, gradient.CenterY.Offset.Value));
+        Assert.Equal((30.0, 40.0), (gradient.CenterX.Offset.Percent, gradient.CenterY.Offset.Percent));
         Assert.Equal(2, gradient.Stops.Count);
     }
 

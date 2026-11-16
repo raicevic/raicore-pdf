@@ -69,7 +69,7 @@ public sealed record InlineImage(PdfImage Image, double Width, double Height, In
 /// <param name="Height">The height in points, or <c>null</c> for auto.</param>
 /// <param name="MinWidth">The minimum width (it wins over the maximum), or <c>null</c> for none.</param>
 /// <param name="MaxWidth">The maximum width, or <c>null</c> for none.</param>
-public sealed record InlineImageSizing(BoxLength? Width = null, double? Height = null, BoxLength? MinWidth = null, BoxLength? MaxWidth = null)
+public sealed record InlineImageSizing(Length? Width = null, double? Height = null, Length? MinWidth = null, Length? MaxWidth = null)
 {
     /// <summary>Whether the width or maximum width is a percentage, so that the image can shrink to nothing for min-content.</summary>
     internal bool IsCompressible => Width is { Percent: not 0 } || MaxWidth is { Percent: not 0 };
@@ -80,7 +80,7 @@ public sealed record InlineImageSizing(BoxLength? Width = null, double? Height =
     /// </summary>
     internal (double Width, double Height) Resolve(PdfImage image, double? containingWidth)
     {
-        double? Length(BoxLength? length) =>
+        double? Length(Length? length) =>
             length is not { } value || (value.Percent != 0 && containingWidth is null) ? null : value.Resolve(containingWidth ?? 0);
 
         double? width = Length(Width) is > 0 and var resolved ? resolved : null;
@@ -94,7 +94,7 @@ public sealed record InlineImageSizing(BoxLength? Width = null, double? Height =
         };
 
         var stretched = width is not null && height is not null;
-        void Limit(BoxLength? limit, bool isMax)
+        void Limit(Length? limit, bool isMax)
         {
             if (Length(limit) is { } value && Math.Max(value, 1e-3) is var bound && (isMax ? w > bound : w < bound))
             {

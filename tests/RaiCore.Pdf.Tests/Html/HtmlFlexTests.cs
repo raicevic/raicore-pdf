@@ -81,7 +81,7 @@ public class HtmlFlexTests
         Assert.Equal((2.0, 3.0, -1, FlexAlignment.FlexEnd), (a.Grow, a.Shrink, a.Order, a.AlignSelf));
         Assert.Equal(FlexBasis.Percent(40), a.Basis); // Of the container's content width, resolved in layout.
         Assert.Equal(AutoMargins.Left, a.AutoMargins);
-        Assert.Equal(0, a.Content.Style.Margin.Left);
+        Assert.Equal(0, a.Content.Style.Margin.Left.Points);
 
         Assert.Equal((0.0, 0.0, FlexBasis.Content), (b.Grow, b.Shrink, b.Basis));
         Assert.Equal(AutoMargins.Top | AutoMargins.Bottom, b.AutoMargins);
@@ -89,7 +89,7 @@ public class HtmlFlexTests
 
         // Content-box sizes become border-box sizes.
         Assert.Equal(0 + (20 * Px), c.Content.Style.MinWidth);
-        Assert.Equal((100 + 20) * Px, c.Content.Style.MaxWidth!.Value, 6);
+        Assert.Equal((100 + 20) * Px, c.Content.Style.MaxWidth!.Value.Points, 6);
         Assert.Null(c.Content.Style.Width); // max-width does not make a flex item as wide as possible.
 
         Assert.Equal(50 * Px, d.Content.Style.MinWidth);
@@ -129,7 +129,7 @@ public class HtmlFlexTests
 
         Assert.Equal(450 - (50 * Px), last.Left, 6);
         Assert.Equal(AutoMargins.Left, flex.Items[1].AutoMargins);
-        Assert.Equal(0, flex.Items[1].Content.Style.Margin.Left); // Not pre-resolved like a block's auto margin.
+        Assert.Equal(0, flex.Items[1].Content.Style.Margin.Left.Points); // Not pre-resolved like a block's auto margin.
     }
 
     [Fact]

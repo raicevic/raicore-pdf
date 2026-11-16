@@ -121,7 +121,7 @@ public class RightToLeftLayoutTests
     {
         var table = Table(
             rightToLeft: true,
-            [TableWidth.Points(30)], // The first column: the rightmost.
+            [Length.FromPoints(30)], // The first column: the rightmost.
             new TableRow(new TableCell(new Paragraph(Text).Add("AB")) { ColumnSpan = 2 }, Cell("C")),
             new TableRow(Cell("a"), Cell("b"), Cell("c")));
         var layout = TableLayouter.Layout(table, 0, 160);
@@ -151,7 +151,7 @@ public class RightToLeftLayoutTests
 
     private static TableBlock Table(bool rightToLeft, params TableRow[] rows) => Table(rightToLeft, [], rows);
 
-    private static TableBlock Table(bool rightToLeft, IReadOnlyList<TableWidth?> columnWidths, params TableRow[] rows)
+    private static TableBlock Table(bool rightToLeft, IReadOnlyList<Length?> columnWidths, params TableRow[] rows)
     {
         var table = new TableBlock { Direction = Direction(rightToLeft), ColumnWidths = columnWidths };
         foreach (var row in rows)

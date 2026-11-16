@@ -1,22 +1,52 @@
 namespace RaiCore.Pdf.Layout;
 
-/// <summary>Widths of the four sides of a box, in points (CSS order: top, right, bottom, left).</summary>
-public readonly record struct Thickness(double Top, double Right, double Bottom, double Left)
+/// <summary>
+/// The four sides of a box (CSS order: top, right, bottom, left) as <see cref="Length"/>s. Numbers convert to points,
+/// so <c>new Thickness(10, 20, 10, 20)</c> works. A percentage in a <see cref="BoxStyle.Margin"/> or
+/// <see cref="BoxStyle.Padding"/> is of the containing block's width, on all four sides (as in CSS); in
+/// <see cref="PageSetup.Margins"/> it is of the page's width (left and right) or height (top and bottom).
+/// </summary>
+public readonly record struct Thickness(Length Top, Length Right, Length Bottom, Length Left)
 {
     /// <summary>No thickness.</summary>
     public static Thickness Zero { get; }
 
     /// <summary>The same value on all four sides.</summary>
-    public static Thickness All(double value) => new(value, value, value, value);
+    public static Thickness All(Length value) => new(value, value, value, value);
 
     /// <summary>One value for top and bottom, another for left and right.</summary>
-    public static Thickness Symmetric(double vertical, double horizontal) => new(vertical, horizontal, vertical, horizontal);
+    public static Thickness Symmetric(Length vertical, Length horizontal) => new(vertical, horizontal, vertical, horizontal);
 
+    /// <summary>Left + right.</summary>
+    public Length Horizontal => Left + Right;
+
+    /// <summary>Top + bottom.</summary>
+    public Length Vertical => Top + Bottom;
+
+    /// <summary>Whether a side has a percentage part.</summary>
+    public bool HasPercent => Top.HasPercent || Right.HasPercent || Bottom.HasPercent || Left.HasPercent;
+
+    /// <summary>The sides in points, with percentages of <paramref name="reference"/>.</summary>
+    public Thickness Resolve(double reference) =>
+        new(Top.Resolve(reference), Right.Resolve(reference), Bottom.Resolve(reference), Left.Resolve(reference));
+
+    /// <summary>The sides without their percentages (as for intrinsic sizes).</summary>
+    internal Thickness PointsOnly => new(Top.Points, Right.Points, Bottom.Points, Left.Points);
+
+    /// <summary>The sides in points, for a thickness known to have no percentage (see <see cref="Length.Fixed"/>).</summary>
+    internal Sides Fixed => new(Top.Fixed, Right.Fixed, Bottom.Fixed, Left.Fixed);
+}
+
+/// <summary>The four sides of a box in points: a <see cref="Thickness"/> without percentages, as the layout uses it.</summary>
+internal readonly record struct Sides(double Top, double Right, double Bottom, double Left)
+{
     /// <summary>Left + right.</summary>
     public double Horizontal => Left + Right;
 
     /// <summary>Top + bottom.</summary>
     public double Vertical => Top + Bottom;
+
+    public static implicit operator Thickness(Sides sides) => new(sides.Top, sides.Right, sides.Bottom, sides.Left);
 }
 
 /// <summary>How a border side is drawn (CSS <c>border-style</c>). CSS <c>none</c> is a side of width 0.</summary>
@@ -168,90 +198,9 @@ public enum Positioning
     Fixed,
 }
 
-/// <summary>A length in points or a percentage of a reference length (an inset of a positioned block).</summary>
-/// <param name="Value">Points, or a percentage.</param>
-/// <param name="IsPercent">Whether <paramref name="Value"/> is a percentage.</param>
-public readonly record struct Inset(double Value, bool IsPercent = false)
-{
-    /// <summary>A length in points.</summary>
-    public static Inset Points(double points) => new(points);
-
-    /// <summary>A percentage of the containing block's width (left, right) or height (top, bottom).</summary>
-    public static Inset Percent(double percent) => new(percent, IsPercent: true);
-
-    /// <summary>The length in points for a reference length.</summary>
-    public double Resolve(double reference) => IsPercent ? Value / 100 * reference : Value;
-}
-
 /// <summary>The offsets of a positioned block from its containing block's edges (CSS <c>top</c>, <c>right</c>, ...); <c>null</c> is auto.</summary>
-public readonly record struct BoxInsets(Inset? Top = null, Inset? Right = null, Inset? Bottom = null, Inset? Left = null);
-
-/// <summary>
-/// A horizontal box length that may depend on the width of the containing block: points plus a percentage of that
-/// width, as CSS <c>40%</c> or <c>calc(50% - 10pt)</c>.
-/// </summary>
-/// <param name="Points">The fixed part, in points.</param>
-/// <param name="Percent">The part that is a percentage (0-100) of the containing block's width.</param>
-public readonly record struct BoxLength(double Points, double Percent = 0)
-{
-    /// <summary>A length in points.</summary>
-    public static BoxLength FromPoints(double points) => new(points);
-
-    /// <summary>A percentage (0-100) of the containing block's width.</summary>
-    public static BoxLength FromPercent(double percent) => new(0, percent);
-
-    /// <summary>The length in points in a containing block of a width.</summary>
-    public double Resolve(double containingWidth) => Points + (Percent / 100 * containingWidth);
-
-    /// <summary>The sum of two lengths.</summary>
-    public static BoxLength operator +(BoxLength left, BoxLength right) => new(left.Points + right.Points, left.Percent + right.Percent);
-
-    /// <summary>The sum of two lengths.</summary>
-    public static BoxLength Add(BoxLength left, BoxLength right) => left + right;
-}
-
-/// <summary>The four sides of a margin or padding as <see cref="BoxLength"/>s (CSS order: top, right, bottom, left).</summary>
-public readonly record struct RelativeThickness(BoxLength Top, BoxLength Right, BoxLength Bottom, BoxLength Left)
-{
-    /// <summary>The sides in points in a containing block of a width.</summary>
-    public Thickness Resolve(double containingWidth) =>
-        new(Top.Resolve(containingWidth), Right.Resolve(containingWidth), Bottom.Resolve(containingWidth), Left.Resolve(containingWidth));
-
-    /// <summary>The sides without their percentages (as for intrinsic sizes).</summary>
-    internal Thickness PointsOnly => new(Top.Points, Right.Points, Bottom.Points, Left.Points);
-
-    /// <summary>Left + right.</summary>
-    public BoxLength Horizontal => Left + Right;
-}
-
-/// <summary>
-/// The sizes of a box that depend on its containing block's width (CSS percentages, also in <c>calc()</c>). The layout
-/// resolves them against the width the containing block actually gets (a flex item after flexing, a table column, a
-/// shrink-to-fit float or inline box, a box narrowed by its own <c>max-width</c>), and each one given replaces the
-/// <see cref="BoxStyle"/> property of the same name.
-/// </summary>
-/// <remarks>
-/// For min-content and max-content sizes (the shrink-to-fit width of a float, a table column's width, a flex item's
-/// content size), a width or maximum width with a percentage counts as auto and a minimum width as 0, and margins and
-/// padding count without their percentages, as CSS Sizing 3 section 5.2.1 specifies.
-/// </remarks>
-public sealed record BoxPercentages
-{
-    /// <summary>The border-box width (<see cref="BoxStyle.Width"/>), or <c>null</c> to keep that one.</summary>
-    public BoxLength? Width { get; init; }
-
-    /// <summary>The minimum border-box width (<see cref="BoxStyle.MinWidth"/>), or <c>null</c> to keep that one.</summary>
-    public BoxLength? MinWidth { get; init; }
-
-    /// <summary>The maximum border-box width (<see cref="BoxStyle.MaxWidth"/>), or <c>null</c> to keep that one.</summary>
-    public BoxLength? MaxWidth { get; init; }
-
-    /// <summary>The margins (<see cref="BoxStyle.Margin"/>), or <c>null</c> to keep those; vertical ones are of the width too.</summary>
-    public RelativeThickness? Margin { get; init; }
-
-    /// <summary>The padding (<see cref="BoxStyle.Padding"/>), or <c>null</c> to keep that; vertical sides are of the width too.</summary>
-    public RelativeThickness? Padding { get; init; }
-}
+/// <remarks>Percentages are of the containing block's width (left, right) or height (top, bottom).</remarks>
+public readonly record struct BoxInsets(Length? Top = null, Length? Right = null, Length? Bottom = null, Length? Left = null);
 
 /// <summary>Page break behavior inside a block (CSS <c>break-inside</c>).</summary>
 public enum PageBreakInside
@@ -272,10 +221,13 @@ public sealed record BoxStyle
     /// <summary>The default: no margin, border, padding or background.</summary>
     public static BoxStyle Default { get; } = new();
 
-    /// <summary>Space outside the border. Vertical margins of adjacent blocks collapse into the larger one, as in CSS.</summary>
+    /// <summary>
+    /// Space outside the border. Vertical margins of adjacent blocks collapse into the larger one, as in CSS.
+    /// Percentages are of the containing block's width, also for the top and bottom.
+    /// </summary>
     public Thickness Margin { get; init; }
 
-    /// <summary>Space between the border and the content.</summary>
+    /// <summary>Space between the border and the content. Percentages are of the containing block's width, also for the top and bottom.</summary>
     public Thickness Padding { get; init; }
 
     /// <summary>Border lines.</summary>
@@ -305,23 +257,23 @@ public sealed record BoxStyle
     /// </summary>
     public CornerRadii BorderRadius { get; init; }
 
-    /// <summary>Width of the border box in points, or <c>null</c> to fill the available width.</summary>
-    public double? Width { get; init; }
+    /// <summary>Width of the border box, or <c>null</c> to fill the available width.</summary>
+    public Length? Width { get; init; }
 
     /// <summary>
-    /// Minimum border-box width in points. <c>null</c> is CSS <c>min-width: auto</c>: no minimum, except for flex
+    /// Minimum border-box width. <c>null</c> is CSS <c>min-width: auto</c>: no minimum, except for flex
     /// items in a row, which do not shrink below their min-content width (e.g. their longest word). Applies to fixed,
     /// filling and shrink-to-fit widths alike, and wins over <see cref="MaxWidth"/> (as in CSS).
     /// </summary>
-    public double? MinWidth { get; init; }
+    public Length? MinWidth { get; init; }
 
     /// <summary>
-    /// Maximum border-box width in points, or <c>null</c> for none. A block without a <see cref="Width"/> fills the
+    /// Maximum border-box width, or <c>null</c> for none. A block without a <see cref="Width"/> fills the
     /// available width up to this; images scale to it (keeping their aspect ratio unless given both a width and a
     /// height) and tables shrink to fit within it, but a table without a width never gets narrower than its content's
     /// minimum width.
     /// </summary>
-    public double? MaxWidth { get; init; }
+    public Length? MaxWidth { get; init; }
 
     /// <summary>
     /// Height of the border box in points, or <c>null</c> for the content's height. Content that does not fit
@@ -412,36 +364,42 @@ public sealed record BoxStyle
     public int? ZIndex { get; init; }
 
     /// <summary>
-    /// Sizes that are percentages of the containing block's width, resolved in layout against the width it actually
-    /// gets, or <c>null</c> for none; see <see cref="BoxPercentages"/>. The width, margins and padding set directly are
-    /// used where the containing width is not known.
+    /// Whether a width, margin or padding has a percentage (of the containing block's width), which the layout resolves
+    /// against the width the containing block actually gets: a flex item after flexing, a table column, a shrink-to-fit
+    /// float or inline box, a box narrowed by its own <see cref="MaxWidth"/>.
     /// </summary>
-    public BoxPercentages? Percentages { get; init; }
+    /// <remarks>
+    /// For min-content and max-content sizes (the shrink-to-fit width of a float, a table column's width, a flex item's
+    /// content size), a width or maximum width with a percentage counts as auto and a minimum width as 0, and margins and
+    /// padding count without their percentages, as CSS Sizing 3 section 5.2.1 specifies.
+    /// </remarks>
+    public bool HasPercent =>
+        Width is { HasPercent: true } || MinWidth is { HasPercent: true } || MaxWidth is { HasPercent: true }
+        || Margin.HasPercent || Padding.HasPercent;
 
     /// <summary>
-    /// The style with its <see cref="Percentages"/> resolved against a containing block's width: the sizes of the box
-    /// laid out in it. A border-box width is at least the horizontal padding and border.
+    /// The style with its percentages resolved against a containing block's width: the sizes of the box laid out in
+    /// it. A border-box width is at least the horizontal padding and border.
     /// </summary>
     internal BoxStyle Resolve(double containingWidth)
     {
-        if (Percentages is not { } p)
+        if (!HasPercent)
         {
             return this;
         }
 
         // Padding cannot be negative, nor can a border box be narrower than its padding and border.
-        var padding = p.Padding?.Resolve(containingWidth) is { } resolved
-            ? new Thickness(Math.Max(0, resolved.Top), Math.Max(0, resolved.Right), Math.Max(0, resolved.Bottom), Math.Max(0, resolved.Left))
-            : Padding;
-        var decoration = padding.Horizontal + Border.Widths.Horizontal;
-        double? BorderBox(BoxLength? length, double? fallback) => length is { } l ? Math.Max(l.Resolve(containingWidth), decoration) : fallback;
+        var resolved = Padding.Resolve(containingWidth);
+        var padding = new Thickness(
+            Math.Max(0, resolved.Top.Points), Math.Max(0, resolved.Right.Points), Math.Max(0, resolved.Bottom.Points), Math.Max(0, resolved.Left.Points));
+        var decoration = padding.Horizontal.Points + Border.Widths.Horizontal.Fixed;
+        Length? BorderBox(Length? length) => length is { } l ? Math.Max(l.Resolve(containingWidth), decoration) : null;
         return this with
         {
-            Percentages = null,
-            Width = BorderBox(p.Width, Width),
-            MinWidth = BorderBox(p.MinWidth, MinWidth),
-            MaxWidth = BorderBox(p.MaxWidth, MaxWidth),
-            Margin = p.Margin?.Resolve(containingWidth) ?? Margin,
+            Width = BorderBox(Width),
+            MinWidth = BorderBox(MinWidth),
+            MaxWidth = BorderBox(MaxWidth),
+            Margin = Margin.Resolve(containingWidth),
             Padding = padding,
         };
     }
@@ -452,27 +410,25 @@ public sealed record BoxStyle
     /// </summary>
     internal BoxStyle Intrinsic()
     {
-        if (Percentages is not { } p)
+        if (!HasPercent)
         {
             return this;
         }
 
-        var padding = p.Padding?.PointsOnly ?? Padding;
-        var decoration = padding.Horizontal + Border.Widths.Horizontal;
-        double? BorderBox(BoxLength? length, double? fallback) =>
-            length is { } l ? l.Percent == 0 ? Math.Max(l.Points, decoration) : null : fallback;
+        var padding = Padding.PointsOnly;
+        var decoration = padding.Horizontal.Points + Border.Widths.Horizontal.Fixed;
+        Length? BorderBox(Length? length) => length is { } l ? l.HasPercent ? null : Math.Max(l.Points, decoration) : null;
         return this with
         {
-            Percentages = null,
-            Width = BorderBox(p.Width, Width),
-            MinWidth = BorderBox(p.MinWidth, MinWidth),
-            MaxWidth = BorderBox(p.MaxWidth, MaxWidth),
-            Margin = p.Margin?.PointsOnly ?? Margin,
+            Width = BorderBox(Width),
+            MinWidth = BorderBox(MinWidth),
+            MaxWidth = BorderBox(MaxWidth),
+            Margin = Margin.PointsOnly,
             Padding = padding,
         };
     }
 
     /// <summary>A border-box width limited by <see cref="MaxWidth"/> and then <see cref="MinWidth"/>.</summary>
     internal double ClampWidth(double width) =>
-        Math.Max(Math.Min(width, MaxWidth ?? double.PositiveInfinity), MinWidth ?? 0);
+        Math.Max(Math.Min(width, MaxWidth?.Fixed ?? double.PositiveInfinity), MinWidth?.Fixed ?? 0);
 }

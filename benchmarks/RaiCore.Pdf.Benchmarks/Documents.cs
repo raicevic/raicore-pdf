@@ -244,7 +244,7 @@ public static class Documents
         {
             var text = new Paragraph(footer) { Alignment = TextAlignment.Center }
                 .Add(string.Create(CultureInfo.InvariantCulture, $"Page {page.Number} of {page.Count}"));
-            text.Layout(page.Setup.ContentWidth).Draw(canvas, page.Setup.Margins.Left, 40);
+            text.Layout(page.Setup.ContentWidth).Draw(canvas, page.Setup.Margins.Left.Points, 40);
         };
         return flow;
     }

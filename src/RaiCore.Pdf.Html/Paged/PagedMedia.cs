@@ -269,7 +269,9 @@ internal sealed partial class PagedMedia
     /// </summary>
     private static (double X, double Top, double Width, double Height) BoxRect(string name, PageSetup setup, IEnumerable<string> present)
     {
-        var margins = setup.Margins;
+        var (width0, height0) = (setup.Size.Width, setup.Size.Height); // Percentages: of the page's width or height.
+        var margins = (Top: setup.Margins.Top.Resolve(height0), Right: setup.Margins.Right.Resolve(width0),
+            Bottom: setup.Margins.Bottom.Resolve(height0), Left: setup.Margins.Left.Resolve(width0));
         var isTop = name.StartsWith("top", StringComparison.OrdinalIgnoreCase);
         var top = isTop ? 0 : setup.Size.Height - margins.Bottom;
         var height = isTop ? margins.Top : margins.Bottom;

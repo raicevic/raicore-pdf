@@ -24,7 +24,7 @@ public class PositioningLayoutTests
     [Fact]
     public void An_absolute_block_without_a_positioned_ancestor_is_placed_in_the_page_area()
     {
-        var box = Absolute(new BoxInsets(Top: Inset.Points(30), Left: Inset.Points(10)), 50, 20);
+        var box = Absolute(new BoxInsets(Top: Length.FromPoints(30), Left: Length.FromPoints(10)), 50, 20);
         var after = Rect(10);
         var result = Paginate(box, after);
 
@@ -38,8 +38,8 @@ public class PositioningLayoutTests
     public void Insets_place_a_block_from_each_edge(double? left, double? right, double? bottom, double? top, double x, double y)
     {
         var insets = new BoxInsets(
-            top is { } t ? Inset.Points(t) : null, right is { } r ? Inset.Points(r) : null,
-            bottom is { } b ? Inset.Points(b) : null, left is { } l ? Inset.Points(l) : null);
+            top is { } t ? Length.FromPoints(t) : null, right is { } r ? Length.FromPoints(r) : null,
+            bottom is { } b ? Length.FromPoints(b) : null, left is { } l ? Length.FromPoints(l) : null);
         var box = Absolute(insets, 40, 20);
         var placed = Box(Paginate(box), box);
 
@@ -49,7 +49,7 @@ public class PositioningLayoutTests
     [Fact]
     public void Percent_insets_are_of_the_containing_block()
     {
-        var box = Absolute(new BoxInsets(Top: Inset.Percent(50), Left: Inset.Percent(25)), 10, 10);
+        var box = Absolute(new BoxInsets(Top: Length.FromPercent(50), Left: Length.FromPercent(25)), 10, 10);
         var placed = Box(Paginate(box), box);
 
         Assert.Equal((60.0, 100.0), (placed.Left, placed.Top));
@@ -61,7 +61,7 @@ public class PositioningLayoutTests
         var box = new ContainerBlock(new BoxStyle
         {
             Position = Positioning.Absolute,
-            Insets = new BoxInsets(Inset.Points(10), Inset.Points(20), Inset.Points(30), Inset.Points(40)),
+            Insets = new BoxInsets(Length.FromPoints(10), Length.FromPoints(20), Length.FromPoints(30), Length.FromPoints(40)),
             Background = Gray,
         });
         var placed = Box(Paginate(box), box);
@@ -73,7 +73,7 @@ public class PositioningLayoutTests
     public void Without_a_width_or_both_horizontal_insets_an_absolute_block_shrinks_to_fit()
     {
         var box = new ContainerBlock(
-            new BoxStyle { Position = Positioning.Absolute, Insets = new BoxInsets(Right: Inset.Points(0)), Background = Gray },
+            new BoxStyle { Position = Positioning.Absolute, Insets = new BoxInsets(Right: Length.FromPoints(0)), Background = Gray },
             new ParagraphBlock(new Paragraph(Text).Add("Hello")));
         var placed = Box(Paginate(box), box);
 
@@ -93,7 +93,7 @@ public class PositioningLayoutTests
     [Fact]
     public void The_containing_block_is_the_padding_box_of_the_nearest_positioned_ancestor()
     {
-        var box = Absolute(new BoxInsets(Bottom: Inset.Points(0), Right: Inset.Points(0)), 20, 10);
+        var box = Absolute(new BoxInsets(Bottom: Length.FromPoints(0), Right: Length.FromPoints(0)), 20, 10);
         var relative = new ContainerBlock(
             new BoxStyle { Position = Positioning.Relative, Border = Borders.All(2, PdfColor.Black), Margin = new Thickness(10, 0, 0, 0) },
             new ContainerBlock(new BoxStyle { Background = Gray }, new SpacerBlock(50)), box);
@@ -106,7 +106,7 @@ public class PositioningLayoutTests
     [Fact]
     public void A_relative_block_is_drawn_moved_and_keeps_its_place_in_the_flow()
     {
-        var moved = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, Insets = new BoxInsets(Top: Inset.Points(10), Left: Inset.Points(30)), Background = Red }, new SpacerBlock(20));
+        var moved = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, Insets = new BoxInsets(Top: Length.FromPoints(10), Left: Length.FromPoints(30)), Background = Red }, new SpacerBlock(20));
         var after = new ContainerBlock(new BoxStyle { Background = Blue }, new SpacerBlock(20));
         var flow = new FlowDocument(Small).Add(moved).Add(after);
 
@@ -120,8 +120,8 @@ public class PositioningLayoutTests
     [Fact]
     public void A_relative_block_moves_its_absolute_children_with_it()
     {
-        var box = Absolute(new BoxInsets(Top: Inset.Points(0), Left: Inset.Points(0)), 10, 10);
-        var relative = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, Insets = new BoxInsets(Left: Inset.Points(15), Top: Inset.Points(5)) }, Rect(20), box);
+        var box = Absolute(new BoxInsets(Top: Length.FromPoints(0), Left: Length.FromPoints(0)), 10, 10);
+        var relative = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, Insets = new BoxInsets(Left: Length.FromPoints(15), Top: Length.FromPoints(5)) }, Rect(20), box);
         var placed = Box(Paginate(relative), box);
 
         Assert.Equal((35.0, 25.0), (placed.Left, placed.Top));
@@ -130,9 +130,9 @@ public class PositioningLayoutTests
     [Fact]
     public void A_higher_z_index_is_painted_over_a_lower_one_and_a_negative_one_under_the_flow()
     {
-        var high = Absolute(new BoxInsets(Top: Inset.Points(0), Left: Inset.Points(0)), 60, 60, color: Red, z: 2);
-        var low = Absolute(new BoxInsets(Top: Inset.Points(20), Left: Inset.Points(20)), 60, 60, color: Blue, z: 1);
-        var under = Absolute(new BoxInsets(Top: Inset.Points(70), Left: Inset.Points(0)), 60, 40, color: Red, z: -1);
+        var high = Absolute(new BoxInsets(Top: Length.FromPoints(0), Left: Length.FromPoints(0)), 60, 60, color: Red, z: 2);
+        var low = Absolute(new BoxInsets(Top: Length.FromPoints(20), Left: Length.FromPoints(20)), 60, 60, color: Blue, z: 1);
+        var under = Absolute(new BoxInsets(Top: Length.FromPoints(70), Left: Length.FromPoints(0)), 60, 40, color: Red, z: -1);
         var flow = new FlowDocument(Small).Add(high).Add(low).Add(under).Add(Rect(100, Blue));
 
         using var bitmap = Render(flow);
@@ -149,9 +149,9 @@ public class PositioningLayoutTests
     public void Relative_offsets_move_the_block(double? left, double? right, double? bottom, double? top, double dx, double dy)
     {
         var insets = new BoxInsets(
-            top is { } t ? Inset.Points(t) : null, right is { } r ? Inset.Points(r) : null,
-            bottom is { } b ? Inset.Points(b) : null, left is { } l ? Inset.Points(l) : null);
-        var box = Absolute(new BoxInsets(Top: Inset.Points(0), Left: Inset.Points(0)), 10, 10);
+            top is { } t ? Length.FromPoints(t) : null, right is { } r ? Length.FromPoints(r) : null,
+            bottom is { } b ? Length.FromPoints(b) : null, left is { } l ? Length.FromPoints(l) : null);
+        var box = Absolute(new BoxInsets(Top: Length.FromPoints(0), Left: Length.FromPoints(0)), 10, 10);
         var relative = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, Insets = insets }, Rect(20), box);
         var placed = Box(Paginate(Rect(40), relative), box);
 
@@ -161,8 +161,8 @@ public class PositioningLayoutTests
     [Fact]
     public void Relative_offsets_add_up_when_nested()
     {
-        var inner = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, Insets = new BoxInsets(Left: Inset.Points(20), Top: Inset.Points(10)), Background = Red }, new SpacerBlock(10));
-        var outer = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, Insets = new BoxInsets(Left: Inset.Points(30), Top: Inset.Points(20)), Width = 40 }, inner);
+        var inner = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, Insets = new BoxInsets(Left: Length.FromPoints(20), Top: Length.FromPoints(10)), Background = Red }, new SpacerBlock(10));
+        var outer = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, Insets = new BoxInsets(Left: Length.FromPoints(30), Top: Length.FromPoints(20)), Width = 40 }, inner);
 
         using var bitmap = Render(new FlowDocument(Small).Add(outer));
         Assert.Equal(new SKColor(255, 0, 0), bitmap.GetPixel(72, 52)); // x 70-110, y 50-60.
@@ -172,8 +172,8 @@ public class PositioningLayoutTests
     [Fact]
     public void A_relative_percent_offset_is_of_the_containing_width()
     {
-        var box = Absolute(new BoxInsets(Top: Inset.Points(0), Left: Inset.Points(0)), 10, 10);
-        var relative = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, Insets = new BoxInsets(Left: Inset.Percent(25)) }, Rect(20), box);
+        var box = Absolute(new BoxInsets(Top: Length.FromPoints(0), Left: Length.FromPoints(0)), 10, 10);
+        var relative = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, Insets = new BoxInsets(Left: Length.FromPercent(25)) }, Rect(20), box);
         var placed = Box(Paginate(relative), box);
 
         Assert.Equal(60, placed.Left, 3); // 25% of 160.
@@ -182,7 +182,7 @@ public class PositioningLayoutTests
     [Fact]
     public void A_top_inset_is_from_the_containing_blocks_padding_edge()
     {
-        var box = Absolute(new BoxInsets(Top: Inset.Points(0), Left: Inset.Points(0)), 10, 10);
+        var box = Absolute(new BoxInsets(Top: Length.FromPoints(0), Left: Length.FromPoints(0)), 10, 10);
         var relative = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, Border = Borders.All(4, PdfColor.Black) }, Rect(30), box);
         var placed = Box(Paginate(relative), box);
 
@@ -203,9 +203,9 @@ public class PositioningLayoutTests
     public void A_z_index_auto_child_paints_in_its_ancestors_layer()
     {
         // The child (z-index auto) inside the z-index 2 box goes over the z-index 1 box that follows in the document.
-        var child = Absolute(new BoxInsets(Top: Inset.Points(0), Left: Inset.Points(0)), 40, 40, color: Red);
+        var child = Absolute(new BoxInsets(Top: Length.FromPoints(0), Left: Length.FromPoints(0)), 40, 40, color: Red);
         var parent = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, ZIndex = 2, Width = 10 }, child);
-        var other = Absolute(new BoxInsets(Top: Inset.Points(10), Left: Inset.Points(10)), 40, 40, color: Blue, z: 1);
+        var other = Absolute(new BoxInsets(Top: Length.FromPoints(10), Left: Length.FromPoints(10)), 40, 40, color: Blue, z: 1);
 
         using var bitmap = Render(new FlowDocument(Small).Add(parent).Add(other));
         Assert.Equal(new SKColor(255, 0, 0), bitmap.GetPixel(45, 45));
@@ -216,7 +216,7 @@ public class PositioningLayoutTests
     {
         var red = new ContainerBlock(new BoxStyle { Float = FloatSide.Left, Width = 40, Background = Red }, new SpacerBlock(40));
         var parent = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, ZIndex = 1 }, red);
-        var other = Absolute(new BoxInsets(Top: Inset.Points(10), Left: Inset.Points(10)), 40, 40, color: Blue, z: 0);
+        var other = Absolute(new BoxInsets(Top: Length.FromPoints(10), Left: Length.FromPoints(10)), 40, 40, color: Blue, z: 0);
 
         using var bitmap = Render(new FlowDocument(Small).Add(other).Add(parent));
         Assert.Equal(new SKColor(255, 0, 0), bitmap.GetPixel(45, 45));
@@ -225,7 +225,7 @@ public class PositioningLayoutTests
     [Fact]
     public void A_fixed_block_is_drawn_on_every_page()
     {
-        var box = new ContainerBlock(new BoxStyle { Position = Positioning.Fixed, Insets = new BoxInsets(Bottom: Inset.Points(0), Left: Inset.Points(0)), Width = 30, Background = Gray }, new SpacerBlock(10));
+        var box = new ContainerBlock(new BoxStyle { Position = Positioning.Fixed, Insets = new BoxInsets(Bottom: Length.FromPoints(0), Left: Length.FromPoints(0)), Width = 30, Background = Gray }, new SpacerBlock(10));
         var result = Paginate(box, Lines(40)); // Three pages.
 
         Assert.Equal([0, 1, 2], result.Placements.Where(p => p.Block == box).Select(p => p.Page));
@@ -235,7 +235,7 @@ public class PositioningLayoutTests
     [Fact]
     public void An_absolute_block_on_a_later_page_is_placed_there()
     {
-        var box = Absolute(new BoxInsets(Top: Inset.Points(5), Right: Inset.Points(5)), 20, 10);
+        var box = Absolute(new BoxInsets(Top: Length.FromPoints(5), Right: Length.FromPoints(5)), 20, 10);
         var relative = new ContainerBlock(new BoxStyle { Position = Positioning.Relative, BreakInside = PageBreakInside.Avoid, Background = Gray }, new SpacerBlock(30), box);
         var placed = Box(Paginate(Rect(150), relative), box);
 
@@ -245,7 +245,7 @@ public class PositioningLayoutTests
     [Fact]
     public void A_bottom_inset_places_the_block_on_the_page_its_containing_block_ends_on()
     {
-        var box = Absolute(new BoxInsets(Bottom: Inset.Points(0), Left: Inset.Points(0)), 20, 10);
+        var box = Absolute(new BoxInsets(Bottom: Length.FromPoints(0), Left: Length.FromPoints(0)), 20, 10);
         var relative = new ContainerBlock(new BoxStyle { Position = Positioning.Relative }, new ContainerBlock(new BoxStyle { Background = Gray }, Lines(20)), box);
         var placed = Box(Paginate(relative), box);
 

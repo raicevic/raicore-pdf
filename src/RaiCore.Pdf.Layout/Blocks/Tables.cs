@@ -1,17 +1,5 @@
 namespace RaiCore.Pdf.Layout;
 
-/// <summary>A width in points or as a percentage of the table's content width.</summary>
-public readonly record struct TableWidth(double Value, bool IsPercent = false)
-{
-    /// <summary>A width in points.</summary>
-    public static TableWidth Points(double points) => new(points);
-
-    /// <summary>A percentage (0-100) of the table's content width.</summary>
-    public static TableWidth Percent(double percent) => new(percent, IsPercent: true);
-
-    internal double Resolve(double reference) => IsPercent ? Value / 100 * reference : Value;
-}
-
 /// <summary>How cell borders are drawn (CSS <c>border-collapse</c>).</summary>
 public enum BorderCollapse
 {
@@ -71,7 +59,7 @@ public sealed class TableBlock : Block
     public IReadOnlyList<TableRow> Rows => _rows;
 
     /// <summary>Optional width specifications per column (CSS <c>col</c> widths); <c>null</c> entries are automatic.</summary>
-    public IReadOnlyList<TableWidth?> ColumnWidths { get; init; } = [];
+    public IReadOnlyList<Length?> ColumnWidths { get; init; } = [];
 
     /// <summary>
     /// The table's direction (CSS <c>direction</c>). Right to left, the first column (of the rows' cells and of
@@ -184,7 +172,7 @@ public sealed class TableCell
     public VerticalAlignment VerticalAlignment { get; init; }
 
     /// <summary>Requested width (CSS <c>width</c> on a cell), or <c>null</c>.</summary>
-    public TableWidth? Width { get; init; }
+    public Length? Width { get; init; }
 
     /// <summary>
     /// What the cell is in a tagged document: <c>null</c> (the default) for a data cell (<c>TD</c>), or a header cell
