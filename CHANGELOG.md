@@ -12,6 +12,9 @@ change at any time, and this section lists what the packages can do so far.
 The public API reviewed for 1.0 (#60) is recorded in each package's `PublicAPI.Shipped.txt`, and the build fails
 when it changes without a matching line in `PublicAPI.Unshipped.txt` (#61), so changes before 1.0 are deliberate.
 
+Samples (#65): runnable apps in [samples/](samples/README.md) (invoice, report with a table of contents, letter for a
+window envelope, ASP.NET Core with Razor, background worker, Docker image), built and run in CI.
+
 Release trains (#62): the core packages share one version and depend on each other at exactly that version; future
 packages (such as DOCX conversion) get versions and release tags of their own (see "Releasing" in CONTRIBUTING.md).
 
@@ -548,7 +551,7 @@ Project policies (#66): [SECURITY.md](SECURITY.md) (private vulnerability report
   (`tests/PackageSmoke/publish-and-run.sh`) and fails on trim or AOT warnings other than the known ones in
   `Microsoft.AspNetCore.Components`. HarfBuzz's native library is published for the target runtime.
 - CI also runs the package smoke test, trimmed and Native AOT publishing included, in Alpine (musl) and Debian
-  containers on x64 and Arm64, and builds the sample Dockerfile in `docs/docker` (an HTML-to-PDF app on Alpine).
+  containers on x64 and Arm64, and builds the sample Dockerfile in `samples/Docker` (an HTML-to-PDF app on Alpine).
 
 ### Known limitations
 The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these.

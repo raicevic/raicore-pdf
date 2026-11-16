@@ -1,7 +1,7 @@
 # A small app that converts HTML to PDF with RaiCore.Pdf, built and run on Alpine Linux (musl), x64 or Arm64.
 #
-#   dotnet pack -c Release -o docs/docker/packages    # until 1.0 is on NuGet (see nuget.config)
-#   docker build -t hello-pdf docs/docker
+#   dotnet pack -c Release -o samples/Docker/packages    # until 1.0 is on NuGet (see nuget.config)
+#   docker build -t hello-pdf samples/Docker
 #   docker run --rm hello-pdf > hello.pdf
 #
 # No fonts or fontconfig are needed in the image: RaiCore.Pdf.Fonts bundles Liberation Sans, Serif and Mono for

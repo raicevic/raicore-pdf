@@ -57,7 +57,7 @@ warnings from failing the publish.
 ### Docker and Linux containers
 
 CI runs the package smoke test (also trimmed and Native AOT) in Alpine and Debian containers on x64 and Arm64.
-[docs/docker/Dockerfile](docs/docker/Dockerfile) builds and runs a small HTML-to-PDF app on Alpine. What an image
+[samples/Docker/Dockerfile](samples/Docker/Dockerfile) builds and runs a small HTML-to-PDF app on Alpine. What an image
 needs:
 - No fonts and no fontconfig: `RaiCore.Pdf.Fonts` bundles the Liberation fonts (for Arial, Helvetica, Times New
   Roman, Courier New and the generic families); other fonts come from `@font-face` or files you load.
@@ -69,6 +69,9 @@ needs:
 - Encryption uses OpenSSL on Linux (`libssl`, also in the .NET images).
 
 ## Quick start
+
+[samples/](samples/README.md) has runnable apps for typical jobs: an invoice, a report with a table of contents, a
+letter for a window envelope, an ASP.NET Core app with Razor components, a background worker and a Docker image.
 
 ### HTML to PDF
 

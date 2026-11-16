@@ -1,0 +1,33 @@
+@* A long statement of every invoice; the component loads its own data from an injected service. *@
+@inject InvoiceStore Store
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Statement</title>
+  <style>
+    @@page { size: A4; margin: 20mm; @@bottom-center { content: counter(page) " / " counter(pages); font-size: 8pt; } }
+    html { font-family: Arial, sans-serif; } /* The margin boxes inherit from the root element. */
+    body { font-size: 10pt; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 1.5mm 2mm; border-bottom: 0.5pt solid #ccc; text-align: left; }
+    .num { text-align: right; }
+  </style>
+</head>
+<body>
+  <h1>Statement</h1>
+  <table>
+    <thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th class="num">Total</th></tr></thead>
+    <tbody>
+      @foreach (var invoice in Store.All())
+      {
+        <tr>
+          <td>@invoice.Id</td>
+          <td>@invoice.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)</td>
+          <td>@invoice.Customer</td>
+          <td class="num">@invoice.Total.ToString("N2", CultureInfo.InvariantCulture)</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</body>
+</html>

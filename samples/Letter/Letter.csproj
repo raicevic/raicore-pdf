@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- In your app: <PackageReference Include="RaiCore.Pdf.Html" Version="1.0.0" /> -->
+    <ProjectReference Include="../../src/RaiCore.Pdf.Html/RaiCore.Pdf.Html.csproj" />
+  </ItemGroup>
+
+</Project>
