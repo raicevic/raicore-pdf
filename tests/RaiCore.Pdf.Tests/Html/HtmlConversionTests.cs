@@ -350,6 +350,29 @@ public class HtmlConversionTests
         Assert.Contains(diagnostics, d => d.Kind == HtmlDiagnosticKind.UnsupportedValue && d.Subject.Contains("color", StringComparison.Ordinal));
     }
 
+    [Theory]
+    [InlineData("a { color: inherit }")]
+    [InlineData("nav a { color: inherit }")]
+    [InlineData("a { color: #800000 }")]
+    public void Any_author_rule_overrides_the_default_link_color(string css)
+    {
+        // The default styles' a:link would outrank these selectors if it were an author rule.
+        var blocks = Blocks($"<style>{css}</style><nav><p style='color: #800000'><a href='#x'>link</a></p></nav>");
+
+        Assert.Equal(PdfColor.FromRgb(128, 0, 0), Color(blocks, "link"));
+    }
+
+    [Fact]
+    public void Links_are_blue_by_default() =>
+        Assert.Equal(PdfColor.FromRgb(0, 0, 0xEE), Color(Blocks("<p><a href='#x'>link</a></p>"), "link"));
+
+    [Fact]
+    public void An_author_display_shows_a_hidden_element_as_in_browsers()
+    {
+        Assert.DoesNotContain(Paragraphs(Blocks("<div hidden>hidden</div>")), p => Text(p).Trim() == "hidden");
+        Assert.Single(Paragraphs(Blocks("<style>div { display: block }</style><div hidden>shown</div>")), p => Text(p).Trim() == "shown");
+    }
+
     private static IReadOnlyList<Block> Blocks(string html, PageSetup? page = null, Uri? baseUri = null) =>
         HtmlToPdf.CreateFlowDocument(html, new HtmlConverterOptions { Page = page ?? new HtmlConverterOptions().Page, BaseUri = baseUri }).Blocks;
 
