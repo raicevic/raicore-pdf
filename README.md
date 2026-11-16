@@ -635,6 +635,9 @@ page.Canvas.DrawText(shaped, 14, 72, 700);
 double width = shaped.GetWidth(14); // includes kerning
 ```
 
+`TextShaper` and the shaped-text types are experimental (diagnostic `RCPDF002`, see
+[docs/experimental.md](docs/experimental.md)): they may still change after 1.0, so using them needs an opt-in.
+
 Shaped runs are tagged so text extraction returns the logical text, even for Arabic. Paragraphs order mixed
 left-to-right and right-to-left text with the Unicode bidi algorithm (UAX #9); `Paragraph.Direction` sets the base
 direction, or detects it from the text.

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.IO;
@@ -250,6 +251,7 @@ public sealed partial class PdfCanvas
     /// The logical text of the whole run, for scripts where glyphs do not map one-to-one to characters in order
     /// (Arabic, Indic). Text extraction then returns this instead of the per-glyph mapping.
     /// </param>
+    [Experimental(ExperimentalApis.TextShaping, UrlFormat = ExperimentalApis.UrlFormat)]
     public PdfCanvas DrawGlyphs(IReadOnlyList<PositionedGlyph> glyphs, PdfFont font, double size, double x, double y, string? actualText = null)
     {
         ArgumentNullException.ThrowIfNull(glyphs);

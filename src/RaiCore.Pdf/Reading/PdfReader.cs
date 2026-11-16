@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using RaiCore.Pdf.Objects;
 using RaiCore.Pdf.Reading;
 
@@ -111,9 +112,11 @@ public sealed class PdfReader
     public PdfPermissions Permissions => _store.Decryption?.Permissions ?? PdfPermissions.All;
 
     /// <summary>The trailer dictionary (merged over incremental updates). References in it are to objects of this file.</summary>
+    [Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
     public PdfDictionary Trailer => _store.Trailer;
 
     /// <summary>The document catalog (<c>/Root</c>). References in it are to objects of this file; see <see cref="Resolve"/>.</summary>
+    [Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
     public PdfDictionary Catalog { get; }
 
     /// <summary>The numbers of the page tree's intermediate nodes, which imports never copy.</summary>
@@ -175,6 +178,7 @@ public sealed class PdfReader
     /// Follows indirect references (<c>12 0 R</c>) in this file to the object they point to. Returns <c>null</c> for
     /// <c>null</c>, the null object, and references to missing objects (or reference loops).
     /// </summary>
+    [Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
     public PdfObject? Resolve(PdfObject? obj) => _store.Resolve(obj);
 
     /// <summary>The page that is the object <paramref name="reference"/> points to, or <c>null</c>.</summary>

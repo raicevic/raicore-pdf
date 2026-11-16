@@ -164,6 +164,12 @@ diagnostic ID, e.g. `RCPDF001`):
 
 **Recommendation:** all three lists as above.
 
+*Done in part 5,* with one correction: `ResourceLimits.Enforce` stays public. Its documentation shows it limiting
+`PdfImage.Load`, `PdfReader` and `FlowDocument.Render` outside HTML conversion, which nothing else can do. The
+diagnostic IDs are `RCPDF001` (PDF objects) and `RCPDF002` (text shaping and glyphs), explained in
+`docs/experimental.md`. RaiCore.Pdf.Layout now grants `InternalsVisibleTo` to RaiCore.Pdf.Html, which reads paragraph
+content (see the note for #62 below).
+
 ### 6. Resource loading and global state (B, decision)
 
 - **`ResourceLoader`** is a delegate `byte[]? ResourceLoader(Uri uri)`. Changing a delegate's signature later breaks

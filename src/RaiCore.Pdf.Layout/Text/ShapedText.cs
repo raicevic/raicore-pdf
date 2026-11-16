@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using RaiCore.Pdf.Fonts;
 
 namespace RaiCore.Pdf.Layout.Text;
@@ -12,6 +13,7 @@ public sealed class ShapingOptions
     /// OpenType features in HarfBuzz syntax, e.g. <c>"dlig"</c> (enable), <c>"-kern"</c> (disable),
     /// <c>"ss01"</c> or <c>"aalt=2"</c>. These map to CSS <c>font-feature-settings</c>.
     /// </summary>
+    [Experimental(ExperimentalApis.TextShaping, UrlFormat = ExperimentalApis.UrlFormat)]
     public IReadOnlyList<string> Features { get; init; } = [];
 
     /// <summary>BCP 47 language, e.g. <c>"tr"</c> or <c>"sr"</c>, which selects language-specific glyph forms.</summary>
@@ -22,6 +24,7 @@ public sealed class ShapingOptions
 /// Text shaped into glyphs: one or more runs, each in a single font, script and direction.
 /// Positions are fractions of the font size, so one shaped text can be drawn at any size.
 /// </summary>
+[Experimental(ExperimentalApis.TextShaping, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class ShapedText
 {
     internal ShapedText(string text, IReadOnlyList<ShapedRun> runs)
@@ -53,6 +56,7 @@ public sealed class ShapedText
 }
 
 /// <summary>A sequence of glyphs in one font, script and direction.</summary>
+[Experimental(ExperimentalApis.TextShaping, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class ShapedRun
 {
     internal ShapedRun(

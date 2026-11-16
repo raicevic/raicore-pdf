@@ -88,7 +88,7 @@ public sealed class StructureTag
 /// <param name="Start">The index of the run's first character in the paragraph's text.</param>
 /// <param name="End">The index after its last character.</param>
 /// <param name="Tag">The tag.</param>
-public sealed record InlineTag(int Start, int End, StructureTag Tag);
+internal sealed record InlineTag(int Start, int End, StructureTag Tag);
 
 /// <summary>
 /// Begins and ends tags on a canvas for layout objects (blocks, table cells, tagged runs, links), using the structure

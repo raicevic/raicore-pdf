@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace RaiCore.Pdf.Layout.Text;
@@ -5,12 +6,14 @@ namespace RaiCore.Pdf.Layout.Text;
 /// <summary>A position where a line may (or must) be broken.</summary>
 /// <param name="Position">UTF-16 index of the first character of the next line.</param>
 /// <param name="Required">A mandatory break (after a line feed, paragraph separator, ...).</param>
+[Experimental(ExperimentalApis.TextShaping, UrlFormat = ExperimentalApis.UrlFormat)]
 public readonly record struct LineBreakOpportunity(int Position, bool Required);
 
 /// <summary>
 /// The Unicode Line Breaking Algorithm (UAX #14), with the default (untailored) rules and the Unicode
 /// version in <see cref="UnicodeVersion"/>. Verified against the official LineBreakTest.txt.
 /// </summary>
+[Experimental(ExperimentalApis.TextShaping, UrlFormat = ExperimentalApis.UrlFormat)]
 public static class LineBreaker
 {
     /// <summary>The Unicode version of the line breaking data.</summary>

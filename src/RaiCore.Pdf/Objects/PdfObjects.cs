@@ -1,9 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using RaiCore.Pdf.IO;
 
 namespace RaiCore.Pdf.Objects;
 
 /// <summary>Base type for the low-level PDF object model (ISO 32000-2, section 7.3).</summary>
+[Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
 public abstract class PdfObject
 {
     internal abstract void WriteTo(PdfOutput output);
@@ -22,6 +24,7 @@ public abstract class PdfObject
 }
 
 /// <summary>The PDF <c>null</c> object.</summary>
+[Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class PdfNull : PdfObject
 {
     /// <summary>The single instance.</summary>
@@ -35,6 +38,7 @@ public sealed class PdfNull : PdfObject
 }
 
 /// <summary>A PDF boolean.</summary>
+[Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class PdfBoolean : PdfObject
 {
     /// <summary><c>true</c>.</summary>
@@ -55,6 +59,7 @@ public sealed class PdfBoolean : PdfObject
 }
 
 /// <summary>A PDF integer.</summary>
+[Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class PdfInteger(long value) : PdfObject
 {
     /// <summary>The value.</summary>
@@ -64,6 +69,7 @@ public sealed class PdfInteger(long value) : PdfObject
 }
 
 /// <summary>A PDF real number.</summary>
+[Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class PdfReal(double value) : PdfObject
 {
     /// <summary>The number as it was written in a file that was read, kept so that copying it loses no precision.</summary>
@@ -89,6 +95,7 @@ public sealed class PdfReal(double value) : PdfObject
 }
 
 /// <summary>A PDF name, such as <c>/Type</c>. The value is stored without the leading slash.</summary>
+[Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class PdfName : PdfObject, IEquatable<PdfName>
 {
     /// <summary>The bytes of a name read from a file (after <c>#xx</c> decoding), written back unchanged.</summary>
@@ -153,6 +160,7 @@ public sealed class PdfName : PdfObject, IEquatable<PdfName>
 }
 
 /// <summary>A PDF string. Holds raw bytes; use <see cref="FromText"/> for human-readable text.</summary>
+[Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class PdfString : PdfObject
 {
     private readonly byte[] _bytes;
@@ -236,6 +244,7 @@ public sealed class PdfString : PdfObject
 }
 
 /// <summary>A PDF array.</summary>
+[Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class PdfArray : PdfObject
 {
     /// <summary>Creates an array with the given items.</summary>
@@ -276,6 +285,7 @@ public sealed class PdfArray : PdfObject
 }
 
 /// <summary>A PDF dictionary. Keys keep their insertion order so output is deterministic.</summary>
+[Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
 public class PdfDictionary : PdfObject
 {
     private readonly List<KeyValuePair<PdfName, PdfObject>> _entries = [];
@@ -330,6 +340,7 @@ public class PdfDictionary : PdfObject
 }
 
 /// <summary>A reference to an indirect object, such as <c>12 0 R</c>.</summary>
+[Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class PdfReference : PdfObject
 {
     internal PdfReference(int objectNumber, int generation = 0)
@@ -354,6 +365,7 @@ public sealed class PdfReference : PdfObject
 }
 
 /// <summary>A PDF stream: a dictionary followed by binary data. Must be written as an indirect object.</summary>
+[Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
 public sealed class PdfStreamObject : PdfObject
 {
     /// <summary>Creates a stream holding <paramref name="data"/> as-is (no filter).</summary>

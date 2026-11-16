@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace RaiCore.Pdf;
 
 /// <summary>
@@ -12,4 +14,5 @@ namespace RaiCore.Pdf;
 /// The text this glyph represents, used for copy/paste and search. A ligature such as "ﬁ" maps to "fi";
 /// extra glyphs in a cluster can use <c>null</c>.
 /// </param>
+[Experimental(ExperimentalApis.TextShaping, UrlFormat = ExperimentalApis.UrlFormat)]
 public readonly record struct PositionedGlyph(int GlyphId, double Advance, double OffsetX = 0, double OffsetY = 0, string? Text = null);
