@@ -2,6 +2,13 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/RaiCore.Pdf.Benchmarks/RaiCore.Pdf.Benchmarks.csproj" />
   </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Invoice/Invoice.csproj" />
+    <Project Path="samples/Letter/Letter.csproj" />
+    <Project Path="samples/Report/Report.csproj" />
+    <Project Path="samples/WebApp/WebApp.csproj" />
+    <Project Path="samples/Worker/Worker.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/RaiCore.Pdf.Fonts/RaiCore.Pdf.Fonts.csproj" />
     <Project Path="src/RaiCore.Pdf.Html/RaiCore.Pdf.Html.csproj" />

@@ -71,6 +71,18 @@ jobs:
       - name: Package smoke test
         run: dotnet run --project tests/PackageSmoke --configuration Release -- smoke-output
 
+      # The samples (built with the solution) run and write their PDFs; the web app is started and asked for its PDFs.
+      - name: Run the samples
+        if: runner.os == 'Linux'
+        run: samples/run-all.sh Release samples-output
+
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: samples
+          path: samples-output/*.pdf
+          if-no-files-found: error
+
       # The release workflow's plan for the current core version, so the script keeps working before it is first used.
       - name: Release plan
         if: runner.os == 'Linux'
@@ -164,7 +176,7 @@ jobs:
 
   # The deployment targets beyond the runners' own OS: Alpine (musl) and Debian containers on x64 and Arm64. Each
   # builds the packages inside the container, runs the package smoke test and publishes it trimmed and with Native
-  # AOT; the Alpine jobs also build and run the sample Dockerfile in docs/docker. Docker runs on the host runner
+  # AOT; the Alpine jobs also build and run the sample Dockerfile in samples/Docker. Docker runs on the host runner
   # (not a `container:` job), since JavaScript actions cannot run in Alpine containers on Arm64. Not required checks.
   containers:
     name: container (${{ matrix.distro }}, ${{ matrix.arch }})
@@ -208,12 +220,12 @@ jobs:
               dotnet run --project tests/PackageSmoke --configuration Release -- smoke-output
               tests/PackageSmoke/publish-and-run.sh'
 
-      - name: Build and run the sample Dockerfile (docs/docker)
+      - name: Build and run the sample Dockerfile (samples/Docker)
         if: matrix.distro == 'alpine'
         run: |
-          mkdir -p docs/docker/packages
-          cp artifacts/*.nupkg docs/docker/packages/
-          docker build --tag hello-pdf docs/docker
+          mkdir -p samples/Docker/packages
+          cp artifacts/*.nupkg samples/Docker/packages/
+          docker build --tag hello-pdf samples/Docker
           docker run --rm hello-pdf > hello.pdf
           ls -l hello.pdf
           head -c 5 hello.pdf | grep -q '%PDF-'
