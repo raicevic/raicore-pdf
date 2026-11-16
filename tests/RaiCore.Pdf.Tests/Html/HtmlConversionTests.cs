@@ -73,10 +73,10 @@ public class HtmlConversionTests
     [Theory]
     [InlineData("<p>  Hello   \n\t world  </p>", "Hello world ")]
     [InlineData("<p>a <b> b </b> c</p>", "a b c")]
-    [InlineData("<p style='white-space: pre'>a  b\nc</p>", "a\u00A0\u00A0b\nc")]
+    [InlineData("<p style='white-space: pre'>a  b\nc</p>", "a  b\nc")] // Spaces stay spaces: TextStyle.NoWrap keeps them from wrapping (#142).
     [InlineData("<p style='white-space: pre-wrap'>a  b\n c</p>", "a  b\n c")]
     [InlineData("<p style='white-space: pre-line'>a   b  \n   c</p>", "a b\nc")]
-    [InlineData("<p style='white-space: nowrap'>a b</p>", "a\u00A0b")]
+    [InlineData("<p style='white-space: nowrap'>a b</p>", "a b")]
     [InlineData("<p>one<br>two<br> three</p>", "one\ntwo\nthree")]
     [InlineData("<p style='text-transform: uppercase'>shout</p>", "SHOUT")]
     [InlineData("<p style='text-transform: capitalize'>hello big world</p>", "Hello Big World")]

@@ -247,7 +247,8 @@ internal sealed partial class BoxBuilder
             Shaping = new ShapingOptions { Features = ParseFeatures(style.FontFeatures), Language = style.Language },
             Language = style.Language,
 
-            // Text that does not wrap is not hyphenated either, not even at soft hyphens.
+            // Text that does not wrap breaks nowhere but at hard breaks: not at spaces, hyphens or soft hyphens either.
+            NoWrap = style.WhiteSpace is CssWhiteSpace.NoWrap or CssWhiteSpace.Pre,
             Hyphens = style.WhiteSpace is CssWhiteSpace.NoWrap or CssWhiteSpace.Pre ? Hyphens.None : style.Hyphens,
             HyphenateCharacter = style.HyphenateCharacter,
             HyphenationLimits = style.HyphenationLimits,

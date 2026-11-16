@@ -285,7 +285,6 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         var output = new StringBuilder(text.Length);
         var preserveSpaces = mode is CssWhiteSpace.Pre or CssWhiteSpace.PreWrap;
         var preserveNewlines = mode is CssWhiteSpace.Pre or CssWhiteSpace.PreWrap or CssWhiteSpace.PreLine;
-        var noWrap = mode is CssWhiteSpace.NoWrap or CssWhiteSpace.Pre;
         for (var i = 0; i < text.Length; i++)
         {
             var c = text[i];
@@ -312,13 +311,13 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
                 if (preserveSpaces)
                 {
                     var count = c == '\t' ? 8 - (_column % 8) : 1;
-                    output.Append(noWrap ? '\u00A0' : ' ', count);
+                    output.Append(' ', count); // Text that does not wrap has TextStyle.NoWrap: its spaces stay spaces.
                     _column += count;
                     _afterSpace = false;
                 }
                 else if (!_afterSpace)
                 {
-                    output.Append(noWrap ? '\u00A0' : ' ');
+                    output.Append(' ');
                     _afterSpace = true;
                     _column++;
                 }
