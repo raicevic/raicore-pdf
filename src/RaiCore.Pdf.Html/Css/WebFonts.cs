@@ -166,12 +166,12 @@ internal sealed class WebFonts
         }
 
         var url = source.Url!;
-        var subject = Resources.Subject(url);
+        var subject = ResourceLoaders.Subject(url);
         var uri = url.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ? null
             : Uri.TryCreate(url, UriKind.Absolute, out var absolute) ? absolute
             : face.BaseUri is not null && Uri.TryCreate(face.BaseUri, url, out var relative) ? relative
             : null;
-        var data = Resources.Fetch(_loader, url, uri, "font", out var fetchFailure);
+        var data = ResourceLoaders.Fetch(_loader, url, uri, ResourceKind.Font, out var fetchFailure);
         if (data is null)
         {
             failure = fetchFailure is { } f ? (f.Kind, subject, f.Message) : null;
@@ -203,7 +203,7 @@ internal sealed class WebFonts
             failure = (HtmlDiagnosticKind.ResourceInvalid, subject, $"The font {subject} cannot be used: {ex.Message}");
             return null;
         }
-        catch (ResourceLimitExceededException ex) when (Resources.IsPerResource(ex))
+        catch (ResourceLimitExceededException ex) when (ResourceLoaders.IsPerResource(ex))
         {
             // A WOFF or WOFF2 file that decompresses to too much.
             failure = (HtmlDiagnosticKind.ResourceTooLarge, subject, $"The font {subject} is too large: {ex.Message}");

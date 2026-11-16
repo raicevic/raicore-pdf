@@ -1,5 +1,6 @@
 using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Layout;
+using RaiCore.Pdf.Layout.Text;
 
 namespace RaiCore.Pdf.Tests.Html;
 
@@ -95,8 +96,39 @@ public class HtmlHyphenationTests
         Assert.Equal(0, HyphenatedLines("hyphens: auto", string.Empty)); // unknown language
     }
 
-    private static List<ParagraphSpan> Spans(string html) =>
-        [.. Flatten(HtmlToPdf.CreateFlowDocument(html).Blocks).OfType<ParagraphBlock>().SelectMany(p => p.Paragraph.Spans)];
+    [Fact]
+    public void The_options_hyphenators_are_used_by_language()
+    {
+        var swedish = Hyphenator.FromPatterns(["1t"]);
+        var german = Hyphenator.FromPatterns(["1s"]);
+        var options = new HtmlConverterOptions { Hyphenators = new Dictionary<string, Hyphenator> { ["sv"] = swedish, ["DE"] = german } };
+        var html = "<p lang='sv-SE'>a</p><p lang='de-CH'>b</p><p lang='en'>c</p><p>d</p>";
+        var spans = Spans(html, options);
+
+        Assert.Same(swedish, Span(spans, "a").Style.Hyphenator);
+        Assert.Same(german, Span(spans, "b").Style.Hyphenator);
+        Assert.Same(Hyphenator.ForLanguage("en"), Span(spans, "c").Style.Hyphenator);
+        Assert.Null(Span(spans, "d").Style.Hyphenator);
+        Assert.All(Spans(html), span => Assert.Null(span.Style.Hyphenator)); // Without them, the layout picks the bundled patterns.
+    }
+
+    [Fact]
+    public void The_options_hyphenators_hyphenate_a_language_without_bundled_patterns()
+    {
+        Assert.Null(Hyphenator.ForLanguage("sv"));
+        var options = new HtmlConverterOptions
+        {
+            Hyphenators = new Dictionary<string, Hyphenator> { ["sv"] = Hyphenator.FromPatterns(["1t"], minBefore: 2, minAfter: 2) },
+        };
+        string FirstLine(HtmlConverterOptions? options) => string.Concat(Flatten(HtmlToPdf.CreateFlowDocument("<p lang='sv' style='hyphens: auto'>xxxxxtxxxxx</p>", options).Blocks)
+            .OfType<ParagraphBlock>().Single().Paragraph.Layout(50).Lines[0].Fragments.Select(f => f.Run.Text));
+
+        Assert.Equal("xxxxx\u2010", FirstLine(options));
+        Assert.Equal("xxxxxtxxxxx", FirstLine(null)); // Too long for the line, but nowhere to hyphenate it.
+    }
+
+    private static List<ParagraphSpan> Spans(string html, HtmlConverterOptions? options = null) =>
+        [.. Flatten(HtmlToPdf.CreateFlowDocument(html, options).Blocks).OfType<ParagraphBlock>().SelectMany(p => p.Paragraph.Spans)];
 
     private static ParagraphSpan Span(List<ParagraphSpan> spans, string text) => spans.First(s => s.Text.Trim() == text);
 

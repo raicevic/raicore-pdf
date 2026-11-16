@@ -1,10 +1,8 @@
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
+using RaiCore.Pdf.Layout.Text;
 
 namespace RaiCore.Pdf.Html;
-
-/// <summary>Loads a resource (image or stylesheet) referenced by the document. Returns <c>null</c> if it cannot be loaded.</summary>
-public delegate byte[]? ResourceLoader(Uri uri);
 
 /// <summary>Options for <see cref="HtmlToPdf"/>.</summary>
 /// <remarks>
@@ -35,7 +33,24 @@ public sealed class HtmlConverterOptions
     /// Loads images and stylesheets. The default allows only <c>data:</c> URIs and <c>file:</c> URIs; network access
     /// is off unless you supply a loader that performs it.
     /// </summary>
-    public ResourceLoader ResourceLoader { get; init; } = Resources.Default;
+    public ResourceLoader ResourceLoader { get; init; } = ResourceLoaders.Default;
+
+    /// <summary>
+    /// Hyphenation patterns for <c>hyphens: auto</c> by language, used in place of the bundled ones (see
+    /// <see cref="Hyphenator.BundledLanguages"/>) or for languages without them. The keys are BCP 47 tags matched like
+    /// <c>lang</c>: an entry for <c>de</c> is used for <c>de-CH</c> too (see
+    /// <see cref="Hyphenator.ForLanguage(string?, IReadOnlyDictionary{string, Hyphenator}?)"/>). Defaults to <c>null</c>:
+    /// the bundled patterns only.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var options = new HtmlConverterOptions
+    /// {
+    ///     Hyphenators = new Dictionary&lt;string, Hyphenator&gt; { ["sv"] = Hyphenator.FromPatterns(File.ReadLines("hyph-sv.pat.txt")) },
+    /// };
+    /// </code>
+    /// </example>
+    public IReadOnlyDictionary<string, Hyphenator>? Hyphenators { get; init; }
 
     /// <summary>Extra CSS applied after the document's own styles (as if it were the last stylesheet).</summary>
     public string? UserStyleSheet { get; init; }
@@ -134,143 +149,4 @@ public sealed class HtmlConverterOptions
     /// </code>
     /// </example>
     public Action<HtmlDiagnostic>? Diagnostics { get; init; }
-}
-
-/// <summary>Built-in resource loading.</summary>
-public static class Resources
-{
-    /// <summary>
-    /// Loads <c>data:</c> and <c>file:</c> URIs; everything else returns <c>null</c>. Files larger than the
-    /// <see cref="ResourceLimits.MaxResourceBytes"/> in effect are not read.
-    /// </summary>
-    public static byte[]? Default(Uri uri)
-    {
-        ArgumentNullException.ThrowIfNull(uri);
-        if (uri.Scheme == "data")
-        {
-            return DecodeDataUri(uri.OriginalString);
-        }
-
-        if (uri.IsFile && File.Exists(uri.LocalPath))
-        {
-            return ReadFile(uri.LocalPath, ResourceLimits.Current.MaxResourceBytes);
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Reads a file, or returns <c>null</c> if it is larger than <paramref name="maxBytes"/>: also for files of unknown
-    /// length (devices and pipes), which are read only that far.
-    /// </summary>
-    private static byte[]? ReadFile(string path, long maxBytes)
-    {
-        using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        if (file.CanSeek && file.Length > maxBytes)
-        {
-            return null;
-        }
-
-        using var buffer = new MemoryStream();
-        var chunk = new byte[81920];
-        int read;
-        while ((read = file.Read(chunk, 0, chunk.Length)) > 0)
-        {
-            if (buffer.Length + read > maxBytes)
-            {
-                return null;
-            }
-
-            buffer.Write(chunk, 0, read);
-        }
-
-        return buffer.ToArray();
-    }
-
-    /// <summary>
-    /// Loads a resource referenced by <paramref name="reference"/> (a <c>data:</c> URI, or a URL that resolved to
-    /// <paramref name="uri"/>), and on failure says why, for diagnostics.
-    /// </summary>
-    /// <param name="loader">The resource loader.</param>
-    /// <param name="reference">The reference as written.</param>
-    /// <param name="uri">The resolved URL; <c>null</c> when it is relative and there is no base URI.</param>
-    /// <param name="what">What the resource is, for the message ("image", "style sheet", "font").</param>
-    /// <param name="failure">Why nothing was loaded, or <c>null</c>.</param>
-    internal static byte[]? Fetch(ResourceLoader loader, string reference, Uri? uri, string what, out (HtmlDiagnosticKind Kind, string Message)? failure)
-    {
-        failure = null;
-        byte[]? data;
-        var subject = Subject(reference);
-        if (reference.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
-        {
-            data = DecodeDataUri(reference);
-            if (data is null)
-            {
-                failure = (HtmlDiagnosticKind.ResourceNotLoaded, $"The data: URI of the {what} is malformed.");
-                return null;
-            }
-        }
-        else if (uri is null)
-        {
-            failure = (HtmlDiagnosticKind.ResourceNotLoaded,
-                $"The {what} {subject} is a relative URL and there is no base URI to resolve it against (HtmlConverterOptions.BaseUri).");
-            return null;
-        }
-        else
-        {
-            data = loader(uri);
-            ResourceLimits.Checkpoint(); // Loading may have taken a while.
-            if (data is null)
-            {
-                failure = (HtmlDiagnosticKind.ResourceNotLoaded,
-                    $"The {what} {subject} could not be loaded: the resource loader returned nothing (the default one loads only file: and data: URIs, and no files larger than ResourceLimits.MaxResourceBytes).");
-                return null;
-            }
-        }
-
-        var max = ResourceLimits.Current.MaxResourceBytes;
-        if (data.LongLength > max)
-        {
-            failure = (HtmlDiagnosticKind.ResourceTooLarge, $"The {what} {subject} is {data.LongLength} bytes, more than ResourceLimits.MaxResourceBytes ({max}).");
-            return null;
-        }
-
-        return data;
-    }
-
-    /// <summary>A reference as a diagnostic's subject: a long <c>data:</c> URI is cut after its media type and a few characters.</summary>
-    internal static string Subject(string reference) =>
-        reference.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && reference.Length > 48 ? string.Concat(reference.AsSpan(0, 48), "\u2026") : reference;
-
-    /// <summary>
-    /// Whether the exception is about a single resource being too large (it is then skipped, like a broken one) rather
-    /// than about the whole conversion (which then fails).
-    /// </summary>
-    internal static bool IsPerResource(ResourceLimitExceededException exception) =>
-        exception.LimitName is nameof(ResourceLimits.MaxImagePixels) or nameof(ResourceLimits.MaxResourceBytes)
-            or nameof(ResourceLimits.MaxFontBytes) or nameof(ResourceLimits.MaxDecompressedBytes);
-
-    /// <summary>Decodes a <c>data:[mediatype][;base64],payload</c> URI.</summary>
-    public static byte[]? DecodeDataUri(string uri)
-    {
-        ArgumentNullException.ThrowIfNull(uri);
-        var comma = uri.IndexOf(',', StringComparison.Ordinal);
-        if (!uri.StartsWith("data:", StringComparison.OrdinalIgnoreCase) || comma < 0)
-        {
-            return null;
-        }
-
-        var header = uri[5..comma];
-        var payload = uri[(comma + 1)..];
-        try
-        {
-            return header.EndsWith(";base64", StringComparison.OrdinalIgnoreCase)
-                ? Convert.FromBase64String(Uri.UnescapeDataString(payload).Replace(" ", string.Empty, StringComparison.Ordinal))
-                : System.Text.Encoding.UTF8.GetBytes(Uri.UnescapeDataString(payload));
-        }
-        catch (FormatException)
-        {
-            return null;
-        }
-    }
 }

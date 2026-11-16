@@ -251,8 +251,21 @@ readers use) from `<html lang>` or `xml:lang`, and the author, subject, keywords
 var pdf = HtmlToPdf.Convert(html, new HtmlConverterOptions { Title = "Invoice 2026-0042", Language = "da-DK" });
 ```
 
-Network access is off unless you pass a `ResourceLoader`. `HtmlToPdf.CreateFlowDocument` returns the laid-out document
-before rendering, e.g. to set your own page decorator.
+Network access is off unless you pass a `ResourceLoader`. It gets a `ResourceRequest` with the resolved `Uri`, the
+`Kind` of resource (style sheet, image or font) and a `CancellationToken` that is canceled with the conversion:
+
+```csharp
+var http = new HttpClient();
+var options = new HtmlConverterOptions
+{
+    BaseUri = new Uri("https://example.com/invoices/"),
+    ResourceLoader = request => request.Uri.Scheme is "https"
+        ? http.GetByteArrayAsync(request.Uri, request.CancellationToken).GetAwaiter().GetResult()
+        : ResourceLoaders.Default(request),
+};
+```
+
+`HtmlToPdf.CreateFlowDocument` returns the laid-out document before rendering, e.g. to set your own page decorator.
 
 `HtmlConverterOptions.Diagnostics` tells you why the output may differ from the browser's: images, style sheets and
 fonts that did not load (and why: nothing loaded, unreadable, too large, not embeddable), and CSS the converter does
@@ -663,13 +676,17 @@ Supported: left/right/center/justify, `normal`/multiple/absolute line heights wi
 first-line indent, hard line breaks, soft hyphens, automatic hyphenation and optional breaking of over-long words.
 
 Hyphenation uses Liang's algorithm (as TeX does) with bundled patterns for a dozen languages; others can be loaded
-from TeX pattern files:
+from TeX pattern files and set on the style (for HTML, in `HtmlConverterOptions.Hyphenators`):
 
 ```csharp
 var english = body with { Language = "en-US", Hyphens = Hyphens.Auto };
 new Paragraph(english) { Alignment = TextAlignment.Justify }.Add("Justified text with hyphenation.").Layout(120);
 
-Hyphenator.Register("sv", Hyphenator.FromPatterns(File.ReadLines("hyph-sv.pat.txt"), minBefore: 2, minAfter: 2));
+var swedish = body with
+{
+    Hyphens = Hyphens.Auto,
+    Hyphenator = Hyphenator.FromPatterns(File.ReadLines("hyph-sv.pat.txt"), minBefore: 2, minAfter: 2),
+};
 ```
 
 ### Multi-page documents
@@ -722,7 +739,7 @@ var pdfs = await Task.WhenAll(invoices.Select(i => Task.Run(() => HtmlToPdf.Conv
 | `PdfFont` | Immutable; one instance can be used by any number of documents and threads. It holds only the font data (bytes, parsed tables, character map, HarfBuzz face, each created once); the glyphs a document uses, its subset and its PDF objects are kept per document. |
 | `FontCollection` | Thread-safe for adding and finding fonts. Each face is loaded once, on first use, and the same `PdfFont` is returned from then on; the faces of a `.ttc` share one copy of the file. |
 | `BundledFonts` | The Liberation fonts are read and parsed once per process and shared by every collection, so a collection per document is cheap. |
-| `PdfImage`, `Hyphenator`, `TextShaper` | Thread-safe; bundled hyphenation patterns load once per process. `Hyphenator.Register` may be called at any time. |
+| `PdfImage`, `Hyphenator`, `TextShaper` | Thread-safe; bundled hyphenation patterns load once per process. There is no global registry to change. |
 | `HtmlToPdf`, `RazorToPdf`, `RazorPdfRenderer` | Thread-safe; each conversion has its own DOM, layout and document. `HtmlConverterOptions` can be shared (its `ResourceLoader`, and a renderer's services, are then called from several threads). Fonts from `@font-face` are loaded per conversion. |
 | `PdfDocument`, `PdfPage`, `PdfCanvas`, `FlowDocument`, `Paragraph` | Not thread-safe: build and save each document on one thread at a time (different documents in parallel). |
 | `PdfReader` | Not thread-safe, and documents importing its pages read it when they are saved: open a reader per thread. |

@@ -180,6 +180,11 @@ content (see the note for #62 below).
   - Move the static `Resources.Default` and `Resources.DecodeDataUri` onto a `ResourceLoaders` class. That also
     removes the clash with `.resx` classes from section 2.
   - An async loader can then be added later without breaking anyone.
+*Done in part 6* (the next bullet too). `ResourceKind` is `StyleSheet`, `Image` or `Font`, and the token is the
+conversion's own, also canceled by `ResourceLimits.Timeout`. On the layout side, `TextStyle.Hyphenator` holds a
+style's patterns (it works without a `Language`), and `Hyphenator.ForLanguage(language, hyphenators)` does the
+`lang`-style lookup for both.
+
 - **`Hyphenator.Register`** changes a process-wide registry. That is the only global, mutable state in the public API,
   and it lets two conversions in the same process influence each other. **Recommendation:**
   - Replace it with an `IReadOnlyDictionary<string, Hyphenator>? Hyphenators` setting on `HtmlConverterOptions`, with

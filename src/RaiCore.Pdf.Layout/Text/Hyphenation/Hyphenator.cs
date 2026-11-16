@@ -7,8 +7,8 @@ namespace RaiCore.Pdf.Layout.Text;
 
 /// <summary>
 /// Finds where words may be hyphenated, with Frank Liang's algorithm (the one TeX uses) and a language's hyphenation
-/// patterns. Patterns for several languages are bundled (see <see cref="BundledLanguages"/>); others can be added with
-/// <see cref="Register"/>.
+/// patterns. Patterns for several languages are bundled (see <see cref="BundledLanguages"/>); others can be created with
+/// <see cref="FromPatterns"/> and set on <see cref="TextStyle.Hyphenator"/> (or in the HTML converter's options).
 /// </summary>
 /// <remarks>
 /// Each pattern is a fragment of a word with digits between its letters, such as <c>.ach4</c> or <c>a1b</c> (a dot
@@ -17,8 +17,8 @@ namespace RaiCore.Pdf.Layout.Text;
 /// <c>ta-ble</c>.
 /// <para>
 /// Thread-safe: a hyphenator can be used from any number of threads at once. Bundled patterns are loaded once per
-/// process, the first time a language needs them, and shared by all documents. <see cref="Register"/> may be called
-/// at any time; lookups that start after it returns see the registration.
+/// process, the first time a language needs them, and shared by all documents. There is no global registry: what one
+/// document uses never changes another.
 /// </para>
 /// </remarks>
 public sealed class Hyphenator
@@ -41,14 +41,7 @@ public sealed class Hyphenator
     };
 
     private static readonly ConcurrentDictionary<string, Lazy<Hyphenator>> Loaded = new(StringComparer.Ordinal);
-    private static readonly ConcurrentDictionary<string, Hyphenator> Registered = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, Hyphenator?> Resolved = new(StringComparer.Ordinal);
-
-    /// <summary>Guards <see cref="Registered"/> changes against a <see cref="ForLanguage"/> caching what it resolved before them.</summary>
-    private static readonly Lock RegistrationLock = new();
-
-    /// <summary>Counts <see cref="Register"/> calls, so a resolution that raced with one is not cached.</summary>
-    private static int _registrations;
 
     private readonly PatternTable _patterns;
     private readonly Dictionary<string, int[]> _exceptions;
@@ -88,17 +81,31 @@ public sealed class Hyphenator
     }
 
     /// <summary>
-    /// The hyphenator for a language (a BCP 47 tag such as <c>en-US</c>, <c>de-CH</c> or <c>nb</c>, as in HTML
-    /// <c>lang</c>), or <c>null</c> when there are no patterns for it. Subtags are dropped from the end until a
-    /// registered or bundled language matches: <c>de-CH</c> uses <c>de</c>; <c>en</c> is <c>en-us</c>, and
-    /// <c>en-AU</c>, <c>en-IE</c>, <c>en-IN</c>, <c>en-NZ</c> and <c>en-ZA</c> are <c>en-gb</c>. Bundled patterns
-    /// are loaded the first time they are needed.
+    /// The bundled hyphenator for a language (a BCP 47 tag such as <c>en-US</c>, <c>de-CH</c> or <c>nb</c>, as in HTML
+    /// <c>lang</c>), or <c>null</c> when there are no patterns for it. Subtags are dropped from the end until a bundled
+    /// language matches: <c>de-CH</c> uses <c>de</c>; <c>en</c> is <c>en-us</c>, and <c>en-AU</c>, <c>en-IE</c>,
+    /// <c>en-IN</c>, <c>en-NZ</c> and <c>en-ZA</c> are <c>en-gb</c>. Bundled patterns are loaded the first time they
+    /// are needed.
     /// </summary>
-    public static Hyphenator? ForLanguage(string? language)
+    public static Hyphenator? ForLanguage(string? language) => ForLanguage(language, null);
+
+    /// <summary>
+    /// The hyphenator for a language from <paramref name="hyphenators"/>, or else the bundled one (see
+    /// <see cref="ForLanguage(string?)"/>). Subtags are dropped from the end until either has the language, and at each
+    /// step <paramref name="hyphenators"/> comes first: with an entry for <c>de</c>, <c>de-CH</c> uses it rather than
+    /// the bundled <c>de</c> patterns. The dictionary's keys are BCP 47 tags, matched ignoring case and with <c>_</c>
+    /// read as <c>-</c>.
+    /// </summary>
+    public static Hyphenator? ForLanguage(string? language, IReadOnlyDictionary<string, Hyphenator>? hyphenators)
     {
         if (string.IsNullOrWhiteSpace(language))
         {
             return null;
+        }
+
+        if (hyphenators is { Count: > 0 })
+        {
+            return Resolve(language, hyphenators);
         }
 
         if (Resolved.TryGetValue(language, out var cached))
@@ -106,27 +113,24 @@ public sealed class Hyphenator
             return cached;
         }
 
-        var registrations = Volatile.Read(ref _registrations);
-        var resolved = Resolve(language);
-        lock (RegistrationLock)
-        {
-            // A registration made while this one was resolving may change the answer; then leave it uncached.
-            if (registrations == _registrations)
-            {
-                Resolved.TryAdd(language, resolved);
-            }
-        }
-
+        var resolved = Resolve(language, null);
+        Resolved.TryAdd(language, resolved);
         return resolved;
     }
 
-    private static Hyphenator? Resolve(string tag)
+    private static Hyphenator? Resolve(string tag, IReadOnlyDictionary<string, Hyphenator>? hyphenators)
     {
-        for (var candidate = tag.Trim().Replace('_', '-').ToLowerInvariant(); candidate.Length > 0; candidate = candidate[..Math.Max(0, candidate.LastIndexOf('-'))])
+        for (var candidate = Normalize(tag); candidate.Length > 0; candidate = candidate[..Math.Max(0, candidate.LastIndexOf('-'))])
         {
-            if (Registered.TryGetValue(candidate, out var registered))
+            if (hyphenators is not null)
             {
-                return registered;
+                foreach (var (key, value) in hyphenators)
+                {
+                    if (value is not null && Normalize(key) == candidate)
+                    {
+                        return value;
+                    }
+                }
             }
 
             var bundled = Aliases.GetValueOrDefault(candidate, candidate);
@@ -139,29 +143,7 @@ public sealed class Hyphenator
         return null;
     }
 
-    /// <summary>
-    /// Makes <paramref name="hyphenator"/> the one used for <paramref name="language"/> (and its subtags, unless they
-    /// have their own), in place of the bundled patterns if there are any; <c>null</c> removes a registration.
-    /// </summary>
-    public static void Register(string language, Hyphenator? hyphenator)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(language);
-        var tag = language.Trim().Replace('_', '-').ToLowerInvariant();
-        lock (RegistrationLock)
-        {
-            if (hyphenator is null)
-            {
-                Registered.TryRemove(tag, out _);
-            }
-            else
-            {
-                Registered[tag] = hyphenator;
-            }
-
-            _registrations++;
-            Resolved.Clear();
-        }
-    }
+    private static string Normalize(string tag) => tag.Trim().Replace('_', '-').ToLowerInvariant();
 
     /// <summary>
     /// The positions in <paramref name="word"/> where it may be hyphenated: a position <c>i</c> means a hyphen between

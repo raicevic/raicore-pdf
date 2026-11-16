@@ -198,6 +198,9 @@ change at any time, and this section lists what the packages can do so far.
   `PdfReader.Trailer`/`Catalog`/`Resolve`, `PdfReaderPage.Dictionary`/`Resources`/`GetContent`) and text shaping
   (`RCPDF002`: `TextShaper`, `ShapedText`, `ShapedRun`, `ShapingOptions.Features`, `LineBreaker`,
   `PdfCanvas.DrawGlyphs`, `PositionedGlyph`) need an opt-in and may change after 1.0.
+- API review (#60), breaking: `Hyphenator.Register` and its process-wide registry are gone. `TextStyle.Hyphenator`
+  sets the patterns for a style, and `Hyphenator.ForLanguage(language, hyphenators)` picks from your own by language
+  before the bundled ones.
 - The package includes the Unicode License v3 notice (`licenses/unicode.txt`) for its bidi and line break tables,
   generated from the Unicode Character Database, and its license expression names `Unicode-3.0`. All third-party
   material is listed in `THIRD-PARTY-NOTICES.md`.
@@ -350,6 +353,12 @@ change at any time, and this section lists what the packages can do so far.
   `FlowDocument.RenderTo` flushes each page as soon as it is drawn into a document written page by page.
 
 ### RaiCore.Pdf.Html
+- API review (#60), breaking: a `ResourceLoader` takes a `ResourceRequest` (`Uri`, `Kind`: style sheet, image or
+  font, and a `CancellationToken` canceled with the conversion) instead of a `Uri`, so it can grow without breaking
+  loaders again. The built-in loader and `DecodeDataUri` moved from `Resources` to `ResourceLoaders`. When migrating
+  a lambda such as `uri => Load(uri.ToString())`, use `request.Uri`: a record's `ToString()` still compiles.
+- `HtmlConverterOptions.Hyphenators`: hyphenation patterns by language (matched like `lang`, so `de` covers `de-CH`),
+  in place of the removed global `Hyphenator.Register`.
 - `rgb()`/`rgba()` colors whose alpha has a unit (`rgb(1 2 3 / 4px)`) no longer make the conversion throw
   (AngleSharp.Css throws on them while parsing; fuzzing found it): the declaration is dropped, as CSS requires.
 - HTML and CSS to PDF via AngleSharp: the cascade, inheritance, `!important`, custom properties and print media

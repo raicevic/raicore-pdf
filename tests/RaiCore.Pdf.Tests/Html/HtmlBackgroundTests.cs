@@ -154,8 +154,9 @@ public class HtmlBackgroundTests
         var options = new HtmlConverterOptions
         {
             BaseUri = new Uri("https://example.com/site/"),
-            ResourceLoader = uri =>
+            ResourceLoader = request =>
             {
+                var uri = request.Uri;
                 requested.Add(uri);
                 return uri.AbsolutePath.EndsWith(".css", StringComparison.Ordinal) ? "div { background: url(../img/bg.png) }"u8.ToArray() : null;
             },

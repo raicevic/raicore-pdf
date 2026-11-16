@@ -237,13 +237,38 @@ public class HtmlConversionTests
         var options = new HtmlConverterOptions
         {
             BaseUri = new Uri("https://example.com/"),
-            ResourceLoader = uri => css.TryGetValue(uri.ToString(), out var text) ? System.Text.Encoding.UTF8.GetBytes(text) : null,
+            ResourceLoader = request => css.TryGetValue(request.Uri.ToString(), out var text) ? System.Text.Encoding.UTF8.GetBytes(text) : null,
             UserStyleSheet = ".override { color: #0000ff }",
         };
         var blocks = HtmlToPdf.CreateFlowDocument("<link rel='stylesheet' href='site.css'><p>red</p><p class='override'>blue</p>", options).Blocks;
 
         Assert.Equal(PdfColor.FromRgb(255, 0, 0), Color(blocks, "red"));
         Assert.Equal(PdfColor.FromRgb(0, 0, 255), Color(blocks, "blue"));
+    }
+
+    [Fact]
+    public void The_loader_is_told_what_each_resource_is_for()
+    {
+        var requests = new List<ResourceRequest>();
+        var options = new HtmlConverterOptions
+        {
+            BaseUri = new Uri("https://example.com/"),
+            ResourceLoader = request =>
+            {
+                requests.Add(request);
+                return request.Uri.AbsolutePath == "/site.css"
+                    ? "@font-face { font-family: Brand; src: url(brand.ttf) } p { font-family: Brand } div { background-image: url(bg.png); height: 10px }"u8.ToArray()
+                    : null;
+            },
+        };
+
+        HtmlToPdf.ConvertToBytes("<link rel='stylesheet' href='site.css'><p>Text</p><img src='photo.png'><div></div>", options);
+
+        Assert.Equal(ResourceKind.StyleSheet, Assert.Single(requests, r => r.Uri.AbsolutePath == "/site.css").Kind);
+        Assert.Equal(ResourceKind.Font, Assert.Single(requests, r => r.Uri.AbsolutePath == "/brand.ttf").Kind);
+        Assert.Equal(ResourceKind.Image, Assert.Single(requests, r => r.Uri.AbsolutePath == "/photo.png").Kind);
+        Assert.Equal(ResourceKind.Image, Assert.Single(requests, r => r.Uri.AbsolutePath == "/bg.png").Kind);
+        Assert.All(requests, r => Assert.True(r.CancellationToken.CanBeCanceled)); // Every conversion has a deadline.
     }
 
     [Fact]
@@ -308,7 +333,7 @@ public class HtmlConversionTests
         var options = new HtmlConverterOptions
         {
             BaseUri = new Uri("https://example.com/"),
-            ResourceLoader = uri => uri.AbsolutePath == "/linked.css" ? System.Text.Encoding.UTF8.GetBytes($".linked {{ color: red; color: {Bad} }}") : null,
+            ResourceLoader = request => request.Uri.AbsolutePath == "/linked.css" ? System.Text.Encoding.UTF8.GetBytes($".linked {{ color: red; color: {Bad} }}") : null,
             UserStyleSheet = $".user {{ color: red; color: {Bad} }}",
             Diagnostics = diagnostics.Add,
         };

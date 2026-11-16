@@ -34,6 +34,7 @@ internal sealed partial class BoxBuilder
     private readonly Dictionary<string, IReadOnlyList<PdfFont>> _fontLists = new(StringComparer.Ordinal);
     private readonly Dictionary<ComputedStyle, TextStyle> _textStyles = [];
     private readonly Dictionary<string, PdfImage?> _images = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Hyphenator?> _hyphenators = new(StringComparer.Ordinal);
 
     /// <summary>Why each image in <see cref="_images"/> that is <c>null</c> failed, to report it again where it is used again.</summary>
     private readonly Dictionary<string, (HtmlDiagnosticKind Kind, string Message)> _imageFailures = new(StringComparer.Ordinal);
@@ -230,6 +231,26 @@ internal sealed partial class BoxBuilder
         return ComputedStyle.From(clean.DefaultView!.GetComputedStyle(clean.DocumentElement), _rootFontSize, _viewport);
     }
 
+    /// <summary>
+    /// The options' hyphenator for a language, or <c>null</c> for the layout's bundled patterns (also when the options
+    /// have none for it).
+    /// </summary>
+    private Hyphenator? HyphenatorFor(string? language)
+    {
+        if (_options.Hyphenators is not { Count: > 0 } hyphenators || string.IsNullOrWhiteSpace(language))
+        {
+            return null;
+        }
+
+        if (!_hyphenators.TryGetValue(language, out var hyphenator))
+        {
+            hyphenator = Hyphenator.ForLanguage(language, hyphenators);
+            _hyphenators[language] = hyphenator;
+        }
+
+        return hyphenator;
+    }
+
     public TextStyle TextStyleFor(ComputedStyle style)
     {
         if (_textStyles.TryGetValue(style, out var cached))
@@ -245,6 +266,7 @@ internal sealed partial class BoxBuilder
             WordSpacing = style.WordSpacing,
             Shaping = new ShapingOptions { Features = ParseFeatures(style.FontFeatures), Language = style.Language },
             Language = style.Language,
+            Hyphenator = HyphenatorFor(style.Language),
 
             // Text that does not wrap breaks nowhere but at hard breaks: not at spaces, hyphens or soft hyphens either.
             NoWrap = style.WhiteSpace is CssWhiteSpace.NoWrap or CssWhiteSpace.Pre,
@@ -791,7 +813,7 @@ internal sealed partial class BoxBuilder
         {
             if (cached is null && _imageFailures.TryGetValue(src, out var known))
             {
-                Diagnostics.Report(known.Kind, HtmlDiagnosticSeverity.Warning, Resources.Subject(src), known.Message, element);
+                Diagnostics.Report(known.Kind, HtmlDiagnosticSeverity.Warning, ResourceLoaders.Subject(src), known.Message, element);
             }
 
             return cached;
@@ -801,25 +823,25 @@ internal sealed partial class BoxBuilder
         (HtmlDiagnosticKind Kind, string Message)? failure;
         try
         {
-            var data = Resources.Fetch(_options.ResourceLoader, src, src.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ? null : ResolveUri(src), "image", out failure);
+            var data = ResourceLoaders.Fetch(_options.ResourceLoader, src, src.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ? null : ResolveUri(src), ResourceKind.Image, out failure);
             image = data is null ? null : PdfImage.Load(data);
         }
         catch (ImageFormatException ex)
         {
             // A broken image is skipped (its alt text is shown), as browsers do.
-            failure = (HtmlDiagnosticKind.ResourceInvalid, $"The image {Resources.Subject(src)} cannot be read: {ex.Message}");
+            failure = (HtmlDiagnosticKind.ResourceInvalid, $"The image {ResourceLoaders.Subject(src)} cannot be read: {ex.Message}");
         }
-        catch (ResourceLimitExceededException ex) when (Resources.IsPerResource(ex))
+        catch (ResourceLimitExceededException ex) when (ResourceLoaders.IsPerResource(ex))
         {
             // So is one that is too large (a decompression bomb).
-            failure = (HtmlDiagnosticKind.ResourceTooLarge, $"The image {Resources.Subject(src)} is too large: {ex.Message}");
+            failure = (HtmlDiagnosticKind.ResourceTooLarge, $"The image {ResourceLoaders.Subject(src)} is too large: {ex.Message}");
         }
 
         _images[src] = image;
         if (failure is { } failed)
         {
             _imageFailures[src] = failed;
-            Diagnostics.Report(failed.Kind, HtmlDiagnosticSeverity.Warning, Resources.Subject(src), failed.Message, element);
+            Diagnostics.Report(failed.Kind, HtmlDiagnosticSeverity.Warning, ResourceLoaders.Subject(src), failed.Message, element);
         }
 
         return image;

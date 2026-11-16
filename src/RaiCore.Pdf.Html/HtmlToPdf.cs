@@ -408,11 +408,11 @@ public static partial class HtmlToPdf
             {
                 var uri = href.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ? null : ResolveUri(options.BaseUri, href);
                 sheetUri = uri ?? sheetUri;
-                var data = Resources.Fetch(options.ResourceLoader, href, uri, "style sheet", out var failure);
+                var data = ResourceLoaders.Fetch(options.ResourceLoader, href, uri, ResourceKind.StyleSheet, out var failure);
                 css = data is null ? null : Encoding.UTF8.GetString(data);
                 if (failure is { } failed)
                 {
-                    diagnostics.Report(failed.Kind, HtmlDiagnosticSeverity.Warning, Resources.Subject(href), failed.Message, link);
+                    diagnostics.Report(failed.Kind, HtmlDiagnosticSeverity.Warning, ResourceLoaders.Subject(href), failed.Message, link);
                 }
             }
 

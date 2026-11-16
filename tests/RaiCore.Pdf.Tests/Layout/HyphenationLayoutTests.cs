@@ -1,5 +1,6 @@
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
+using RaiCore.Pdf.Layout.Text;
 
 namespace RaiCore.Pdf.Tests.Layout;
 
@@ -34,6 +35,19 @@ public class HyphenationLayoutTests
         Assert.Equal("The hyphen\u2010", string.Concat(layout.Lines[0].Fragments.Select(f => f.Run.Text)));
         Assert.Equal(Width("The hyphen") + HyphenWidth, layout.Lines[0].Width, 3);
         Assert.Equal("ation", string.Concat(layout.Lines[1].Fragments.Select(f => f.Run.Text)));
+    }
+
+    [Fact]
+    public void A_styles_hyphenator_replaces_the_bundled_patterns()
+    {
+        // Breaking before every t: "hyphena-tion", where the bundled English patterns give "hy-phen-ation".
+        var custom = Hyphenator.FromPatterns(["1t"], minBefore: 2, minAfter: 2);
+        var width = Width("The hyphena\u2010") + 1;
+
+        Assert.Equal("The hyphena".Length, new Paragraph(Auto with { Hyphenator = custom }).Add(Text).Layout(width).Lines[0].End);
+        Assert.Equal("The hyphena".Length, new Paragraph(Body with { Hyphens = Hyphens.Auto, Hyphenator = custom }).Add(Text).Layout(width).Lines[0].End); // No language needed.
+        Assert.Equal("The hyphen".Length, new Paragraph(Auto).Add(Text).Layout(width).Lines[0].End);
+        Assert.Equal("The ".Length, new Paragraph(Auto with { Hyphens = Hyphens.Manual, Hyphenator = custom }).Add(Text).Layout(width).Lines[0].End);
     }
 
     [Fact]

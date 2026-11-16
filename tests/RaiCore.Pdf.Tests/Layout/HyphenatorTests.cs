@@ -123,24 +123,29 @@ public class HyphenatorTests
     public void Languages_without_patterns_have_no_hyphenator(string? tag) => Assert.Null(Hyphenator.ForLanguage(tag));
 
     [Fact]
-    public void Registered_hyphenators_take_precedence_and_can_be_removed()
+    public void Given_hyphenators_come_before_the_bundled_ones_at_each_subtag()
     {
         var custom = Hyphenator.FromPatterns(["1b"]);
-        try
-        {
-            Hyphenator.Register("x-test", custom);
-            Hyphenator.Register("en-x-custom", custom);
+        var german = Hyphenator.FromPatterns(["1c"]);
+        var given = new Dictionary<string, Hyphenator> { ["X-Test"] = custom, ["en_x_custom"] = custom, ["de"] = german };
 
-            Assert.Same(custom, Hyphenator.ForLanguage("x-test-region"));
-            Assert.Same(custom, Hyphenator.ForLanguage("en-X-Custom"));
-            Assert.Same(Hyphenator.ForLanguage("en-us"), Hyphenator.ForLanguage("en-x-other"));
-        }
-        finally
-        {
-            Hyphenator.Register("x-test", null);
-            Hyphenator.Register("en-x-custom", null);
-        }
+        Assert.Same(custom, Hyphenator.ForLanguage("x-test-region", given));
+        Assert.Same(custom, Hyphenator.ForLanguage("en-X-Custom", given));
+        Assert.Same(german, Hyphenator.ForLanguage("de-CH", given));
+        Assert.Same(Hyphenator.ForLanguage("en-us"), Hyphenator.ForLanguage("en-x-other", given));
+        Assert.Null(Hyphenator.ForLanguage("zh", given));
+        Assert.Null(Hyphenator.ForLanguage(" ", given));
+    }
 
+    [Fact]
+    public void Given_hyphenators_change_no_other_lookup()
+    {
+        var custom = Hyphenator.FromPatterns(["1b"]);
+        var bundled = Hyphenator.ForLanguage("de");
+
+        Assert.Same(custom, Hyphenator.ForLanguage("de", new Dictionary<string, Hyphenator> { ["de"] = custom }));
+        Assert.Same(bundled, Hyphenator.ForLanguage("de"));
+        Assert.Same(bundled, Hyphenator.ForLanguage("de", new Dictionary<string, Hyphenator>()));
         Assert.Null(Hyphenator.ForLanguage("x-test"));
     }
 

@@ -274,53 +274,6 @@ public class ConcurrencyTests
         }
     }
 
-    [Fact]
-    public async Task A_registration_racing_with_lookups_is_seen_by_the_lookups_after_it()
-    {
-        var hyphenator = Hyphenator.FromPatterns(["a1b"]);
-        for (var round = 0; round < 100; round++)
-        {
-            // Every lookup is of a new subtag of the language, so each one resolves (and caches) while the language is
-            // being registered; none may keep the answer from before the registration.
-            var tag = "x-thread-test-" + round.ToString(CultureInfo.InvariantCulture);
-            var registered = 0;
-            using var started = new CountdownEvent(3);
-            var lookups = Enumerable.Range(0, 3).Select(thread => Task.Run(
-                () =>
-                {
-                    var looked = new List<string>();
-                    for (var i = 0; Volatile.Read(ref registered) == 0 || i < 3; i++)
-                    {
-                        var subtag = FormattableString.Invariant($"{tag}-t{thread}v{i}");
-                        Hyphenator.ForLanguage(subtag);
-                        looked.Add(subtag);
-                        if (i == 0)
-                        {
-                            started.Signal();
-                        }
-                    }
-
-                    return looked;
-                },
-                Ct)).ToArray();
-
-            started.Wait(Ct);
-            Thread.SpinWait(round % 20 * 10);
-            Hyphenator.Register(tag, hyphenator);
-            Volatile.Write(ref registered, 1);
-            var subtags = (await Task.WhenAll(lookups)).SelectMany(l => l).ToList();
-
-            try
-            {
-                Assert.All(subtags, subtag => Assert.Same(hyphenator, Hyphenator.ForLanguage(subtag)));
-            }
-            finally
-            {
-                Hyphenator.Register(tag, null);
-            }
-        }
-    }
-
     /// <summary>A collection shared by all conversions: the bundled fonts plus fonts for Arabic and Japanese.</summary>
     private static FontCollection SharedFonts() => BundledFonts.CreateCollection()
         .AddFile(Fixtures.Path("NotoSansArabic-Subset.ttf"))
