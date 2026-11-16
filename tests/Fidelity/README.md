@@ -13,6 +13,8 @@ print-to-PDF, scores the differences and uploads a report. It runs nightly, on d
     Chrome takes from the system would measure font differences instead of layout.
   - Set the page size and margins with `@page`.
   - No scripts and no network resources.
+- `Corpus/shared/`: files several documents use, such as Bootstrap's CSS. A folder without `index.html` is not a
+  document.
 - `Render/`: a console app that converts every corpus document with RaiCore.Pdf. Next to each PDF it writes what
   the converter reported (`<name>.diagnostics.txt`).
 - `fidelity.py`: renders the Chrome references and compares them with RaiCore.Pdf's output.
@@ -61,12 +63,32 @@ open /tmp/fidelity/report/index.html
 
 `--only <name> ...` limits each step to some documents.
 
+## Documents
+
+- **Our own** (made-up data): `budget-report`, `invoice`, `layout-showcase`, `letter`, `rtl-multilingual`.
+- **Public templates** (sources and licenses in `THIRD-PARTY-NOTICES.md`):
+  - invoices: `sparksuite-invoice`, `anvil-invoice`, `weasyprint-invoice`;
+  - e-mails: `postmark-invoice`, `postmark-receipt`, `postmark-welcome`, `leemunroe-email`, `cerberus-fluid`,
+    `cerberus-hybrid`, `cerberus-responsive`;
+  - print documents: `weasyprint-letter`, `weasyprint-report`, `weasyprint-ticket`;
+  - web pages: `bootstrap-pricing`, `bootstrap-checkout`, `bootstrap-blog`, `bootstrap-album`,
+    `startbootstrap-resume`.
+
+Chrome is the reference even where it does less than the CSS specifications. The WeasyPrint samples, for instance,
+use `string()` in page margin boxes, a cover image as a page background and `target-counter()`, which Chrome does not
+print. Their scores then count what RaiCore.Pdf adds as differences. The baseline still catches regressions.
+
 ## Adding a document
 
 - **Our own documents** must use made-up data only.
 - **Public templates** must have a license that allows including them, such as MIT, Apache-2.0 or CC0. Keep the
   license next to the document as `LICENSE` and list it in `THIRD-PARTY-NOTICES.md`.
-- **Adapting a template:** replace its fonts with the Liberation families, inline or drop its scripts, and download its
-  images into the folder.
+- **Adapting a template:**
+  - Replace its fonts with the Liberation families, and remove web fonts and `@font-face` rules.
+  - Remove its scripts. Download its images into the folder, or replace remote ones with a local placeholder of the
+    same size.
+  - Fill template placeholders (such as `{{name}}`) with made-up data.
+  - Add `@page { size: A4 }`, plus margins if the template has none.
+  - Start `index.html` with a comment naming the source, its commit or version, and these changes.
 
 A new document has no baseline until one is added, so the job reports it but cannot fail on it.
