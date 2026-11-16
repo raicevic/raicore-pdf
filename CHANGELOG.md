@@ -357,6 +357,10 @@ change at any time, and this section lists what the packages can do so far.
   font, and a `CancellationToken` canceled with the conversion) instead of a `Uri`, so it can grow without breaking
   loaders again. The built-in loader and `DecodeDataUri` moved from `Resources` to `ResourceLoaders`. When migrating
   a lambda such as `uri => Load(uri.ToString())`, use `request.Uri`: a record's `ToString()` still compiles.
+- `HtmlToPdf.ConvertToStreamAsync` writes the stream only asynchronously, from the caller's side, in chunks of up
+  to 64 KiB while the conversion runs on its own thread (it used to write synchronously from that thread, which
+  ASP.NET Core response bodies refuse). A slow stream makes the conversion wait; a failing one stops it and its
+  exception is thrown. New: `HtmlToPdf.ConvertToBytesAsync`.
 - `HtmlConverterOptions.Hyphenators`: hyphenation patterns by language (matched like `lang`, so `de` covers `de-CH`),
   in place of the removed global `Hyphenator.Register`.
 - `rgb()`/`rgba()` colors whose alpha has a unit (`rgb(1 2 3 / 4px)`) no longer make the conversion throw
@@ -526,6 +530,9 @@ change at any time, and this section lists what the packages can do so far.
   for components that inject services, and `AddRazorPdf()` to register it per scope.
 - The component's `<html lang>`, `<title>` and `<meta>` elements become the document metadata as in RaiCore.Pdf.Html;
   the creator is `RaiCore.Pdf.Razor` unless the options or a `<meta name="generator">` name another.
+- `RazorToPdf.ConvertToStreamAsync` and `RazorPdfRenderer.ConvertToStreamAsync` write the PDF page by page with
+  asynchronous writes only, e.g. to an ASP.NET Core response body. `RazorPdfRenderer.CreateFlowDocumentAsync` takes a
+  component `Type` too, and lays out on the conversion thread instead of blocking the caller's.
 
 ### Trimming, Native AOT and containers
 - CI publishes the package smoke test trimmed and with Native AOT on Windows, Linux and macOS, runs it

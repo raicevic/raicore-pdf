@@ -129,6 +129,45 @@ public sealed class RazorPdfRenderer
     }
 
     /// <summary>
+    /// Renders a component, converts the HTML to PDF and writes it to <paramref name="output"/> page by page, with
+    /// asynchronous writes only (see <see cref="HtmlToPdf.ConvertToStreamAsync(string, Stream, HtmlConverterOptions?, CancellationToken)"/>), e.g. to an ASP.NET Core response
+    /// body. The stream is left open.
+    /// </summary>
+    /// <typeparam name="TComponent">The component, typically a <c>.razor</c> file that renders a whole HTML document.</typeparam>
+    /// <param name="output">The stream to write the PDF to.</param>
+    /// <param name="parameters">Values for the component's <c>[Parameter]</c> properties, keyed by property name.</param>
+    /// <param name="options">HTML conversion options: fonts, default page setup, base URI for images and stylesheets.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    public Task ConvertToStreamAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TComponent>(
+        Stream output,
+        IReadOnlyDictionary<string, object?>? parameters = null,
+        HtmlConverterOptions? options = null,
+        CancellationToken cancellationToken = default)
+        where TComponent : IComponent =>
+        ConvertToStreamAsync(typeof(TComponent), output, parameters, options, cancellationToken);
+
+    /// <summary>
+    /// Renders a component, converts the HTML to PDF and writes it to <paramref name="output"/> page by page (see
+    /// <see cref="ConvertToStreamAsync{TComponent}"/>).
+    /// </summary>
+    /// <param name="componentType">A type that implements <see cref="IComponent"/>.</param>
+    /// <param name="output">The stream to write the PDF to.</param>
+    /// <param name="parameters">Values for the component's <c>[Parameter]</c> properties, keyed by property name.</param>
+    /// <param name="options">HTML conversion options: fonts, default page setup, base URI for images and stylesheets.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    public async Task ConvertToStreamAsync(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+        Stream output,
+        IReadOnlyDictionary<string, object?>? parameters = null,
+        HtmlConverterOptions? options = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+        var html = await RenderHtmlAsync(componentType, parameters, cancellationToken).ConfigureAwait(false);
+        await HtmlToPdf.ConvertToStreamAsync(html, output, options ?? new HtmlConverterOptions(), "RaiCore.Pdf.Razor", cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Renders a component and lays out the HTML without rendering the PDF, so you can add a
     /// <see cref="FlowDocument.PageDecorator"/> or render it into an existing <see cref="PdfDocument"/>.
     /// </summary>
@@ -136,15 +175,29 @@ public sealed class RazorPdfRenderer
     /// <param name="parameters">Values for the component's <c>[Parameter]</c> properties, keyed by property name.</param>
     /// <param name="options">HTML conversion options: fonts, default page setup, base URI for images and stylesheets.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>
-    public async Task<FlowDocument> CreateFlowDocumentAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TComponent>(
+    public Task<FlowDocument> CreateFlowDocumentAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TComponent>(
         IReadOnlyDictionary<string, object?>? parameters = null,
         HtmlConverterOptions? options = null,
         CancellationToken cancellationToken = default)
-        where TComponent : IComponent
+        where TComponent : IComponent =>
+        CreateFlowDocumentAsync(typeof(TComponent), parameters, options, cancellationToken);
+
+    /// <summary>
+    /// Renders a component and lays out the HTML without rendering the PDF (see
+    /// <see cref="CreateFlowDocumentAsync{TComponent}"/>).
+    /// </summary>
+    /// <param name="componentType">A type that implements <see cref="IComponent"/>.</param>
+    /// <param name="parameters">Values for the component's <c>[Parameter]</c> properties, keyed by property name.</param>
+    /// <param name="options">HTML conversion options: fonts, default page setup, base URI for images and stylesheets.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    public async Task<FlowDocument> CreateFlowDocumentAsync(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type componentType,
+        IReadOnlyDictionary<string, object?>? parameters = null,
+        HtmlConverterOptions? options = null,
+        CancellationToken cancellationToken = default)
     {
-        var html = await RenderHtmlAsync<TComponent>(parameters, cancellationToken).ConfigureAwait(false);
-        cancellationToken.ThrowIfCancellationRequested();
-        return HtmlToPdf.CreateFlowDocument(html, options);
+        var html = await RenderHtmlAsync(componentType, parameters, cancellationToken).ConfigureAwait(false);
+        return await HtmlToPdf.CreateFlowDocumentAsync(html, options, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>A service provider with no services, for components that inject nothing.</summary>
