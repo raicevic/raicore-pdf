@@ -343,6 +343,8 @@ change at any time, and this section lists what the packages can do so far.
   baseline of the element that declared them, as browsers do.
 - `letter-spacing` and `word-spacing` (lengths, including negative ones).
 - `border-style` and `border-{side}-style` (also through the `border` shorthands), including `hidden` in collapsed tables.
+- The legacy table `border` attribute draws as Chrome does: a gray outset border on the table and a 1px gray inset
+  border on each cell, both replaced by any border the CSS sets.
 - `border-radius` and its longhands: one to four values, the elliptical `/` form, lengths, percentages and `calc()`, on
   blocks, flex items, table cells, inline elements and images (an `<img>` is clipped to its rounded content box); and
   `background-clip`.
