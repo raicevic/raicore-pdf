@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <!--
+    The code samples of the documentation site (docs/guides include them by region), compiled with the solution and run
+    by the docs workflow: every sample in the guides is code that builds and runs.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../src/RaiCore.Pdf.Razor/RaiCore.Pdf.Razor.csproj" />
+  </ItemGroup>
+
+</Project>

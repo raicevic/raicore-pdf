@@ -75,9 +75,8 @@
     so every change to it shows up in review. See "Public API" in CONTRIBUTING.md.
   -->
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <!-- The package adds the project's PublicAPI.*.txt files as AdditionalFiles itself. -->
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
-    <AdditionalFiles Include="$(MSBuildProjectDirectory)/PublicAPI.Shipped.txt" />
-    <AdditionalFiles Include="$(MSBuildProjectDirectory)/PublicAPI.Unshipped.txt" />
   </ItemGroup>
 
   <!-- Each package has its own README (shown on nuget.org); links in it must be absolute. -->

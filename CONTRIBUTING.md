@@ -77,6 +77,22 @@ for running it locally and adding documents.
 - Keep the libraries trimming- and AOT-safe (`IsAotCompatible` is on).
 - Update [CHANGELOG.md](CHANGELOG.md) under *Unreleased*.
 
+## Documentation
+
+The documentation site is built from `docs/` with [docfx](https://dotnet.github.io/docfx/): the guides in
+`docs/guides`, the migration guides in `docs/migration` and the API reference from the XML documentation. The guides'
+C# code comes from `docs/snippets` (by `#region`), a project in the solution, so every sample compiles with the build;
+the [Docs workflow](.github/workflows/docs.yml) also runs it and builds the site with warnings as errors. To see the
+site locally:
+
+```sh
+dotnet tool restore
+dotnet docfx docs/docfx.json --serve     # http://localhost:8080
+```
+
+Add a sample to a `docs/snippets` file inside a `#region` and include it in a guide with
+`[!code-csharp[](../snippets/File.cs#region-name)]`.
+
 ## Public API
 
 Each package lists its public API in two files that

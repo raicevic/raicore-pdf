@@ -48,10 +48,10 @@ byte[] pdf = HtmlToPdf.ConvertToBytes(html, options);
 | Headers and footers (HTML) | running elements: `.header { position: running(header) }` and `@top-left { content: element(header) }` |
 | Page numbers | `counter(page)` and `counter(pages)` in margin boxes, in any counter style |
 | Chapter title in the header | `h1 { string-set: chapter content() }` and `@top-right { content: string(chapter) }` |
-| Table of contents | links with `target-counter(attr(href), page)` and `leader(".")` (see [samples/Report](../../samples/Report/Program.cs)) |
+| Table of contents | links with `target-counter(attr(href), page)` and `leader(".")` (see [samples/Report](https://github.com/raicevic/raicore-pdf/blob/main/samples/Report/Program.cs)) |
 | Bookmarks (outline) | from `h1`-`h6` by default (`CreateBookmarks`); `bookmark-level`, `bookmark-label`, `bookmark-state` |
 | Base URL for relative links, images, stylesheets | `HtmlConverterOptions.BaseUri` |
-| Loading resources over the network | off by default; pass a `ResourceLoader` (see the [README](../../README.md)) |
+| Loading resources over the network | off by default; pass a `ResourceLoader` (see the [README](https://github.com/raicevic/raicore-pdf/blob/main/README.md)) |
 | Fonts | bundled Liberation fonts by default; `@font-face`; installed fonts with `Fonts = new FontCollection().AddSystemFonts().AddBundledFonts()` |
 | Title, author, subject, keywords | from `<title>` and `<meta>`, or `HtmlConverterOptions.Title`, `Author`, ... |
 | Password and permissions | `HtmlConverterOptions.Encryption` |
