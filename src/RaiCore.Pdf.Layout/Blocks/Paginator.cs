@@ -116,6 +116,12 @@ internal sealed partial class Paginator
     private bool _blockFlow = true;
 
     /// <summary>
+    /// A forced break was just taken before a container: its first in-flow child is at the same break point, so its own
+    /// forced break (already counted, see <see cref="StartBreak"/>) does not break again.
+    /// </summary>
+    private bool _atForcedBreak;
+
+    /// <summary>
     /// The width blocks are laid out in follows the content width of the page they start on: no ancestor has a width of
     /// its own (CSS <c>width</c> or <c>max-width</c>) and none is a flex item or a table cell.
     /// </summary>
@@ -559,6 +565,29 @@ internal sealed partial class Paginator
     }
 
     /// <summary>
+    /// The forced break before a block, combining its own <c>break-before</c> with those of its first in-flow child, that
+    /// child's first child and so on, which are at the same break point (CSS Fragmentation section 3.1): a left or right
+    /// break wins over a plain page break.
+    /// </summary>
+    private static PageBreak StartBreak(Block block)
+    {
+        var own = block.Style.BreakBefore;
+        if (block is ContainerBlock container)
+        {
+            foreach (var child in container.Children)
+            {
+                if (!TakesNoSpace(child))
+                {
+                    var inner = StartBreak(child);
+                    return SideOf(inner) is not null || !IsForced(own) ? inner : own;
+                }
+            }
+        }
+
+        return own;
+    }
+
+    /// <summary>
     /// The page name a block starts with (CSS start page value): its own or its parent's, or, for a container, its first
     /// child's.
     /// </summary>
@@ -628,18 +657,26 @@ internal sealed partial class Paginator
 
             // Forced break before this block, or after the previous one, or between pages of different names. A left or
             // right break before the block wins over one after the previous block (CSS Fragmentation section 3.1).
+            // In the block flow, a forced break before a first child is taken before its parent, once.
             var previousBreak = i > 0 ? blocks[i - 1].Style.BreakAfter : PageBreak.Auto;
+            var startBreak = _blockFlow ? StartBreak(block) : style.BreakBefore;
             var startName = _blockFlow && !_static ? StartName(block, _pageName) : null;
             var renamed = _blockFlow && !_static && !string.Equals(startName, _frames[PageIndex].Context.Name, StringComparison.Ordinal);
-            if (!_static && (renamed || IsForced(style.BreakBefore) || IsForced(previousBreak)))
+            var atBreak = i == 0 && _atForcedBreak;
+            _atForcedBreak = false;
+            if (!_static && (renamed || (!atBreak && (IsForced(startBreak) || IsForced(previousBreak)))))
             {
                 var pageBefore = PageIndex;
-                ForcedBreak(startName, SideOf(style.BreakBefore) ?? SideOf(previousBreak));
+                ForcedBreak(startName, SideOf(startBreak) ?? SideOf(previousBreak));
                 if (PageIndex != pageBefore)
                 {
                     pending = default; // The previous block's bottom margin ends with its page; this block keeps its top margin.
                 }
+
+                atBreak = true;
             }
+
+            _atForcedBreak = atBreak && block is ContainerBlock;
 
             var available = fluid ? Math.Max(MinimumContentWidth, width + ContentWidthOf(PageIndex) - entryWidth) : width;
             style = ResolveStyle(block, available);
