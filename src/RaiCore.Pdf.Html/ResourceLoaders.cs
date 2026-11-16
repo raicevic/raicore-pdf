@@ -189,8 +189,10 @@ public static class ResourceLoaders
         }
         catch (OperationCanceledException) when (deadline.IsCancellationRequested)
         {
-            scope.Checkpoint(); // Throws the cancellation or the timeout.
-            throw;
+            // The caller's cancellation, or else the deadline. Not Checkpoint: the timer may fire a moment before the
+            // deadline it checks.
+            scope.CancellationToken.ThrowIfCancellationRequested();
+            throw scope.TimeoutExceeded();
         }
 
         scope.Checkpoint(); // Loading may have taken a while.
