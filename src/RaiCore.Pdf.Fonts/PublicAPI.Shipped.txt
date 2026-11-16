@@ -1,0 +1,7 @@
+#nullable enable
+RaiCore.Pdf.Fonts.BundledFonts
+RaiCore.Pdf.Fonts.StandardFontSubstitutes
+static RaiCore.Pdf.Fonts.BundledFonts.AddBundledFonts(this RaiCore.Pdf.Fonts.FontCollection! collection) -> RaiCore.Pdf.Fonts.FontCollection!
+static RaiCore.Pdf.Fonts.BundledFonts.CreateCollection() -> RaiCore.Pdf.Fonts.FontCollection!
+static RaiCore.Pdf.Fonts.StandardFontSubstitutes.EmbedStandardFonts(this RaiCore.Pdf.PdfDocument! document) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Fonts.StandardFontSubstitutes.Get(RaiCore.Pdf.Fonts.StandardFont font) -> RaiCore.Pdf.Fonts.PdfFont?

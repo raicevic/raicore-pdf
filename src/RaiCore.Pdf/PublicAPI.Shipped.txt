@@ -1,0 +1,602 @@
+#nullable enable
+[RCPDF001]override RaiCore.Pdf.Objects.PdfName.Equals(object? obj) -> bool
+[RCPDF001]override RaiCore.Pdf.Objects.PdfName.GetHashCode() -> int
+[RCPDF001]override RaiCore.Pdf.Objects.PdfObject.ToString() -> string!
+[RCPDF001]RaiCore.Pdf.Objects.PdfArray
+[RCPDF001]RaiCore.Pdf.Objects.PdfArray.Items.get -> System.Collections.Generic.IList<RaiCore.Pdf.Objects.PdfObject!>!
+[RCPDF001]RaiCore.Pdf.Objects.PdfArray.PdfArray(params System.Collections.Generic.IEnumerable<RaiCore.Pdf.Objects.PdfObject!>! items) -> void
+[RCPDF001]RaiCore.Pdf.Objects.PdfBoolean
+[RCPDF001]RaiCore.Pdf.Objects.PdfBoolean.Value.get -> bool
+[RCPDF001]RaiCore.Pdf.Objects.PdfDictionary
+[RCPDF001]RaiCore.Pdf.Objects.PdfDictionary.Count.get -> int
+[RCPDF001]RaiCore.Pdf.Objects.PdfDictionary.Entries.get -> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<RaiCore.Pdf.Objects.PdfName!, RaiCore.Pdf.Objects.PdfObject!>>!
+[RCPDF001]RaiCore.Pdf.Objects.PdfDictionary.PdfDictionary() -> void
+[RCPDF001]RaiCore.Pdf.Objects.PdfDictionary.this[RaiCore.Pdf.Objects.PdfName! key].get -> RaiCore.Pdf.Objects.PdfObject?
+[RCPDF001]RaiCore.Pdf.Objects.PdfDictionary.this[RaiCore.Pdf.Objects.PdfName! key].set -> void
+[RCPDF001]RaiCore.Pdf.Objects.PdfInteger
+[RCPDF001]RaiCore.Pdf.Objects.PdfInteger.PdfInteger(long value) -> void
+[RCPDF001]RaiCore.Pdf.Objects.PdfInteger.Value.get -> long
+[RCPDF001]RaiCore.Pdf.Objects.PdfName
+[RCPDF001]RaiCore.Pdf.Objects.PdfName.Equals(RaiCore.Pdf.Objects.PdfName? other) -> bool
+[RCPDF001]RaiCore.Pdf.Objects.PdfName.PdfName(string! value) -> void
+[RCPDF001]RaiCore.Pdf.Objects.PdfName.Value.get -> string!
+[RCPDF001]RaiCore.Pdf.Objects.PdfNull
+[RCPDF001]RaiCore.Pdf.Objects.PdfObject
+[RCPDF001]RaiCore.Pdf.Objects.PdfObject.PdfObject() -> void
+[RCPDF001]RaiCore.Pdf.Objects.PdfReal
+[RCPDF001]RaiCore.Pdf.Objects.PdfReal.PdfReal(double value) -> void
+[RCPDF001]RaiCore.Pdf.Objects.PdfReal.Value.get -> double
+[RCPDF001]RaiCore.Pdf.Objects.PdfReference
+[RCPDF001]RaiCore.Pdf.Objects.PdfReference.Generation.get -> int
+[RCPDF001]RaiCore.Pdf.Objects.PdfReference.ObjectNumber.get -> int
+[RCPDF001]RaiCore.Pdf.Objects.PdfStreamObject
+[RCPDF001]RaiCore.Pdf.Objects.PdfStreamObject.Data.get -> byte[]!
+[RCPDF001]RaiCore.Pdf.Objects.PdfStreamObject.Dictionary.get -> RaiCore.Pdf.Objects.PdfDictionary!
+[RCPDF001]RaiCore.Pdf.Objects.PdfStreamObject.PdfStreamObject(byte[]! data, RaiCore.Pdf.Objects.PdfDictionary? dictionary = null) -> void
+[RCPDF001]RaiCore.Pdf.Objects.PdfString
+[RCPDF001]RaiCore.Pdf.Objects.PdfString.Bytes.get -> System.ReadOnlySpan<byte>
+[RCPDF001]RaiCore.Pdf.Objects.PdfString.IsHex.get -> bool
+[RCPDF001]RaiCore.Pdf.Objects.PdfString.PdfString(byte[]! bytes, bool hex = false) -> void
+[RCPDF001]RaiCore.Pdf.PdfReader.Catalog.get -> RaiCore.Pdf.Objects.PdfDictionary!
+[RCPDF001]RaiCore.Pdf.PdfReader.Resolve(RaiCore.Pdf.Objects.PdfObject? obj) -> RaiCore.Pdf.Objects.PdfObject?
+[RCPDF001]RaiCore.Pdf.PdfReader.Trailer.get -> RaiCore.Pdf.Objects.PdfDictionary!
+[RCPDF001]RaiCore.Pdf.PdfReaderPage.Dictionary.get -> RaiCore.Pdf.Objects.PdfDictionary!
+[RCPDF001]RaiCore.Pdf.PdfReaderPage.GetContent() -> byte[]!
+[RCPDF001]RaiCore.Pdf.PdfReaderPage.Resources.get -> RaiCore.Pdf.Objects.PdfDictionary!
+[RCPDF001]static RaiCore.Pdf.Objects.PdfArray.OfNumbers(params System.ReadOnlySpan<double> values) -> RaiCore.Pdf.Objects.PdfArray!
+[RCPDF001]static RaiCore.Pdf.Objects.PdfBoolean.From(bool value) -> RaiCore.Pdf.Objects.PdfBoolean!
+[RCPDF001]static RaiCore.Pdf.Objects.PdfName.FromString(string! value) -> RaiCore.Pdf.Objects.PdfName!
+[RCPDF001]static RaiCore.Pdf.Objects.PdfName.implicit operator RaiCore.Pdf.Objects.PdfName!(string! value) -> RaiCore.Pdf.Objects.PdfName!
+[RCPDF001]static RaiCore.Pdf.Objects.PdfStreamObject.CreateCompressed(System.ReadOnlySpan<byte> data, RaiCore.Pdf.Objects.PdfDictionary? dictionary = null) -> RaiCore.Pdf.Objects.PdfStreamObject!
+[RCPDF001]static RaiCore.Pdf.Objects.PdfString.FromText(string! text) -> RaiCore.Pdf.Objects.PdfString!
+[RCPDF001]static readonly RaiCore.Pdf.Objects.PdfBoolean.False -> RaiCore.Pdf.Objects.PdfBoolean!
+[RCPDF001]static readonly RaiCore.Pdf.Objects.PdfBoolean.True -> RaiCore.Pdf.Objects.PdfBoolean!
+[RCPDF001]static readonly RaiCore.Pdf.Objects.PdfNull.Instance -> RaiCore.Pdf.Objects.PdfNull!
+[RCPDF002]override RaiCore.Pdf.PositionedGlyph.GetHashCode() -> int
+[RCPDF002]RaiCore.Pdf.PdfCanvas.DrawGlyphs(System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.PositionedGlyph>! glyphs, RaiCore.Pdf.Fonts.PdfFont! font, double size, double x, double y, string? actualText = null) -> RaiCore.Pdf.PdfCanvas!
+[RCPDF002]RaiCore.Pdf.PositionedGlyph
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.Advance.get -> double
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.Advance.init -> void
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.Deconstruct(out int GlyphId, out double Advance, out double OffsetX, out double OffsetY, out string? Text) -> void
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.Equals(RaiCore.Pdf.PositionedGlyph other) -> bool
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.GlyphId.get -> int
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.GlyphId.init -> void
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.OffsetX.get -> double
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.OffsetX.init -> void
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.OffsetY.get -> double
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.OffsetY.init -> void
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.PositionedGlyph() -> void
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.PositionedGlyph(int GlyphId, double Advance, double OffsetX = 0, double OffsetY = 0, string? Text = null) -> void
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.Text.get -> string?
+[RCPDF002]RaiCore.Pdf.PositionedGlyph.Text.init -> void
+[RCPDF002]static RaiCore.Pdf.PositionedGlyph.operator !=(RaiCore.Pdf.PositionedGlyph left, RaiCore.Pdf.PositionedGlyph right) -> bool
+[RCPDF002]static RaiCore.Pdf.PositionedGlyph.operator ==(RaiCore.Pdf.PositionedGlyph left, RaiCore.Pdf.PositionedGlyph right) -> bool
+abstract RaiCore.Pdf.Fonts.PdfFont.Ascent.get -> double
+abstract RaiCore.Pdf.Fonts.PdfFont.CapHeight.get -> double
+abstract RaiCore.Pdf.Fonts.PdfFont.Descent.get -> double
+abstract RaiCore.Pdf.Fonts.PdfFont.FamilyName.get -> string!
+abstract RaiCore.Pdf.Fonts.PdfFont.HasGlyph(int codePoint) -> bool
+abstract RaiCore.Pdf.Fonts.PdfFont.IsItalic.get -> bool
+abstract RaiCore.Pdf.Fonts.PdfFont.IsMonospaced.get -> bool
+abstract RaiCore.Pdf.Fonts.PdfFont.LineGap.get -> double
+abstract RaiCore.Pdf.Fonts.PdfFont.PostScriptName.get -> string!
+abstract RaiCore.Pdf.Fonts.PdfFont.Weight.get -> int
+abstract RaiCore.Pdf.Fonts.PdfFont.XHeight.get -> double
+const RaiCore.Pdf.PdfStructureTypes.Annotation = "Annot" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Article = "Art" -> string!
+const RaiCore.Pdf.PdfStructureTypes.BlockQuote = "BlockQuote" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Caption = "Caption" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Code = "Code" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Division = "Div" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Document = "Document" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Figure = "Figure" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Form = "Form" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Formula = "Formula" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Heading = "H" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Heading1 = "H1" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Heading2 = "H2" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Heading3 = "H3" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Heading4 = "H4" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Heading5 = "H5" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Heading6 = "H6" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Index = "Index" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Label = "Lbl" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Link = "Link" -> string!
+const RaiCore.Pdf.PdfStructureTypes.List = "L" -> string!
+const RaiCore.Pdf.PdfStructureTypes.ListBody = "LBody" -> string!
+const RaiCore.Pdf.PdfStructureTypes.ListItem = "LI" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Note = "Note" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Paragraph = "P" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Part = "Part" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Quote = "Quote" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Reference = "Reference" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Section = "Sect" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Span = "Span" -> string!
+const RaiCore.Pdf.PdfStructureTypes.Table = "Table" -> string!
+const RaiCore.Pdf.PdfStructureTypes.TableBody = "TBody" -> string!
+const RaiCore.Pdf.PdfStructureTypes.TableDataCell = "TD" -> string!
+const RaiCore.Pdf.PdfStructureTypes.TableFoot = "TFoot" -> string!
+const RaiCore.Pdf.PdfStructureTypes.TableHead = "THead" -> string!
+const RaiCore.Pdf.PdfStructureTypes.TableHeaderCell = "TH" -> string!
+const RaiCore.Pdf.PdfStructureTypes.TableOfContents = "TOC" -> string!
+const RaiCore.Pdf.PdfStructureTypes.TableOfContentsItem = "TOCI" -> string!
+const RaiCore.Pdf.PdfStructureTypes.TableRow = "TR" -> string!
+override RaiCore.Pdf.Fonts.PdfFont.ToString() -> string!
+override RaiCore.Pdf.Fonts.UnicodeRange.GetHashCode() -> int
+override RaiCore.Pdf.PdfColor.GetHashCode() -> int
+override RaiCore.Pdf.PdfPageSize.GetHashCode() -> int
+override RaiCore.Pdf.PdfRectangle.GetHashCode() -> int
+override RaiCore.Pdf.PdfStructureElement.ToString() -> string!
+override RaiCore.Pdf.ResourceLimits.Equals(object? obj) -> bool
+override RaiCore.Pdf.ResourceLimits.GetHashCode() -> int
+override RaiCore.Pdf.ResourceLimits.ToString() -> string!
+RaiCore.Pdf.FacturX
+RaiCore.Pdf.FacturXProfile
+RaiCore.Pdf.FacturXProfile.Basic = 2 -> RaiCore.Pdf.FacturXProfile
+RaiCore.Pdf.FacturXProfile.BasicWL = 1 -> RaiCore.Pdf.FacturXProfile
+RaiCore.Pdf.FacturXProfile.EN16931 = 3 -> RaiCore.Pdf.FacturXProfile
+RaiCore.Pdf.FacturXProfile.Extended = 4 -> RaiCore.Pdf.FacturXProfile
+RaiCore.Pdf.FacturXProfile.Minimum = 0 -> RaiCore.Pdf.FacturXProfile
+RaiCore.Pdf.FacturXProfile.XRechnung = 5 -> RaiCore.Pdf.FacturXProfile
+RaiCore.Pdf.Fonts.FontCollection
+RaiCore.Pdf.Fonts.FontCollection.AddDirectory(string! directory, bool recursive = true) -> RaiCore.Pdf.Fonts.FontCollection!
+RaiCore.Pdf.Fonts.FontCollection.AddFile(string! path) -> RaiCore.Pdf.Fonts.FontCollection!
+RaiCore.Pdf.Fonts.FontCollection.AddFont(byte[]! data) -> RaiCore.Pdf.Fonts.FontCollection!
+RaiCore.Pdf.Fonts.FontCollection.AddFont(RaiCore.Pdf.Fonts.PdfFont! font) -> RaiCore.Pdf.Fonts.FontCollection!
+RaiCore.Pdf.Fonts.FontCollection.AddFont(System.Func<byte[]!>! load, string! family, int weight = 400, bool italic = false, int faceIndex = 0) -> RaiCore.Pdf.Fonts.FontCollection!
+RaiCore.Pdf.Fonts.FontCollection.AddFont(System.Func<RaiCore.Pdf.Fonts.PdfFont!>! load, string! family, int weight = 400, bool italic = false) -> RaiCore.Pdf.Fonts.FontCollection!
+RaiCore.Pdf.Fonts.FontCollection.AddSystemFonts() -> RaiCore.Pdf.Fonts.FontCollection!
+RaiCore.Pdf.Fonts.FontCollection.Count.get -> int
+RaiCore.Pdf.Fonts.FontCollection.Families.get -> System.Collections.Generic.IReadOnlyList<string!>!
+RaiCore.Pdf.Fonts.FontCollection.Find(string! family, int weight = 400, bool italic = false) -> RaiCore.Pdf.Fonts.PdfFont?
+RaiCore.Pdf.Fonts.FontCollection.Find(System.Collections.Generic.IEnumerable<string!>! families, int weight = 400, bool italic = false) -> RaiCore.Pdf.Fonts.PdfFont?
+RaiCore.Pdf.Fonts.FontCollection.FontCollection() -> void
+RaiCore.Pdf.Fonts.FontCollection.SetSubstitutes(string! family, params System.Collections.Generic.IEnumerable<string!>! substitutes) -> RaiCore.Pdf.Fonts.FontCollection!
+RaiCore.Pdf.Fonts.FontFormatException
+RaiCore.Pdf.Fonts.FontFormatException.FontFormatException() -> void
+RaiCore.Pdf.Fonts.FontFormatException.FontFormatException(string! message) -> void
+RaiCore.Pdf.Fonts.FontFormatException.FontFormatException(string! message, System.Exception! innerException) -> void
+RaiCore.Pdf.Fonts.PdfFont
+RaiCore.Pdf.Fonts.PdfFont.GetLineHeight(double fontSize) -> double
+RaiCore.Pdf.Fonts.PdfFont.HasGlyphs(string! text) -> bool
+RaiCore.Pdf.Fonts.PdfFont.MeasureText(string! text, double fontSize) -> double
+RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.Courier = 8 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.CourierBold = 9 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.CourierBoldOblique = 11 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.CourierOblique = 10 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.Helvetica = 0 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.HelveticaBold = 1 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.HelveticaBoldOblique = 3 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.HelveticaOblique = 2 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.Symbol = 12 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.TimesBold = 5 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.TimesBoldItalic = 7 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.TimesItalic = 6 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.TimesRoman = 4 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.StandardFont.ZapfDingbats = 13 -> RaiCore.Pdf.Fonts.StandardFont
+RaiCore.Pdf.Fonts.UnicodeRange
+RaiCore.Pdf.Fonts.UnicodeRange.Contains(int codePoint) -> bool
+RaiCore.Pdf.Fonts.UnicodeRange.Deconstruct(out int First, out int Last) -> void
+RaiCore.Pdf.Fonts.UnicodeRange.Equals(RaiCore.Pdf.Fonts.UnicodeRange other) -> bool
+RaiCore.Pdf.Fonts.UnicodeRange.First.get -> int
+RaiCore.Pdf.Fonts.UnicodeRange.First.init -> void
+RaiCore.Pdf.Fonts.UnicodeRange.Last.get -> int
+RaiCore.Pdf.Fonts.UnicodeRange.Last.init -> void
+RaiCore.Pdf.Fonts.UnicodeRange.UnicodeRange() -> void
+RaiCore.Pdf.Fonts.UnicodeRange.UnicodeRange(int First, int Last) -> void
+RaiCore.Pdf.ImageFormatException
+RaiCore.Pdf.ImageFormatException.ImageFormatException() -> void
+RaiCore.Pdf.ImageFormatException.ImageFormatException(string! message) -> void
+RaiCore.Pdf.ImageFormatException.ImageFormatException(string! message, System.Exception! innerException) -> void
+RaiCore.Pdf.LineCap
+RaiCore.Pdf.LineCap.Butt = 0 -> RaiCore.Pdf.LineCap
+RaiCore.Pdf.LineCap.Round = 1 -> RaiCore.Pdf.LineCap
+RaiCore.Pdf.LineCap.Square = 2 -> RaiCore.Pdf.LineCap
+RaiCore.Pdf.LineJoin
+RaiCore.Pdf.LineJoin.Bevel = 2 -> RaiCore.Pdf.LineJoin
+RaiCore.Pdf.LineJoin.Miter = 0 -> RaiCore.Pdf.LineJoin
+RaiCore.Pdf.LineJoin.Round = 1 -> RaiCore.Pdf.LineJoin
+RaiCore.Pdf.PdfAConformance
+RaiCore.Pdf.PdfAConformance.None = 0 -> RaiCore.Pdf.PdfAConformance
+RaiCore.Pdf.PdfAConformance.PdfA2B = 1 -> RaiCore.Pdf.PdfAConformance
+RaiCore.Pdf.PdfAConformance.PdfA3B = 2 -> RaiCore.Pdf.PdfAConformance
+RaiCore.Pdf.PdfArtifactKind
+RaiCore.Pdf.PdfArtifactKind.Background = 3 -> RaiCore.Pdf.PdfArtifactKind
+RaiCore.Pdf.PdfArtifactKind.Layout = 0 -> RaiCore.Pdf.PdfArtifactKind
+RaiCore.Pdf.PdfArtifactKind.Page = 2 -> RaiCore.Pdf.PdfArtifactKind
+RaiCore.Pdf.PdfArtifactKind.Pagination = 1 -> RaiCore.Pdf.PdfArtifactKind
+RaiCore.Pdf.PdfAttachment
+RaiCore.Pdf.PdfAttachment.CreationDate.get -> System.DateTimeOffset?
+RaiCore.Pdf.PdfAttachment.CreationDate.init -> void
+RaiCore.Pdf.PdfAttachment.Data.get -> System.ReadOnlyMemory<byte>
+RaiCore.Pdf.PdfAttachment.Description.get -> string?
+RaiCore.Pdf.PdfAttachment.Description.init -> void
+RaiCore.Pdf.PdfAttachment.FileName.get -> string!
+RaiCore.Pdf.PdfAttachment.MediaType.get -> string!
+RaiCore.Pdf.PdfAttachment.ModificationDate.get -> System.DateTimeOffset?
+RaiCore.Pdf.PdfAttachment.ModificationDate.init -> void
+RaiCore.Pdf.PdfAttachment.PdfAttachment(string! fileName, System.ReadOnlySpan<byte> data, string! mediaType = "application/octet-stream") -> void
+RaiCore.Pdf.PdfAttachment.Relationship.get -> RaiCore.Pdf.PdfAttachmentRelationship
+RaiCore.Pdf.PdfAttachment.Relationship.init -> void
+RaiCore.Pdf.PdfAttachmentRelationship
+RaiCore.Pdf.PdfAttachmentRelationship.Alternative = 3 -> RaiCore.Pdf.PdfAttachmentRelationship
+RaiCore.Pdf.PdfAttachmentRelationship.Data = 2 -> RaiCore.Pdf.PdfAttachmentRelationship
+RaiCore.Pdf.PdfAttachmentRelationship.FormData = 5 -> RaiCore.Pdf.PdfAttachmentRelationship
+RaiCore.Pdf.PdfAttachmentRelationship.Schema = 6 -> RaiCore.Pdf.PdfAttachmentRelationship
+RaiCore.Pdf.PdfAttachmentRelationship.Source = 1 -> RaiCore.Pdf.PdfAttachmentRelationship
+RaiCore.Pdf.PdfAttachmentRelationship.Supplement = 4 -> RaiCore.Pdf.PdfAttachmentRelationship
+RaiCore.Pdf.PdfAttachmentRelationship.Unspecified = 0 -> RaiCore.Pdf.PdfAttachmentRelationship
+RaiCore.Pdf.PdfCanvas
+RaiCore.Pdf.PdfCanvas.AddLink(double x, double y, double width, double height, RaiCore.Pdf.PdfDestination! destination) -> RaiCore.Pdf.PdfLink!
+RaiCore.Pdf.PdfCanvas.AddLink(double x, double y, double width, double height, string! destinationName) -> RaiCore.Pdf.PdfLink!
+RaiCore.Pdf.PdfCanvas.AddLink(double x, double y, double width, double height, System.Uri! uri) -> RaiCore.Pdf.PdfLink!
+RaiCore.Pdf.PdfCanvas.BeginArtifact(RaiCore.Pdf.PdfArtifactKind kind = RaiCore.Pdf.PdfArtifactKind.Layout) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.BeginGroup(double opacity) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.BeginTag(RaiCore.Pdf.PdfStructureElement! element) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.Clip(bool evenOdd = false) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.ClosePath() -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.CurrentElement.get -> RaiCore.Pdf.PdfStructureElement?
+RaiCore.Pdf.PdfCanvas.CurveTo(double x1, double y1, double x2, double y2, double x3, double y3) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.DrawImage(RaiCore.Pdf.PdfImage! image, double x, double y, double width, double height) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.DrawPage(RaiCore.Pdf.PdfReaderPage! page, double x, double y) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.DrawPage(RaiCore.Pdf.PdfReaderPage! page, double x, double y, double width, double height) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.DrawText(string! text, RaiCore.Pdf.Fonts.PdfFont! font, double size, double x, double y) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.DrawText(string! text, RaiCore.Pdf.Fonts.StandardFont font, double size, double x, double y) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.EndGroup() -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.EndPath() -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.EndTag() -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.Fill() -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.FillAndStroke() -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.FillAndStrokeEvenOdd() -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.FillEvenOdd() -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.LineTo(double x, double y) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.MoveTo(double x, double y) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.Rectangle(double x, double y, double width, double height) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.RestoreState() -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.SaveState() -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.SetDash(System.Collections.Generic.IReadOnlyList<double>! pattern, double phase = 0) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.SetFillColor(RaiCore.Pdf.PdfColor color) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.SetLineCap(RaiCore.Pdf.LineCap cap) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.SetLineJoin(RaiCore.Pdf.LineJoin join) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.SetLineWidth(double width) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.SetMiterLimit(double limit) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.SetStrokeColor(RaiCore.Pdf.PdfColor color) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.Stroke() -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfCanvas.Transform(double a, double b, double c, double d, double e, double f) -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfColor
+RaiCore.Pdf.PdfColor.Alpha.get -> double
+RaiCore.Pdf.PdfColor.Blue.get -> double
+RaiCore.Pdf.PdfColor.Equals(RaiCore.Pdf.PdfColor other) -> bool
+RaiCore.Pdf.PdfColor.Green.get -> double
+RaiCore.Pdf.PdfColor.IsOpaque.get -> bool
+RaiCore.Pdf.PdfColor.PdfColor() -> void
+RaiCore.Pdf.PdfColor.PdfColor(double red, double green, double blue) -> void
+RaiCore.Pdf.PdfColor.PdfColor(double red, double green, double blue, double alpha) -> void
+RaiCore.Pdf.PdfColor.Red.get -> double
+RaiCore.Pdf.PdfColor.WithAlpha(double alpha) -> RaiCore.Pdf.PdfColor
+RaiCore.Pdf.PdfDestination
+RaiCore.Pdf.PdfDestination.Left.get -> double?
+RaiCore.Pdf.PdfDestination.Page.get -> RaiCore.Pdf.PdfPage!
+RaiCore.Pdf.PdfDestination.PdfDestination(RaiCore.Pdf.PdfPage! page, double? left = null, double? top = null) -> void
+RaiCore.Pdf.PdfDestination.Top.get -> double?
+RaiCore.Pdf.PdfDocument
+RaiCore.Pdf.PdfDocument.AddPage() -> RaiCore.Pdf.PdfPage!
+RaiCore.Pdf.PdfDocument.AddPage(RaiCore.Pdf.PdfPageSize size) -> RaiCore.Pdf.PdfPage!
+RaiCore.Pdf.PdfDocument.Attachments.get -> System.Collections.Generic.IList<RaiCore.Pdf.PdfAttachment!>!
+RaiCore.Pdf.PdfDocument.BeginSave(System.IO.Stream! stream) -> void
+RaiCore.Pdf.PdfDocument.CompressContent.get -> bool
+RaiCore.Pdf.PdfDocument.CompressContent.set -> void
+RaiCore.Pdf.PdfDocument.Encryption.get -> RaiCore.Pdf.PdfEncryption?
+RaiCore.Pdf.PdfDocument.Encryption.set -> void
+RaiCore.Pdf.PdfDocument.EndSave() -> void
+RaiCore.Pdf.PdfDocument.FlushPages() -> void
+RaiCore.Pdf.PdfDocument.ImportPages(RaiCore.Pdf.PdfReader! source, RaiCore.Pdf.PdfImportOptions? options = null) -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.PdfPage!>!
+RaiCore.Pdf.PdfDocument.ImportPages(RaiCore.Pdf.PdfReader! source, System.Collections.Generic.IEnumerable<int>! pageIndexes, RaiCore.Pdf.PdfImportOptions? options = null) -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.PdfPage!>!
+RaiCore.Pdf.PdfDocument.IncludeXmpMetadata.get -> bool
+RaiCore.Pdf.PdfDocument.IncludeXmpMetadata.set -> void
+RaiCore.Pdf.PdfDocument.Info.get -> RaiCore.Pdf.PdfDocumentInfo!
+RaiCore.Pdf.PdfDocument.InsertPage(int index, RaiCore.Pdf.PdfPageSize size) -> RaiCore.Pdf.PdfPage!
+RaiCore.Pdf.PdfDocument.InsertPages(int index, RaiCore.Pdf.PdfReader! source, RaiCore.Pdf.PdfImportOptions? options = null) -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.PdfPage!>!
+RaiCore.Pdf.PdfDocument.InsertPages(int index, RaiCore.Pdf.PdfReader! source, System.Collections.Generic.IEnumerable<int>! pageIndexes, RaiCore.Pdf.PdfImportOptions? options = null) -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.PdfPage!>!
+RaiCore.Pdf.PdfDocument.IsSaving.get -> bool
+RaiCore.Pdf.PdfDocument.Language.get -> string?
+RaiCore.Pdf.PdfDocument.Language.set -> void
+RaiCore.Pdf.PdfDocument.NamedDestinations.get -> System.Collections.Generic.IDictionary<string!, RaiCore.Pdf.PdfDestination!>!
+RaiCore.Pdf.PdfDocument.Outline.get -> System.Collections.Generic.IList<RaiCore.Pdf.PdfOutlineItem!>!
+RaiCore.Pdf.PdfDocument.PageMode.get -> RaiCore.Pdf.PdfPageMode
+RaiCore.Pdf.PdfDocument.PageMode.set -> void
+RaiCore.Pdf.PdfDocument.Pages.get -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.PdfPage!>!
+RaiCore.Pdf.PdfDocument.PdfAConformance.get -> RaiCore.Pdf.PdfAConformance
+RaiCore.Pdf.PdfDocument.PdfAConformance.set -> void
+RaiCore.Pdf.PdfDocument.PdfDocument() -> void
+RaiCore.Pdf.PdfDocument.PdfUA.get -> bool
+RaiCore.Pdf.PdfDocument.PdfUA.set -> void
+RaiCore.Pdf.PdfDocument.Save(string! path) -> void
+RaiCore.Pdf.PdfDocument.Save(System.IO.Stream! stream) -> void
+RaiCore.Pdf.PdfDocument.SaveAsync(System.IO.Stream! stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+RaiCore.Pdf.PdfDocument.StandardFontSubstitute.get -> System.Func<RaiCore.Pdf.Fonts.StandardFont, RaiCore.Pdf.Fonts.PdfFont?>?
+RaiCore.Pdf.PdfDocument.StandardFontSubstitute.set -> void
+RaiCore.Pdf.PdfDocument.StrictTagging.get -> bool
+RaiCore.Pdf.PdfDocument.StrictTagging.set -> void
+RaiCore.Pdf.PdfDocument.StructureRoot.get -> RaiCore.Pdf.PdfStructureElement!
+RaiCore.Pdf.PdfDocument.Tagged.get -> bool
+RaiCore.Pdf.PdfDocument.Tagged.set -> void
+RaiCore.Pdf.PdfDocument.TimeProvider.get -> System.TimeProvider!
+RaiCore.Pdf.PdfDocument.TimeProvider.set -> void
+RaiCore.Pdf.PdfDocument.ToArray() -> byte[]!
+RaiCore.Pdf.PdfDocumentInfo
+RaiCore.Pdf.PdfDocumentInfo.Author.get -> string?
+RaiCore.Pdf.PdfDocumentInfo.Author.set -> void
+RaiCore.Pdf.PdfDocumentInfo.CreationDate.get -> System.DateTimeOffset?
+RaiCore.Pdf.PdfDocumentInfo.CreationDate.set -> void
+RaiCore.Pdf.PdfDocumentInfo.Creator.get -> string?
+RaiCore.Pdf.PdfDocumentInfo.Creator.set -> void
+RaiCore.Pdf.PdfDocumentInfo.CustomProperties.get -> System.Collections.Generic.IDictionary<string!, string!>!
+RaiCore.Pdf.PdfDocumentInfo.Keywords.get -> string?
+RaiCore.Pdf.PdfDocumentInfo.Keywords.set -> void
+RaiCore.Pdf.PdfDocumentInfo.ModificationDate.get -> System.DateTimeOffset?
+RaiCore.Pdf.PdfDocumentInfo.ModificationDate.set -> void
+RaiCore.Pdf.PdfDocumentInfo.PdfDocumentInfo() -> void
+RaiCore.Pdf.PdfDocumentInfo.Producer.get -> string!
+RaiCore.Pdf.PdfDocumentInfo.Producer.set -> void
+RaiCore.Pdf.PdfDocumentInfo.Subject.get -> string?
+RaiCore.Pdf.PdfDocumentInfo.Subject.set -> void
+RaiCore.Pdf.PdfDocumentInfo.Title.get -> string?
+RaiCore.Pdf.PdfDocumentInfo.Title.set -> void
+RaiCore.Pdf.PdfEncryption
+RaiCore.Pdf.PdfEncryption.Algorithm.get -> RaiCore.Pdf.PdfEncryptionAlgorithm
+RaiCore.Pdf.PdfEncryption.Algorithm.init -> void
+RaiCore.Pdf.PdfEncryption.EncryptMetadata.get -> bool
+RaiCore.Pdf.PdfEncryption.EncryptMetadata.init -> void
+RaiCore.Pdf.PdfEncryption.OwnerPassword.get -> string?
+RaiCore.Pdf.PdfEncryption.OwnerPassword.init -> void
+RaiCore.Pdf.PdfEncryption.PdfEncryption() -> void
+RaiCore.Pdf.PdfEncryption.Permissions.get -> RaiCore.Pdf.PdfPermissions
+RaiCore.Pdf.PdfEncryption.Permissions.init -> void
+RaiCore.Pdf.PdfEncryption.UserPassword.get -> string?
+RaiCore.Pdf.PdfEncryption.UserPassword.init -> void
+RaiCore.Pdf.PdfEncryptionAlgorithm
+RaiCore.Pdf.PdfEncryptionAlgorithm.Aes128 = 1 -> RaiCore.Pdf.PdfEncryptionAlgorithm
+RaiCore.Pdf.PdfEncryptionAlgorithm.Aes256 = 0 -> RaiCore.Pdf.PdfEncryptionAlgorithm
+RaiCore.Pdf.PdfException
+RaiCore.Pdf.PdfException.PdfException() -> void
+RaiCore.Pdf.PdfException.PdfException(string! message) -> void
+RaiCore.Pdf.PdfException.PdfException(string! message, System.Exception! innerException) -> void
+RaiCore.Pdf.PdfFormatException
+RaiCore.Pdf.PdfFormatException.PdfFormatException() -> void
+RaiCore.Pdf.PdfFormatException.PdfFormatException(string! message) -> void
+RaiCore.Pdf.PdfFormatException.PdfFormatException(string! message, System.Exception! innerException) -> void
+RaiCore.Pdf.PdfImage
+RaiCore.Pdf.PdfImage.Format.get -> RaiCore.Pdf.PdfImageFormat
+RaiCore.Pdf.PdfImage.HasTransparency.get -> bool
+RaiCore.Pdf.PdfImage.NaturalHeight.get -> double
+RaiCore.Pdf.PdfImage.NaturalWidth.get -> double
+RaiCore.Pdf.PdfImage.PixelHeight.get -> int
+RaiCore.Pdf.PdfImage.PixelWidth.get -> int
+RaiCore.Pdf.PdfImageFormat
+RaiCore.Pdf.PdfImageFormat.Bmp = 4 -> RaiCore.Pdf.PdfImageFormat
+RaiCore.Pdf.PdfImageFormat.Gif = 2 -> RaiCore.Pdf.PdfImageFormat
+RaiCore.Pdf.PdfImageFormat.Jpeg = 0 -> RaiCore.Pdf.PdfImageFormat
+RaiCore.Pdf.PdfImageFormat.Png = 1 -> RaiCore.Pdf.PdfImageFormat
+RaiCore.Pdf.PdfImageFormat.Svg = 3 -> RaiCore.Pdf.PdfImageFormat
+RaiCore.Pdf.PdfImageFormat.WebP = 5 -> RaiCore.Pdf.PdfImageFormat
+RaiCore.Pdf.PdfImportOptions
+RaiCore.Pdf.PdfImportOptions.KeepAnnotations.get -> bool
+RaiCore.Pdf.PdfImportOptions.KeepAnnotations.init -> void
+RaiCore.Pdf.PdfImportOptions.KeepOutline.get -> bool
+RaiCore.Pdf.PdfImportOptions.KeepOutline.init -> void
+RaiCore.Pdf.PdfImportOptions.PdfImportOptions() -> void
+RaiCore.Pdf.PdfLink
+RaiCore.Pdf.PdfLink.Description.get -> string?
+RaiCore.Pdf.PdfLink.Description.set -> void
+RaiCore.Pdf.PdfLink.Destination.get -> RaiCore.Pdf.PdfDestination?
+RaiCore.Pdf.PdfLink.DestinationName.get -> string?
+RaiCore.Pdf.PdfLink.Height.get -> double
+RaiCore.Pdf.PdfLink.Uri.get -> System.Uri?
+RaiCore.Pdf.PdfLink.Width.get -> double
+RaiCore.Pdf.PdfLink.X.get -> double
+RaiCore.Pdf.PdfLink.Y.get -> double
+RaiCore.Pdf.PdfListNumbering
+RaiCore.Pdf.PdfListNumbering.Circle = 2 -> RaiCore.Pdf.PdfListNumbering
+RaiCore.Pdf.PdfListNumbering.DecimalDigits = 4 -> RaiCore.Pdf.PdfListNumbering
+RaiCore.Pdf.PdfListNumbering.Disc = 1 -> RaiCore.Pdf.PdfListNumbering
+RaiCore.Pdf.PdfListNumbering.LowerAlpha = 8 -> RaiCore.Pdf.PdfListNumbering
+RaiCore.Pdf.PdfListNumbering.LowerRoman = 6 -> RaiCore.Pdf.PdfListNumbering
+RaiCore.Pdf.PdfListNumbering.None = 0 -> RaiCore.Pdf.PdfListNumbering
+RaiCore.Pdf.PdfListNumbering.Square = 3 -> RaiCore.Pdf.PdfListNumbering
+RaiCore.Pdf.PdfListNumbering.UpperAlpha = 7 -> RaiCore.Pdf.PdfListNumbering
+RaiCore.Pdf.PdfListNumbering.UpperRoman = 5 -> RaiCore.Pdf.PdfListNumbering
+RaiCore.Pdf.PdfOutlineItem
+RaiCore.Pdf.PdfOutlineItem.Children.get -> System.Collections.Generic.IList<RaiCore.Pdf.PdfOutlineItem!>!
+RaiCore.Pdf.PdfOutlineItem.Destination.get -> RaiCore.Pdf.PdfDestination!
+RaiCore.Pdf.PdfOutlineItem.Destination.set -> void
+RaiCore.Pdf.PdfOutlineItem.IsOpen.get -> bool
+RaiCore.Pdf.PdfOutlineItem.IsOpen.set -> void
+RaiCore.Pdf.PdfOutlineItem.PdfOutlineItem(string! title, RaiCore.Pdf.PdfDestination! destination) -> void
+RaiCore.Pdf.PdfOutlineItem.PdfOutlineItem(string! title, RaiCore.Pdf.PdfPage! page, double? top = null) -> void
+RaiCore.Pdf.PdfOutlineItem.Title.get -> string!
+RaiCore.Pdf.PdfOutlineItem.Title.set -> void
+RaiCore.Pdf.PdfPage
+RaiCore.Pdf.PdfPage.AddLink(double x, double y, double width, double height, RaiCore.Pdf.PdfDestination! destination) -> RaiCore.Pdf.PdfLink!
+RaiCore.Pdf.PdfPage.AddLink(double x, double y, double width, double height, string! destinationName) -> RaiCore.Pdf.PdfLink!
+RaiCore.Pdf.PdfPage.AddLink(double x, double y, double width, double height, System.Uri! uri) -> RaiCore.Pdf.PdfLink!
+RaiCore.Pdf.PdfPage.Canvas.get -> RaiCore.Pdf.PdfCanvas!
+RaiCore.Pdf.PdfPage.Height.get -> double
+RaiCore.Pdf.PdfPage.Links.get -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.PdfLink!>!
+RaiCore.Pdf.PdfPage.Size.get -> RaiCore.Pdf.PdfPageSize
+RaiCore.Pdf.PdfPage.Width.get -> double
+RaiCore.Pdf.PdfPageMode
+RaiCore.Pdf.PdfPageMode.Automatic = 0 -> RaiCore.Pdf.PdfPageMode
+RaiCore.Pdf.PdfPageMode.UseNone = 1 -> RaiCore.Pdf.PdfPageMode
+RaiCore.Pdf.PdfPageMode.UseOutlines = 2 -> RaiCore.Pdf.PdfPageMode
+RaiCore.Pdf.PdfPageSize
+RaiCore.Pdf.PdfPageSize.Deconstruct(out double Width, out double Height) -> void
+RaiCore.Pdf.PdfPageSize.Equals(RaiCore.Pdf.PdfPageSize other) -> bool
+RaiCore.Pdf.PdfPageSize.Height.get -> double
+RaiCore.Pdf.PdfPageSize.Height.init -> void
+RaiCore.Pdf.PdfPageSize.Landscape.get -> RaiCore.Pdf.PdfPageSize
+RaiCore.Pdf.PdfPageSize.PdfPageSize() -> void
+RaiCore.Pdf.PdfPageSize.PdfPageSize(double Width, double Height) -> void
+RaiCore.Pdf.PdfPageSize.Width.get -> double
+RaiCore.Pdf.PdfPageSize.Width.init -> void
+RaiCore.Pdf.PdfPasswordException
+RaiCore.Pdf.PdfPasswordException.PdfPasswordException() -> void
+RaiCore.Pdf.PdfPasswordException.PdfPasswordException(string! message) -> void
+RaiCore.Pdf.PdfPasswordException.PdfPasswordException(string! message, System.Exception! innerException) -> void
+RaiCore.Pdf.PdfPermissions
+RaiCore.Pdf.PdfPermissions.All = RaiCore.Pdf.PdfPermissions.Print | RaiCore.Pdf.PdfPermissions.Modify | RaiCore.Pdf.PdfPermissions.Copy | RaiCore.Pdf.PdfPermissions.Annotate | RaiCore.Pdf.PdfPermissions.FillForms | RaiCore.Pdf.PdfPermissions.ExtractForAccessibility | RaiCore.Pdf.PdfPermissions.Assemble | RaiCore.Pdf.PdfPermissions.PrintHighQuality -> RaiCore.Pdf.PdfPermissions
+RaiCore.Pdf.PdfPermissions.Annotate = 32 -> RaiCore.Pdf.PdfPermissions
+RaiCore.Pdf.PdfPermissions.Assemble = 1024 -> RaiCore.Pdf.PdfPermissions
+RaiCore.Pdf.PdfPermissions.Copy = 16 -> RaiCore.Pdf.PdfPermissions
+RaiCore.Pdf.PdfPermissions.ExtractForAccessibility = 512 -> RaiCore.Pdf.PdfPermissions
+RaiCore.Pdf.PdfPermissions.FillForms = 256 -> RaiCore.Pdf.PdfPermissions
+RaiCore.Pdf.PdfPermissions.Modify = 8 -> RaiCore.Pdf.PdfPermissions
+RaiCore.Pdf.PdfPermissions.None = 0 -> RaiCore.Pdf.PdfPermissions
+RaiCore.Pdf.PdfPermissions.Print = 4 -> RaiCore.Pdf.PdfPermissions
+RaiCore.Pdf.PdfPermissions.PrintHighQuality = 2048 -> RaiCore.Pdf.PdfPermissions
+RaiCore.Pdf.PdfReader
+RaiCore.Pdf.PdfReader.IsEncrypted.get -> bool
+RaiCore.Pdf.PdfReader.IsOpenedWithOwnerPassword.get -> bool
+RaiCore.Pdf.PdfReader.IsRepaired.get -> bool
+RaiCore.Pdf.PdfReader.Pages.get -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.PdfReaderPage!>!
+RaiCore.Pdf.PdfReader.Permissions.get -> RaiCore.Pdf.PdfPermissions
+RaiCore.Pdf.PdfReader.Version.get -> string!
+RaiCore.Pdf.PdfReaderPage
+RaiCore.Pdf.PdfReaderPage.CropBox.get -> RaiCore.Pdf.PdfRectangle
+RaiCore.Pdf.PdfReaderPage.Height.get -> double
+RaiCore.Pdf.PdfReaderPage.Index.get -> int
+RaiCore.Pdf.PdfReaderPage.MediaBox.get -> RaiCore.Pdf.PdfRectangle
+RaiCore.Pdf.PdfReaderPage.Reader.get -> RaiCore.Pdf.PdfReader!
+RaiCore.Pdf.PdfReaderPage.Rotate.get -> int
+RaiCore.Pdf.PdfReaderPage.Width.get -> double
+RaiCore.Pdf.PdfRectangle
+RaiCore.Pdf.PdfRectangle.Deconstruct(out double X, out double Y, out double Width, out double Height) -> void
+RaiCore.Pdf.PdfRectangle.Equals(RaiCore.Pdf.PdfRectangle other) -> bool
+RaiCore.Pdf.PdfRectangle.Height.get -> double
+RaiCore.Pdf.PdfRectangle.Height.init -> void
+RaiCore.Pdf.PdfRectangle.PdfRectangle() -> void
+RaiCore.Pdf.PdfRectangle.PdfRectangle(double X, double Y, double Width, double Height) -> void
+RaiCore.Pdf.PdfRectangle.Right.get -> double
+RaiCore.Pdf.PdfRectangle.Top.get -> double
+RaiCore.Pdf.PdfRectangle.Width.get -> double
+RaiCore.Pdf.PdfRectangle.Width.init -> void
+RaiCore.Pdf.PdfRectangle.X.get -> double
+RaiCore.Pdf.PdfRectangle.X.init -> void
+RaiCore.Pdf.PdfRectangle.Y.get -> double
+RaiCore.Pdf.PdfRectangle.Y.init -> void
+RaiCore.Pdf.PdfStructureElement
+RaiCore.Pdf.PdfStructureElement.ActualText.get -> string?
+RaiCore.Pdf.PdfStructureElement.ActualText.set -> void
+RaiCore.Pdf.PdfStructureElement.AddChild(string! type) -> RaiCore.Pdf.PdfStructureElement!
+RaiCore.Pdf.PdfStructureElement.AlternateText.get -> string?
+RaiCore.Pdf.PdfStructureElement.AlternateText.set -> void
+RaiCore.Pdf.PdfStructureElement.BoundingBox.get -> RaiCore.Pdf.PdfRectangle?
+RaiCore.Pdf.PdfStructureElement.BoundingBox.set -> void
+RaiCore.Pdf.PdfStructureElement.Children.get -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.PdfStructureElement!>!
+RaiCore.Pdf.PdfStructureElement.ColumnSpan.get -> int
+RaiCore.Pdf.PdfStructureElement.ColumnSpan.set -> void
+RaiCore.Pdf.PdfStructureElement.Expansion.get -> string?
+RaiCore.Pdf.PdfStructureElement.Expansion.set -> void
+RaiCore.Pdf.PdfStructureElement.Language.get -> string?
+RaiCore.Pdf.PdfStructureElement.Language.set -> void
+RaiCore.Pdf.PdfStructureElement.ListNumbering.get -> RaiCore.Pdf.PdfListNumbering?
+RaiCore.Pdf.PdfStructureElement.ListNumbering.set -> void
+RaiCore.Pdf.PdfStructureElement.Parent.get -> RaiCore.Pdf.PdfStructureElement?
+RaiCore.Pdf.PdfStructureElement.RowSpan.get -> int
+RaiCore.Pdf.PdfStructureElement.RowSpan.set -> void
+RaiCore.Pdf.PdfStructureElement.Scope.get -> RaiCore.Pdf.PdfTableScope?
+RaiCore.Pdf.PdfStructureElement.Scope.set -> void
+RaiCore.Pdf.PdfStructureElement.Title.get -> string?
+RaiCore.Pdf.PdfStructureElement.Title.set -> void
+RaiCore.Pdf.PdfStructureElement.Type.get -> string!
+RaiCore.Pdf.PdfStructureTypes
+RaiCore.Pdf.PdfTableScope
+RaiCore.Pdf.PdfTableScope.Both = 2 -> RaiCore.Pdf.PdfTableScope
+RaiCore.Pdf.PdfTableScope.Column = 1 -> RaiCore.Pdf.PdfTableScope
+RaiCore.Pdf.PdfTableScope.Row = 0 -> RaiCore.Pdf.PdfTableScope
+RaiCore.Pdf.ResourceLimitExceededException
+RaiCore.Pdf.ResourceLimitExceededException.Limit.get -> long
+RaiCore.Pdf.ResourceLimitExceededException.LimitName.get -> string!
+RaiCore.Pdf.ResourceLimitExceededException.ResourceLimitExceededException() -> void
+RaiCore.Pdf.ResourceLimitExceededException.ResourceLimitExceededException(string! limitName, long limit, string! message) -> void
+RaiCore.Pdf.ResourceLimitExceededException.ResourceLimitExceededException(string! message) -> void
+RaiCore.Pdf.ResourceLimitExceededException.ResourceLimitExceededException(string! message, System.Exception! innerException) -> void
+RaiCore.Pdf.ResourceLimits
+RaiCore.Pdf.ResourceLimits.<Clone>$() -> RaiCore.Pdf.ResourceLimits!
+RaiCore.Pdf.ResourceLimits.Enforce(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.IDisposable!
+RaiCore.Pdf.ResourceLimits.Equals(RaiCore.Pdf.ResourceLimits? other) -> bool
+RaiCore.Pdf.ResourceLimits.MaxDecompressedBytes.get -> long
+RaiCore.Pdf.ResourceLimits.MaxDecompressedBytes.init -> void
+RaiCore.Pdf.ResourceLimits.MaxElements.get -> int
+RaiCore.Pdf.ResourceLimits.MaxElements.init -> void
+RaiCore.Pdf.ResourceLimits.MaxFontBytes.get -> long
+RaiCore.Pdf.ResourceLimits.MaxFontBytes.init -> void
+RaiCore.Pdf.ResourceLimits.MaxImagePixels.get -> long
+RaiCore.Pdf.ResourceLimits.MaxImagePixels.init -> void
+RaiCore.Pdf.ResourceLimits.MaxNestingDepth.get -> int
+RaiCore.Pdf.ResourceLimits.MaxNestingDepth.init -> void
+RaiCore.Pdf.ResourceLimits.MaxPages.get -> int
+RaiCore.Pdf.ResourceLimits.MaxPages.init -> void
+RaiCore.Pdf.ResourceLimits.MaxResourceBytes.get -> long
+RaiCore.Pdf.ResourceLimits.MaxResourceBytes.init -> void
+RaiCore.Pdf.ResourceLimits.MaxTableCells.get -> long
+RaiCore.Pdf.ResourceLimits.MaxTableCells.init -> void
+RaiCore.Pdf.ResourceLimits.ResourceLimits() -> void
+RaiCore.Pdf.ResourceLimits.Timeout.get -> System.TimeSpan
+RaiCore.Pdf.ResourceLimits.Timeout.init -> void
+static RaiCore.Pdf.FacturX.AttachFacturXInvoice(this RaiCore.Pdf.PdfDocument! document, byte[]! invoiceXml, RaiCore.Pdf.FacturXProfile profile) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Fonts.FontCollection.SystemFontDirectories.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static RaiCore.Pdf.Fonts.PdfFont.GetFaceCount(byte[]! data) -> int
+static RaiCore.Pdf.Fonts.PdfFont.Load(byte[]! data, int faceIndex = 0) -> RaiCore.Pdf.Fonts.PdfFont!
+static RaiCore.Pdf.Fonts.PdfFont.Load(string! path, int faceIndex = 0) -> RaiCore.Pdf.Fonts.PdfFont!
+static RaiCore.Pdf.Fonts.PdfFont.Load(System.IO.Stream! stream, int faceIndex = 0) -> RaiCore.Pdf.Fonts.PdfFont!
+static RaiCore.Pdf.Fonts.PdfFont.Standard(RaiCore.Pdf.Fonts.StandardFont font) -> RaiCore.Pdf.Fonts.PdfFont!
+static RaiCore.Pdf.Fonts.UnicodeRange.operator !=(RaiCore.Pdf.Fonts.UnicodeRange left, RaiCore.Pdf.Fonts.UnicodeRange right) -> bool
+static RaiCore.Pdf.Fonts.UnicodeRange.operator ==(RaiCore.Pdf.Fonts.UnicodeRange left, RaiCore.Pdf.Fonts.UnicodeRange right) -> bool
+static RaiCore.Pdf.PdfColor.Black.get -> RaiCore.Pdf.PdfColor
+static RaiCore.Pdf.PdfColor.FromRgb(byte red, byte green, byte blue) -> RaiCore.Pdf.PdfColor
+static RaiCore.Pdf.PdfColor.FromRgba(byte red, byte green, byte blue, double alpha) -> RaiCore.Pdf.PdfColor
+static RaiCore.Pdf.PdfColor.operator !=(RaiCore.Pdf.PdfColor left, RaiCore.Pdf.PdfColor right) -> bool
+static RaiCore.Pdf.PdfColor.operator ==(RaiCore.Pdf.PdfColor left, RaiCore.Pdf.PdfColor right) -> bool
+static RaiCore.Pdf.PdfColor.White.get -> RaiCore.Pdf.PdfColor
+static RaiCore.Pdf.PdfImage.Load(byte[]! data) -> RaiCore.Pdf.PdfImage!
+static RaiCore.Pdf.PdfImage.Load(string! path) -> RaiCore.Pdf.PdfImage!
+static RaiCore.Pdf.PdfImage.Load(System.IO.Stream! stream) -> RaiCore.Pdf.PdfImage!
+static RaiCore.Pdf.PdfImage.LoadSvg(string! markup) -> RaiCore.Pdf.PdfImage!
+static RaiCore.Pdf.PdfImportOptions.Default.get -> RaiCore.Pdf.PdfImportOptions!
+static RaiCore.Pdf.PdfPageSize.A3.get -> RaiCore.Pdf.PdfPageSize
+static RaiCore.Pdf.PdfPageSize.A4.get -> RaiCore.Pdf.PdfPageSize
+static RaiCore.Pdf.PdfPageSize.A5.get -> RaiCore.Pdf.PdfPageSize
+static RaiCore.Pdf.PdfPageSize.FromInches(double width, double height) -> RaiCore.Pdf.PdfPageSize
+static RaiCore.Pdf.PdfPageSize.FromMillimeters(double width, double height) -> RaiCore.Pdf.PdfPageSize
+static RaiCore.Pdf.PdfPageSize.Legal.get -> RaiCore.Pdf.PdfPageSize
+static RaiCore.Pdf.PdfPageSize.Letter.get -> RaiCore.Pdf.PdfPageSize
+static RaiCore.Pdf.PdfPageSize.operator !=(RaiCore.Pdf.PdfPageSize left, RaiCore.Pdf.PdfPageSize right) -> bool
+static RaiCore.Pdf.PdfPageSize.operator ==(RaiCore.Pdf.PdfPageSize left, RaiCore.Pdf.PdfPageSize right) -> bool
+static RaiCore.Pdf.PdfReader.Open(byte[]! data) -> RaiCore.Pdf.PdfReader!
+static RaiCore.Pdf.PdfReader.Open(byte[]! data, string? password) -> RaiCore.Pdf.PdfReader!
+static RaiCore.Pdf.PdfReader.Open(string! path) -> RaiCore.Pdf.PdfReader!
+static RaiCore.Pdf.PdfReader.Open(string! path, string? password) -> RaiCore.Pdf.PdfReader!
+static RaiCore.Pdf.PdfReader.Open(System.IO.Stream! stream) -> RaiCore.Pdf.PdfReader!
+static RaiCore.Pdf.PdfReader.Open(System.IO.Stream! stream, string? password) -> RaiCore.Pdf.PdfReader!
+static RaiCore.Pdf.PdfRectangle.operator !=(RaiCore.Pdf.PdfRectangle left, RaiCore.Pdf.PdfRectangle right) -> bool
+static RaiCore.Pdf.PdfRectangle.operator ==(RaiCore.Pdf.PdfRectangle left, RaiCore.Pdf.PdfRectangle right) -> bool
+static RaiCore.Pdf.ResourceLimits.Default.get -> RaiCore.Pdf.ResourceLimits!
+static RaiCore.Pdf.ResourceLimits.operator !=(RaiCore.Pdf.ResourceLimits? left, RaiCore.Pdf.ResourceLimits? right) -> bool
+static RaiCore.Pdf.ResourceLimits.operator ==(RaiCore.Pdf.ResourceLimits? left, RaiCore.Pdf.ResourceLimits? right) -> bool
+virtual RaiCore.Pdf.Fonts.PdfFont.StrikeoutPosition.get -> double
+virtual RaiCore.Pdf.Fonts.PdfFont.StrikeoutThickness.get -> double
+virtual RaiCore.Pdf.Fonts.PdfFont.UnderlinePosition.get -> double
+virtual RaiCore.Pdf.Fonts.PdfFont.UnderlineThickness.get -> double
+virtual RaiCore.Pdf.Fonts.PdfFont.WithUnicodeRanges(params System.Collections.Generic.IEnumerable<RaiCore.Pdf.Fonts.UnicodeRange>! ranges) -> RaiCore.Pdf.Fonts.PdfFont!
+~[RCPDF002]override RaiCore.Pdf.PositionedGlyph.Equals(object obj) -> bool
+~[RCPDF002]override RaiCore.Pdf.PositionedGlyph.ToString() -> string
+~override RaiCore.Pdf.Fonts.UnicodeRange.Equals(object obj) -> bool
+~override RaiCore.Pdf.Fonts.UnicodeRange.ToString() -> string
+~override RaiCore.Pdf.PdfColor.Equals(object obj) -> bool
+~override RaiCore.Pdf.PdfColor.ToString() -> string
+~override RaiCore.Pdf.PdfPageSize.Equals(object obj) -> bool
+~override RaiCore.Pdf.PdfPageSize.ToString() -> string
+~override RaiCore.Pdf.PdfRectangle.Equals(object obj) -> bool
+~override RaiCore.Pdf.PdfRectangle.ToString() -> string

@@ -9,6 +9,9 @@ Nothing has been released yet: the first release will be 1.0.0, once the
 [roadmap milestones](https://github.com/raicevic/raicore-pdf/milestones) are done. Until then, the public API may
 change at any time, and this section lists what the packages can do so far.
 
+The public API reviewed for 1.0 (#60) is recorded in each package's `PublicAPI.Shipped.txt`, and the build fails
+when it changes without a matching line in `PublicAPI.Unshipped.txt` (#61), so changes before 1.0 are deliberate.
+
 ### RaiCore.Pdf
 - PDF writer with compressed streams, document information and the 14 standard fonts.
 - Embedded TrueType, OpenType, TTC, WOFF and WOFF2 fonts, subset to the glyphs used, with ToUnicode maps so text

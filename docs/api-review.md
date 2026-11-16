@@ -260,3 +260,6 @@ One pull request per group, in this order, each with its CHANGELOG entry and tes
    - the async counterparts (section 7).
 
 After that, #61 records the result in `PublicAPI.Shipped.txt`, so later changes show up in review.
+
+*Done:* parts 1-7 are #161-#164, #167, #168 and #170 (section 6 became parts 6 and 7). #61 recorded the API in
+`PublicAPI.Shipped.txt`; the workflow is described under *Public API* in `CONTRIBUTING.md`.
