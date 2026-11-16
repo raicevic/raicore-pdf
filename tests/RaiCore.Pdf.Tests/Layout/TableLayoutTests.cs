@@ -62,9 +62,8 @@ public class TableLayoutTests
     [Fact]
     public void Percentage_and_fixed_columns()
     {
-        var table = StyledTable(new BoxStyle { Width = 260 }, new TableRow(Cell("a"), Cell("b"), Cell("c")));
-        table.ColumnWidths.Add(TableWidth.Percent(50));
-        table.ColumnWidths.Add(TableWidth.Points(40));
+        var table = new TableBlock(new BoxStyle { Width = 260 }) { ColumnWidths = [TableWidth.Percent(50), TableWidth.Points(40)] }
+            .Add(new TableRow(Cell("a"), Cell("b"), Cell("c")));
         var layout = TableLayouter.Layout(table, 0, 260);
 
         Assert.Equal(130, Width(layout, 0), 3);
@@ -75,9 +74,8 @@ public class TableLayoutTests
     [Fact]
     public void Fixed_layout_shares_the_rest_equally()
     {
-        var table = new TableBlock(new BoxStyle { Width = 260 }) { LayoutMode = TableLayoutMode.Fixed };
+        var table = new TableBlock(new BoxStyle { Width = 260 }) { LayoutMode = TableLayoutMode.Fixed, ColumnWidths = [TableWidth.Points(60)] };
         table.Add(new TableRow(Cell("a very long text that would want a lot of room"), Cell("b"), Cell("c")));
-        table.ColumnWidths.Add(TableWidth.Points(60));
         var layout = TableLayouter.Layout(table, 0, 260);
 
         Assert.Equal([60, 100, 100], Enumerable.Range(0, 3).Select(c => Math.Round(Width(layout, c), 3)));

@@ -71,14 +71,14 @@ public sealed class TableBlock : Block
     public IReadOnlyList<TableRow> Rows => _rows;
 
     /// <summary>Optional width specifications per column (CSS <c>col</c> widths); <c>null</c> entries are automatic.</summary>
-    public IList<TableWidth?> ColumnWidths { get; } = [];
+    public IReadOnlyList<TableWidth?> ColumnWidths { get; init; } = [];
 
     /// <summary>
-    /// The table's direction is right to left (CSS <c>direction: rtl</c>): the first column (of the rows' cells and of
+    /// The table's direction (CSS <c>direction</c>). Right to left, the first column (of the rows' cells and of
     /// <see cref="ColumnWidths"/>) is on the right and the columns follow to the left. Cell borders and padding stay
     /// on their physical sides.
     /// </summary>
-    public bool RightToLeft { get; init; }
+    public TextDirection Direction { get; init; }
 
     /// <summary>Border model.</summary>
     public BorderCollapse BorderCollapse { get; init; }
@@ -93,7 +93,7 @@ public sealed class TableBlock : Block
     public TableLayoutMode LayoutMode { get; init; }
 
     /// <summary>Position of a table narrower than the available width (e.g. CSS <c>margin: 0 auto</c> centers it).</summary>
-    public TextAlignment Alignment { get; init; } = TextAlignment.Left;
+    public BlockAlignment Alignment { get; init; }
 
     /// <summary>Appends a row.</summary>
     public TableBlock Add(TableRow row)
@@ -128,7 +128,10 @@ public sealed class TableRow
     /// </summary>
     public bool IsFooter { get; init; }
 
-    /// <summary>Background behind the row's cells (a cell's own background is drawn over it).</summary>
+    /// <summary>
+    /// Background behind the row's cells (a cell's own background is drawn over it). Rows take only a colour: borders
+    /// belong to cells, and in the collapsing border model a row's borders are resolved onto its cells.
+    /// </summary>
     public PdfColor? Background { get; init; }
 
     /// <summary>Minimum row height in points.</summary>

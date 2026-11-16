@@ -10,14 +10,14 @@ public sealed class LinkTarget
     private LinkTarget(Uri? uri, string? destination)
     {
         Uri = uri;
-        Destination = destination;
+        DestinationName = destination;
     }
 
     /// <summary>The URI the link opens, or <c>null</c> for a link within the document.</summary>
     public Uri? Uri { get; }
 
     /// <summary>The id of the block or anchor the link jumps to, or <c>null</c> for a link to a URI.</summary>
-    public string? Destination { get; }
+    public string? DestinationName { get; }
 
     /// <summary>A link that opens a URI. Relative URIs are kept as they are.</summary>
     public static LinkTarget ToUri(Uri uri)
@@ -37,7 +37,7 @@ public sealed class LinkTarget
     }
 
     /// <inheritdoc />
-    public override string ToString() => Uri?.ToString() ?? "#" + Destination;
+    public override string ToString() => Uri?.ToString() ?? "#" + DestinationName;
 
     /// <summary>
     /// Adds the link annotation for a rectangle in the canvas's coordinates, with a description for screen readers (such
@@ -50,7 +50,7 @@ public sealed class LinkTarget
             return;
         }
 
-        var link = Uri is { } uri ? canvas.AddLink(x, y, width, height, uri) : canvas.AddLink(x, y, width, height, Destination!);
+        var link = Uri is { } uri ? canvas.AddLink(x, y, width, height, uri) : canvas.AddLink(x, y, width, height, DestinationName!);
         link.Description = description;
     }
 }

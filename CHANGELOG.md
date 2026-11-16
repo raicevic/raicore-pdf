@@ -178,6 +178,13 @@ change at any time, and this section lists what the packages can do so far.
 ### RaiCore.Pdf.Layout
 - API review (#60), breaking: the `RaiCore.Pdf.Layout.Blocks` namespace is merged into `RaiCore.Pdf.Layout`, so
   blocks, `FlowDocument`, page setup and paragraphs need one `using`. `RaiCore.Pdf.Layout.Text` stays separate.
+- API review (#60), breaking: `FlexBlock.Direction` and `TableBlock.Direction` are a `TextDirection` (in place of
+  `RightToLeft`), and the flex main axis is `FlexBlock.FlexDirection`; `TextDirection` moved to `RaiCore.Pdf.Layout`.
+  `ImageBlock.Alignment` and `TableBlock.Alignment` are a `BlockAlignment`. `TableBlock.ColumnWidths` is set with
+  `init`, and so are `Paragraph.Alignment`, `Direction`, `FirstLineIndent`, `BreakLongWords` and `Ellipsis`. A corner
+  gradient is `LinearGradient.ToCorner(GradientCorner, ...)`. `FlowDocument.DrawBlocks` takes `top` as a PDF y
+  coordinate and no page height. `PageInfo` is `(Context, Count, Setup, Markers)`, with `Number` from the context.
+  `LinkTarget.Destination` is `DestinationName`.
 - The package includes the Unicode License v3 notice (`licenses/unicode.txt`) for its bidi and line break tables,
   generated from the Unicode Character Database, and its license expression names `Unicode-3.0`. All third-party
   material is listed in `THIRD-PARTY-NOTICES.md`.

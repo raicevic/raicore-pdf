@@ -231,6 +231,14 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
 
         var baseStyle = builder.TextStyleFor(blockStyle);
         var indent = blockStyle.TextIndent.Resolve(contentWidth);
+
+        // An outside marker hangs to the left of the text; an inside marker is just the first piece of text.
+        var markerText = _marker is { } marker ? marker + "\u00A0" : null;
+        if (markerText is not null && !blockStyle.ListStyleInside)
+        {
+            indent -= TextShaper.Shape(markerText, baseStyle.Fonts, baseStyle.Shaping).GetWidth(baseStyle.FontSize);
+        }
+
         _paragraph = new Paragraph(baseStyle)
         {
             Alignment = blockStyle.TextAlign,
@@ -248,16 +256,9 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
             _paragraph.Add(blockStyle.Rtl ? "\u202E" : "\u202D", baseStyle);
         }
 
-        if (_marker is { } marker)
+        if (markerText is not null)
         {
-            // An outside marker hangs to the left of the text; an inside marker is just the first piece of text.
-            var markerText = marker + "\u00A0";
             _paragraph.BeginTag(BoxBuilder.ListLabel).Add(markerText, baseStyle).EndTag();
-            if (!blockStyle.ListStyleInside)
-            {
-                _paragraph.FirstLineIndent = indent - TextShaper.Shape(markerText, baseStyle.Fonts, baseStyle.Shaping).GetWidth(baseStyle.FontSize);
-            }
-
             _marker = null;
         }
 

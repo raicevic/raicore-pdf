@@ -46,23 +46,14 @@ public readonly record struct PageContext(int Number, string? Name, PageSide Sid
 }
 
 /// <summary>Information passed to a page decorator (header/footer callback).</summary>
-/// <param name="Number">1-based page number.</param>
+/// <param name="Context">The page: its number, name and side, and whether it is blank.</param>
 /// <param name="Count">Total number of pages.</param>
 /// <param name="Setup">The page's setup (its own size and margins, see <see cref="FlowDocument.PageSetupResolver"/>).</param>
 /// <param name="Markers">Markers (<see cref="Block.Marker"/>) of the blocks that start on this page, in document order.</param>
-public readonly record struct PageInfo(int Number, int Count, PageSetup Setup, IReadOnlyList<object> Markers)
+public readonly record struct PageInfo(PageContext Context, int Count, PageSetup Setup, IReadOnlyList<object> Markers)
 {
-    /// <summary>The page name (see <see cref="PageContext.Name"/>); <c>null</c> for unnamed pages.</summary>
-    public string? Name { get; init; }
-
-    /// <summary>Whether it is a left or a right page.</summary>
-    public PageSide Side { get; init; }
-
-    /// <summary>The page was inserted empty by a left or right page break (see <see cref="PageContext.IsBlank"/>).</summary>
-    public bool IsBlank { get; init; }
-
-    /// <summary>What the page's setup was chosen by.</summary>
-    public PageContext Context => new(Number, Name, Side, IsBlank);
+    /// <summary>1-based page number (the same as the <see cref="Context"/>'s).</summary>
+    public int Number => Context.Number;
 }
 
 /// <summary>The pages a <see cref="FlowDocument"/> was laid out on (see <see cref="FlowDocument.MapPages"/>).</summary>
@@ -249,7 +240,7 @@ public sealed class FlowDocument
             // Headers, footers and page numbers repeat on every page: artifacts in a tagged document.
             var markers = result.Markers.Where(m => m.Page == i).Select(m => m.Marker).ToList();
             LayoutTagging.BeginArtifact(page.Canvas, PdfArtifactKind.Pagination);
-            PageDecorator?.Invoke(page.Canvas, new PageInfo(i + 1, pages.Count, setup, markers) { Name = context.Name, Side = context.Side, IsBlank = context.IsBlank });
+            PageDecorator?.Invoke(page.Canvas, new PageInfo(context, pages.Count, setup, markers));
             LayoutTagging.End(page.Canvas);
             if (document.IsSaving)
             {
@@ -330,10 +321,11 @@ public sealed class FlowDocument
 
     /// <summary>
     /// Draws blocks in one unbroken column (no page breaks) with its top-left corner at (<paramref name="x"/>,
-    /// <paramref name="top"/>), where <paramref name="top"/> is measured from the top of the page. Useful in page
-    /// decorators, e.g. for headers and footers. Returns the height used.
+    /// <paramref name="top"/>) in the canvas's coordinates, which start at the bottom-left corner of the page (as for
+    /// <see cref="ParagraphLayout.Draw(PdfCanvas, double, double)"/>). Useful in page decorators, e.g. for headers
+    /// and footers. Returns the height used.
     /// </summary>
-    public static double DrawBlocks(PdfCanvas canvas, double pageHeight, IReadOnlyList<Block> blocks, double x, double top, double width)
+    public static double DrawBlocks(PdfCanvas canvas, IReadOnlyList<Block> blocks, double x, double top, double width)
     {
         ArgumentNullException.ThrowIfNull(canvas);
         ArgumentNullException.ThrowIfNull(blocks);
@@ -341,7 +333,7 @@ public sealed class FlowDocument
         var (height, content, _) = Paginator.LayoutStatic(blocks, x, Math.Max(1, width));
         foreach (var draw in content)
         {
-            draw(canvas, pageHeight - top);
+            draw(canvas, top);
         }
 
         return height;

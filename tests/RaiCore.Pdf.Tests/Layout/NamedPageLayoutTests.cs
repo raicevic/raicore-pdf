@@ -127,8 +127,8 @@ public class NamedPageLayoutTests
         Assert.Equal(PageSide.Right, result.Frames[2].Context.Side);
 
         flow.Render();
-        Assert.Equal([false, true, false], seen.Select(p => p.IsBlank));
-        Assert.Equal([PageSide.Right, PageSide.Left, PageSide.Right], seen.Select(p => p.Side));
+        Assert.Equal([false, true, false], seen.Select(p => p.Context.IsBlank));
+        Assert.Equal([PageSide.Right, PageSide.Left, PageSide.Right], seen.Select(p => p.Context.Side));
         Assert.Same(blank, seen[1].Setup);
     }
 
@@ -270,7 +270,7 @@ public class NamedPageLayoutTests
         flow.Render();
 
         Assert.Equal([Small, Wide], seen.Select(p => p.Setup));
-        Assert.Equal([null, "wide"], seen.Select(p => p.Name));
+        Assert.Equal([null, "wide"], seen.Select(p => p.Context.Name));
         Assert.Equal(new PageContext(2, "wide", PageSide.Left, IsBlank: false), seen[1].Context);
     }
 

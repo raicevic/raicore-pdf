@@ -2,16 +2,6 @@ using RaiCore.Pdf.Fonts;
 
 namespace RaiCore.Pdf.Layout.Text;
 
-/// <summary>Writing direction of a run.</summary>
-public enum TextDirection
-{
-    /// <summary>Left to right (Latin, Greek, Cyrillic, CJK, ...).</summary>
-    LeftToRight,
-
-    /// <summary>Right to left (Arabic, Hebrew, ...).</summary>
-    RightToLeft,
-}
-
 /// <summary>Options for <see cref="TextShaper"/>.</summary>
 public sealed class ShapingOptions
 {

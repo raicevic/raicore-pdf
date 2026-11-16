@@ -863,12 +863,12 @@ internal sealed partial class BoxBuilder
     /// share the free space (<c>margin: 0 auto</c> centers it); otherwise it is on the containing block's start side,
     /// the right when that is right to left (CSS 2.1 section 10.3.3).
     /// </summary>
-    private static TextAlignment ShrinkToFitAlignment(ComputedStyle style) => (style.Margin[3].IsAuto, style.Margin[1].IsAuto) switch
+    private static BlockAlignment ShrinkToFitAlignment(ComputedStyle style) => (style.Margin[3].IsAuto, style.Margin[1].IsAuto) switch
     {
-        (true, true) => TextAlignment.Center,
-        (true, false) => TextAlignment.Right,
-        (false, true) => TextAlignment.Left,
-        _ => style.ContainerRtl ? TextAlignment.Right : TextAlignment.Left,
+        (true, true) => BlockAlignment.Center,
+        (true, false) => BlockAlignment.Right,
+        (false, true) => BlockAlignment.Left,
+        _ => style.ContainerRtl ? BlockAlignment.Right : BlockAlignment.Left,
     };
 
     /// <summary>
