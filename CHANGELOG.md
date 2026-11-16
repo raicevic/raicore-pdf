@@ -12,6 +12,10 @@ change at any time, and this section lists what the packages can do so far.
 The public API reviewed for 1.0 (#60) is recorded in each package's `PublicAPI.Shipped.txt`, and the build fails
 when it changes without a matching line in `PublicAPI.Unshipped.txt` (#61), so changes before 1.0 are deliberate.
 
+Documentation site (#63): guides (getting started, CSS support, paged media, fonts, images, tables and pagination,
+flexbox, Razor and ASP.NET Core, the layout API, PDF/A and accessibility), the migration guides and the API reference,
+built with docfx from `docs/`; every code sample is compiled and run in CI. Not published yet.
+
 Samples (#65): runnable apps in [samples/](samples/README.md) (invoice, report with a table of contents, letter for a
 window envelope, ASP.NET Core with Razor, background worker, Docker image), built and run in CI.
 

@@ -1,0 +1,22 @@
+- name: Getting started
+  href: getting-started.md
+- name: HTML and CSS support
+  href: css-support.md
+- name: Paged media
+  href: paged-media.md
+- name: Fonts
+  href: fonts.md
+- name: Images
+  href: images.md
+- name: Tables and pagination
+  href: tables.md
+- name: Flexbox
+  href: flexbox.md
+- name: Razor and ASP.NET Core
+  href: razor.md
+- name: The layout API
+  href: layout-api.md
+- name: PDF/A, accessibility and security
+  href: standards.md
+- name: Experimental APIs
+  href: ../experimental.md

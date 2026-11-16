@@ -487,3 +487,8 @@ smoke-output/
 smoke-publish/
 samples/Docker/packages/
 samples-output/
+
+# Documentation site (generated)
+docs/api/
+docs/_site/
+snippets-output/
