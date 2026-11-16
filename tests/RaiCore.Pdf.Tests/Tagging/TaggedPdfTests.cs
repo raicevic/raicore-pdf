@@ -23,10 +23,15 @@ public class TaggedPdfTests
         var page = doc.AddPage();
         page.Canvas.DrawText("Plain", Sans, 12, 72, 720).BeginArtifact().Rectangle(0, 0, 10, 10).Fill().EndTag();
         page.AddLink(72, 700, 50, 12, new Uri("https://example.com/"));
-        var text = Encoding.Latin1.GetString(doc.ToArray());
+        var bytes = doc.ToArray();
+        var text = Encoding.Latin1.GetString(bytes);
+        // Marked content can only be in the content stream. The whole file also holds font data and a hex file ID
+        // that changes with the creation time, where "BDC" turns up by chance.
+        var content = Encoding.Latin1.GetString(PdfReader.Open(bytes).Pages[0].GetContent());
 
-        Assert.DoesNotContain("BDC", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("BMC", text, StringComparison.Ordinal);
+        Assert.Contains("Tj", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("BDC", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("BMC", content, StringComparison.Ordinal);
         Assert.DoesNotContain("/StructTreeRoot", text, StringComparison.Ordinal);
         Assert.DoesNotContain("/StructParent", text, StringComparison.Ordinal);
         Assert.DoesNotContain("/Tabs", text, StringComparison.Ordinal);
