@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>A box in a <see cref="FlowDocument"/>: content that stacks vertically and flows across pages.</summary>
 public abstract class Block

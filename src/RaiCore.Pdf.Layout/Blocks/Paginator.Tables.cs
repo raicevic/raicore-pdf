@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>Table rows split across pages (CSS fragmentation of table rows, including rows joined by row spans).</summary>
 internal sealed partial class Paginator

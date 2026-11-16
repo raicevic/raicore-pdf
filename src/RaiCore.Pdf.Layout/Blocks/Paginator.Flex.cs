@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>Size overrides for a flex item's border box.</summary>
 /// <param name="Height">A fixed border-box height (content that does not fit overflows).</param>

@@ -674,8 +674,6 @@ Hyphenator.Register("sv", Hyphenator.FromPatterns(File.ReadLines("hyph-sv.pat.tx
 Blocks stack like CSS block boxes and flow across pages:
 
 ```csharp
-using RaiCore.Pdf.Layout.Blocks;
-
 var flow = new FlowDocument(new PageSetup(PdfPageSize.A4, Thickness.All(56)));
 flow.Add(new ParagraphBlock(new Paragraph(h1).Add("Report"), new BoxStyle { BreakAfter = PageBreak.Avoid }));
 flow.Add(new ContainerBlock(

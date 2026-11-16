@@ -2,8 +2,8 @@ namespace RaiCore.Pdf.Layout;
 
 /// <summary>
 /// Where a link goes: a URI (a web page, a <c>mailto:</c> address) or a place in the document named by a block's
-/// <see cref="Blocks.Block.Id"/> or a paragraph's <see cref="Paragraph.AddAnchor"/>. Used for links in text
-/// (<see cref="Paragraph.BeginLink"/>) and on whole blocks (<see cref="Blocks.Block.Link"/>).
+/// <see cref="Block.Id"/> or a paragraph's <see cref="Paragraph.AddAnchor"/>. Used for links in text
+/// (<see cref="Paragraph.BeginLink"/>) and on whole blocks (<see cref="Block.Link"/>).
 /// </summary>
 public sealed class LinkTarget
 {
@@ -27,7 +27,7 @@ public sealed class LinkTarget
     }
 
     /// <summary>
-    /// A link to the block or paragraph anchor with this id (see <see cref="Blocks.Block.Id"/> and
+    /// A link to the block or paragraph anchor with this id (see <see cref="Block.Id"/> and
     /// <see cref="Paragraph.AddAnchor"/>). A link to an id that nothing in the document has is left out of the PDF.
     /// </summary>
     public static LinkTarget ToDestination(string id)

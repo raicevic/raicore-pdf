@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 
 namespace RaiCore.Pdf.Benchmarks;
 

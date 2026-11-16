@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>
 /// Makes a block an entry in the PDF outline (<see cref="Block.Bookmark"/>): when the document is rendered, the entry

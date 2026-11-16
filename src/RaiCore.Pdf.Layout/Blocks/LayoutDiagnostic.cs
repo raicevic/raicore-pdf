@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>
 /// Content that did not fit where it was laid out (see <see cref="FlowDocument.Diagnostics"/>): wider than its box,

@@ -7,7 +7,7 @@ using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html.Boxes;
 using RaiCore.Pdf.Html.Css;
 using RaiCore.Pdf.Html.Diagnostics;
-using RaiCore.Pdf.Layout.Blocks;
+using RaiCore.Pdf.Layout;
 
 namespace RaiCore.Pdf.Html;
 

@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>A cell placed on the table grid.</summary>
 internal sealed record GridCell(TableCell Cell, int Row, int Column, int RowSpan, int ColumnSpan);

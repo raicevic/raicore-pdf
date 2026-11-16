@@ -1,8 +1,7 @@
 using AngleSharp.Css.Dom;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
-using FlexDirection = RaiCore.Pdf.Layout.Blocks.FlexDirection;
-using FlexWrap = RaiCore.Pdf.Layout.Blocks.FlexWrap;
+using FlexDirection = RaiCore.Pdf.Layout.FlexDirection;
+using FlexWrap = RaiCore.Pdf.Layout.FlexWrap;
 using TextDecorationStyle = RaiCore.Pdf.Layout.TextDecorationStyle;
 
 namespace RaiCore.Pdf.Html.Css;
@@ -128,7 +127,7 @@ internal sealed partial record ComputedStyle
     public PdfColor[] BorderColor { get; init; } = [PdfColor.Black, PdfColor.Black, PdfColor.Black, PdfColor.Black];
 
     /// <summary>Per side (top, right, bottom, left); <c>none</c> is solid with width 0, <c>hidden</c> has width 0 too.</summary>
-    public BorderStyle[] BorderStyle { get; init; } = [Layout.Blocks.BorderStyle.Solid, Layout.Blocks.BorderStyle.Solid, Layout.Blocks.BorderStyle.Solid, Layout.Blocks.BorderStyle.Solid];
+    public BorderStyle[] BorderStyle { get; init; } = [Layout.BorderStyle.Solid, Layout.BorderStyle.Solid, Layout.BorderStyle.Solid, Layout.BorderStyle.Solid];
 
     public PdfColor? Background { get; init; }
 
@@ -512,15 +511,15 @@ internal sealed partial record ComputedStyle
 
     private static BorderStyle ParseBorderStyle(string value) => value switch
     {
-        "dashed" => Layout.Blocks.BorderStyle.Dashed,
-        "dotted" => Layout.Blocks.BorderStyle.Dotted,
-        "double" => Layout.Blocks.BorderStyle.Double,
-        "groove" => Layout.Blocks.BorderStyle.Groove,
-        "ridge" => Layout.Blocks.BorderStyle.Ridge,
-        "inset" => Layout.Blocks.BorderStyle.Inset,
-        "outset" => Layout.Blocks.BorderStyle.Outset,
-        "hidden" => Layout.Blocks.BorderStyle.Hidden,
-        _ => Layout.Blocks.BorderStyle.Solid,
+        "dashed" => Layout.BorderStyle.Dashed,
+        "dotted" => Layout.BorderStyle.Dotted,
+        "double" => Layout.BorderStyle.Double,
+        "groove" => Layout.BorderStyle.Groove,
+        "ridge" => Layout.BorderStyle.Ridge,
+        "inset" => Layout.BorderStyle.Inset,
+        "outset" => Layout.BorderStyle.Outset,
+        "hidden" => Layout.BorderStyle.Hidden,
+        _ => Layout.BorderStyle.Solid,
     };
 
     private static CssDisplay ParseDisplay(string value) => value switch

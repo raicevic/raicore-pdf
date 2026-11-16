@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>
 /// Positioning (CSS 2.1 section 9.3 and 10.3.7/10.6.4): relative blocks are laid out in the flow and drawn moved;

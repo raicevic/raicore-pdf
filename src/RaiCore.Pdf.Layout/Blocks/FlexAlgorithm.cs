@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>One item's main-axis inputs to the flex algorithm (border-box sizes; margins separately).</summary>
 /// <param name="BaseSize">The flex base size.</param>
