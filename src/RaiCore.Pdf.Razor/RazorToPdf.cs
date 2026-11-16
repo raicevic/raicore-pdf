@@ -54,6 +54,24 @@ public static class RazorToPdf
         where TComponent : IComponent =>
         Renderer.ConvertAsync<TComponent>(parameters, options, cancellationToken);
 
+    /// <summary>
+    /// Renders a component, converts the HTML to PDF and writes it to <paramref name="output"/> page by page, with
+    /// asynchronous writes only, e.g. to an ASP.NET Core response body (see <see cref="HtmlToPdf.ConvertToStreamAsync(string, Stream, HtmlConverterOptions?, CancellationToken)"/>).
+    /// The stream is left open.
+    /// </summary>
+    /// <typeparam name="TComponent">The component, typically a <c>.razor</c> file that renders a whole HTML document.</typeparam>
+    /// <param name="output">The stream to write the PDF to.</param>
+    /// <param name="parameters">Values for the component's <c>[Parameter]</c> properties, keyed by property name.</param>
+    /// <param name="options">HTML conversion options: fonts, default page setup, base URI for images and stylesheets.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    public static Task ConvertToStreamAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TComponent>(
+        Stream output,
+        IReadOnlyDictionary<string, object?>? parameters = null,
+        HtmlConverterOptions? options = null,
+        CancellationToken cancellationToken = default)
+        where TComponent : IComponent =>
+        Renderer.ConvertToStreamAsync<TComponent>(output, parameters, options, cancellationToken);
+
     /// <summary>Renders a component to an HTML string, e.g. to inspect what will be converted.</summary>
     /// <typeparam name="TComponent">The component to render.</typeparam>
     /// <param name="parameters">Values for the component's <c>[Parameter]</c> properties, keyed by property name.</param>

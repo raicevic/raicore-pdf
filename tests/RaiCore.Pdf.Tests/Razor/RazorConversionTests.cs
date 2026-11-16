@@ -69,6 +69,27 @@ public class RazorConversionTests
         Assert.True(pdf.Pages.Count >= 2, $"Expected the 80-line invoice to need several pages, got {pdf.Pages.Count}.");
     }
 
+    [Fact(Timeout = 60_000)]
+    public async Task Converts_to_a_stream_with_asynchronous_writes_only()
+    {
+        using var output = new AsyncOnlyStream();
+        await RazorToPdf.ConvertToStreamAsync<InvoiceDocument>(output, Params(nameof(InvoiceDocument.Invoice), SampleInvoice(80)), cancellationToken: TestContext.Current.CancellationToken);
+
+        var bytes = output.ToArray();
+        Assert.True(PdfReader.Open(bytes).Pages.Count >= 2);
+        Assert.Contains("RaiCore.Pdf.Razor", System.Text.Encoding.Latin1.GetString(bytes), StringComparison.Ordinal); // The creator.
+        Assert.True(output.Flushed);
+    }
+
+    [Fact]
+    public async Task Creates_a_flow_document_from_a_component_type()
+    {
+        var flow = await new RazorPdfRenderer().CreateFlowDocumentAsync(typeof(InvoiceDocument), Params(nameof(InvoiceDocument.Invoice), SampleInvoice(3)), cancellationToken: Ct);
+
+        Assert.Contains(Flatten(flow.Blocks).OfType<ParagraphBlock>(), p => Text(p) == "Invoice 2026-0042");
+        await Assert.ThrowsAsync<ArgumentException>(() => new RazorPdfRenderer().CreateFlowDocumentAsync(typeof(string), cancellationToken: Ct));
+    }
+
     [Fact]
     public async Task Escaped_at_rules_in_razor_style_blocks_reach_the_css()
     {

@@ -390,6 +390,17 @@ app.MapGet("/invoices/{id}.pdf", async (int id, RazorPdfRenderer renderer) =>
 });
 ```
 
+For long documents, `ConvertToStreamAsync` writes the PDF straight to the response, page by page and with
+asynchronous writes only, as ASP.NET Core requires:
+
+```csharp
+app.MapGet("/reports/{id}.pdf", async (int id, RazorPdfRenderer renderer, HttpResponse response, CancellationToken cancel) =>
+{
+    response.ContentType = "application/pdf";
+    await renderer.ConvertToStreamAsync<ReportPage>(response.Body, new Dictionary<string, object?> { ["Id"] = id }, cancellationToken: cancel);
+});
+```
+
 Outside a host, pass any `IServiceProvider` to `new RazorPdfRenderer(services)`.
 
 - Parameters, child components, layout components with `ChildContent`, `@foreach`/`@if` and HTML encoding work as in
@@ -780,6 +791,9 @@ document.EndSave();                // Fonts, links, outline and metadata, which 
 
 HtmlToPdf.ConvertToStream(html, file); // The same for HTML.
 ```
+
+`HtmlToPdf.ConvertToStreamAsync` (and `RazorToPdf.ConvertToStreamAsync`) write the stream only asynchronously, so it
+can be an ASP.NET Core response body; while the stream is slow, the conversion waits.
 
 ## Architecture
 

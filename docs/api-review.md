@@ -201,6 +201,10 @@ These add API only:
   (the `Type` overload exists for `ConvertAsync` and `RenderHtmlAsync` only).
 - **`PdfPageSize.FromInches`**, next to `FromMillimeters`.
 
+*Done in part 1 (`SaveAsync`, `FromInches`) and part 7 (the rest).* `RazorPdfRenderer` gained `ConvertToStreamAsync`
+too, which `RazorToPdf.ConvertToStreamAsync` calls. Part 7 also fixes `HtmlToPdf.ConvertToStreamAsync`, which wrote
+the stream synchronously from the conversion thread; it now writes it asynchronously from the caller's side.
+
 ### 8. Left as they are
 
 Reviewed with no change proposed:

@@ -49,19 +49,31 @@ public static partial class HtmlToPdf
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' <see cref="HtmlConverterOptions.Limits"/>.</exception>
     public static byte[] ConvertToBytes(string html, HtmlConverterOptions? options = null) => Convert(html, options).ToArray();
 
+    /// <summary>Converts an HTML document to PDF bytes (see <see cref="ConvertAsync(string, HtmlConverterOptions?, CancellationToken)"/>).</summary>
+    /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' <see cref="HtmlConverterOptions.Limits"/>.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+    public static async Task<byte[]> ConvertToBytesAsync(string html, HtmlConverterOptions? options = null, CancellationToken cancellationToken = default) =>
+        (await ConvertAsync(html, options, cancellationToken).ConfigureAwait(false)).ToArray();
+
     /// <summary>
     /// Converts an HTML document to PDF and writes it to <paramref name="output"/> page by page (see
     /// <see cref="PdfDocument.BeginSave"/>): each page is written as soon as it is drawn, so long documents need less
     /// memory than with <see cref="Convert"/>. The stream is left open.
     /// </summary>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' <see cref="HtmlConverterOptions.Limits"/>.</exception>
-    public static void ConvertToStream(string html, Stream output, HtmlConverterOptions? options = null) =>
-        ConvertToStreamAsync(html, output, options).GetAwaiter().GetResult();
+    public static void ConvertToStream(string html, Stream output, HtmlConverterOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(html);
+        ArgumentNullException.ThrowIfNull(output);
+        ConvertToStream(html, output, options ?? new HtmlConverterOptions(), HtmlMetadata.DefaultCreator, CancellationToken.None).GetAwaiter().GetResult();
+    }
 
-    /// <summary>Converts an HTML document to PDF and writes it to <paramref name="output"/> page by page (see <see cref="ConvertToStream"/>).</summary>
+    /// <summary>Converts an HTML document to PDF and writes it to <paramref name="output"/> page by page (see <see cref="ConvertToStream(string, Stream, HtmlConverterOptions?)"/>).</summary>
     /// <remarks>
-    /// Like <see cref="ConvertAsync(string, HtmlConverterOptions?, CancellationToken)"/>, it runs on a thread of its own
-    /// and applies the options' <see cref="HtmlConverterOptions.Limits"/>; the stream is written from that thread.
+    /// Like <see cref="ConvertAsync(string, HtmlConverterOptions?, CancellationToken)"/>, the conversion runs on a thread
+    /// of its own and applies the options' <see cref="HtmlConverterOptions.Limits"/>. The stream is written only
+    /// asynchronously, a page at a time, so it can be an ASP.NET Core response body (which forbids synchronous writes);
+    /// while it is slow, the conversion waits. If writing fails, the conversion stops and the write's exception is thrown.
     /// </remarks>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' <see cref="HtmlConverterOptions.Limits"/>.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
@@ -69,31 +81,69 @@ public static partial class HtmlToPdf
     {
         ArgumentNullException.ThrowIfNull(html);
         ArgumentNullException.ThrowIfNull(output);
-        options ??= new HtmlConverterOptions();
-        return RunLimited(
+        return ConvertToStreamAsync(html, output, options ?? new HtmlConverterOptions(), HtmlMetadata.DefaultCreator, cancellationToken);
+    }
+
+    /// <summary>
+    /// <see cref="ConvertToStreamAsync(string, Stream, HtmlConverterOptions?, CancellationToken)"/>, naming
+    /// <paramref name="defaultCreator"/> as the creator unless the options or the document name one.
+    /// </summary>
+    internal static async Task ConvertToStreamAsync(string html, Stream output, HtmlConverterOptions options, string defaultCreator, CancellationToken cancellationToken)
+    {
+        using var pipe = new OutputPipe(bounded: !RunsOnCallerThread);
+        // The conversion completes the pipe when it ends. One canceled before it starts never does, but then the same
+        // token stops the copy.
+        var conversion = ConvertToStream(html, pipe, options, defaultCreator, cancellationToken);
+        try
+        {
+            await pipe.DrainToAsync(output, cancellationToken).ConfigureAwait(false);
+            await output.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // Writing failed (or was canceled): stop the conversion at its next write, let it end, and report the write's error.
+            pipe.Abort();
+            await ((Task)conversion).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            throw;
+        }
+
+        await conversion.ConfigureAwait(false);
+    }
+
+    /// <summary>Converts on a conversion thread and writes the PDF to <paramref name="output"/> from there, page by page.</summary>
+    private static Task<bool> ConvertToStream(string html, Stream output, HtmlConverterOptions options, string defaultCreator, CancellationToken cancellationToken) =>
+        RunLimited(
             options,
             () =>
             {
-                var (flow, metadata, diagnostics) = Layout(html, options, cancellationToken);
-
-                // Everything ConvertAsync sets, but before writing begins: page by page, it is read by BeginSave.
-                var document = new PdfDocument { Tagged = options.Tagged, PdfUA = options.PdfUA, StrictTagging = options.StrictTagging, TimeProvider = options.TimeProvider };
-                metadata.ApplyTo(document, options, HtmlMetadata.DefaultCreator);
-                document.Encryption = options.Encryption;
-                document.PdfAConformance = options.PdfAConformance;
-                if (options.PdfAConformance != PdfAConformance.None)
+                var succeeded = false;
+                try
                 {
-                    document.EmbedStandardFonts();
-                }
+                    var (flow, metadata, diagnostics) = Layout(html, options, cancellationToken);
 
-                document.BeginSave(output);
-                flow.RenderTo(document);
-                document.EndSave();
-                diagnostics.Deliver();
-                return true;
+                    // Everything ConvertAsync sets, but before writing begins: page by page, it is read by BeginSave.
+                    var document = new PdfDocument { Tagged = options.Tagged, PdfUA = options.PdfUA, StrictTagging = options.StrictTagging, TimeProvider = options.TimeProvider };
+                    metadata.ApplyTo(document, options, defaultCreator);
+                    document.Encryption = options.Encryption;
+                    document.PdfAConformance = options.PdfAConformance;
+                    if (options.PdfAConformance != PdfAConformance.None)
+                    {
+                        document.EmbedStandardFonts();
+                    }
+
+                    document.BeginSave(output);
+                    flow.RenderTo(document);
+                    document.EndSave();
+                    diagnostics.Deliver();
+                    succeeded = true;
+                    return true;
+                }
+                finally
+                {
+                    (output as OutputPipe)?.Complete(succeeded);
+                }
             },
             cancellationToken);
-    }
 
     /// <summary>Converts an HTML document to a PDF document.</summary>
     /// <remarks>
@@ -150,7 +200,14 @@ public static partial class HtmlToPdf
     /// <see cref="ResourceLimits.Enforce"/> scope), on the calling thread's stack.
     /// </remarks>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' <see cref="HtmlConverterOptions.Limits"/>.</exception>
-    public static FlowDocument CreateFlowDocument(string html, HtmlConverterOptions? options = null)
+    public static FlowDocument CreateFlowDocument(string html, HtmlConverterOptions? options = null) =>
+        CreateFlowDocumentAsync(html, options, CancellationToken.None).GetAwaiter().GetResult();
+
+    /// <summary>
+    /// <see cref="CreateFlowDocument"/> on a conversion thread, observing <paramref name="cancellationToken"/> while
+    /// the layout is built.
+    /// </summary>
+    internal static Task<FlowDocument> CreateFlowDocumentAsync(string html, HtmlConverterOptions? options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(html);
         options ??= new HtmlConverterOptions();
@@ -158,12 +215,15 @@ public static partial class HtmlToPdf
             options,
             () =>
             {
-                var (flow, _, diagnostics) = Layout(html, options, CancellationToken.None);
+                var (flow, _, diagnostics) = Layout(html, options, cancellationToken);
                 diagnostics.DeliverAndGoLive(); // Layout issues come when the document is rendered, later.
                 return flow;
             },
-            CancellationToken.None).GetAwaiter().GetResult();
+            cancellationToken);
     }
+
+    /// <summary>Whether conversions run on the caller's thread: where there are no threads to start.</summary>
+    private static bool RunsOnCallerThread => OperatingSystem.IsBrowser() || OperatingSystem.IsWasi();
 
     /// <summary>
     /// Runs <paramref name="work"/> on a thread with a large stack, with the options' limits enforced and the
@@ -185,7 +245,7 @@ public static partial class HtmlToPdf
             }
         }
 
-        if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
+        if (RunsOnCallerThread)
         {
             return Task.FromResult(Run()); // No threads to start: the caller's stack it is.
         }
