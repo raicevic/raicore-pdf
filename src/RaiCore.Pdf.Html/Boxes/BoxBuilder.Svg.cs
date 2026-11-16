@@ -39,7 +39,7 @@ internal sealed partial class BoxBuilder
             _imageFailures[key] = (HtmlDiagnosticKind.ResourceInvalid, $"An inline SVG cannot be read: {ex.Message}");
             Diagnostics.Report(HtmlDiagnosticKind.ResourceInvalid, HtmlDiagnosticSeverity.Warning, "<svg>", _imageFailures[key].Message, svg);
         }
-        catch (ResourceLimitExceededException ex) when (Resources.IsPerResource(ex))
+        catch (ResourceLimitExceededException ex) when (ResourceLoaders.IsPerResource(ex))
         {
             // So is one with a raster image that is too large.
             _imageFailures[key] = (HtmlDiagnosticKind.ResourceTooLarge, $"An inline SVG is too large: {ex.Message}");

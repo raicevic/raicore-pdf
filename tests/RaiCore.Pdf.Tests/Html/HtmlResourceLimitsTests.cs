@@ -212,7 +212,7 @@ public class HtmlResourceLimitsTests
     {
         var png = ResourceLimitsTests.Png(20, 20, ResourceLimitsTests.Zlib(new byte[20 * 21]));
         var css = Encoding.UTF8.GetBytes("p { color: red; } /*" + new string(' ', 2000) + "*/");
-        byte[]? Loader(Uri uri) => uri.AbsolutePath.EndsWith(".css", StringComparison.Ordinal) ? css : png;
+        byte[]? Loader(ResourceRequest request) => request.Uri.AbsolutePath.EndsWith(".css", StringComparison.Ordinal) ? css : png;
         const string html = "<link rel='stylesheet' href='a.css'><p>Text</p><img src='a.png'>";
         FlowDocument Flow(long max) => HtmlToPdf.CreateFlowDocument(html, new HtmlConverterOptions
         {
@@ -234,11 +234,11 @@ public class HtmlResourceLimitsTests
     public void The_default_loader_does_not_read_files_over_the_limit()
     {
         var path = new Uri(Fixtures.Path("LiberationSans-Regular.woff"));
-        Assert.NotNull(Resources.Default(path));
+        Assert.NotNull(ResourceLoaders.Default(new ResourceRequest(path, ResourceKind.Font)));
 
         using ((ResourceLimits.Default with { MaxResourceBytes = 1000 }).Enforce(TestContext.Current.CancellationToken))
         {
-            Assert.Null(Resources.Default(path));
+            Assert.Null(ResourceLoaders.Default(new ResourceRequest(path, ResourceKind.Font)));
         }
     }
 
@@ -290,10 +290,12 @@ public class HtmlResourceLimitsTests
     {
         using var cancel = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         var loaded = new List<string>();
-        byte[]? Loader(Uri uri)
+        var tokenCanceled = false;
+        byte[]? Loader(ResourceRequest request)
         {
-            loaded.Add(uri.AbsolutePath);
+            loaded.Add(request.Uri.AbsolutePath);
             cancel.Cancel();
+            tokenCanceled = request.CancellationToken.IsCancellationRequested;
             return null;
         }
 
@@ -302,6 +304,34 @@ public class HtmlResourceLimitsTests
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => HtmlToPdf.ConvertAsync(html, options, cancel.Token));
         Assert.Equal(["/first.png"], loaded);
+        Assert.True(tokenCanceled); // The loader's token is the conversion's.
+    }
+
+    [Fact]
+    public async Task A_loader_waiting_on_its_token_is_stopped_by_the_timeout()
+    {
+        byte[]? Loader(ResourceRequest request)
+        {
+            request.CancellationToken.WaitHandle.WaitOne(TimeSpan.FromSeconds(30));
+            request.CancellationToken.ThrowIfCancellationRequested();
+            return null;
+        }
+
+        var options = new HtmlConverterOptions { BaseUri = Base, ResourceLoader = Loader, Limits = ResourceLimits.Default with { Timeout = TimeSpan.FromMilliseconds(300) } };
+        var started = System.Diagnostics.Stopwatch.StartNew();
+
+        var ex = await Assert.ThrowsAsync<ResourceLimitExceededException>(() => HtmlToPdf.ConvertAsync("<img src='slow.png'>", options, TestContext.Current.CancellationToken));
+        Assert.Equal(nameof(ResourceLimits.Timeout), ex.LimitName);
+        Assert.True(started.Elapsed < TimeSpan.FromSeconds(10), $"Took {started.Elapsed}.");
+    }
+
+    [Fact]
+    public async Task A_loaders_own_exception_is_not_hidden()
+    {
+        var options = new HtmlConverterOptions { BaseUri = Base, ResourceLoader = _ => throw new IOException("Disk gone.") };
+
+        var ex = await Assert.ThrowsAsync<IOException>(() => HtmlToPdf.ConvertAsync("<img src='a.png'>", options, TestContext.Current.CancellationToken));
+        Assert.Equal("Disk gone.", ex.Message);
     }
 
     [Fact]

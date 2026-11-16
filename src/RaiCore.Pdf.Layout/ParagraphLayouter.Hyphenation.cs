@@ -92,7 +92,7 @@ internal static partial class ParagraphLayouter
 
             var span = spans[s];
             var style = span.Style;
-            var hyphenator = span.Image is null && span.Box is null && !span.IsLeader && style.Hyphens == Hyphens.Auto ? Hyphenator.ForLanguage(style.Language) : null;
+            var hyphenator = span.Image is null && span.Box is null && !span.IsLeader && style.Hyphens == Hyphens.Auto ? style.Hyphenator ?? Hyphenator.ForLanguage(style.Language) : null;
             if (hyphenator is null)
             {
                 // Skip the whole word, so a later span in it does not start a word of its own.

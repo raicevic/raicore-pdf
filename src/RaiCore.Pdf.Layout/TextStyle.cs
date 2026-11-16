@@ -161,10 +161,17 @@ public sealed record TextStyle
 
     /// <summary>
     /// The language of the text, as a BCP 47 tag such as <c>en-US</c> or <c>de</c> (HTML <c>lang</c>), which picks the
-    /// patterns for <see cref="Hyphens.Auto"/> (see <see cref="Hyphenator.ForLanguage"/>); <c>null</c> when unknown,
+    /// patterns for <see cref="Hyphens.Auto"/> unless <see cref="Hyphenator"/> is set; <c>null</c> when unknown,
     /// and then words are not hyphenated automatically. Shaping has its own language, <see cref="ShapingOptions.Language"/>.
     /// </summary>
     public string? Language { get; init; }
+
+    /// <summary>
+    /// The hyphenation patterns for <see cref="Hyphens.Auto"/>, such as patterns for a language that has none bundled
+    /// (see <see cref="Text.Hyphenator.FromPatterns"/>). <c>null</c> (the default) uses the bundled patterns for the
+    /// <see cref="Language"/> (<see cref="Text.Hyphenator.ForLanguage(string?)"/>).
+    /// </summary>
+    public Hyphenator? Hyphenator { get; init; }
 
     /// <summary>
     /// Whether words may be hyphenated at the end of a line (CSS <c>hyphens</c>): only at soft hyphens (U+00AD) by

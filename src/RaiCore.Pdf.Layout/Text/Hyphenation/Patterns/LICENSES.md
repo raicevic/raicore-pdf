@@ -8,7 +8,8 @@ starts with the original file's header (title, copyright, licence) unchanged.
 
 Only languages whose patterns may be redistributed, modified (converted), in a permissively licensed package are
 included. Patterns under the LPPL alone (such as Swedish), the GPL (such as Czech) or unclear terms are not bundled;
-they can be loaded at run time with `Hyphenator.FromPatterns` and `Hyphenator.Register`.
+they can be loaded at run time with `Hyphenator.FromPatterns` and set on `TextStyle.Hyphenator` or in
+`HtmlConverterOptions.Hyphenators`.
 
 | Resource | Language | Source file | Copyright | Licence |
 | --- | --- | --- | --- | --- |

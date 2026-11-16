@@ -116,7 +116,7 @@ public class HtmlWebFontTests
               p { font-family: Brand; }
             </style>
             <p>Hello</p>
-            """, uri => { requested.Add(Path.GetFileName(uri.LocalPath)); return Resources.Default(uri); });
+            """, request => { requested.Add(Path.GetFileName(request.Uri.LocalPath)); return ResourceLoaders.Default(request); });
 
         Assert.Equal("LiberationMono", fonts[0].PostScriptName);
         Assert.Equal(["missing.woff2", "LiberationMono-Regular.ttf"], requested);
@@ -174,10 +174,10 @@ public class HtmlWebFontTests
     {
         var requested = new List<Uri>();
         var mono = Fixtures.Read("LiberationMono-Regular.ttf");
-        byte[]? Loader(Uri uri)
+        byte[]? Loader(ResourceRequest request)
         {
-            requested.Add(uri);
-            return uri.AbsolutePath switch
+            requested.Add(request.Uri);
+            return request.Uri.AbsolutePath switch
             {
                 "/assets/css/site.css" => Encoding.UTF8.GetBytes("@font-face { font-family: Brand; src: url(../fonts/brand.ttf); } p { font-family: Brand; }"),
                 "/assets/fonts/brand.ttf" => mono,
@@ -238,7 +238,7 @@ public class HtmlWebFontTests
               p { font-family: Used; }
             </style>
             <p>Hello</p>
-            """, uri => { requested.Add(Path.GetFileName(uri.LocalPath)); return Resources.Default(uri); });
+            """, request => { requested.Add(Path.GetFileName(request.Uri.LocalPath)); return ResourceLoaders.Default(request); });
 
         Assert.Equal(["LiberationMono-Regular.ttf"], requested);
     }
@@ -262,7 +262,7 @@ public class HtmlWebFontTests
 
     private static List<PdfFont> FontsOf(string html, ResourceLoader? loader = null)
     {
-        var flow = HtmlToPdf.CreateFlowDocument(html, new HtmlConverterOptions { BaseUri = FixturesUri, ResourceLoader = loader ?? Resources.Default });
+        var flow = HtmlToPdf.CreateFlowDocument(html, new HtmlConverterOptions { BaseUri = FixturesUri, ResourceLoader = loader ?? ResourceLoaders.Default });
         return [.. Paragraphs(flow)[0].Paragraph.Spans[0].Style.Fonts];
     }
 
