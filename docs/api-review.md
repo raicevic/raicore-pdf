@@ -242,6 +242,9 @@ RaiCore.Pdf.Razor. A package that uses another package's internals only works wi
 against. So either those dependencies are pinned to exact versions (`[1.0.0]`), or the internals they use become
 public (possibly `[Experimental]`) before the packages are versioned independently.
 
+*Done in #62:* the core packages stay one release train with exact pins (`[1.0.0]`); packages with their own
+version use only the core's public API. See "Releasing" in `CONTRIBUTING.md`.
+
 ## Plan
 
 One pull request per group, in this order, each with its CHANGELOG entry and tests:

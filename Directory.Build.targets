@@ -1,0 +1,19 @@
+<Project>
+
+  <!--
+    Package dependencies between RaiCore packages (#62; see the release trains in Directory.Build.props). NuGet records
+    a project reference as "this version or newer"; instead, a core package depends on the other core packages at
+    exactly its own version ([1.2.0]), and a package with its own version depends on the core from CoreVersionPrefix
+    up to the next major version ([1.2.0, 2.0.0)).
+  -->
+  <Target Name="PinRaiCoreDependencies" AfterTargets="_GetProjectReferenceVersions" Condition="'$(IsPackable)' == 'true'">
+    <PropertyGroup>
+      <_RaiCoreNextMajor>$([MSBuild]::Add($(CoreVersionPrefix.Split('.')[0]), 1)).0.0</_RaiCoreNextMajor>
+    </PropertyGroup>
+    <ItemGroup>
+      <_ProjectReferencesWithVersions Update="@(_ProjectReferencesWithVersions)" Condition="'$(IsCorePackage)' == 'true'" ProjectVersion="[%(ProjectVersion)]" />
+      <_ProjectReferencesWithVersions Update="@(_ProjectReferencesWithVersions)" Condition="'$(IsCorePackage)' != 'true'" ProjectVersion="[%(ProjectVersion), $(_RaiCoreNextMajor))" />
+    </ItemGroup>
+  </Target>
+
+</Project>

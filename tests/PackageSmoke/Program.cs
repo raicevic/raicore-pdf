@@ -30,6 +30,23 @@ Console.WriteLine($"{RuntimeInformation.FrameworkDescription} on {RuntimeInforma
 var packageCache = typeof(Invoice).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().Single(a => a.Key == "PackageCache").Value!;
 Check("packages were restored into the private cache", Directory.Exists(Path.Combine(packageCache, "raicore.pdf.razor")));
 
+// The core packages share internals, so each depends on the others at exactly its own version (#62).
+var pins = 0;
+foreach (var nuspec in Directory.GetFiles(packageCache, "raicore.pdf*.nuspec", SearchOption.AllDirectories))
+{
+    var packageVersion = Path.GetFileName(Path.GetDirectoryName(nuspec)!);
+    foreach (var dependency in System.Xml.Linq.XDocument.Load(nuspec).Descendants()
+        .Where(e => e.Name.LocalName == "dependency" && ((string?)e.Attribute("id"))?.StartsWith("RaiCore.Pdf", StringComparison.Ordinal) == true))
+    {
+        var range = (string?)dependency.Attribute("version");
+        Check($"{Path.GetFileNameWithoutExtension(nuspec)} {packageVersion} depends on {(string?)dependency.Attribute("id")} {range}, exactly its own version",
+            string.Equals(range, $"[{packageVersion}]", StringComparison.OrdinalIgnoreCase));
+        pins++;
+    }
+}
+
+Check($"the core packages depend on each other ({pins} dependencies)", pins >= 4);
+
 // RaiCore.Pdf: drawing directly, with a bundled font and a PNG.
 var logo = PdfImage.Load(Convert.FromBase64String(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="));

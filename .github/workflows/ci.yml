@@ -71,6 +71,11 @@ jobs:
       - name: Package smoke test
         run: dotnet run --project tests/PackageSmoke --configuration Release -- smoke-output
 
+      # The release workflow's plan for the current core version, so the script keeps working before it is first used.
+      - name: Release plan
+        if: runner.os == 'Linux'
+        run: tools/release-plan.sh "v$(dotnet msbuild src/RaiCore.Pdf/RaiCore.Pdf.csproj -getProperty:CoreVersionPrefix)"
+
       - uses: actions/upload-artifact@v4
         if: runner.os == 'Linux'
         with:

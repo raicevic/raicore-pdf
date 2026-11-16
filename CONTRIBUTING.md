@@ -93,12 +93,31 @@ prefix (`[RCPDF002]...`; see [docs/experimental.md](docs/experimental.md)).
 
 ## Releasing
 
-**Nothing is released before 1.0.** The 0.x milestones are internal stages; the release workflow refuses tags below
-`v1.0.0` (including `v1.0.0-rc.1` and other 1.0.0 prereleases).
+**Nothing is released before 1.0.** The 0.x milestones are internal stages; the release workflow refuses core tags
+below `v1.0.0` (including `v1.0.0-rc.1` and other 1.0.0 prereleases), and any other package until the core has a 1.x
+release.
 
-Releases are published by [.github/workflows/release.yml](.github/workflows/release.yml) when a version tag is pushed.
-The tag sets the version of every package; `VersionPrefix`/`VersionSuffix` in `Directory.Build.props` apply only to
-local and CI builds.
+### Release trains
+
+The packages are released in trains (#62):
+
+- **The core:** RaiCore.Pdf, RaiCore.Pdf.Fonts, RaiCore.Pdf.Layout, RaiCore.Pdf.Html and RaiCore.Pdf.Razor share one
+  version, `CoreVersionPrefix` in `Directory.Build.props`, and are always released together by a tag `v<version>`.
+  They use each other's internals, so each depends on the others at exactly its own version (`[1.2.0]`).
+- **A package with its own version**, such as a future RaiCore.Pdf.Docx, sets `<IsCorePackage>false</IsCorePackage>`
+  and its own `<VersionPrefix>` (it may start at 0.x) in its project file, and is released alone by a tag
+  `<PackageId>/v<version>` (`RaiCore.Pdf.Docx/v0.3.0`). It may use only the core's public API (no `InternalsVisibleTo`
+  from the core to it) and depends on the core from `CoreVersionPrefix` up to the next major version
+  (`[1.2.0, 2.0.0)`), so release the core first when it needs unreleased core changes. It brings its own smoke test.
+
+`Directory.Build.targets` writes those dependency versions, and `tests/PackageSmoke` checks the core's pins.
+
+### Publishing
+
+Releases are published by [.github/workflows/release.yml](.github/workflows/release.yml) when a release tag is
+pushed. [tools/release-plan.sh](tools/release-plan.sh) works out what the tag releases and refuses a tag whose version
+does not match the repository (`CoreVersionPrefix`, or the package's `VersionPrefix`); a prerelease suffix on the tag
+(`v1.1.0-rc.1`) becomes the packages' suffix. Local and CI builds are versioned `<prefix>-dev`.
 
 One-time setup:
 
@@ -109,21 +128,24 @@ One-time setup:
 
 For each release:
 
-1. Move the *Unreleased* entries in `CHANGELOG.md` under the new version with today's date, move each package's
-   `PublicAPI.Unshipped.txt` lines into its `PublicAPI.Shipped.txt` (dropping the `*REMOVED*` lines and the shipped
-   lines they name), and merge that to `main`.
+1. In a pull request:
+   - set the version: `CoreVersionPrefix` in `Directory.Build.props` for the core, or the package's `VersionPrefix`;
+   - move the *Unreleased* entries in `CHANGELOG.md` under the new version with today's date;
+   - move each released package's `PublicAPI.Unshipped.txt` lines into its `PublicAPI.Shipped.txt` (dropping the
+     `*REMOVED*` lines and the shipped lines they name).
 2. Tag the merge commit and push the tag:
 
    ```sh
-   git tag v1.0.0
-   git push origin v1.0.0
+   git tag v1.0.0                      # the core
+   git tag RaiCore.Pdf.Docx/v0.3.0     # a package with its own version
+   git push origin <tag>
    ```
 
-   After 1.0, a tag with a suffix (`v1.1.0-rc.1`) publishes a prerelease.
-3. The workflow builds, tests, packs and smoke-tests the packages, pushes them and their symbols to nuget.org and
-   creates a GitHub release with the packages attached.
+3. The workflow builds and tests everything, packs the train's packages (and smoke-tests the core), pushes them and
+   their symbols to nuget.org and creates a GitHub release with the packages attached.
 
 Published versions cannot be deleted from nuget.org, only unlisted, so a bad release needs a new version.
 
-After a release, set `PackageValidationBaselineVersion` in `Directory.Build.props` to the released version (after
-1.0.0, uncomment it): packing then fails when a package breaks compatibility with that release.
+After a release, set `PackageValidationBaselineVersion` to the released version, so that packing fails when a package
+breaks compatibility with it: in `Directory.Build.props` for the core (after 1.0.0, uncomment it), or in the
+package's project file for a package with its own version.
