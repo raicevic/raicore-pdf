@@ -174,6 +174,14 @@ public sealed record TextStyle
     public Hyphens Hyphens { get; init; } = Hyphens.Manual;
 
     /// <summary>
+    /// Whether the text wraps only at hard breaks (CSS <c>white-space: nowrap</c> and <c>pre</c>): no line breaks
+    /// between two characters of no-wrap text, at spaces, hyphens, slashes, dashes, between ideographs or at hyphenation
+    /// points alike. A break between no-wrap text and wrapping text is the wrapping text's, as in CSS (it belongs to
+    /// the characters' nearest common ancestor).
+    /// </summary>
+    public bool NoWrap { get; init; }
+
+    /// <summary>
     /// The text shown at the end of a hyphenated line (CSS <c>hyphenate-character</c>), or <c>null</c> for the hyphen
     /// U+2010 (or the hyphen-minus when the first font has no U+2010). An empty string shows nothing.
     /// </summary>

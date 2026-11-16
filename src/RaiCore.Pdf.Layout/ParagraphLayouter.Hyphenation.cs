@@ -18,14 +18,23 @@ internal static partial class ParagraphLayouter
         var hyphenation = AutomaticHyphenationPoints(spans, text, spanStarts);
         var result = new List<BreakOpportunity>();
         var h = 0;
+        var noWrap = NoWrapCharacters(spans, text, spanStarts);
+        bool Suppressed(int position) => noWrap is not null && position > 0 && position < text.Length && noWrap[position - 1] && noWrap[position];
+
         foreach (var opportunity in LineBreaker.GetBreakOpportunities(text))
         {
             for (; h < hyphenation.Count && hyphenation[h] <= opportunity.Position; h++)
             {
-                if (hyphenation[h] < opportunity.Position)
+                if (hyphenation[h] < opportunity.Position && !Suppressed(hyphenation[h]))
                 {
                     result.Add(new BreakOpportunity(hyphenation[h], false, true));
                 }
+            }
+
+            // No soft wrap opportunity inside no-wrap text (white-space: nowrap, pre); hard breaks stay.
+            if (!opportunity.Required && Suppressed(opportunity.Position))
+            {
+                continue;
             }
 
             var softHyphen = !opportunity.Required && opportunity.Position < text.Length && text[opportunity.Position - 1] == SoftHyphen;
@@ -38,6 +47,26 @@ internal static partial class ParagraphLayouter
         }
 
         return result;
+    }
+
+    /// <summary>Which characters are no-wrap text (<see cref="TextStyle.NoWrap"/>), or <c>null</c> when none are.</summary>
+    private static bool[]? NoWrapCharacters(IReadOnlyList<ParagraphSpan> spans, string text, int[] spanStarts)
+    {
+        if (!spans.Any(s => s.Style.NoWrap))
+        {
+            return null;
+        }
+
+        var noWrap = new bool[text.Length];
+        for (var s = 0; s < spans.Count; s++)
+        {
+            if (spans[s].Style.NoWrap)
+            {
+                noWrap.AsSpan(spanStarts[s], spanStarts[s + 1] - spanStarts[s]).Fill(true);
+            }
+        }
+
+        return noWrap;
     }
 
     /// <summary>
