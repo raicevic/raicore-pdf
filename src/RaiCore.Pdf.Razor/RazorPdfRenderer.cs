@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using RaiCore.Pdf.Html;
-using RaiCore.Pdf.Layout.Blocks;
+using RaiCore.Pdf.Layout;
 
 namespace RaiCore.Pdf.Razor;
 

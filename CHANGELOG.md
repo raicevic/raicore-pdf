@@ -176,6 +176,8 @@ change at any time, and this section lists what the packages can do so far.
   `Register` racing with lookups could leave them cached with the old answer.
 
 ### RaiCore.Pdf.Layout
+- API review (#60), breaking: the `RaiCore.Pdf.Layout.Blocks` namespace is merged into `RaiCore.Pdf.Layout`, so
+  blocks, `FlowDocument`, page setup and paragraphs need one `using`. `RaiCore.Pdf.Layout.Text` stays separate.
 - The package includes the Unicode License v3 notice (`licenses/unicode.txt`) for its bidi and line break tables,
   generated from the Unicode Character Database, and its license expression names `Unicode-3.0`. All third-party
   material is listed in `THIRD-PARTY-NOTICES.md`.

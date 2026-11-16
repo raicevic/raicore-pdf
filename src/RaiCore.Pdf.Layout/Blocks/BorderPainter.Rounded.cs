@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>Borders of boxes with rounded corners (CSS <c>border-radius</c>).</summary>
 internal static partial class BorderPainter

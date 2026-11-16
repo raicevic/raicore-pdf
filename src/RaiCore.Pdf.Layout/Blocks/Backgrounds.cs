@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>How a background image repeats along one axis (CSS <c>background-repeat</c>).</summary>
 public enum BackgroundRepeat

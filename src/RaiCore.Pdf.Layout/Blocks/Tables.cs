@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>A width in points or as a percentage of the table's content width.</summary>
 public readonly record struct TableWidth(double Value, bool IsPercent = false)

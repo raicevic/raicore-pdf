@@ -4,7 +4,7 @@ using AngleSharp.Css.Parser;
 using AngleSharp.Dom;
 using RaiCore.Pdf.Html.Boxes;
 using RaiCore.Pdf.Html.Css;
-using RaiCore.Pdf.Layout.Blocks;
+using RaiCore.Pdf.Layout;
 
 namespace RaiCore.Pdf.Html.Paged;
 

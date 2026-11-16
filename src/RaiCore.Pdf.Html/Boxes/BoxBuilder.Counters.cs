@@ -2,7 +2,7 @@ using System.Globalization;
 using AngleSharp.Dom;
 using RaiCore.Pdf.Html.Css;
 using RaiCore.Pdf.Html.Paged;
-using RaiCore.Pdf.Layout.Blocks;
+using RaiCore.Pdf.Layout;
 
 namespace RaiCore.Pdf.Html.Boxes;
 

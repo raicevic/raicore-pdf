@@ -2,8 +2,7 @@ using System.Globalization;
 using AngleSharp.Dom;
 using RaiCore.Pdf.Html.Css;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
-using VerticalAlignment = RaiCore.Pdf.Layout.Blocks.VerticalAlignment;
+using VerticalAlignment = RaiCore.Pdf.Layout.VerticalAlignment;
 
 namespace RaiCore.Pdf.Html.Boxes;
 

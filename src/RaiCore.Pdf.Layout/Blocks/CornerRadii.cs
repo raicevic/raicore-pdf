@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>
 /// One radius of a rounded corner: a length in points plus a percentage of the border box's width (for horizontal

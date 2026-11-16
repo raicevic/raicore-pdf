@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>Widths of the four sides of a box, in points (CSS order: top, right, bottom, left).</summary>
 public readonly record struct Thickness(double Top, double Right, double Bottom, double Left)

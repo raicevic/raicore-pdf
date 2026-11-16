@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>A drawing operation on a page: receives the canvas and the page height (to convert from top-down y).</summary>
 internal delegate void DrawOperation(PdfCanvas canvas, double pageHeight);

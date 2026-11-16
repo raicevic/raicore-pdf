@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>
 /// Opacity (CSS <c>opacity</c>): everything a block with an opacity below 1 paints becomes one transparency group per

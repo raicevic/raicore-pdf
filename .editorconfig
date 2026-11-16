@@ -392,3 +392,7 @@ dotnet_naming_style.s_camelcase.capitalization = camel_case
 [*.cs]
 # Type names such as PdfDictionary and PdfArray mirror the PDF specification.
 dotnet_diagnostic.CA1711.severity = none
+
+# The layout blocks keep their own folder but share the RaiCore.Pdf.Layout namespace (API review, #60).
+[src/RaiCore.Pdf.Layout/Blocks/**.cs]
+dotnet_style_namespace_match_folder = false

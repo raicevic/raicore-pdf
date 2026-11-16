@@ -3,7 +3,6 @@ using System.IO.Compression;
 using System.Text;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 using RaiCore.Pdf.Tests.Reading;
 
 namespace RaiCore.Pdf.Tests;

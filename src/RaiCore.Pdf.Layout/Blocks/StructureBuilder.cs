@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>
 /// Creates the structure elements of a flow document's blocks, table cells, tagged runs and links in document order,

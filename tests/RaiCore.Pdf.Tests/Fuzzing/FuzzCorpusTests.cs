@@ -1,6 +1,6 @@
 using System.Buffers.Binary;
 using RaiCore.Pdf.Html;
-using RaiCore.Pdf.Layout.Blocks;
+using RaiCore.Pdf.Layout;
 
 namespace RaiCore.Pdf.Tests.Fuzzing;
 

@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>
 /// Background layers (CSS Backgrounds 3): images and gradients sized and positioned in the origin box, tiled if they

@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>The main axis of a <see cref="FlexBlock"/> (CSS <c>flex-direction</c>).</summary>
 public enum FlexDirection
