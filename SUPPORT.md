@@ -30,6 +30,10 @@ breaking existing code, and only a major version may break it. The public API is
 or patch release. APIs marked `[Experimental]` ([docs/experimental.md](docs/experimental.md)) are the exception: they
 may change in a minor release.
 
+The core packages (RaiCore.Pdf, .Fonts, .Layout, .Html and .Razor) always have the same version: use them at one
+version. Packages for further formats may have versions of their own, starting at 0.x while they mature; each works
+with any core version from the one it names up to the next major version.
+
 ## Release cadence
 
 There is no fixed schedule. Minor releases come when their features are ready, patches as soon as a fix is needed,

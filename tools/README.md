@@ -123,3 +123,13 @@ weights, and the variable fonts) and Noto Sans JP found no differences either.
 Last run (macOS 27, 2026-11-02): 800 faces matched fontTools exactly and 662 TrueType subsets validated. The
 only differences are symbol fonts (Wingdings, Webdings), where RaiCore.Pdf also maps the Windows symbol cmap
 (U+F020–U+F0FF), as Windows does. One font with no outlines at all (NISC18030.ttf) is rejected, as intended.
+
+## `release-plan.sh`
+
+Used by the release workflow: works out what a release tag releases (the core train for `v1.2.0`, one package for
+`RaiCore.Pdf.Docx/v0.3.0`), checks its version against the repository and prints the workflow's step outputs. Run
+it to check a tag before pushing it:
+
+```sh
+tools/release-plan.sh v1.0.0
+```

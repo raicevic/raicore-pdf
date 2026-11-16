@@ -1,12 +1,17 @@
 name: Release
 
-# Push a tag such as v1.0.0 or v1.1.0-rc.1 to build, test and publish every package with that version.
-# Nothing is released before 1.0: tags below v1.0.0 (including 1.0.0 prereleases) are refused.
+# Two kinds of tags (#62; see "Releasing" in CONTRIBUTING.md):
+# - v1.2.0 (or v1.2.0-rc.1) releases the core packages (RaiCore.Pdf, .Fonts, .Layout, .Html, .Razor) together. The
+#   version must match CoreVersionPrefix in Directory.Build.props.
+# - <PackageId>/v0.3.0, such as RaiCore.Pdf.Docx/v0.3.0, releases one package with its own version, which must match
+#   the VersionPrefix in its project file.
+# Nothing is released before 1.0: core tags below v1.0.0 (including 1.0.0 prereleases) are refused, and so is any
+# package tag until the core has a 1.x release.
 # One-time setup (see CONTRIBUTING.md): a nuget.org trusted publishing policy for this repository and the workflow
 # file "release.yml" in environment "nuget", and the repository secret NUGET_USER (the nuget.org profile name).
 on:
   push:
-    tags: ["v*"]
+    tags: ["v*", "RaiCore.Pdf.*/v*"]
 
 permissions:
   contents: read
@@ -24,40 +29,36 @@ jobs:
       id-token: write # Exchange a GitHub OIDC token for a short-lived nuget.org API key.
     steps:
       - uses: actions/checkout@v5
-
-      - name: Version from tag
-        id: version
-        run: |
-          version="${GITHUB_REF_NAME#v}"
-          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-            echo "::error::Tag $GITHUB_REF_NAME is not v<major>.<minor>.<patch>[-prerelease]"
-            exit 1
-          fi
-          if [[ "$version" == 0.* || "$version" == 1.0.0-* ]]; then
-            echo "::error::Nothing is released before 1.0; $GITHUB_REF_NAME is below v1.0.0. See CONTRIBUTING.md."
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          if [[ "$version" == *-* ]]; then echo "prerelease=true" >> "$GITHUB_OUTPUT"; else echo "prerelease=false" >> "$GITHUB_OUTPUT"; fi
+        with:
+          fetch-depth: 0 # The tags, to check that the core has been released before a package with its own version.
 
       - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
+      - name: What the tag releases
+        id: release
+        run: tools/release-plan.sh "$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+
       - name: Install PDF validators
         run: sudo apt-get update && sudo apt-get install -y qpdf poppler-utils
 
       - name: Build
-        run: dotnet build --configuration Release -p:Version=${{ steps.version.outputs.version }}
+        run: dotnet build --configuration Release -p:ReleaseTrain=${{ steps.release.outputs.train }} -p:ReleaseSuffix=${{ steps.release.outputs.suffix }}
 
       - name: Test
-        run: dotnet test --no-build --configuration Release
+        run: dotnet test --no-build --configuration Release -p:ReleaseTrain=${{ steps.release.outputs.train }} -p:ReleaseSuffix=${{ steps.release.outputs.suffix }}
 
       - name: Pack
-        run: dotnet pack --no-build --configuration Release -p:Version=${{ steps.version.outputs.version }} --output artifacts
+        run: |
+          for project in ${{ steps.release.outputs.projects }}; do
+            dotnet pack "$project" --no-build --configuration Release -p:ReleaseTrain=${{ steps.release.outputs.train }} -p:ReleaseSuffix=${{ steps.release.outputs.suffix }} --output artifacts
+          done
+          ls artifacts
 
       - name: Package smoke test
-        run: dotnet run --project tests/PackageSmoke --configuration Release -p:RaiCoreVersion=${{ steps.version.outputs.version }} -- smoke-output
+        if: steps.release.outputs.train == 'core' # A package with its own version brings its own smoke test.
+        run: dotnet run --project tests/PackageSmoke --configuration Release -p:RaiCoreVersion=${{ steps.release.outputs.version }} -- smoke-output
 
       - name: NuGet login (OIDC to temporary API key)
         uses: NuGet/login@v1
@@ -80,4 +81,4 @@ jobs:
           gh release create "$GITHUB_REF_NAME" artifacts/*.nupkg artifacts/*.snupkg
           --title "$GITHUB_REF_NAME"
           --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md). Packages: https://www.nuget.org/packages?q=RaiCore.Pdf"
-          ${{ steps.version.outputs.prerelease == 'true' && '--prerelease' || '' }}
+          ${{ steps.release.outputs.prerelease == 'true' && '--prerelease' || '' }}

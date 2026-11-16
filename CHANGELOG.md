@@ -12,6 +12,9 @@ change at any time, and this section lists what the packages can do so far.
 The public API reviewed for 1.0 (#60) is recorded in each package's `PublicAPI.Shipped.txt`, and the build fails
 when it changes without a matching line in `PublicAPI.Unshipped.txt` (#61), so changes before 1.0 are deliberate.
 
+Release trains (#62): the core packages share one version and depend on each other at exactly that version; future
+packages (such as DOCX conversion) get versions and release tags of their own (see "Releasing" in CONTRIBUTING.md).
+
 Project policies (#66): [SECURITY.md](SECURITY.md) (private vulnerability reporting), [SUPPORT.md](SUPPORT.md)
 (supported versions and .NET releases, versioning, release cadence) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
