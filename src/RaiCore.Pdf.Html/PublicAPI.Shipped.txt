@@ -1,0 +1,115 @@
+#nullable enable
+override RaiCore.Pdf.Html.HtmlDiagnostic.Equals(object? obj) -> bool
+override RaiCore.Pdf.Html.HtmlDiagnostic.GetHashCode() -> int
+override RaiCore.Pdf.Html.HtmlDiagnostic.ToString() -> string!
+override RaiCore.Pdf.Html.ResourceRequest.Equals(object? obj) -> bool
+override RaiCore.Pdf.Html.ResourceRequest.GetHashCode() -> int
+override RaiCore.Pdf.Html.ResourceRequest.ToString() -> string!
+RaiCore.Pdf.Html.HtmlConverterOptions
+RaiCore.Pdf.Html.HtmlConverterOptions.Author.get -> string?
+RaiCore.Pdf.Html.HtmlConverterOptions.Author.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.BaseUri.get -> System.Uri?
+RaiCore.Pdf.Html.HtmlConverterOptions.BaseUri.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.CreateBookmarks.get -> bool
+RaiCore.Pdf.Html.HtmlConverterOptions.CreateBookmarks.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.Creator.get -> string?
+RaiCore.Pdf.Html.HtmlConverterOptions.Creator.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.Diagnostics.get -> System.Action<RaiCore.Pdf.Html.HtmlDiagnostic!>?
+RaiCore.Pdf.Html.HtmlConverterOptions.Diagnostics.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.Encryption.get -> RaiCore.Pdf.PdfEncryption?
+RaiCore.Pdf.Html.HtmlConverterOptions.Encryption.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.FallbackFontFamilies.get -> System.Collections.Generic.IReadOnlyList<string!>!
+RaiCore.Pdf.Html.HtmlConverterOptions.FallbackFontFamilies.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.Fonts.get -> RaiCore.Pdf.Fonts.FontCollection?
+RaiCore.Pdf.Html.HtmlConverterOptions.Fonts.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.HtmlConverterOptions() -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.Hyphenators.get -> System.Collections.Generic.IReadOnlyDictionary<string!, RaiCore.Pdf.Layout.Text.Hyphenator!>?
+RaiCore.Pdf.Html.HtmlConverterOptions.Hyphenators.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.Keywords.get -> string?
+RaiCore.Pdf.Html.HtmlConverterOptions.Keywords.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.Language.get -> string?
+RaiCore.Pdf.Html.HtmlConverterOptions.Language.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.Limits.get -> RaiCore.Pdf.ResourceLimits!
+RaiCore.Pdf.Html.HtmlConverterOptions.Limits.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.Page.get -> RaiCore.Pdf.Layout.PageSetup!
+RaiCore.Pdf.Html.HtmlConverterOptions.Page.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.PdfAConformance.get -> RaiCore.Pdf.PdfAConformance
+RaiCore.Pdf.Html.HtmlConverterOptions.PdfAConformance.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.PdfUA.get -> bool
+RaiCore.Pdf.Html.HtmlConverterOptions.PdfUA.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.ResourceLoader.get -> RaiCore.Pdf.Html.ResourceLoader!
+RaiCore.Pdf.Html.HtmlConverterOptions.ResourceLoader.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.Subject.get -> string?
+RaiCore.Pdf.Html.HtmlConverterOptions.Subject.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.Tagged.get -> bool
+RaiCore.Pdf.Html.HtmlConverterOptions.Tagged.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.TimeProvider.get -> System.TimeProvider!
+RaiCore.Pdf.Html.HtmlConverterOptions.TimeProvider.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.Title.get -> string?
+RaiCore.Pdf.Html.HtmlConverterOptions.Title.init -> void
+RaiCore.Pdf.Html.HtmlConverterOptions.UserStyleSheet.get -> string?
+RaiCore.Pdf.Html.HtmlConverterOptions.UserStyleSheet.init -> void
+RaiCore.Pdf.Html.HtmlDiagnostic
+RaiCore.Pdf.Html.HtmlDiagnostic.<Clone>$() -> RaiCore.Pdf.Html.HtmlDiagnostic!
+RaiCore.Pdf.Html.HtmlDiagnostic.Count.get -> int
+RaiCore.Pdf.Html.HtmlDiagnostic.Count.init -> void
+RaiCore.Pdf.Html.HtmlDiagnostic.Deconstruct(out RaiCore.Pdf.Html.HtmlDiagnosticKind Kind, out RaiCore.Pdf.Html.HtmlDiagnosticSeverity Severity, out string! Subject, out string! Message, out string? ElementPath, out int Count) -> void
+RaiCore.Pdf.Html.HtmlDiagnostic.ElementPath.get -> string?
+RaiCore.Pdf.Html.HtmlDiagnostic.ElementPath.init -> void
+RaiCore.Pdf.Html.HtmlDiagnostic.Equals(RaiCore.Pdf.Html.HtmlDiagnostic? other) -> bool
+RaiCore.Pdf.Html.HtmlDiagnostic.HtmlDiagnostic(RaiCore.Pdf.Html.HtmlDiagnosticKind Kind, RaiCore.Pdf.Html.HtmlDiagnosticSeverity Severity, string! Subject, string! Message, string? ElementPath, int Count) -> void
+RaiCore.Pdf.Html.HtmlDiagnostic.Kind.get -> RaiCore.Pdf.Html.HtmlDiagnosticKind
+RaiCore.Pdf.Html.HtmlDiagnostic.Kind.init -> void
+RaiCore.Pdf.Html.HtmlDiagnostic.Message.get -> string!
+RaiCore.Pdf.Html.HtmlDiagnostic.Message.init -> void
+RaiCore.Pdf.Html.HtmlDiagnostic.Severity.get -> RaiCore.Pdf.Html.HtmlDiagnosticSeverity
+RaiCore.Pdf.Html.HtmlDiagnostic.Severity.init -> void
+RaiCore.Pdf.Html.HtmlDiagnostic.Subject.get -> string!
+RaiCore.Pdf.Html.HtmlDiagnostic.Subject.init -> void
+RaiCore.Pdf.Html.HtmlDiagnosticKind
+RaiCore.Pdf.Html.HtmlDiagnosticKind.Clipped = 9 -> RaiCore.Pdf.Html.HtmlDiagnosticKind
+RaiCore.Pdf.Html.HtmlDiagnosticKind.FontNotEmbeddable = 3 -> RaiCore.Pdf.Html.HtmlDiagnosticKind
+RaiCore.Pdf.Html.HtmlDiagnosticKind.Overflow = 8 -> RaiCore.Pdf.Html.HtmlDiagnosticKind
+RaiCore.Pdf.Html.HtmlDiagnosticKind.ResourceInvalid = 1 -> RaiCore.Pdf.Html.HtmlDiagnosticKind
+RaiCore.Pdf.Html.HtmlDiagnosticKind.ResourceNotLoaded = 0 -> RaiCore.Pdf.Html.HtmlDiagnosticKind
+RaiCore.Pdf.Html.HtmlDiagnosticKind.ResourceTooLarge = 2 -> RaiCore.Pdf.Html.HtmlDiagnosticKind
+RaiCore.Pdf.Html.HtmlDiagnosticKind.ScaledToFit = 10 -> RaiCore.Pdf.Html.HtmlDiagnosticKind
+RaiCore.Pdf.Html.HtmlDiagnosticKind.UnsupportedProperty = 4 -> RaiCore.Pdf.Html.HtmlDiagnosticKind
+RaiCore.Pdf.Html.HtmlDiagnosticKind.UnsupportedRule = 7 -> RaiCore.Pdf.Html.HtmlDiagnosticKind
+RaiCore.Pdf.Html.HtmlDiagnosticKind.UnsupportedSelector = 6 -> RaiCore.Pdf.Html.HtmlDiagnosticKind
+RaiCore.Pdf.Html.HtmlDiagnosticKind.UnsupportedValue = 5 -> RaiCore.Pdf.Html.HtmlDiagnosticKind
+RaiCore.Pdf.Html.HtmlDiagnosticSeverity
+RaiCore.Pdf.Html.HtmlDiagnosticSeverity.Info = 0 -> RaiCore.Pdf.Html.HtmlDiagnosticSeverity
+RaiCore.Pdf.Html.HtmlDiagnosticSeverity.Warning = 1 -> RaiCore.Pdf.Html.HtmlDiagnosticSeverity
+RaiCore.Pdf.Html.HtmlToPdf
+RaiCore.Pdf.Html.ResourceKind
+RaiCore.Pdf.Html.ResourceKind.Font = 2 -> RaiCore.Pdf.Html.ResourceKind
+RaiCore.Pdf.Html.ResourceKind.Image = 1 -> RaiCore.Pdf.Html.ResourceKind
+RaiCore.Pdf.Html.ResourceKind.StyleSheet = 0 -> RaiCore.Pdf.Html.ResourceKind
+RaiCore.Pdf.Html.ResourceLoader
+RaiCore.Pdf.Html.ResourceLoaders
+RaiCore.Pdf.Html.ResourceRequest
+RaiCore.Pdf.Html.ResourceRequest.<Clone>$() -> RaiCore.Pdf.Html.ResourceRequest!
+RaiCore.Pdf.Html.ResourceRequest.CancellationToken.get -> System.Threading.CancellationToken
+RaiCore.Pdf.Html.ResourceRequest.CancellationToken.init -> void
+RaiCore.Pdf.Html.ResourceRequest.Deconstruct(out System.Uri! Uri, out RaiCore.Pdf.Html.ResourceKind Kind, out System.Threading.CancellationToken CancellationToken) -> void
+RaiCore.Pdf.Html.ResourceRequest.Equals(RaiCore.Pdf.Html.ResourceRequest? other) -> bool
+RaiCore.Pdf.Html.ResourceRequest.Kind.get -> RaiCore.Pdf.Html.ResourceKind
+RaiCore.Pdf.Html.ResourceRequest.Kind.init -> void
+RaiCore.Pdf.Html.ResourceRequest.ResourceRequest(System.Uri! Uri, RaiCore.Pdf.Html.ResourceKind Kind, System.Threading.CancellationToken CancellationToken = default(System.Threading.CancellationToken)) -> void
+RaiCore.Pdf.Html.ResourceRequest.Uri.get -> System.Uri!
+RaiCore.Pdf.Html.ResourceRequest.Uri.init -> void
+static RaiCore.Pdf.Html.HtmlDiagnostic.operator !=(RaiCore.Pdf.Html.HtmlDiagnostic? left, RaiCore.Pdf.Html.HtmlDiagnostic? right) -> bool
+static RaiCore.Pdf.Html.HtmlDiagnostic.operator ==(RaiCore.Pdf.Html.HtmlDiagnostic? left, RaiCore.Pdf.Html.HtmlDiagnostic? right) -> bool
+static RaiCore.Pdf.Html.HtmlToPdf.Convert(string! html, RaiCore.Pdf.Html.HtmlConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Html.HtmlToPdf.ConvertAsync(string! html, RaiCore.Pdf.Html.HtmlConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Html.HtmlToPdf.ConvertToBytes(string! html, RaiCore.Pdf.Html.HtmlConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Html.HtmlToPdf.ConvertToBytesAsync(string! html, RaiCore.Pdf.Html.HtmlConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<byte[]!>!
+static RaiCore.Pdf.Html.HtmlToPdf.ConvertToStream(string! html, System.IO.Stream! output, RaiCore.Pdf.Html.HtmlConverterOptions? options = null) -> void
+static RaiCore.Pdf.Html.HtmlToPdf.ConvertToStreamAsync(string! html, System.IO.Stream! output, RaiCore.Pdf.Html.HtmlConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static RaiCore.Pdf.Html.HtmlToPdf.CreateFlowDocument(string! html, RaiCore.Pdf.Html.HtmlConverterOptions? options = null) -> RaiCore.Pdf.Layout.FlowDocument!
+static RaiCore.Pdf.Html.ResourceLoaders.DecodeDataUri(string! uri) -> byte[]?
+static RaiCore.Pdf.Html.ResourceLoaders.Default(RaiCore.Pdf.Html.ResourceRequest! request) -> byte[]?
+static RaiCore.Pdf.Html.ResourceRequest.operator !=(RaiCore.Pdf.Html.ResourceRequest? left, RaiCore.Pdf.Html.ResourceRequest? right) -> bool
+static RaiCore.Pdf.Html.ResourceRequest.operator ==(RaiCore.Pdf.Html.ResourceRequest? left, RaiCore.Pdf.Html.ResourceRequest? right) -> bool
+virtual RaiCore.Pdf.Html.ResourceLoader.Invoke(RaiCore.Pdf.Html.ResourceRequest! request) -> byte[]?

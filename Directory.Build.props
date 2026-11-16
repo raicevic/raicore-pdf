@@ -45,7 +45,23 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible>true</IsAotCompatible>
     <EnablePackageValidation>true</EnablePackageValidation>
+    <!--
+      Once 1.0.0 is on nuget.org, packing compares each package with the last released version and fails on a breaking
+      change (#61): uncomment and keep it at the latest release.
+    -->
+    <!-- <PackageValidationBaselineVersion>1.0.0</PackageValidationBaselineVersion> -->
   </PropertyGroup>
+
+  <!--
+    The public API of each package is listed in PublicAPI.Shipped.txt (what a released version has: empty until 1.0)
+    and PublicAPI.Unshipped.txt (changed since). Changing the API without updating them fails the build (RS0016/RS0017),
+    so every change to it shows up in review. See "Public API" in CONTRIBUTING.md.
+  -->
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)/PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="$(MSBuildProjectDirectory)/PublicAPI.Unshipped.txt" />
+  </ItemGroup>
 
   <!-- Each package has its own README (shown on nuget.org); links in it must be absolute. -->
   <ItemGroup Condition="'$(IsPackable)' == 'true'">

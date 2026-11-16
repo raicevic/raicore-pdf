@@ -393,6 +393,12 @@ dotnet_naming_style.s_camelcase.capitalization = camel_case
 # Type names such as PdfDictionary and PdfArray mirror the PDF specification.
 dotnet_diagnostic.CA1711.severity = none
 
+# Public API tracking (PublicAPI.*.txt, #61). Overloads that each have optional parameters, such as Load(path,
+# faceIndex = 0) next to Load(stream, faceIndex = 0), are designed together; what these rules guard against, adding an
+# optional parameter to a shipped method, removes that method's old signature, which RS0017 reports.
+dotnet_diagnostic.RS0026.severity = none
+dotnet_diagnostic.RS0027.severity = none
+
 # The layout blocks keep their own folder but share the RaiCore.Pdf.Layout namespace (API review, #60).
 [src/RaiCore.Pdf.Layout/Blocks/**.cs]
 dotnet_style_namespace_match_folder = false

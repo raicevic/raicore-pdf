@@ -73,8 +73,23 @@ for running it locally and adding documents.
 - One feature per pull request, with tests that fail without the change.
 - Shipped dependencies must be permissively licensed (MIT, BSD or Apache-2.0). Test-only dependencies are exempt.
 - Public APIs need XML documentation; warnings are errors.
+- Changes to the public API must be recorded in the package's `PublicAPI.Unshipped.txt` (see *Public API* below).
 - Keep the libraries trimming- and AOT-safe (`IsAotCompatible` is on).
 - Update [CHANGELOG.md](CHANGELOG.md) under *Unreleased*.
+
+## Public API
+
+Each package lists its public API in two files that
+[Microsoft.CodeAnalysis.PublicApiAnalyzers](https://github.com/dotnet/roslyn/blob/main/src/RoslynAnalyzers/PublicApiAnalyzers/PublicApiAnalyzers.Help.md)
+checks on every build:
+
+- `PublicAPI.Shipped.txt`: the API as reviewed for 1.0 (#60) and, after each release, as released.
+- `PublicAPI.Unshipped.txt`: what changed since. A new public type or member gets a line here (your IDE's fix for
+  RS0016 adds it); a removed or changed one from the shipped file gets a `*REMOVED*` line, which marks a breaking change.
+
+A public API change that is not recorded fails the build (RS0016 for an unlisted symbol, RS0017 for a listed one that
+is gone), so every change shows up in the pull request. APIs marked `[Experimental]` keep their diagnostic ID as a
+prefix (`[RCPDF002]...`; see [docs/experimental.md](docs/experimental.md)).
 
 ## Releasing
 
@@ -94,7 +109,9 @@ One-time setup:
 
 For each release:
 
-1. Move the *Unreleased* entries in `CHANGELOG.md` under the new version with today's date, and merge that to `main`.
+1. Move the *Unreleased* entries in `CHANGELOG.md` under the new version with today's date, move each package's
+   `PublicAPI.Unshipped.txt` lines into its `PublicAPI.Shipped.txt` (dropping the `*REMOVED*` lines and the shipped
+   lines they name), and merge that to `main`.
 2. Tag the merge commit and push the tag:
 
    ```sh
@@ -107,3 +124,6 @@ For each release:
    creates a GitHub release with the packages attached.
 
 Published versions cannot be deleted from nuget.org, only unlisted, so a bad release needs a new version.
+
+After a release, set `PackageValidationBaselineVersion` in `Directory.Build.props` to the released version (after
+1.0.0, uncomment it): packing then fails when a package breaks compatibility with that release.
