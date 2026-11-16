@@ -58,5 +58,5 @@ jobs:
           name: fidelity-report
           path: |
             ${{ runner.temp }}/fidelity/report
-            ${{ runner.temp }}/fidelity/chrome/*.pdf
+            ${{ runner.temp }}/fidelity/chrome
             ${{ runner.temp }}/fidelity/raicore

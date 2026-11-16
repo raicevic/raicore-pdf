@@ -26,10 +26,11 @@ Pages are rasterized at 72 dpi with PDFium. For each document the report gives:
 - **Pages**: RaiCore.Pdf's page count next to Chrome's.
 - **Pixel score**: the share of inked pixels that match after a light blur, averaged over the pages. A page only one
   renderer produced scores 0.
-- **Words in place**: the share of Chrome's words that RaiCore.Pdf puts within 2 pt of Chrome's position. Words are
-  matched in reading order.
-- **Same line**: the share of Chrome's words on the same page and line.
-- **Median offset**: the median distance of matched words on the same page.
+- **Text in place**: the share of Chrome's characters that RaiCore.Pdf puts within 2 pt of Chrome's position.
+  Characters are matched in reading order, and spaces are skipped. Words would not do: PDFs split text into words
+  differently, for instance with letter-spaced text.
+- **Same line**: the share of Chrome's characters on the same page and line.
+- **Median offset**: the median distance of matched characters on the same page.
 
 Each page is shown side by side with a heatmap of the differing pixels. The report also lists the words furthest
 from Chrome's position and RaiCore.Pdf's diagnostics.
@@ -37,12 +38,15 @@ from Chrome's position and RaiCore.Pdf's diagnostics.
 The job fails when a document gets worse than its baseline:
 
 - the pixel score drops more than 1 point;
-- words in place drop more than 2 points;
+- text in place drops more than 2 points;
 - or the page count moves further from Chrome's.
 
 When a change improves the scores, update the baseline in the same pull request. The CI report holds the
 `baseline.json` for its run, or you can run the comparison locally with `--update-baseline`. Take the baseline
 from CI: Chrome on Linux can place text slightly differently from Chrome on macOS.
+
+Chrome runs with `--font-render-hinting=none`. Linux's default hinting rounds glyph advances, which spaces text
+unlike Chrome on macOS and Windows.
 
 ## Running locally
 
