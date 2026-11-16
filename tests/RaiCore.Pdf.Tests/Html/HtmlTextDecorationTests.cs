@@ -36,6 +36,57 @@ public class HtmlTextDecorationTests
         Assert.Equal(PdfColor.FromRgb(0, 0, 255), current.Color);     // currentColor.
     }
 
+    [Theory]
+    [InlineData("underline wavy red 2px", TextDecorationLines.Underline, TextDecorationStyle.Wavy, "red", 2 * Px)]
+    [InlineData("2px dotted overline blue", TextDecorationLines.Overline, TextDecorationStyle.Dotted, "blue", 2 * Px)]
+    [InlineData("line-through 10%", TextDecorationLines.LineThrough, TextDecorationStyle.Solid, "black", 20 * Px / 10)]
+    [InlineData("underline overline calc(1px + 1px) double", TextDecorationLines.Underline | TextDecorationLines.Overline, TextDecorationStyle.Double, "black", 2 * Px)]
+    public void A_shorthand_with_a_thickness_sets_every_longhand(string value, TextDecorationLines lines, TextDecorationStyle style, string color, double thickness)
+    {
+        // #137: AngleSharp drops the shorthand with a thickness; it is split into longhands first.
+        var decoration = Assert.Single(Span(Spans($"<p style='font-size: 20px'><span style='text-decoration: {value}'>t</span></p>"), "t").Style.Decorations);
+        var colors = new Dictionary<string, PdfColor> { ["red"] = PdfColor.FromRgb(255, 0, 0), ["blue"] = PdfColor.FromRgb(0, 0, 255), ["black"] = PdfColor.FromRgb(0, 0, 0) };
+
+        Assert.Equal((lines, style, colors[color]), (decoration.Lines, decoration.Style, decoration.Color));
+        Assert.Equal(thickness, decoration.Thickness!.Value, 6);
+    }
+
+    [Fact]
+    public void Shorthands_with_a_thickness_work_in_style_sheets_with_important()
+    {
+        var spans = Spans("""
+            <style>
+              .a { text-decoration: underline 4px !important }
+              .a { text-decoration: overline }
+              .b { text-decoration: none 2px }
+            </style>
+            <p><span class="a">a</span> <span class="b">b</span></p>
+            """);
+
+        var a = Assert.Single(Span(spans, "a").Style.Decorations);
+        Assert.Equal((TextDecorationLines.Underline, 4 * Px), (a.Lines, a.Thickness!.Value));
+        Assert.Empty(Span(spans, "b").Style.Decorations);
+    }
+
+    [Fact]
+    public void The_thickness_from_the_shorthand_is_drawn()
+    {
+        var document = HtmlToPdf.Convert("<p><span style='text-decoration: underline 4px'>Thick</span></p>");
+        document.CompressContent = false;
+        var content = System.Text.Encoding.Latin1.GetString(document.ToArray());
+
+        Assert.Matches(@"[\d.]+ [\d.]+ [\d.]+ 3 re\nf", content); // A solid underline is a rectangle 4px = 3pt tall.
+    }
+
+    [Fact]
+    public void Diagnostics_no_longer_report_a_shorthand_with_a_thickness()
+    {
+        var found = new List<HtmlDiagnostic>();
+        HtmlToPdf.Convert("<p style='text-decoration: underline wavy red 2px'>t</p>", new HtmlConverterOptions { Diagnostics = found.Add });
+
+        Assert.Empty(found);
+    }
+
     [Fact]
     public void Decorations_propagate_to_descendants_and_cannot_be_removed()
     {

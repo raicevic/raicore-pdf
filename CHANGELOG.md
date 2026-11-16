@@ -457,6 +457,8 @@ change at any time, and this section lists what the packages can do so far.
   margins that leave no room are dropped, declarations and rules AngleSharp cannot read are removed and an element
   whose style it cannot compute takes its parent's (it threw `NullReferenceException` on them), `box-shadow` and `text-shadow` (not drawn) are ignored, invalid
   `font-feature-settings` are skipped, and web fonts whose license forbids embedding fall back to other fonts.
+- `text-decoration` with a thickness in the shorthand (`underline wavy red 2px`, CSS Text Decoration 4) is split into
+  its longhands before AngleSharp parses the CSS, which dropped the whole declaration (#137).
 - Diagnostics (#59): `HtmlConverterOptions.Diagnostics` receives `HtmlDiagnostic`s for images (`img`, CSS `url()`),
   inline SVGs, linked style sheets and web fonts that did not load, telling apart nothing loaded (with a hint for
   relative URLs without a base URI), unreadable data, a per-resource limit and fonts that may not be embedded. Each

@@ -169,7 +169,11 @@ internal static partial class CssDiagnostics
                 continue;
             }
 
-            if (!IsAccepted(parser, property, value))
+            // A text-decoration shorthand with a thickness is split into longhands before AngleSharp sees it.
+            var accepted = property == "text-decoration" && CssTextDecoration.Longhands(value) is { } longhands
+                ? longhands.TrueForAll(l => IsAccepted(parser, l.Property, l.Value))
+                : IsAccepted(parser, property, value);
+            if (!accepted)
             {
                 Report(HtmlDiagnosticKind.UnsupportedValue, HtmlDiagnosticSeverity.Warning, Shorten($"{property}: {value}"),
                     $"The value of {property} is not valid or not supported: the declaration is ignored.");

@@ -167,7 +167,7 @@ internal static partial class CssBackgrounds
     }
 
     /// <summary>The end of a declaration's value: the <c>;</c> or <c>}</c> after it outside parentheses and strings.</summary>
-    private static int ValueEnd(string css, int start)
+    internal static int ValueEnd(string css, int start)
     {
         var depth = 0;
         char? quote = null;
