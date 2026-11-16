@@ -46,24 +46,3 @@ internal sealed record DecodedImage(int Width, int Height, ImageColorSpace Color
         _ => 1,
     };
 }
-
-/// <summary>Thrown when image data is malformed or uses an unsupported format.</summary>
-public sealed class ImageFormatException : Exception
-{
-    /// <summary>Creates the exception.</summary>
-    public ImageFormatException()
-    {
-    }
-
-    /// <summary>Creates the exception with a message.</summary>
-    public ImageFormatException(string message)
-        : base(message)
-    {
-    }
-
-    /// <summary>Creates the exception with a message and inner exception.</summary>
-    public ImageFormatException(string message, Exception innerException)
-        : base(message, innerException)
-    {
-    }
-}

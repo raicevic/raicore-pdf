@@ -4,7 +4,7 @@ namespace RaiCore.Pdf;
 /// Thrown when an encrypted PDF file is opened without its password: the password given (or the empty password, when
 /// none was given) is neither the file's user password nor its owner password.
 /// </summary>
-public sealed class PdfPasswordException : Exception
+public sealed class PdfPasswordException : PdfException
 {
     /// <summary>Creates the exception.</summary>
     public PdfPasswordException()

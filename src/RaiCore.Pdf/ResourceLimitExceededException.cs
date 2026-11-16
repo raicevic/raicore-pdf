@@ -4,7 +4,7 @@ namespace RaiCore.Pdf;
 /// Thrown when input exceeds one of the <see cref="ResourceLimits"/>: it is nested too deeply, is too large, decodes to
 /// too much data, makes too many pages, or takes too long to convert.
 /// </summary>
-public sealed class ResourceLimitExceededException : Exception
+public sealed class ResourceLimitExceededException : PdfException
 {
     /// <summary>Creates the exception.</summary>
     public ResourceLimitExceededException()

@@ -21,7 +21,7 @@ public partial class PdfOutlineTests
         chapter.Children.Add(new PdfOutlineItem("Section 1.1", pages[0], 500.5));
         var closed = new PdfOutlineItem("Section 1.2 (closed)", pages[1], 700) { IsOpen = false };
         closed.Children.Add(new PdfOutlineItem("1.2.1", pages[1], 600));
-        closed.Children.Add(new PdfOutlineItem("1.2.2", pages[2], 300) { Left = 72 });
+        closed.Children.Add(new PdfOutlineItem("1.2.2", new PdfDestination(pages[2], left: 72, top: 300)));
         chapter.Children.Add(closed);
         doc.Outline.Add(chapter);
         doc.Outline.Add(new PdfOutlineItem("\u00C6bler \u2013 \u65E5\u672C", pages[2]));

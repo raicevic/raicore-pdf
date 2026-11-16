@@ -11,11 +11,15 @@ namespace RaiCore.Pdf;
 /// </summary>
 public sealed class PdfDestination
 {
-    /// <summary>Creates a destination on <paramref name="page"/>, scrolled so that <paramref name="top"/> is at the top of the window.</summary>
+    /// <summary>
+    /// Creates a destination on <paramref name="page"/>, scrolled so that (<paramref name="left"/>,
+    /// <paramref name="top"/>) is at the top-left of the window. Name the coordinates you give, as in
+    /// <c>new PdfDestination(page, top: 700)</c>.
+    /// </summary>
     /// <param name="page">The target page. It must belong to the document the destination is saved with.</param>
-    /// <param name="top">The PDF y coordinate (from the bottom of the page) to show at the top of the window, or <c>null</c> to keep the viewer's position.</param>
     /// <param name="left">The PDF x coordinate to show at the left of the window, or <c>null</c> to keep the viewer's position.</param>
-    public PdfDestination(PdfPage page, double? top = null, double? left = null)
+    /// <param name="top">The PDF y coordinate (from the bottom of the page) to show at the top of the window, or <c>null</c> to keep the viewer's position.</param>
+    public PdfDestination(PdfPage page, double? left = null, double? top = null)
     {
         ArgumentNullException.ThrowIfNull(page);
         Page = page;

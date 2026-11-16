@@ -36,8 +36,8 @@ change at any time, and this section lists what the packages can do so far.
   and `data:` images. `viewBox` and `preserveAspectRatio` are honored, also when drawn at another aspect ratio.
   Unsupported features are skipped; DTDs are ignored and nothing external is loaded.
 - Drawing API: paths, fills, strokes, colors, text and images.
-- Document outline (bookmarks): `PdfDocument.Outline` with nested `PdfOutlineItem`s (Unicode titles, a page and
-  position to jump to, open or closed), and `PdfDocument.PageMode`, which by default opens the outline panel when
+- Document outline (bookmarks): `PdfDocument.Outline` with nested `PdfOutlineItem`s (Unicode titles, a
+  `PdfDestination` to jump to, open or closed), and `PdfDocument.PageMode`, which by default opens the outline panel when
   the document has an outline.
 - Links: `PdfPage.AddLink` writes link annotations (borderless) that open a URI (a URI action, written as 7-bit ASCII
   with other characters percent-encoded) or jump to a `PdfDestination` or a named destination.
@@ -150,6 +150,15 @@ change at any time, and this section lists what the packages can do so far.
   tree and metadata are written at the end, so links may point at any page; tagged, PDF/UA and PDF/A documents can be
   written page by page too. `Save` writes each page's content as it goes too; object numbers changed
   (fonts and page dictionaries now follow the content).
+- `PdfDocument.SaveAsync(stream, cancellationToken)`: encodes page by page into a buffer and writes it with
+  `WriteAsync`, so streams that forbid synchronous writes (an ASP.NET Core response body) work.
+- `PdfException` is the base class of every exception the library throws for input it rejects: `PdfFormatException`,
+  `PdfPasswordException`, `FontFormatException`, `ImageFormatException` and `ResourceLimitExceededException`.
+- `PdfPageSize.FromInches`.
+- API review (#60), breaking: `FontFormatException` moved to `RaiCore.Pdf.Fonts` and `ImageFormatException` to
+  `RaiCore.Pdf`; `ImageFormat` is now `PdfImageFormat`; `PdfAttachment`'s `mimeType` parameter is `mediaType`;
+  `PdfDestination` takes `(page, left, top)`; `PdfOutlineItem` holds a `Destination` in place of `Page`, `Top` and
+  `Left` (the `(title, page, top)` constructor stays).
 
 ### RaiCore.Pdf.Fonts
 - Bundled Liberation Sans, Serif and Mono (SIL OFL 1.1), metric-compatible with Arial, Times New Roman and Courier New.
