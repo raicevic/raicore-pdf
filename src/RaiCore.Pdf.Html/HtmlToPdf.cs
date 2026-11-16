@@ -232,7 +232,7 @@ public static partial class HtmlToPdf
             ViewPortHeight = (int)(options.Page.ContentHeight / CssValues.PointsPerPixel),
         };
         var context = BrowsingContext.New(Configuration.Default.WithCss().WithRenderDevice(device));
-        using var document = Parse(context, html, options.BaseUri, cancellationToken);
+        using var document = Parse(context, CssColorGuard.Rewrite(html), options.BaseUri, cancellationToken); // AngleSharp parses CSS here.
         CheckStructure(document, options.Limits);
 
         var originalInlineStyles = new Dictionary<IElement, string>(ReferenceEqualityComparer.Instance);
@@ -526,7 +526,7 @@ public static partial class HtmlToPdf
     }
 
     /// <summary>Rewrites CSS that AngleSharp would misread before it is parsed (see LegacyBreaks and LogicalSides).</summary>
-    private static string RewriteCss(string css) => CssTextDecoration.RewriteShorthand(CssBackgrounds.RewriteShorthand(LogicalSides.Rewrite(LegacyBreaks.Rewrite(StripShadows(css)))));
+    private static string RewriteCss(string css) => CssTextDecoration.RewriteShorthand(CssBackgrounds.RewriteShorthand(LogicalSides.Rewrite(LegacyBreaks.Rewrite(StripShadows(CssColorGuard.Rewrite(css))))));
 
     /// <summary>
     /// Removes <c>box-shadow</c> and <c>text-shadow</c>, which are not drawn: AngleSharp throws a
