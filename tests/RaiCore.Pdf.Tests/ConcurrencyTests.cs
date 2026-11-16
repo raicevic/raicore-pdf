@@ -45,9 +45,11 @@ public class ConcurrencyTests
     [Fact]
     public void A_document_using_an_already_loaded_bundled_font_does_not_copy_its_data()
     {
-        static byte[] Render(PdfFont font)
+        // A fixed clock: documents written a second apart differ in their dates.
+        var clock = new DeterminismTests.FixedClock(new DateTimeOffset(2026, 11, 16, 12, 0, 0, TimeSpan.Zero));
+        byte[] Render(PdfFont font)
         {
-            var document = new PdfDocument { IncludeXmpMetadata = false };
+            var document = new PdfDocument { IncludeXmpMetadata = false, TimeProvider = clock };
             var page = document.AddPage(PdfPageSize.A4);
             new Paragraph(new TextStyle(font, 12)).Add("Shared fonts are not copied per document.").Layout(400).Draw(page.Canvas, 72, 700);
             page.Canvas.DrawText("Nor per thread.", font, 12, 72, 600);
