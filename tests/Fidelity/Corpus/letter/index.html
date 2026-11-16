@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Letter</title>
+<link rel="stylesheet" href="../fonts.css">
+<style>
+  @page { size: A4; margin: 25mm 25mm 25mm 30mm; }
+  body { font-family: "Liberation Serif"; font-size: 11.5pt; line-height: 1.45; color: #111; margin: 0; }
+  .letterhead { text-align: right; font-family: "Liberation Sans"; font-size: 8.5pt; color: #444; line-height: 1.35; }
+  .letterhead strong { display: block; font-size: 13pt; color: #000; letter-spacing: 2pt; margin-bottom: 2pt; }
+  .recipient { float: left; width: 85mm; margin-top: 14mm; font-size: 11pt; }
+  .date { float: right; margin-top: 14mm; }
+  .subject { clear: both; padding-top: 14mm; font-weight: bold; }
+  p { margin: 0 0 8pt; text-align: justify; }
+  blockquote { margin: 10pt 18pt; font-style: italic; color: #333; border-left: 2pt solid #999; padding-left: 10pt; }
+  ol { margin: 0 0 8pt; padding-left: 20pt; }
+  li { margin-bottom: 3pt; }
+  .closing { margin-top: 18pt; }
+  .signature { margin-top: 28pt; font-family: "Liberation Sans"; }
+  .signature span { display: block; font-size: 9pt; color: #555; }
+  .ps { margin-top: 18pt; font-size: 10pt; }
+</style>
+</head>
+<body>
+<div class="letterhead">
+  <strong>MERIDIAN ADVISORY</strong>
+  Old Mill Lane 4<br>1234 Riverside<br>Telephone +00 12 34 56 78<br>www.example.org
+</div>
+
+<div class="recipient">Ms. Jordan Example<br>Head of Operations<br>Sample Manufacturing Inc.<br>77 Industrial Park Way<br>5678 Lakeside</div>
+<div class="date">16 November 2026</div>
+
+<p class="subject">Proposal for the review of your document production workflow</p>
+
+<p>Dear Ms. Example,</p>
+
+<p>Thank you for meeting with us last week and for the opportunity to learn more about how your organisation produces, approves and archives its customer documents. As agreed, this letter summarises our understanding of the current situation and outlines how we propose to approach the review.</p>
+
+<p>Your team currently generates roughly forty thousand documents each month: order confirmations, delivery notes, invoices and statements. Most are produced overnight by a batch job, while a smaller but growing share is created on demand from the customer portal. Several of your colleagues described the same concern in slightly different words:</p>
+
+<blockquote>&ldquo;What the designers approve in the browser is not quite what our customers receive. Tables shift, totals wrap onto a new line, and the footer sometimes ends up on a page of its own.&rdquo;</blockquote>
+
+<p>We propose to address this in three phases, each concluding with a short written report and a meeting with your steering group:</p>
+
+<ol>
+  <li><strong>Inventory.</strong> We collect every template in use, record how often each is produced, and note which data sources feed it.</li>
+  <li><strong>Comparison.</strong> For each template we compare the approved design with the delivered document, page by page, and classify the differences by their effect on the reader.</li>
+  <li><strong>Recommendations.</strong> We recommend changes to templates, data and tooling, ordered by the number of documents they improve.</li>
+</ol>
+
+<p>We estimate the work at eighteen consulting days spread over six weeks, starting in the first week of December. A detailed plan and a fixed-price quotation are enclosed. Should you wish to adjust the scope, for instance by limiting the first phase to the documents produced on demand, we would be happy to revise the proposal accordingly.</p>
+
+<p class="closing">We look forward to hearing from you.</p>
+<p>Yours sincerely,</p>
+
+<div class="signature">Alex Sample<span>Partner, Meridian Advisory</span></div>
+
+<p class="ps"><em>Enclosures:</em> project plan, quotation, references.</p>
+</body>
+</html>

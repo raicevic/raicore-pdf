@@ -60,6 +60,14 @@ dotnet run -c Release --project tests/RaiCore.Pdf.Fuzz -- minimize png /tmp/png-
 Fix what it finds and add the minimized input to `tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Crashes/<target>`:
 `FuzzCorpusTests` replays the seeds and all those inputs on every test run.
 
+### Fidelity corpus
+
+`tests/Fidelity` holds HTML documents that are rendered with RaiCore.Pdf and with Chrome's print-to-PDF; the
+[Fidelity workflow](.github/workflows/fidelity.yml) scores how close they are and fails when a document gets worse
+than `tests/Fidelity/baseline.json`. Its report shows each page side by side with a heatmap of the differences. When a
+change improves the scores, update the baseline in the same pull request. See [tests/Fidelity/README.md](tests/Fidelity/README.md)
+for running it locally and adding documents.
+
 ## Guidelines
 
 - One feature per pull request, with tests that fail without the change.

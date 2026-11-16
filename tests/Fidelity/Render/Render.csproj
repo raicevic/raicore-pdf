@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Fidelity corpus renderer, not part of the solution: converts tests/Fidelity/Corpus/*/index.html for fidelity.py. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>RaiCore.Pdf.Fidelity.Render</AssemblyName>
+    <RootNamespace>RaiCore.Pdf.Fidelity</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\RaiCore.Pdf.Html\RaiCore.Pdf.Html.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>RTL and multilingual text</title>
+<link rel="stylesheet" href="../fonts.css">
+<style>
+  @page { size: A4; margin: 20mm; }
+  body { font-family: "Liberation Sans"; font-size: 11pt; line-height: 1.5; margin: 0; color: #111; }
+  h1 { font-size: 20pt; margin: 0 0 6pt; border-bottom: 2pt solid #6a1b9a; padding-bottom: 4pt; }
+  h2 { font-size: 13pt; margin: 16pt 0 6pt; color: #6a1b9a; }
+  p { margin: 0 0 8pt; }
+  table { width: 100%; border-collapse: collapse; margin: 6pt 0 10pt; }
+  th, td { border: 1px solid #bbb; padding: 4pt 6pt; text-align: start; }
+  th { background: #f1e6f5; }
+  td.num { text-align: left; direction: ltr; }
+  ul { margin: 0 0 8pt; padding-inline-start: 18pt; }
+  .box { border-inline-start: 4pt solid #6a1b9a; background: #faf6fc; padding: 6pt 10pt; margin: 8pt 0; }
+  .ltr { direction: ltr; text-align: left; }
+  .ltr p { margin-bottom: 4pt; }
+  .ltr span.label { display: inline-block; width: 80pt; color: #6a1b9a; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>חשבונית מספר 2026-0147</h1>
+
+<p>שלום, זוהי חשבונית לדוגמה עבור הלקוח Example Trading Ltd. הסכום הכולל הוא 1,250.00 ₪ והתשלום יבוצע עד 30.11.2026.</p>
+
+<table>
+  <thead><tr><th>תיאור</th><th>כמות</th><th>מחיר</th><th>סה״כ</th></tr></thead>
+  <tbody>
+    <tr><td>עיצוב אתר (Web design)</td><td class="num">2</td><td class="num">400.00</td><td class="num">800.00</td></tr>
+    <tr><td>אחסון לשנה</td><td class="num">1</td><td class="num">300.00</td><td class="num">300.00</td></tr>
+    <tr><td>דומיין example.com</td><td class="num">1</td><td class="num">150.00</td><td class="num">150.00</td></tr>
+  </tbody>
+</table>
+
+<div class="box">תודה רבה! לשאלות ניתן לפנות בטלפון ‎+972 00-000-0000 או בכתובת hello@example.com.</div>
+
+<h2>רשימה</h2>
+<ul>
+  <li>פריט ראשון עם מספר 42 באמצע המשפט.</li>
+  <li>פריט שני עם מילה באנגלית: <b>invoice</b> ועוד טקסט.</li>
+  <li>פריט שלישי (בסוגריים) וסימן שאלה?</li>
+</ul>
+
+<h2>Multilingual / רב-לשוני</h2>
+<div class="ltr" dir="ltr">
+  <p><span class="label">English</span>The quick brown fox jumps over the lazy dog.</p>
+  <p><span class="label">Dansk</span>Høj bølge på Æblevej: blåbærgrød og rødgrød med fløde.</p>
+  <p><span class="label">Deutsch</span>Zwölf Boxkämpfer jagen Viktor quer über den großen Sylter Deich.</p>
+  <p><span class="label">Français</span>Où est la façade de l’hôtel? Ça coûte cher, n’est-ce pas?</p>
+  <p><span class="label">Ελληνικά</span>Ξεσκεπάζω την ψυχοφθόρα βδελυγμία.</p>
+  <p><span class="label">Русский</span>Съешь же ещё этих мягких французских булок, да выпей чаю.</p>
+  <p><span class="label">Mixed</span>English text with עברית בתוך המשפט and numbers 1234 at the end.</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Layout showcase</title>
+<link rel="stylesheet" href="../fonts.css">
+<style>
+  @page { size: Letter; margin: 0.6in; }
+  body { font-family: "Liberation Sans"; font-size: 10pt; line-height: 1.4; color: #1d2433; margin: 0; }
+  .hero { position: relative; background: linear-gradient(135deg, #243b6b, #4c6fb8); color: white; border-radius: 8pt; padding: 18pt 20pt; margin-bottom: 14pt; }
+  .hero h1 { margin: 0 0 4pt; font-size: 22pt; }
+  .hero p { margin: 0; max-width: 70%; opacity: 0.9; }
+  .badge { position: absolute; top: 12pt; right: 14pt; background: #ffcf40; color: #3a2a00; font-weight: bold; font-size: 8pt; padding: 3pt 8pt; border-radius: 10pt; text-transform: uppercase; }
+  .cards { display: flex; flex-wrap: wrap; gap: 10pt; margin-bottom: 14pt; }
+  .card { flex: 1 1 140pt; border: 1px solid #d6dbe6; border-radius: 6pt; padding: 10pt; background: #fafbfd; }
+  .card h3 { margin: 0 0 4pt; font-size: 11pt; color: #243b6b; }
+  .card p { margin: 0; font-size: 9pt; color: #4a5468; }
+  .card .stat { font-size: 18pt; font-weight: bold; color: #1d2433; margin-top: 6pt; }
+  .article { margin-bottom: 14pt; }
+  .article h2 { font-size: 14pt; margin: 0 0 6pt; }
+  .figure { float: right; width: 150pt; margin: 2pt 0 8pt 12pt; border: 1px solid #d6dbe6; border-radius: 4pt; padding: 6pt; background: white; font-size: 8pt; color: #555; text-align: center; }
+  .figure .chart { height: 80pt; display: flex; align-items: flex-end; gap: 6pt; padding: 0 6pt; border-bottom: 1px solid #999; margin-bottom: 4pt; }
+  .figure .bar { flex: 1; background: #4c6fb8; }
+  .pull { float: left; width: 120pt; margin: 4pt 12pt 6pt 0; font-size: 13pt; font-style: italic; color: #243b6b; border-top: 2pt solid #243b6b; border-bottom: 2pt solid #243b6b; padding: 6pt 0; }
+  .article p { margin: 0 0 8pt; text-align: justify; }
+  .columns { display: flex; gap: 14pt; clear: both; }
+  .columns > div { flex: 1; }
+  .columns h4 { margin: 0 0 4pt; font-size: 10pt; text-transform: uppercase; letter-spacing: 0.5pt; color: #4c6fb8; }
+  .columns ul { margin: 0; padding-left: 14pt; }
+  .callout { margin-top: 14pt; border: 2px dashed #4c6fb8; border-radius: 6pt; padding: 8pt 12pt; display: flex; align-items: center; gap: 10pt; }
+  .callout .icon { width: 24pt; height: 24pt; border-radius: 50%; background: #4c6fb8; color: white; font-weight: bold; text-align: center; line-height: 24pt; flex: none; }
+  code { font-family: "Liberation Mono"; font-size: 9pt; background: #eef1f7; padding: 1pt 3pt; border-radius: 2pt; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <span class="badge">Quarterly</span>
+  <h1>Platform update</h1>
+  <p>Highlights from the last three months: faster rendering, new layout features and better accessibility across all document types.</p>
+</div>
+
+<div class="cards">
+  <div class="card"><h3>Throughput</h3><p>Documents rendered per minute on a single core.</p><div class="stat">1,840</div></div>
+  <div class="card"><h3>Templates</h3><p>Active templates across all customers.</p><div class="stat">312</div></div>
+  <div class="card"><h3>Pages</h3><p>Pages produced this quarter.</p><div class="stat">4.2 M</div></div>
+  <div class="card"><h3>Uptime</h3><p>Availability of the rendering service.</p><div class="stat">99.97%</div></div>
+</div>
+
+<div class="article">
+  <h2>Floats, text wrap and flex in one flow</h2>
+  <div class="figure">
+    <div class="chart"><div class="bar" style="height: 35%"></div><div class="bar" style="height: 55%"></div><div class="bar" style="height: 48%"></div><div class="bar" style="height: 80%"></div><div class="bar" style="height: 95%"></div></div>
+    Pages per month, January to May
+  </div>
+  <p>Documents produced by business systems tend to combine a handful of layout techniques: blocks of running text, tables of figures, side-by-side boxes, and the occasional figure that text flows around. This page combines them so that differences in any one of them show up in the comparison.</p>
+  <div class="pull">&ldquo;Layout bugs hide where techniques meet.&rdquo;</div>
+  <p>Text next to a float must shorten its lines and then return to the full width once it passes the bottom of the float. Line heights, the space between paragraphs and the exact position where each line breaks all depend on font metrics, so the fonts are loaded from the same files in both renderers. Words such as <code>display: flex</code> in a monospaced face change the line height slightly, which is another place where small differences add up.</p>
+  <p>Below the floats, a flex row divides the width into equal columns. Each column holds a short heading and a list. The callout at the end uses a dashed border with rounded corners, a circular icon made with a border radius, and vertical centering with <code>align-items</code>.</p>
+</div>
+
+<div class="columns">
+  <div><h4>Rendering</h4><ul><li>Shaping with OpenType features</li><li>Hyphenation patterns</li><li>Bidirectional text</li></ul></div>
+  <div><h4>Layout</h4><ul><li>Flexible boxes</li><li>Floats and clearance</li><li>Positioned elements</li></ul></div>
+  <div><h4>Output</h4><ul><li>Tagged PDF</li><li>PDF/A archives</li><li>Embedded attachments</li></ul></div>
+</div>
+
+<div class="callout"><div class="icon">i</div><div>Every document in this corpus is rendered by both Chrome and RaiCore.Pdf every night. The scores are compared with a baseline, so a change that makes any document look less like Chrome fails the job.</div></div>
+</body>
+</html>
