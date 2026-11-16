@@ -220,11 +220,28 @@ jobs:
               dotnet run --project tests/PackageSmoke --configuration Release -- smoke-output
               tests/PackageSmoke/publish-and-run.sh'
 
+      # The sample references the released packages from nuget.org; here it is built from the packages of this commit
+      # instead: a nuget.config maps RaiCore.Pdf* to them and the version floats to their -dev version.
       - name: Build and run the sample Dockerfile (samples/Docker)
         if: matrix.distro == 'alpine'
         run: |
           mkdir -p samples/Docker/packages
           cp artifacts/*.nupkg samples/Docker/packages/
+          cat > samples/Docker/nuget.config <<'XML'
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="local" value="packages" />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+            </packageSources>
+            <packageSourceMapping>
+              <packageSource key="local"><package pattern="RaiCore.Pdf" /><package pattern="RaiCore.Pdf.*" /></packageSource>
+              <packageSource key="nuget.org"><package pattern="*" /></packageSource>
+            </packageSourceMapping>
+          </configuration>
+          XML
+          sed -i 's/Include="RaiCore.Pdf.Html" Version="[^"]*"/Include="RaiCore.Pdf.Html" Version="*-*"/' samples/Docker/HelloPdf.csproj
+          grep -q 'Version="\*-\*"' samples/Docker/HelloPdf.csproj
           docker build --tag hello-pdf samples/Docker
           docker run --rm hello-pdf > hello.pdf
           ls -l hello.pdf
