@@ -194,7 +194,7 @@ internal static partial class CssDiagnostics
     {
         try
         {
-            return parser.ParseDeclaration($"{property}: {value}") is { Length: > 0 };
+            return parser.ParseDeclaration($"{property}: {CssColorGuard.Rewrite(value)}") is { Length: > 0 };
         }
         catch (NullReferenceException)
         {

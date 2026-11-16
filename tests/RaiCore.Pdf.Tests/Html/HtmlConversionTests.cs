@@ -299,6 +299,32 @@ public class HtmlConversionTests
 
     private static PageSetup PageWidth(double width) => new(new PdfPageSize(width + 100, 800), new Thickness(50, 50, 50, 50));
 
+    [Fact]
+    public void Colors_with_a_unit_on_their_alpha_are_dropped_wherever_they_come_from()
+    {
+        // AngleSharp.Css threw on rgb(1 2 3 / 4px) while parsing (fuzzing found it); CSS drops the declaration instead.
+        const string Bad = "rgb(1 2 3 / 4px)";
+        var diagnostics = new List<HtmlDiagnostic>();
+        var options = new HtmlConverterOptions
+        {
+            BaseUri = new Uri("https://example.com/"),
+            ResourceLoader = uri => uri.AbsolutePath == "/linked.css" ? System.Text.Encoding.UTF8.GetBytes($".linked {{ color: red; color: {Bad} }}") : null,
+            UserStyleSheet = $".user {{ color: red; color: {Bad} }}",
+            Diagnostics = diagnostics.Add,
+        };
+        var html = $$"""
+            <link rel="stylesheet" href="linked.css">
+            <style>.sheet { color: red; color: {{Bad}} } .valid { color: rgb(0 0 255 / 50%) }</style>
+            <p style="color: red; color: {{Bad}}">inline</p>
+            <p class="sheet">sheet</p><p class="linked">linked</p><p class="user">user</p><p class="valid">valid</p>
+            """;
+        var blocks = HtmlToPdf.CreateFlowDocument(html, options).Blocks;
+
+        Assert.All(new[] { "inline", "sheet", "linked", "user" }, text => Assert.Equal(PdfColor.FromRgb(255, 0, 0), Color(blocks, text)));
+        Assert.Equal(PdfColor.FromRgba(0, 0, 255, 0.5), Color(blocks, "valid"));
+        Assert.Contains(diagnostics, d => d.Kind == HtmlDiagnosticKind.UnsupportedValue && d.Subject.Contains("color", StringComparison.Ordinal));
+    }
+
     private static IReadOnlyList<Block> Blocks(string html, PageSetup? page = null, Uri? baseUri = null) =>
         HtmlToPdf.CreateFlowDocument(html, new HtmlConverterOptions { Page = page ?? new HtmlConverterOptions().Page, BaseUri = baseUri }).Blocks;
 

@@ -337,6 +337,8 @@ change at any time, and this section lists what the packages can do so far.
   `FlowDocument.RenderTo` flushes each page as soon as it is drawn into a document written page by page.
 
 ### RaiCore.Pdf.Html
+- `rgb()`/`rgba()` colors whose alpha has a unit (`rgb(1 2 3 / 4px)`) no longer make the conversion throw
+  (AngleSharp.Css throws on them while parsing; fuzzing found it): the declaration is dropped, as CSS requires.
 - HTML and CSS to PDF via AngleSharp: the cascade, inheritance, `!important`, custom properties and print media
   queries, with browser default styles.
 - Block and inline formatting, white-space handling, the box model, fonts, colors, text alignment and transforms,
