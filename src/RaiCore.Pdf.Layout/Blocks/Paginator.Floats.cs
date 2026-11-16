@@ -146,7 +146,7 @@ internal sealed partial class Paginator
         }
 
         _floatContext.Last = (page, top);
-        _pageIndex = page;
+        SetPage(page);
         Y = y;
         TruncateMargins = truncate;
     }

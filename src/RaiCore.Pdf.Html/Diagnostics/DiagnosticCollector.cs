@@ -41,6 +41,24 @@ internal sealed class DiagnosticCollector(Action<HtmlDiagnostic>? callback)
         {
             entry.Elements.Add(element);
         }
+
+        if (_live)
+        {
+            Deliver();
+        }
+    }
+
+    /// <summary>Whether issues are delivered as they are reported (after <see cref="DeliverAndGoLive"/>).</summary>
+    private bool _live;
+
+    /// <summary>
+    /// Delivers what was collected, then delivers each later issue as soon as it is reported (for a laid-out document
+    /// that is rendered later, outside the conversion).
+    /// </summary>
+    public void DeliverAndGoLive()
+    {
+        Deliver();
+        _live = true;
     }
 
     /// <summary>Calls the callback for each issue, in the order they first occurred, and forgets them.</summary>

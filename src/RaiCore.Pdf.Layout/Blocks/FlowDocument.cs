@@ -132,6 +132,14 @@ public sealed class FlowDocument
     /// </summary>
     public Action<PdfCanvas, PageInfo>? PageDecorator { get; set; }
 
+    /// <summary>
+    /// Receives the content that did not fit where it was laid out (<see cref="LayoutDiagnostic"/>): lines and tables
+    /// wider than their boxes, content taller than a page, images scaled down to fit one. Called when the document is
+    /// rendered (<see cref="Render"/>, <see cref="RenderTo"/>), once per kind and block, in layout order. <c>null</c>
+    /// (the default) collects nothing.
+    /// </summary>
+    public Action<LayoutDiagnostic>? Diagnostics { get; set; }
+
     /// <summary>Appends a block.</summary>
     public FlowDocument Add(Block block)
     {
@@ -199,6 +207,14 @@ public sealed class FlowDocument
     {
         ArgumentNullException.ThrowIfNull(document);
         var result = Paginator.Paginate(this);
+        if (Diagnostics is { } diagnostics)
+        {
+            foreach (var diagnostic in result.Diagnostics)
+            {
+                diagnostics(diagnostic);
+            }
+        }
+
         if (document.Tagged)
         {
             StructureBuilder.Build(Blocks, document.StructureRoot, document.LayoutStructure);

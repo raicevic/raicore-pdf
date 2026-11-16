@@ -311,6 +311,41 @@ public class HtmlDiagnosticsTests
         Assert.Empty(found);
     }
 
+    [Fact]
+    public async Task Content_that_does_not_fit_is_reported_at_its_element()
+    {
+        var found = await Diagnose($"""
+            <div style="width: 100px"><p id="word">Short Donaudampfschifffahrtsgesellschaftskapitaenswitwenrente end</p></div>
+            <div style="width: 100px; overflow: hidden"><p>Clipped Donaudampfschifffahrtsgesellschaftskapitaenswitwenrente</p></div>
+            <table id="wide" style="width: 100px"><tr><td>Unbreakablewordnumberone</td><td>Unbreakablewordnumbertwo</td></tr></table>
+            <img id="tall" src="{Tall}" style="display: block">
+            <p id="inline">A line made taller than a page by an inline image <img src="{Tall}"></p>
+            """);
+
+        Assert.Equal(
+            [(HtmlDiagnosticKind.Overflow, "line wider than its box", "html > body > div:nth-of-type(1) > p#word"),
+             (HtmlDiagnosticKind.Overflow, "table wider than its container", "html > body > table#wide"),
+             (HtmlDiagnosticKind.ScaledToFit, "image taller than a page", "html > body > img#tall"),
+             (HtmlDiagnosticKind.Clipped, "content taller than a page", "html > body > p#inline")],
+            found.Select(d => (d.Kind, d.Subject, d.ElementPath)));
+        Assert.All(found.Take(2), d => Assert.Contains("(page 1)", d.Message, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_laid_out_document_reports_layout_issues_when_it_is_rendered()
+    {
+        var found = new List<HtmlDiagnostic>();
+        var flow = HtmlToPdf.CreateFlowDocument($"""<img src="{Missing}"><img src="{Tall}" style="display: block">""", new HtmlConverterOptions { Diagnostics = found.Add });
+        Assert.Equal([HtmlDiagnosticKind.ResourceNotLoaded], found.Select(d => d.Kind));
+
+        flow.Render();
+
+        Assert.Equal([HtmlDiagnosticKind.ResourceNotLoaded, HtmlDiagnosticKind.ScaledToFit], found.Select(d => d.Kind));
+    }
+
+    /// <summary>A 30 x 1500 CSS pixel SVG image: taller than a page.</summary>
+    private const string Tall = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='1500'%3E%3Crect width='30' height='1500' fill='teal'/%3E%3C/svg%3E";
+
     [Theory]
     [InlineData("<div id='a'><p class='x y z'>t</p></div>", "p", "html > body > div#a > p.x.y")]
     [InlineData("<ul><li>1</li><li>2</li><li id='last'>3</li></ul>", "li:nth-child(2)", "html > body > ul > li:nth-of-type(2)")]

@@ -12,6 +12,17 @@ internal sealed partial class BoxBuilder
 {
     private List<Block> BuildTable(IElement element, ComputedStyle style, double containingWidth)
     {
+        var blocks = BuildTableOf(element, style, containingWidth);
+        foreach (var block in blocks)
+        {
+            Own(block, element);
+        }
+
+        return blocks;
+    }
+
+    private List<Block> BuildTableOf(IElement element, ComputedStyle style, double containingWidth)
+    {
         // Table cells have no definite height, so percentage heights inside them are auto.
         var outerHeight = _containingHeight;
         _containingHeight = null;
@@ -176,6 +187,10 @@ internal sealed partial class BoxBuilder
             AddChildren(td, style, contentWidth, content, collector);
         });
         Flush(collector, content);
+        foreach (var block in content)
+        {
+            Own(block, td);
+        }
 
         var width = style.Width.IsAuto ? Dimension(td.GetAttribute("width")) : style.Width;
         return new TableCell(content)
