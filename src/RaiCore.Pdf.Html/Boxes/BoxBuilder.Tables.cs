@@ -40,23 +40,13 @@ internal sealed partial class BoxBuilder
 
     private IEnumerable<Block> BuildTableBlocks(IElement element, ComputedStyle style, double containingWidth)
     {
-        // Legacy attributes still common in invoices and e-mail templates.
-        var borderAttribute = Pixels(element.GetAttribute("border"));
+        // Legacy attributes still common in invoices and e-mail templates. AngleSharp.Css maps the border attribute
+        // to borders itself, as the HTML presentational hints do: outset on the table and 1px inset on its cells.
         var spacingAttribute = Pixels(element.GetAttribute("cellspacing"));
         var paddingAttribute = Pixels(element.GetAttribute("cellpadding"));
         if (style.Width.IsAuto && Dimension(element.GetAttribute("width")) is { } widthAttribute)
         {
             style = style with { Width = widthAttribute };
-        }
-
-        if (borderAttribute is > 0 && style.BorderWidth.All(w => w == 0))
-        {
-            style = style with
-            {
-                BorderWidth = [borderAttribute.Value, borderAttribute.Value, borderAttribute.Value, borderAttribute.Value],
-                BorderColor = [Gray, Gray, Gray, Gray],
-                BorderStyle = [BorderStyle.Solid, BorderStyle.Solid, BorderStyle.Solid, BorderStyle.Solid],
-            };
         }
 
         var (box, contentWidth) = BoxStyleFor(style, containingWidth);
@@ -75,7 +65,7 @@ internal sealed partial class BoxBuilder
         var header = new List<TableRow>();
         var body = new List<TableRow>();
         var footer = new List<TableRow>();
-        var cellDefaults = new CellDefaults(borderAttribute is > 0 ? 1 * CssValues.PointsPerPixel : null, paddingAttribute);
+        var cellDefaults = new CellDefaults(paddingAttribute);
         foreach (var child in element.Children)
         {
             var childStyle = Style(child);
@@ -162,16 +152,6 @@ internal sealed partial class BoxBuilder
             style = style with { Padding = [new(padding, CssLengthKind.Points), new(padding, CssLengthKind.Points), new(padding, CssLengthKind.Points), new(padding, CssLengthKind.Points)] };
         }
 
-        if (defaults.Border is { } border && style.BorderWidth.All(w => w == 0))
-        {
-            style = style with
-            {
-                BorderWidth = [border, border, border, border],
-                BorderColor = [Gray, Gray, Gray, Gray],
-                BorderStyle = [BorderStyle.Solid, BorderStyle.Solid, BorderStyle.Solid, BorderStyle.Solid],
-            };
-        }
-
         if (td.GetAttribute("align") is { } align && style.TextAlign == TextAlignment.Start)
         {
             style = style with { TextAlign = align.ToUpperInvariant() switch { "CENTER" => TextAlignment.Center, "RIGHT" => TextAlignment.Right, "JUSTIFY" => TextAlignment.Justify, _ => TextAlignment.Left } };
@@ -244,8 +224,6 @@ internal sealed partial class BoxBuilder
     /// <summary>The largest <c>rowspan</c>: larger values count as this (HTML's table processing model).</summary>
     private const int MaxRowSpan = 65534;
 
-    private static readonly PdfColor Gray = PdfColor.FromRgb(128, 128, 128);
-
     /// <summary>HTML length attribute: "120" (pixels) or "50%".</summary>
     private static CssLength? Dimension(string? value)
     {
@@ -271,5 +249,5 @@ internal sealed partial class BoxBuilder
     private static int? Integer(string? value) =>
         int.TryParse(value?.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : null;
 
-    private sealed record CellDefaults(double? Border, double? Padding);
+    private sealed record CellDefaults(double? Padding);
 }

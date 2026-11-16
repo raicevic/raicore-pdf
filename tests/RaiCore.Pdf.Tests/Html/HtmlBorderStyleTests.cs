@@ -57,13 +57,27 @@ public class HtmlBorderStyleTests
     }
 
     [Fact]
-    public void The_legacy_border_attribute_stays_solid()
+    public void The_legacy_border_attribute_draws_like_chrome()
     {
-        var table = Flatten(Blocks("<table border='1'><tr><td>a</td></tr></table>")).OfType<TableBlock>().Single();
+        // The HTML presentational hints: a gray outset table border and a 1px gray inset border on each cell.
+        var table = Flatten(Blocks("<table border='3'><tr><td>a</td></tr></table>")).OfType<TableBlock>().Single();
+        var cell = table.Rows[0].Cells[0].Style.Border.Left;
 
-        Assert.Equal(BorderStyle.Solid, table.Style.Border.Top.Style);
-        Assert.Equal(BorderStyle.Solid, table.Rows[0].Cells[0].Style.Border.Left.Style);
-        Assert.Equal(1 * Px, table.Rows[0].Cells[0].Style.Border.Left.Width, 3);
+        Assert.Equal(BorderStyle.Outset, table.Style.Border.Top.Style);
+        Assert.Equal(3 * Px, table.Style.Border.Top.Width, 3);
+        Assert.Equal(BorderStyle.Inset, cell.Style);
+        Assert.Equal(1 * Px, cell.Width, 3);
+        Assert.Equal(PdfColor.FromRgb(128, 128, 128), table.Style.Border.Top.Color);
+        Assert.Equal(PdfColor.FromRgb(128, 128, 128), cell.Color);
+    }
+
+    [Fact]
+    public void Author_css_removes_the_legacy_border()
+    {
+        var table = Flatten(Blocks("<table border='1' style='border: 0'><tr><td style='border: none'>a</td></tr></table>")).OfType<TableBlock>().Single();
+
+        Assert.Equal(Borders.None, table.Style.Border);
+        Assert.Equal(Borders.None, table.Rows[0].Cells[0].Style.Border);
     }
 
     // ---- helpers ----
