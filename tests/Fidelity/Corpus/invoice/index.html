@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Invoice 2026-0147</title>
+<link rel="stylesheet" href="../fonts.css">
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm; }
+  body { font-family: "Liberation Sans"; font-size: 10pt; color: #222; margin: 0; }
+  header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1f5fa8; padding-bottom: 10pt; }
+  .brand { display: flex; align-items: center; gap: 8pt; }
+  .brand .name { font-size: 18pt; font-weight: bold; color: #1f5fa8; }
+  .brand .tag { font-size: 8pt; color: #666; letter-spacing: 0.5pt; text-transform: uppercase; }
+  .meta { text-align: right; }
+  .meta h1 { font-size: 22pt; margin: 0 0 4pt; letter-spacing: 1pt; }
+  .meta table { margin-left: auto; border-collapse: collapse; }
+  .meta td { padding: 1pt 0 1pt 12pt; }
+  .meta td:first-child { color: #666; }
+  .parties { display: flex; gap: 24pt; margin: 18pt 0; }
+  .parties > div { flex: 1; }
+  .parties h2 { font-size: 8pt; text-transform: uppercase; color: #666; margin: 0 0 4pt; letter-spacing: 0.5pt; }
+  .parties p { margin: 0; line-height: 1.4; }
+  table.items { width: 100%; border-collapse: collapse; }
+  table.items th { background: #1f5fa8; color: white; text-align: left; padding: 5pt 6pt; font-weight: bold; }
+  table.items td { padding: 5pt 6pt; border-bottom: 1px solid #d5dbe3; vertical-align: top; }
+  table.items tr:nth-child(even) td { background: #f3f6fa; }
+  table.items .num { text-align: right; white-space: nowrap; }
+  table.items .desc small { display: block; color: #777; font-size: 8pt; margin-top: 1pt; }
+  .totals { width: 45%; margin: 12pt 0 0 auto; border-collapse: collapse; }
+  .totals td { padding: 3pt 6pt; }
+  .totals td:last-child { text-align: right; }
+  .totals tr.grand td { font-weight: bold; font-size: 12pt; border-top: 2px solid #222; padding-top: 6pt; }
+  .note { margin-top: 24pt; padding: 8pt 10pt; background: #fff8e1; border-left: 4px solid #f0b400; border-radius: 0 4pt 4pt 0; }
+  footer { margin-top: 28pt; padding-top: 8pt; border-top: 1px solid #ccc; font-size: 8pt; color: #666; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg width="36" height="36" viewBox="0 0 36 36"><rect width="36" height="36" rx="6" fill="#1f5fa8"/><path d="M9 26 L18 9 L27 26 Z" fill="white"/></svg>
+    <div><div class="name">Northwind Studio</div><div class="tag">Design &amp; engineering</div></div>
+  </div>
+  <div class="meta">
+    <h1>INVOICE</h1>
+    <table>
+      <tr><td>Invoice no.</td><td>2026-0147</td></tr>
+      <tr><td>Date</td><td>16 November 2026</td></tr>
+      <tr><td>Due</td><td>30 November 2026</td></tr>
+      <tr><td>Customer no.</td><td>C-10234</td></tr>
+    </table>
+  </div>
+</header>
+
+<section class="parties">
+  <div>
+    <h2>From</h2>
+    <p>Northwind Studio ApS<br>Harbour Street 12, 2nd floor<br>8000 Aarhus C<br>Denmark<br>VAT DK 12 34 56 78</p>
+  </div>
+  <div>
+    <h2>Bill to</h2>
+    <p>Example Trading Ltd.<br>Attn: Accounts Payable<br>400 Sample Road<br>Springfield 12345<br>United Kingdom</p>
+  </div>
+  <div>
+    <h2>Payment</h2>
+    <p>Bank: Example Bank<br>IBAN DK00 0000 0000 0000 00<br>BIC EXAMDKKK<br>Reference 2026-0147</p>
+  </div>
+</section>
+
+<table class="items">
+  <thead>
+    <tr><th style="width: 6%">#</th><th>Description</th><th class="num" style="width: 10%">Qty</th><th class="num" style="width: 15%">Unit price</th><th class="num" style="width: 16%">Amount</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td class="desc">Discovery workshop<small>Two half-day sessions with stakeholders, including preparation and summary report</small></td><td class="num">2</td><td class="num">8,500.00</td><td class="num">17,000.00</td></tr>
+    <tr><td>2</td><td class="desc">User interface design<small>Wireframes and high-fidelity screens for the customer portal</small></td><td class="num">64 h</td><td class="num">950.00</td><td class="num">60,800.00</td></tr>
+    <tr><td>3</td><td class="desc">Front-end development<small>Implementation of the approved designs, responsive layouts</small></td><td class="num">120 h</td><td class="num">1,050.00</td><td class="num">126,000.00</td></tr>
+    <tr><td>4</td><td class="desc">Accessibility review</td><td class="num">1</td><td class="num">6,400.00</td><td class="num">6,400.00</td></tr>
+    <tr><td>5</td><td class="desc">Hosting, November 2026<small>Managed hosting plan "Standard"</small></td><td class="num">1</td><td class="num">1,200.00</td><td class="num">1,200.00</td></tr>
+    <tr><td>6</td><td class="desc">Travel expenses</td><td class="num">1</td><td class="num">2,345.50</td><td class="num">2,345.50</td></tr>
+  </tbody>
+</table>
+
+<table class="totals">
+  <tr><td>Subtotal</td><td>213,745.50</td></tr>
+  <tr><td>Discount 5%</td><td>&minus;10,687.28</td></tr>
+  <tr><td>VAT 25%</td><td>50,764.56</td></tr>
+  <tr class="grand"><td>Total DKK</td><td>253,822.78</td></tr>
+</table>
+
+<div class="note"><strong>Thank you for your business.</strong> Please pay within 14 days and quote the invoice number. Late payments accrue interest of 0.8% per started month.</div>
+
+<footer>
+  <span>Northwind Studio ApS &middot; Harbour Street 12 &middot; 8000 Aarhus C</span>
+  <span>hello@example.com &middot; +45 00 00 00 00</span>
+</footer>
+</body>
+</html>

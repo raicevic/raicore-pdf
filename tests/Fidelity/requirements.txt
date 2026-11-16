@@ -1,0 +1,5 @@
+# Pinned: the Playwright version pins the Chromium build that renders the references (1.60.0 = Chrome 148).
+playwright==1.60.0
+pypdfium2==5.15.2
+numpy==2.0.2
+pillow==11.3.0

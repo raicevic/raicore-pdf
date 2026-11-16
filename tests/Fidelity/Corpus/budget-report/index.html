@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Budget follow-up, third quarter 2026</title>
+<link rel="stylesheet" href="../fonts.css">
+<style>
+  /* Made-up figures for a fictional municipality. */
+  @page {
+    size: A4;
+    margin: 22mm 15mm 20mm;
+    @top-left { content: "Budget follow-up Q3 2026"; font-family: "Liberation Sans"; font-size: 8pt; color: #555; }
+    @top-right { content: "Fictional Municipality"; font-family: "Liberation Sans"; font-size: 8pt; color: #555; }
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: "Liberation Sans"; font-size: 8pt; color: #555; }
+  }
+  body { font-family: "Liberation Sans"; font-size: 9pt; color: #1a1a1a; margin: 0; }
+  h1 { font-size: 20pt; margin: 0 0 4pt; color: #0b3d2e; }
+  .lead { font-size: 10.5pt; color: #444; margin: 0 0 12pt; max-width: 75%; line-height: 1.45; }
+  .kpis { display: flex; gap: 8pt; margin-bottom: 14pt; }
+  .kpi { flex: 1; border: 1px solid #c9d6cf; border-radius: 4pt; padding: 6pt 8pt; background: #f4f8f6; }
+  .kpi b { display: block; font-size: 14pt; color: #0b3d2e; }
+  .kpi span { font-size: 7.5pt; color: #555; text-transform: uppercase; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: #0b3d2e; color: #fff; padding: 4pt 5pt; text-align: left; font-size: 8.5pt; }
+  thead th.num { text-align: right; }
+  td { padding: 2.5pt 5pt; border-bottom: 0.5pt solid #dde5e1; }
+  td.num { text-align: right; white-space: nowrap; }
+  td small { color: #666; font-size: 7pt; }
+  td.over { color: #a3121b; }
+  tr { break-inside: avoid; }
+  tr.dept td { background: #e3ece7; font-weight: bold; padding-top: 5pt; }
+  tr.sub td { font-weight: bold; border-bottom: 1pt solid #0b3d2e; }
+  tr.grand td { font-weight: bold; font-size: 10pt; border-top: 2pt solid #0b3d2e; border-bottom: none; padding-top: 5pt; }
+</style>
+</head>
+<body>
+<h1>Budget follow-up, third quarter 2026</h1>
+<p class="lead">Expected spending for the full year compared with the adjusted budget, by department and account. Figures are in thousands; negative differences are underspending.</p>
+<div class="kpis">
+  <div class="kpi"><span>Adjusted budget</span><b>110,880,000</b></div>
+  <div class="kpi"><span>Expected spending</span><b>101,338,300</b></div>
+  <div class="kpi"><span>Difference</span><b>&minus;9,541,700</b></div>
+  <div class="kpi"><span>Departments</span><b>12</b></div>
+</div>
+<table>
+  <thead>
+    <tr><th style="width: 9%">Account</th><th>Description</th><th class="num" style="width: 17%">Budget</th><th class="num" style="width: 17%">Expected</th><th class="num" style="width: 20%">Difference</th></tr>
+  </thead>
+  <tbody>
+      <tr class="dept"><td colspan="5">Administration</td></tr>
+      <tr><td>3607</td><td>Pensions</td><td class="num">179,000</td><td class="num">199,300</td><td class="num" class="over">20,300 <small>(+11.3%)</small></td></tr>
+      <tr><td>6670</td><td>Postage</td><td class="num">1,731,000</td><td class="num">1,858,600</td><td class="num" class="over">127,600 <small>(+7.4%)</small></td></tr>
+      <tr><td>1560</td><td>Consultants</td><td class="num">1,840,000</td><td class="num">1,810,200</td><td class="num">&minus;29,800 <small>(-1.6%)</small></td></tr>
+      <tr><td>1181</td><td>Maintenance</td><td class="num">2,268,000</td><td class="num">1,982,700</td><td class="num">&minus;285,300 <small>(-12.6%)</small></td></tr>
+      <tr><td>3790</td><td>Cleaning</td><td class="num">1,011,000</td><td class="num">739,200</td><td class="num">&minus;271,800 <small>(-26.9%)</small></td></tr>
+      <tr><td>5495</td><td>Rent</td><td class="num">2,013,000</td><td class="num">1,618,000</td><td class="num">&minus;395,000 <small>(-19.6%)</small></td></tr>
+      <tr><td>7815</td><td>Utilities</td><td class="num">2,041,000</td><td class="num">2,143,300</td><td class="num" class="over">102,300 <small>(+5.0%)</small></td></tr>
+      <tr class="sub"><td></td><td>Total administration</td><td class="num">11,083,000</td><td class="num">10,351,300</td><td class="num">&minus;731,700</td></tr>
+      <tr class="dept"><td colspan="5">Facilities</td></tr>
+      <tr><td>6996</td><td>Pensions</td><td class="num">2,398,000</td><td class="num">2,104,800</td><td class="num">&minus;293,200 <small>(-12.2%)</small></td></tr>
+      <tr><td>7504</td><td>Postage</td><td class="num">2,267,000</td><td class="num">1,721,100</td><td class="num">&minus;545,900 <small>(-24.1%)</small></td></tr>
+      <tr><td>3943</td><td>Licences</td><td class="num">2,171,000</td><td class="num">2,174,000</td><td class="num" class="over">3,000 <small>(+0.1%)</small></td></tr>
+      <tr><td>4023</td><td>Utilities</td><td class="num">1,186,000</td><td class="num">879,600</td><td class="num">&minus;306,400 <small>(-25.8%)</small></td></tr>
+      <tr><td>7990</td><td>Insurance</td><td class="num">1,774,000</td><td class="num">1,890,300</td><td class="num" class="over">116,300 <small>(+6.6%)</small></td></tr>
+      <tr class="sub"><td></td><td>Total facilities</td><td class="num">9,796,000</td><td class="num">8,769,800</td><td class="num">&minus;1,026,200</td></tr>
+      <tr class="dept"><td colspan="5">IT services</td></tr>
+      <tr><td>3949</td><td>Salaries</td><td class="num">742,000</td><td class="num">760,900</td><td class="num" class="over">18,900 <small>(+2.5%)</small></td></tr>
+      <tr><td>4572</td><td>Temporary staff</td><td class="num">397,000</td><td class="num">300,800</td><td class="num">&minus;96,200 <small>(-24.2%)</small></td></tr>
+      <tr><td>8032</td><td>Insurance</td><td class="num">1,297,000</td><td class="num">1,024,600</td><td class="num">&minus;272,400 <small>(-21.0%)</small></td></tr>
+      <tr><td>4495</td><td>Postage</td><td class="num">337,000</td><td class="num">318,900</td><td class="num">&minus;18,100 <small>(-5.4%)</small></td></tr>
+      <tr><td>4787</td><td>Hardware</td><td class="num">653,000</td><td class="num">604,900</td><td class="num">&minus;48,100 <small>(-7.4%)</small></td></tr>
+      <tr><td>3515</td><td>Maintenance</td><td class="num">2,347,000</td><td class="num">2,121,300</td><td class="num">&minus;225,700 <small>(-9.6%)</small></td></tr>
+      <tr><td>7397</td><td>Cleaning</td><td class="num">1,018,000</td><td class="num">953,800</td><td class="num">&minus;64,200 <small>(-6.3%)</small></td></tr>
+      <tr><td>4298</td><td>Licences</td><td class="num">2,207,000</td><td class="num">2,457,000</td><td class="num" class="over">250,000 <small>(+11.3%)</small></td></tr>
+      <tr><td>3396</td><td>Overtime</td><td class="num">351,000</td><td class="num">351,600</td><td class="num" class="over">600 <small>(+0.2%)</small></td></tr>
+      <tr class="sub"><td></td><td>Total it services</td><td class="num">9,349,000</td><td class="num">8,893,800</td><td class="num">&minus;455,200</td></tr>
+      <tr class="dept"><td colspan="5">Human resources</td></tr>
+      <tr><td>3554</td><td>Salaries</td><td class="num">217,000</td><td class="num">164,400</td><td class="num">&minus;52,600 <small>(-24.2%)</small></td></tr>
+      <tr><td>7154</td><td>Rent</td><td class="num">474,000</td><td class="num">489,400</td><td class="num" class="over">15,400 <small>(+3.2%)</small></td></tr>
+      <tr><td>1086</td><td>Training</td><td class="num">2,088,000</td><td class="num">2,258,000</td><td class="num" class="over">170,000 <small>(+8.1%)</small></td></tr>
+      <tr><td>1756</td><td>Pensions</td><td class="num">657,000</td><td class="num">548,800</td><td class="num">&minus;108,200 <small>(-16.5%)</small></td></tr>
+      <tr><td>3467</td><td>Utilities</td><td class="num">802,000</td><td class="num">758,900</td><td class="num">&minus;43,100 <small>(-5.4%)</small></td></tr>
+      <tr class="sub"><td></td><td>Total human resources</td><td class="num">4,238,000</td><td class="num">4,219,500</td><td class="num">&minus;18,500</td></tr>
+      <tr class="dept"><td colspan="5">Finance</td></tr>
+      <tr><td>4180</td><td>Overtime</td><td class="num">893,000</td><td class="num">771,900</td><td class="num">&minus;121,100 <small>(-13.6%)</small></td></tr>
+      <tr><td>5285</td><td>Consultants</td><td class="num">602,000</td><td class="num">443,200</td><td class="num">&minus;158,800 <small>(-26.4%)</small></td></tr>
+      <tr><td>4147</td><td>Postage</td><td class="num">293,000</td><td class="num">304,700</td><td class="num" class="over">11,700 <small>(+4.0%)</small></td></tr>
+      <tr><td>6190</td><td>Temporary staff</td><td class="num">977,000</td><td class="num">924,800</td><td class="num">&minus;52,200 <small>(-5.3%)</small></td></tr>
+      <tr><td>5833</td><td>Rent</td><td class="num">1,524,000</td><td class="num">1,667,000</td><td class="num" class="over">143,000 <small>(+9.4%)</small></td></tr>
+      <tr><td>7651</td><td>Hardware</td><td class="num">78,000</td><td class="num">60,500</td><td class="num">&minus;17,500 <small>(-22.4%)</small></td></tr>
+      <tr class="sub"><td></td><td>Total finance</td><td class="num">4,367,000</td><td class="num">4,172,100</td><td class="num">&minus;194,900</td></tr>
+      <tr class="dept"><td colspan="5">Communications</td></tr>
+      <tr><td>8067</td><td>Overtime</td><td class="num">1,265,000</td><td class="num">1,034,000</td><td class="num">&minus;231,000 <small>(-18.3%)</small></td></tr>
+      <tr><td>1088</td><td>Cleaning</td><td class="num">2,318,000</td><td class="num">2,119,000</td><td class="num">&minus;199,000 <small>(-8.6%)</small></td></tr>
+      <tr><td>2861</td><td>Temporary staff</td><td class="num">2,010,000</td><td class="num">1,649,400</td><td class="num">&minus;360,600 <small>(-17.9%)</small></td></tr>
+      <tr><td>2904</td><td>Consultants</td><td class="num">2,117,000</td><td class="num">1,539,600</td><td class="num">&minus;577,400 <small>(-27.3%)</small></td></tr>
+      <tr><td>2107</td><td>Salaries</td><td class="num">2,023,000</td><td class="num">1,827,500</td><td class="num">&minus;195,500 <small>(-9.7%)</small></td></tr>
+      <tr><td>1935</td><td>Rent</td><td class="num">1,102,000</td><td class="num">1,217,600</td><td class="num" class="over">115,600 <small>(+10.5%)</small></td></tr>
+      <tr><td>5314</td><td>Insurance</td><td class="num">1,221,000</td><td class="num">1,281,100</td><td class="num" class="over">60,100 <small>(+4.9%)</small></td></tr>
+      <tr class="sub"><td></td><td>Total communications</td><td class="num">12,056,000</td><td class="num">10,668,200</td><td class="num">&minus;1,387,800</td></tr>
+      <tr class="dept"><td colspan="5">Social services</td></tr>
+      <tr><td>6857</td><td>Rent</td><td class="num">1,917,000</td><td class="num">1,429,900</td><td class="num">&minus;487,100 <small>(-25.4%)</small></td></tr>
+      <tr><td>9644</td><td>Supplies</td><td class="num">611,000</td><td class="num">443,000</td><td class="num">&minus;168,000 <small>(-27.5%)</small></td></tr>
+      <tr><td>4121</td><td>Salaries</td><td class="num">588,000</td><td class="num">621,200</td><td class="num" class="over">33,200 <small>(+5.6%)</small></td></tr>
+      <tr><td>5772</td><td>Insurance</td><td class="num">1,125,000</td><td class="num">1,169,600</td><td class="num" class="over">44,600 <small>(+4.0%)</small></td></tr>
+      <tr><td>8022</td><td>Maintenance</td><td class="num">2,171,000</td><td class="num">1,783,200</td><td class="num">&minus;387,800 <small>(-17.9%)</small></td></tr>
+      <tr><td>3050</td><td>Temporary staff</td><td class="num">371,000</td><td class="num">420,900</td><td class="num" class="over">49,900 <small>(+13.5%)</small></td></tr>
+      <tr><td>4073</td><td>Hardware</td><td class="num">2,343,000</td><td class="num">1,666,200</td><td class="num">&minus;676,800 <small>(-28.9%)</small></td></tr>
+      <tr><td>4454</td><td>Pensions</td><td class="num">1,127,000</td><td class="num">959,600</td><td class="num">&minus;167,400 <small>(-14.9%)</small></td></tr>
+      <tr><td>8739</td><td>Travel</td><td class="num">95,000</td><td class="num">73,500</td><td class="num">&minus;21,500 <small>(-22.6%)</small></td></tr>
+      <tr class="sub"><td></td><td>Total social services</td><td class="num">10,348,000</td><td class="num">8,567,100</td><td class="num">&minus;1,780,900</td></tr>
+      <tr class="dept"><td colspan="5">Schools</td></tr>
+      <tr><td>8205</td><td>Training</td><td class="num">1,702,000</td><td class="num">1,550,300</td><td class="num">&minus;151,700 <small>(-8.9%)</small></td></tr>
+      <tr><td>8967</td><td>Overtime</td><td class="num">375,000</td><td class="num">378,500</td><td class="num" class="over">3,500 <small>(+0.9%)</small></td></tr>
+      <tr><td>7977</td><td>Utilities</td><td class="num">1,625,000</td><td class="num">1,725,600</td><td class="num" class="over">100,600 <small>(+6.2%)</small></td></tr>
+      <tr><td>2311</td><td>Rent</td><td class="num">491,000</td><td class="num">435,700</td><td class="num">&minus;55,300 <small>(-11.3%)</small></td></tr>
+      <tr><td>9257</td><td>Temporary staff</td><td class="num">1,273,000</td><td class="num">1,216,300</td><td class="num">&minus;56,700 <small>(-4.5%)</small></td></tr>
+      <tr><td>9840</td><td>Pensions</td><td class="num">2,231,000</td><td class="num">1,679,700</td><td class="num">&minus;551,300 <small>(-24.7%)</small></td></tr>
+      <tr><td>7946</td><td>Supplies</td><td class="num">1,385,000</td><td class="num">1,543,700</td><td class="num" class="over">158,700 <small>(+11.5%)</small></td></tr>
+      <tr><td>9777</td><td>Maintenance</td><td class="num">1,165,000</td><td class="num">897,500</td><td class="num">&minus;267,500 <small>(-23.0%)</small></td></tr>
+      <tr class="sub"><td></td><td>Total schools</td><td class="num">10,247,000</td><td class="num">9,427,300</td><td class="num">&minus;819,700</td></tr>
+      <tr class="dept"><td colspan="5">Day care</td></tr>
+      <tr><td>7339</td><td>Maintenance</td><td class="num">747,000</td><td class="num">636,300</td><td class="num">&minus;110,700 <small>(-14.8%)</small></td></tr>
+      <tr><td>5463</td><td>Consultants</td><td class="num">1,963,000</td><td class="num">1,863,000</td><td class="num">&minus;100,000 <small>(-5.1%)</small></td></tr>
+      <tr><td>6438</td><td>Travel</td><td class="num">1,960,000</td><td class="num">1,455,100</td><td class="num">&minus;504,900 <small>(-25.8%)</small></td></tr>
+      <tr><td>4822</td><td>Salaries</td><td class="num">1,760,000</td><td class="num">1,570,600</td><td class="num">&minus;189,400 <small>(-10.8%)</small></td></tr>
+      <tr><td>8235</td><td>Postage</td><td class="num">1,663,000</td><td class="num">1,388,300</td><td class="num">&minus;274,700 <small>(-16.5%)</small></td></tr>
+      <tr><td>2844</td><td>Cleaning</td><td class="num">769,000</td><td class="num">754,200</td><td class="num">&minus;14,800 <small>(-1.9%)</small></td></tr>
+      <tr><td>7910</td><td>Overtime</td><td class="num">1,290,000</td><td class="num">1,436,900</td><td class="num" class="over">146,900 <small>(+11.4%)</small></td></tr>
+      <tr><td>3023</td><td>Hardware</td><td class="num">81,000</td><td class="num">73,700</td><td class="num">&minus;7,300 <small>(-9.0%)</small></td></tr>
+      <tr><td>4396</td><td>Insurance</td><td class="num">901,000</td><td class="num">733,100</td><td class="num">&minus;167,900 <small>(-18.6%)</small></td></tr>
+      <tr class="sub"><td></td><td>Total day care</td><td class="num">11,134,000</td><td class="num">9,911,200</td><td class="num">&minus;1,222,800</td></tr>
+      <tr class="dept"><td colspan="5">Roads and parks</td></tr>
+      <tr><td>3298</td><td>Pensions</td><td class="num">2,363,000</td><td class="num">2,306,800</td><td class="num">&minus;56,200 <small>(-2.4%)</small></td></tr>
+      <tr><td>9249</td><td>Rent</td><td class="num">1,716,000</td><td class="num">1,516,900</td><td class="num">&minus;199,100 <small>(-11.6%)</small></td></tr>
+      <tr><td>3790</td><td>Supplies</td><td class="num">1,657,000</td><td class="num">1,713,600</td><td class="num" class="over">56,600 <small>(+3.4%)</small></td></tr>
+      <tr><td>7270</td><td>Temporary staff</td><td class="num">649,000</td><td class="num">661,400</td><td class="num" class="over">12,400 <small>(+1.9%)</small></td></tr>
+      <tr><td>3009</td><td>Licences</td><td class="num">1,139,000</td><td class="num">1,060,200</td><td class="num">&minus;78,800 <small>(-6.9%)</small></td></tr>
+      <tr><td>6310</td><td>Consultants</td><td class="num">1,426,000</td><td class="num">1,500,400</td><td class="num" class="over">74,400 <small>(+5.2%)</small></td></tr>
+      <tr><td>1801</td><td>Travel</td><td class="num">1,811,000</td><td class="num">1,819,900</td><td class="num" class="over">8,900 <small>(+0.5%)</small></td></tr>
+      <tr><td>9774</td><td>Insurance</td><td class="num">2,388,000</td><td class="num">1,907,400</td><td class="num">&minus;480,600 <small>(-20.1%)</small></td></tr>
+      <tr><td>1165</td><td>Maintenance</td><td class="num">2,257,000</td><td class="num">2,305,400</td><td class="num" class="over">48,400 <small>(+2.1%)</small></td></tr>
+      <tr class="sub"><td></td><td>Total roads and parks</td><td class="num">15,406,000</td><td class="num">14,792,000</td><td class="num">&minus;614,000</td></tr>
+      <tr class="dept"><td colspan="5">Culture and leisure</td></tr>
+      <tr><td>7421</td><td>Hardware</td><td class="num">2,207,000</td><td class="num">1,834,900</td><td class="num">&minus;372,100 <small>(-16.9%)</small></td></tr>
+      <tr><td>7208</td><td>Maintenance</td><td class="num">1,454,000</td><td class="num">1,392,300</td><td class="num">&minus;61,700 <small>(-4.2%)</small></td></tr>
+      <tr><td>4929</td><td>Postage</td><td class="num">91,000</td><td class="num">86,400</td><td class="num">&minus;4,600 <small>(-5.1%)</small></td></tr>
+      <tr><td>6586</td><td>Pensions</td><td class="num">1,329,000</td><td class="num">1,482,600</td><td class="num" class="over">153,600 <small>(+11.6%)</small></td></tr>
+      <tr><td>1598</td><td>Supplies</td><td class="num">1,602,000</td><td class="num">1,658,300</td><td class="num" class="over">56,300 <small>(+3.5%)</small></td></tr>
+      <tr class="sub"><td></td><td>Total culture and leisure</td><td class="num">6,683,000</td><td class="num">6,454,500</td><td class="num">&minus;228,500</td></tr>
+      <tr class="dept"><td colspan="5">Environment</td></tr>
+      <tr><td>8820</td><td>Rent</td><td class="num">1,637,000</td><td class="num">1,530,800</td><td class="num">&minus;106,200 <small>(-6.5%)</small></td></tr>
+      <tr><td>3701</td><td>Salaries</td><td class="num">761,000</td><td class="num">587,000</td><td class="num">&minus;174,000 <small>(-22.9%)</small></td></tr>
+      <tr><td>8631</td><td>Utilities</td><td class="num">1,307,000</td><td class="num">940,300</td><td class="num">&minus;366,700 <small>(-28.1%)</small></td></tr>
+      <tr><td>8670</td><td>Supplies</td><td class="num">1,116,000</td><td class="num">879,200</td><td class="num">&minus;236,800 <small>(-21.2%)</small></td></tr>
+      <tr><td>6519</td><td>Consultants</td><td class="num">1,352,000</td><td class="num">1,174,200</td><td class="num">&minus;177,800 <small>(-13.2%)</small></td></tr>
+      <tr class="sub"><td></td><td>Total environment</td><td class="num">6,173,000</td><td class="num">5,111,500</td><td class="num">&minus;1,061,500</td></tr>
+      <tr class="grand"><td></td><td>Total</td><td class="num">110,880,000</td><td class="num">101,338,300</td><td class="num">&minus;9,541,700</td></tr>
+  </tbody>
+</table>
+</body>
+</html>

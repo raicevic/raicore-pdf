@@ -1,0 +1,62 @@
+name: Fidelity
+
+# Compares RaiCore.Pdf's output for tests/Fidelity/Corpus with Chrome's print-to-PDF (see tests/Fidelity/README.md).
+# Not a required check: it fails when a document scores worse than tests/Fidelity/baseline.json, and its report shows
+# where RaiCore.Pdf differs from Chrome.
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/Fidelity/**"
+      - ".github/workflows/fidelity.yml"
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  fidelity:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Playwright and its pinned Chromium
+        run: |
+          pip install -r tests/Fidelity/requirements.txt
+          python -m playwright install --with-deps --only-shell chromium
+
+      - name: Render with RaiCore.Pdf
+        run: dotnet run -c Release --project tests/Fidelity/Render -- tests/Fidelity/Corpus "$RUNNER_TEMP/fidelity/raicore"
+
+      - name: Render with Chrome
+        run: python tests/Fidelity/fidelity.py chrome tests/Fidelity/Corpus "$RUNNER_TEMP/fidelity/chrome"
+
+      - name: Compare
+        run: python tests/Fidelity/fidelity.py compare tests/Fidelity/Corpus "$RUNNER_TEMP/fidelity/chrome" "$RUNNER_TEMP/fidelity/raicore" "$RUNNER_TEMP/fidelity/report"
+
+      - name: Summary
+        if: always()
+        run: cat "$RUNNER_TEMP/fidelity/report/summary.md" >> "$GITHUB_STEP_SUMMARY" || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fidelity-report
+          path: |
+            ${{ runner.temp }}/fidelity/report
+            ${{ runner.temp }}/fidelity/chrome
+            ${{ runner.temp }}/fidelity/raicore

@@ -1,0 +1,15 @@
+/* Every corpus document links this sheet, so Chrome and RaiCore.Pdf lay out text with the same font files.
+   Documents use only these families: a family Chrome would take from the system would make the comparison
+   measure font differences instead of layout. */
+@font-face { font-family: "Liberation Sans"; font-weight: 400; font-style: normal; src: url("../../../src/RaiCore.Pdf.Fonts/Liberation/LiberationSans-Regular.ttf"); }
+@font-face { font-family: "Liberation Sans"; font-weight: 700; font-style: normal; src: url("../../../src/RaiCore.Pdf.Fonts/Liberation/LiberationSans-Bold.ttf"); }
+@font-face { font-family: "Liberation Sans"; font-weight: 400; font-style: italic; src: url("../../../src/RaiCore.Pdf.Fonts/Liberation/LiberationSans-Italic.ttf"); }
+@font-face { font-family: "Liberation Sans"; font-weight: 700; font-style: italic; src: url("../../../src/RaiCore.Pdf.Fonts/Liberation/LiberationSans-BoldItalic.ttf"); }
+@font-face { font-family: "Liberation Serif"; font-weight: 400; font-style: normal; src: url("../../../src/RaiCore.Pdf.Fonts/Liberation/LiberationSerif-Regular.ttf"); }
+@font-face { font-family: "Liberation Serif"; font-weight: 700; font-style: normal; src: url("../../../src/RaiCore.Pdf.Fonts/Liberation/LiberationSerif-Bold.ttf"); }
+@font-face { font-family: "Liberation Serif"; font-weight: 400; font-style: italic; src: url("../../../src/RaiCore.Pdf.Fonts/Liberation/LiberationSerif-Italic.ttf"); }
+@font-face { font-family: "Liberation Serif"; font-weight: 700; font-style: italic; src: url("../../../src/RaiCore.Pdf.Fonts/Liberation/LiberationSerif-BoldItalic.ttf"); }
+@font-face { font-family: "Liberation Mono"; font-weight: 400; font-style: normal; src: url("../../../src/RaiCore.Pdf.Fonts/Liberation/LiberationMono-Regular.ttf"); }
+@font-face { font-family: "Liberation Mono"; font-weight: 700; font-style: normal; src: url("../../../src/RaiCore.Pdf.Fonts/Liberation/LiberationMono-Bold.ttf"); }
+@font-face { font-family: "Liberation Mono"; font-weight: 400; font-style: italic; src: url("../../../src/RaiCore.Pdf.Fonts/Liberation/LiberationMono-Italic.ttf"); }
+@font-face { font-family: "Liberation Mono"; font-weight: 700; font-style: italic; src: url("../../../src/RaiCore.Pdf.Fonts/Liberation/LiberationMono-BoldItalic.ttf"); }

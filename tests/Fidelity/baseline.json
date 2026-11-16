@@ -1,0 +1,32 @@
+{
+  "budget-report": {
+    "pages": 3,
+    "chrome_pages": 3,
+    "pixel": 0.6701,
+    "text_near": 0.1923
+  },
+  "invoice": {
+    "pages": 1,
+    "chrome_pages": 1,
+    "pixel": 0.6318,
+    "text_near": 0.4403
+  },
+  "layout-showcase": {
+    "pages": 1,
+    "chrome_pages": 1,
+    "pixel": 0.9605,
+    "text_near": 0.954
+  },
+  "letter": {
+    "pages": 2,
+    "chrome_pages": 2,
+    "pixel": 0.9165,
+    "text_near": 0.944
+  },
+  "rtl-multilingual": {
+    "pages": 1,
+    "chrome_pages": 1,
+    "pixel": 0.8615,
+    "text_near": 0.658
+  }
+}
