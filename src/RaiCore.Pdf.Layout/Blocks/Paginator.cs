@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>A drawing operation on a page: receives the canvas and the page height (to convert from top-down y).</summary>
 internal delegate void DrawOperation(PdfCanvas canvas, double pageHeight);
@@ -700,16 +700,16 @@ internal sealed partial class Paginator
             {
                 ImageBlock image when style.Width is null => image.Alignment,
                 TableBlock table => table.Alignment,
-                _ => TextAlignment.Left,
+                _ => BlockAlignment.Left,
             };
-            if (alignment != TextAlignment.Left)
+            if (alignment != BlockAlignment.Left)
             {
                 // Images and tables shrink to their content; the alignment then positions the whole box.
                 var free = Math.Max(0, areaWidth - style.Margin.Horizontal - boxWidth);
                 boxX += alignment switch
                 {
-                    TextAlignment.Center => free / 2,
-                    TextAlignment.Right => free,
+                    BlockAlignment.Center => free / 2,
+                    BlockAlignment.Right => free,
                     _ => 0,
                 };
             }
@@ -1166,8 +1166,8 @@ internal sealed partial class Paginator
 
         var left = x + block.Alignment switch
         {
-            TextAlignment.Center => Math.Max(0, (width - w) / 2),
-            TextAlignment.Right => Math.Max(0, width - w),
+            BlockAlignment.Center => Math.Max(0, (width - w) / 2),
+            BlockAlignment.Right => Math.Max(0, width - w),
             _ => 0,
         };
         var top = Y;

@@ -1,9 +1,57 @@
 {
+  "anvil-invoice": {
+    "pages": 1,
+    "chrome_pages": 1,
+    "pixel": 0.7857,
+    "text_near": 0.6094
+  },
+  "bootstrap-album": {
+    "pages": 4,
+    "chrome_pages": 3,
+    "pixel": 0.2736,
+    "text_near": 0.0081
+  },
+  "bootstrap-blog": {
+    "pages": 7,
+    "chrome_pages": 5,
+    "pixel": 0.1587,
+    "text_near": 0.0011
+  },
+  "bootstrap-checkout": {
+    "pages": 3,
+    "chrome_pages": 2,
+    "pixel": 0.2569,
+    "text_near": 0.0
+  },
+  "bootstrap-pricing": {
+    "pages": 3,
+    "chrome_pages": 2,
+    "pixel": 0.2068,
+    "text_near": 0.0
+  },
   "budget-report": {
     "pages": 3,
     "chrome_pages": 3,
     "pixel": 0.6701,
     "text_near": 0.1923
+  },
+  "cerberus-fluid": {
+    "pages": 2,
+    "chrome_pages": 2,
+    "pixel": 0.6792,
+    "text_near": 0.0889
+  },
+  "cerberus-hybrid": {
+    "pages": 4,
+    "chrome_pages": 3,
+    "pixel": 0.4196,
+    "text_near": 0.2794
+  },
+  "cerberus-responsive": {
+    "pages": 3,
+    "chrome_pages": 3,
+    "pixel": 0.7527,
+    "text_near": 0.5633
   },
   "invoice": {
     "pages": 1,
@@ -17,16 +65,76 @@
     "pixel": 0.9605,
     "text_near": 0.954
   },
+  "leemunroe-email": {
+    "pages": 1,
+    "chrome_pages": 1,
+    "pixel": 0.9393,
+    "text_near": 1.0
+  },
   "letter": {
     "pages": 2,
     "chrome_pages": 2,
     "pixel": 0.9165,
     "text_near": 0.944
   },
+  "postmark-invoice": {
+    "pages": 2,
+    "chrome_pages": 3,
+    "pixel": 0.6179,
+    "text_near": 0.0239
+  },
+  "postmark-receipt": {
+    "pages": 2,
+    "chrome_pages": 2,
+    "pixel": 0.9596,
+    "text_near": 0.3113
+  },
+  "postmark-welcome": {
+    "pages": 2,
+    "chrome_pages": 2,
+    "pixel": 0.9339,
+    "text_near": 0.0436
+  },
   "rtl-multilingual": {
     "pages": 1,
     "chrome_pages": 1,
     "pixel": 0.8615,
     "text_near": 0.658
+  },
+  "sparksuite-invoice": {
+    "pages": 1,
+    "chrome_pages": 1,
+    "pixel": 1.0,
+    "text_near": 1.0
+  },
+  "startbootstrap-resume": {
+    "pages": 4,
+    "chrome_pages": 7,
+    "pixel": 0.2296,
+    "text_near": 0.0
+  },
+  "weasyprint-invoice": {
+    "pages": 1,
+    "chrome_pages": 1,
+    "pixel": 0.3176,
+    "text_near": 0.0182
+  },
+  "weasyprint-letter": {
+    "pages": 1,
+    "chrome_pages": 1,
+    "pixel": 0.6569,
+    "text_near": 0.785
+  },
+  "weasyprint-report": {
+    "pages": 11,
+    "chrome_pages": 6,
+    "pixel": 0.0932,
+    "text_near": 0.0
+  },
+  "weasyprint-ticket": {
+    "pages": 1,
+    "chrome_pages": 1,
+    "pixel": 0.8466,
+    "text_near": 0.0
   }
 }

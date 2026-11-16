@@ -1,7 +1,6 @@
 using PDFtoImage;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 using SkiaSharp;
 
 namespace RaiCore.Pdf.Tests.Layout;
@@ -24,7 +23,7 @@ public class RightToLeftLayoutTests
     public void A_right_to_left_row_starts_on_the_right()
     {
         var (a, b) = (Rect(40), Rect(40));
-        var placements = Layout(new FlexBlock { RightToLeft = true }.Add(a).Add(b));
+        var placements = Layout(new FlexBlock { Direction = TextDirection.RightToLeft }.Add(a).Add(b));
 
         Assert.Equal(140, Left(placements, a));
         Assert.Equal(100, Left(placements, b));
@@ -34,7 +33,7 @@ public class RightToLeftLayoutTests
     public void A_right_to_left_reversed_row_starts_on_the_left()
     {
         var (a, b) = (Rect(40), Rect(40));
-        var placements = Layout(new FlexBlock { RightToLeft = true, Direction = FlexDirection.RowReverse }.Add(a).Add(b));
+        var placements = Layout(new FlexBlock { Direction = TextDirection.RightToLeft, FlexDirection = FlexDirection.RowReverse }.Add(a).Add(b));
 
         Assert.Equal(20, Left(placements, a));
         Assert.Equal(60, Left(placements, b));
@@ -47,7 +46,7 @@ public class RightToLeftLayoutTests
     public void Justify_content_starts_on_the_right(JustifyContent justify, double first, double second)
     {
         var (a, b) = (Rect(40), Rect(40));
-        var placements = Layout(new FlexBlock { RightToLeft = true, JustifyContent = justify }.Add(a).Add(b));
+        var placements = Layout(new FlexBlock { Direction = TextDirection.RightToLeft, JustifyContent = justify }.Add(a).Add(b));
 
         Assert.Equal(first, Left(placements, a), 6);
         Assert.Equal(second, Left(placements, b), 6);
@@ -60,7 +59,7 @@ public class RightToLeftLayoutTests
     {
         // The row starts on the right, so the right margin is the first item's start margin.
         var a = Rect(40, new Thickness(0, 10, 0, 0));
-        var placements = Layout(new FlexBlock { RightToLeft = rightToLeft, Direction = direction }.Add(a).Add(Rect(40)));
+        var placements = Layout(new FlexBlock { Direction = Direction(rightToLeft), FlexDirection = direction }.Add(a).Add(Rect(40)));
 
         Assert.Equal(130, Left(placements, a));
     }
@@ -69,7 +68,7 @@ public class RightToLeftLayoutTests
     public void An_auto_margin_on_the_start_side_pushes_a_right_to_left_item_left()
     {
         var a = new FlexItem(Rect(40)) { AutoMargins = AutoMargins.Right };
-        var placements = Layout(new FlexBlock { RightToLeft = true }.Add(a));
+        var placements = Layout(new FlexBlock { Direction = TextDirection.RightToLeft }.Add(a));
 
         Assert.Equal(20, Left(placements, a.Content));
     }
@@ -81,7 +80,7 @@ public class RightToLeftLayoutTests
     public void A_right_to_left_columns_cross_axis_starts_on_the_right(FlexAlignment alignment, double left)
     {
         var a = Rect(40);
-        var placements = Layout(new FlexBlock { RightToLeft = true, Direction = FlexDirection.Column, AlignItems = alignment }.Add(a));
+        var placements = Layout(new FlexBlock { Direction = TextDirection.RightToLeft, FlexDirection = FlexDirection.Column, AlignItems = alignment }.Add(a));
 
         Assert.Equal(left, Left(placements, a));
     }
@@ -92,8 +91,8 @@ public class RightToLeftLayoutTests
         var (a, b) = (Rect(40, height: 100), Rect(40, height: 100));
         var flex = new FlexBlock(new BoxStyle { Height = 150 })
         {
-            RightToLeft = true,
-            Direction = FlexDirection.Column,
+            Direction = TextDirection.RightToLeft,
+            FlexDirection = FlexDirection.Column,
             Wrap = FlexWrap.Wrap,
             AlignItems = FlexAlignment.FlexStart,
             AlignContent = AlignContent.FlexStart,
@@ -122,9 +121,9 @@ public class RightToLeftLayoutTests
     {
         var table = Table(
             rightToLeft: true,
+            [TableWidth.Points(30)], // The first column: the rightmost.
             new TableRow(new TableCell(new Paragraph(Text).Add("AB")) { ColumnSpan = 2 }, Cell("C")),
             new TableRow(Cell("a"), Cell("b"), Cell("c")));
-        table.ColumnWidths.Add(TableWidth.Points(30)); // The first column: the rightmost.
         var layout = TableLayouter.Layout(table, 0, 160);
 
         Assert.Equal(30, layout.ColumnX[3] - layout.ColumnX[2], 6);
@@ -138,7 +137,7 @@ public class RightToLeftLayoutTests
     {
         var red = new TableCell(new Paragraph(Text).Add("x")) { Style = new BoxStyle { Background = PdfColor.FromRgb(255, 0, 0) } };
         var table = Table(rightToLeft: true, new TableRow(red, Cell("y")));
-        var flow = new FlowDocument(Small).Add(new TableBlock(new BoxStyle { Width = 160 }) { RightToLeft = true }.Add(table.Rows[0]));
+        var flow = new FlowDocument(Small).Add(new TableBlock(new BoxStyle { Width = 160 }) { Direction = TextDirection.RightToLeft }.Add(table.Rows[0]));
 
         using var bitmap = Conversion.ToImage(flow.Render().ToArray(), page: 0, options: new RenderOptions(Dpi: 72));
         Assert.Equal(new SKColor(255, 0, 0), bitmap.GetPixel(170, 25));
@@ -150,9 +149,11 @@ public class RightToLeftLayoutTests
 
     private static TableCell Cell(string text) => new(new Paragraph(Text).Add(text));
 
-    private static TableBlock Table(bool rightToLeft, params TableRow[] rows)
+    private static TableBlock Table(bool rightToLeft, params TableRow[] rows) => Table(rightToLeft, [], rows);
+
+    private static TableBlock Table(bool rightToLeft, IReadOnlyList<TableWidth?> columnWidths, params TableRow[] rows)
     {
-        var table = new TableBlock { RightToLeft = rightToLeft };
+        var table = new TableBlock { Direction = Direction(rightToLeft), ColumnWidths = columnWidths };
         foreach (var row in rows)
         {
             table.Add(row);
@@ -164,4 +165,6 @@ public class RightToLeftLayoutTests
     private static IReadOnlyList<Placement> Layout(FlexBlock flex) => new FlowDocument(Small).Add(flex).Paginate().Placements;
 
     private static double Left(IReadOnlyList<Placement> placements, Block block) => placements.Single(p => p.Block == block).Left;
+
+    private static TextDirection Direction(bool rightToLeft) => rightToLeft ? TextDirection.RightToLeft : TextDirection.LeftToRight;
 }

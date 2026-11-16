@@ -1,7 +1,7 @@
 using PDFtoImage;
 using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Html.Css;
-using RaiCore.Pdf.Layout.Blocks;
+using RaiCore.Pdf.Layout;
 using SkiaSharp;
 
 namespace RaiCore.Pdf.Tests.Html;
@@ -110,14 +110,15 @@ public class HtmlBackgroundTests
     }
 
     [Theory]
-    [InlineData("to top right", 1, -1)]
-    [InlineData("to bottom left", -1, 1)]
-    [InlineData("to left top", -1, -1)]
-    public void A_gradient_toward_a_corner_keeps_the_corner(string direction, int x, int y)
+    [InlineData("to top right", GradientCorner.TopRight)]
+    [InlineData("to bottom left", GradientCorner.BottomLeft)]
+    [InlineData("to left top", GradientCorner.TopLeft)]
+    [InlineData("to right bottom", GradientCorner.BottomRight)]
+    public void A_gradient_toward_a_corner_keeps_the_corner(string direction, GradientCorner corner)
     {
         var gradient = Assert.IsType<LinearGradient>(Assert.Single(Layers($"background: linear-gradient({direction}, red, blue)")).Image);
 
-        Assert.Equal((x, y), gradient.Corner);
+        Assert.Equal(corner, gradient.Corner);
     }
 
     [Fact]

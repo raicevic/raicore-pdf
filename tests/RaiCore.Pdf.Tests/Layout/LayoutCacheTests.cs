@@ -2,7 +2,6 @@ using RaiCore.Pdf.Benchmarks;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 using RaiCore.Pdf.Layout.Text;
 
 namespace RaiCore.Pdf.Tests.Layout;
@@ -131,17 +130,8 @@ public class LayoutCacheTests
             Assert.Equal(23, after.Lines.Sum(l => l.End - l.Start));
             Assert.True(paragraph.MeasureIntrinsicWidths().Max > intrinsic.Max);
 
-            paragraph.Alignment = TextAlignment.Center;
-            var centered = paragraph.Layout(200);
-            Assert.NotSame(after, centered);
-            Assert.True(centered.Lines[0].X > after.Lines[0].X);
-
             foreach (var change in new Action[]
             {
-                () => paragraph.Direction = ParagraphDirection.RightToLeft,
-                () => paragraph.FirstLineIndent = 10,
-                () => paragraph.BreakLongWords = true,
-                () => paragraph.Ellipsis = true,
                 () => paragraph.BeginLink(LinkTarget.ToUri(new Uri("https://example.com"))).Add("link").EndLink(),
                 () => paragraph.AddAnchor("here"),
                 () => paragraph.BeginInline(new BoxStyle()).Add("in").EndInline(),

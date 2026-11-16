@@ -1,7 +1,6 @@
 using PDFtoImage;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 using SkiaSharp;
 
 namespace RaiCore.Pdf.Tests.Layout;
@@ -59,10 +58,10 @@ public class ImageLayoutTests
     }
 
     [Theory]
-    [InlineData(TextAlignment.Left, 20)]
-    [InlineData(TextAlignment.Center, 80)]
-    [InlineData(TextAlignment.Right, 140)]
-    public void Block_images_can_be_aligned(TextAlignment alignment, int expectedLeft)
+    [InlineData(BlockAlignment.Left, 20)]
+    [InlineData(BlockAlignment.Center, 80)]
+    [InlineData(BlockAlignment.Right, 140)]
+    public void Block_images_can_be_aligned(BlockAlignment alignment, int expectedLeft)
     {
         var flow = new FlowDocument(Small).Add(new ImageBlock(Quadrants, width: 40) { Alignment = alignment });
         using var bitmap = Render(flow);

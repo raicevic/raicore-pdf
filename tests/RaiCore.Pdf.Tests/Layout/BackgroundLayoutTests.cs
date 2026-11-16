@@ -2,7 +2,6 @@ using System.IO.Compression;
 using PDFtoImage;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 using SkiaSharp;
 
 namespace RaiCore.Pdf.Tests.Layout;
@@ -67,12 +66,26 @@ public class BackgroundLayoutTests
     public void A_corner_gradient_gives_the_other_two_corners_the_middle_color()
     {
         // Toward the top right of a 160 x 60 box: the top-left and bottom-right corners are on the 50% line.
-        using var bitmap = Render(Box(Layer(new LinearGradient(right: true, bottom: false, [new GradientStop(Red), new GradientStop(Blue)]))));
+        using var bitmap = Render(Box(Layer(LinearGradient.ToCorner(GradientCorner.TopRight, [new GradientStop(Red), new GradientStop(Blue)]))));
 
         var topLeft = bitmap.GetPixel(22, 22);
         var bottomRight = bitmap.GetPixel(177, 77);
         Assert.InRange(Math.Abs(topLeft.Red - bottomRight.Red), 0, 12);
         Assert.InRange(topLeft.Red, 100, 155);
+    }
+
+    [Theory]
+    [InlineData(GradientCorner.TopLeft, 22, 22, 177, 77)]
+    [InlineData(GradientCorner.TopRight, 177, 22, 22, 77)]
+    [InlineData(GradientCorner.BottomLeft, 22, 77, 177, 22)]
+    [InlineData(GradientCorner.BottomRight, 177, 77, 22, 22)]
+    public void A_corner_gradient_runs_toward_its_corner(GradientCorner corner, int toX, int toY, int fromX, int fromY)
+    {
+        // The 160 x 60 box spans (20, 20) to (180, 80): blue at the corner the gradient runs to, red at the opposite one.
+        using var bitmap = Render(Box(Layer(LinearGradient.ToCorner(corner, [new GradientStop(Red), new GradientStop(Blue)]))));
+
+        Assert.True(bitmap.GetPixel(toX, toY).Blue > 230, $"{bitmap.GetPixel(toX, toY)}");
+        Assert.True(bitmap.GetPixel(fromX, fromY).Red > 230, $"{bitmap.GetPixel(fromX, fromY)}");
     }
 
     [Fact]

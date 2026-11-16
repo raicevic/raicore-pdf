@@ -71,7 +71,7 @@ internal static class PdfASamples
 
         var second = doc.AddPage();
         second.Canvas.DrawText("Second page", StandardFont.Helvetica, 18, 72, second.Height - 72);
-        doc.NamedDestinations["second"] = new PdfDestination(second, second.Height - 72);
+        doc.NamedDestinations["second"] = new PdfDestination(second, top: second.Height - 72);
 
         // Links: a URI, a page and a named destination.
         first.AddLink(72, top - 340, 100, 14, new Uri("https://example.com/archive?q=pdf%2Fa"));

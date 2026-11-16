@@ -36,8 +36,8 @@ change at any time, and this section lists what the packages can do so far.
   and `data:` images. `viewBox` and `preserveAspectRatio` are honored, also when drawn at another aspect ratio.
   Unsupported features are skipped; DTDs are ignored and nothing external is loaded.
 - Drawing API: paths, fills, strokes, colors, text and images.
-- Document outline (bookmarks): `PdfDocument.Outline` with nested `PdfOutlineItem`s (Unicode titles, a page and
-  position to jump to, open or closed), and `PdfDocument.PageMode`, which by default opens the outline panel when
+- Document outline (bookmarks): `PdfDocument.Outline` with nested `PdfOutlineItem`s (Unicode titles, a
+  `PdfDestination` to jump to, open or closed), and `PdfDocument.PageMode`, which by default opens the outline panel when
   the document has an outline.
 - Links: `PdfPage.AddLink` writes link annotations (borderless) that open a URI (a URI action, written as 7-bit ASCII
   with other characters percent-encoded) or jump to a `PdfDestination` or a named destination.
@@ -150,6 +150,15 @@ change at any time, and this section lists what the packages can do so far.
   tree and metadata are written at the end, so links may point at any page; tagged, PDF/UA and PDF/A documents can be
   written page by page too. `Save` writes each page's content as it goes too; object numbers changed
   (fonts and page dictionaries now follow the content).
+- `PdfDocument.SaveAsync(stream, cancellationToken)`: encodes page by page into a buffer and writes it with
+  `WriteAsync`, so streams that forbid synchronous writes (an ASP.NET Core response body) work.
+- `PdfException` is the base class of every exception the library throws for input it rejects: `PdfFormatException`,
+  `PdfPasswordException`, `FontFormatException`, `ImageFormatException` and `ResourceLimitExceededException`.
+- `PdfPageSize.FromInches`.
+- API review (#60), breaking: `FontFormatException` moved to `RaiCore.Pdf.Fonts` and `ImageFormatException` to
+  `RaiCore.Pdf`; `ImageFormat` is now `PdfImageFormat`; `PdfAttachment`'s `mimeType` parameter is `mediaType`;
+  `PdfDestination` takes `(page, left, top)`; `PdfOutlineItem` holds a `Destination` in place of `Page`, `Top` and
+  `Left` (the `(title, page, top)` constructor stays).
 
 ### RaiCore.Pdf.Fonts
 - Bundled Liberation Sans, Serif and Mono (SIL OFL 1.1), metric-compatible with Arial, Times New Roman and Courier New.
@@ -167,6 +176,15 @@ change at any time, and this section lists what the packages can do so far.
   `Register` racing with lookups could leave them cached with the old answer.
 
 ### RaiCore.Pdf.Layout
+- API review (#60), breaking: the `RaiCore.Pdf.Layout.Blocks` namespace is merged into `RaiCore.Pdf.Layout`, so
+  blocks, `FlowDocument`, page setup and paragraphs need one `using`. `RaiCore.Pdf.Layout.Text` stays separate.
+- API review (#60), breaking: `FlexBlock.Direction` and `TableBlock.Direction` are a `TextDirection` (in place of
+  `RightToLeft`), and the flex main axis is `FlexBlock.FlexDirection`; `TextDirection` moved to `RaiCore.Pdf.Layout`.
+  `ImageBlock.Alignment` and `TableBlock.Alignment` are a `BlockAlignment`. `TableBlock.ColumnWidths` is set with
+  `init`, and so are `Paragraph.Alignment`, `Direction`, `FirstLineIndent`, `BreakLongWords` and `Ellipsis`. A corner
+  gradient is `LinearGradient.ToCorner(GradientCorner, ...)`. `FlowDocument.DrawBlocks` takes `top` as a PDF y
+  coordinate and no page height. `PageInfo` is `(Context, Count, Setup, Markers)`, with `Number` from the context.
+  `LinkTarget.Destination` is `DestinationName`.
 - The package includes the Unicode License v3 notice (`licenses/unicode.txt`) for its bidi and line break tables,
   generated from the Unicode Character Database, and its license expression names `Unicode-3.0`. All third-party
   material is listed in `THIRD-PARTY-NOTICES.md`.
@@ -319,6 +337,8 @@ change at any time, and this section lists what the packages can do so far.
   `FlowDocument.RenderTo` flushes each page as soon as it is drawn into a document written page by page.
 
 ### RaiCore.Pdf.Html
+- `rgb()`/`rgba()` colors whose alpha has a unit (`rgb(1 2 3 / 4px)`) no longer make the conversion throw
+  (AngleSharp.Css throws on them while parsing; fuzzing found it): the declaration is dropped, as CSS requires.
 - HTML and CSS to PDF via AngleSharp: the cascade, inheritance, `!important`, custom properties and print media
   queries, with browser default styles.
 - Block and inline formatting, white-space handling, the box model, fonts, colors, text alignment and transforms,

@@ -601,7 +601,7 @@ often it is drawn.
 var logo = PdfImage.Load("logo.png");
 page.Canvas.DrawImage(logo, x: 400, y: 760, width: 120, height: 40);
 
-flow.Add(new ImageBlock(logo, width: 150) { Alignment = TextAlignment.Right });          // a block image
+flow.Add(new ImageBlock(logo, width: 150) { Alignment = BlockAlignment.Right });          // a block image
 new Paragraph(body).Add("Status: ").AddImage(checkIcon, 10, 10).Add(" paid");            // an inline image
 new Paragraph(body).Add("Total ").AddBox(badgeBlock).Add(" due");                        // an inline box (any block)
 
@@ -674,8 +674,6 @@ Hyphenator.Register("sv", Hyphenator.FromPatterns(File.ReadLines("hyph-sv.pat.tx
 Blocks stack like CSS block boxes and flow across pages:
 
 ```csharp
-using RaiCore.Pdf.Layout.Blocks;
-
 var flow = new FlowDocument(new PageSetup(PdfPageSize.A4, Thickness.All(56)));
 flow.Add(new ParagraphBlock(new Paragraph(h1).Add("Report"), new BoxStyle { BreakAfter = PageBreak.Avoid }));
 flow.Add(new ContainerBlock(

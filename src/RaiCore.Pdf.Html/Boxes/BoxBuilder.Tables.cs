@@ -2,8 +2,7 @@ using System.Globalization;
 using AngleSharp.Dom;
 using RaiCore.Pdf.Html.Css;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
-using VerticalAlignment = RaiCore.Pdf.Layout.Blocks.VerticalAlignment;
+using VerticalAlignment = RaiCore.Pdf.Layout.VerticalAlignment;
 
 namespace RaiCore.Pdf.Html.Boxes;
 
@@ -51,15 +50,17 @@ internal sealed partial class BoxBuilder
 
         var (box, contentWidth) = BoxStyleFor(style, containingWidth);
         var captions = new List<Block>();
+        var columnWidths = new List<TableWidth?>(); // Filled from colgroup and col below.
         var table = new TableBlock(box)
         {
+            ColumnWidths = columnWidths,
             Id = IdFor(element),
             BorderCollapse = style.BorderCollapse ? BorderCollapse.Collapse : BorderCollapse.Separate,
             HorizontalSpacing = spacingAttribute ?? style.BorderSpacingX,
             VerticalSpacing = spacingAttribute ?? style.BorderSpacingY,
             LayoutMode = style.TableLayoutFixed ? TableLayoutMode.Fixed : TableLayoutMode.Auto,
             Alignment = ShrinkToFitAlignment(style),
-            RightToLeft = style.Rtl,
+            Direction = style.Rtl ? TextDirection.RightToLeft : TextDirection.LeftToRight,
         };
 
         var header = new List<TableRow>();
@@ -85,7 +86,7 @@ internal sealed partial class BoxBuilder
                     break;
                 case "colgroup":
                 case "col":
-                    AddColumns(table, child, contentWidth);
+                    AddColumns(columnWidths, child, contentWidth);
                     break;
                 case "thead":
                     header.AddRange(Rows(child, contentWidth, cellDefaults, isHeader: true));
@@ -198,7 +199,7 @@ internal sealed partial class BoxBuilder
         _ => null,
     };
 
-    private void AddColumns(TableBlock table, IElement element, double tableWidth)
+    private void AddColumns(List<TableWidth?> columnWidths, IElement element, double tableWidth)
     {
         IEnumerable<IElement> cols = element.LocalName == "col" ? [element] : element.Children.Where(c => c.LocalName == "col");
         if (element.LocalName == "colgroup" && !element.Children.Any(c => c.LocalName == "col"))
@@ -213,7 +214,7 @@ internal sealed partial class BoxBuilder
             var width = TableWidthFor(length, tableWidth);
             for (var i = 0; i < Math.Clamp(Integer(col.GetAttribute("span")) ?? 1, 1, MaxColumnSpan); i++)
             {
-                table.ColumnWidths.Add(width);
+                columnWidths.Add(width);
             }
         }
     }

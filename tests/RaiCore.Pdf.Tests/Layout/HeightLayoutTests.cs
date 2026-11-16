@@ -1,6 +1,5 @@
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 
 namespace RaiCore.Pdf.Tests.Layout;
 
@@ -91,7 +90,7 @@ public class HeightLayoutTests
     public void Column_items_grow_into_the_container_height()
     {
         var (a, b, c) = (Rect(null, 10), Rect(null, 10), Rect(null, 10));
-        var placements = Layout(new FlexBlock(new BoxStyle { Height = 160 }) { Direction = FlexDirection.Column }
+        var placements = Layout(new FlexBlock(new BoxStyle { Height = 160 }) { FlexDirection = FlexDirection.Column }
             .Add(a).Add(new FlexItem(b) { Grow = 1 }).Add(c));
 
         Assert.Equal((20.0, 30.0), Span(placements, a));
@@ -107,7 +106,7 @@ public class HeightLayoutTests
     public void Column_items_are_justified_vertically(JustifyContent justify, double first, double second)
     {
         var (a, b) = (Rect(40, 10), Rect(40, 10));
-        var placements = Layout(new FlexBlock(new BoxStyle { Height = 100 }) { Direction = FlexDirection.Column, JustifyContent = justify }.Add(a).Add(b));
+        var placements = Layout(new FlexBlock(new BoxStyle { Height = 100 }) { FlexDirection = FlexDirection.Column, JustifyContent = justify }.Add(a).Add(b));
 
         Assert.Equal(first, Span(placements, a).Top);
         Assert.Equal(second, Span(placements, b).Top);
@@ -117,7 +116,7 @@ public class HeightLayoutTests
     public void An_auto_top_margin_pushes_a_footer_to_the_bottom()
     {
         var (header, footer) = (Rect(null, 10), Rect(null, 10));
-        var placements = Layout(new FlexBlock(new BoxStyle { Height = 160 }) { Direction = FlexDirection.Column }
+        var placements = Layout(new FlexBlock(new BoxStyle { Height = 160 }) { FlexDirection = FlexDirection.Column }
             .Add(header).Add(new FlexItem(footer) { AutoMargins = AutoMargins.Top }));
 
         Assert.Equal((20.0, 30.0), Span(placements, header));
@@ -128,7 +127,7 @@ public class HeightLayoutTests
     public void Column_reverse_starts_at_the_bottom()
     {
         var (a, b) = (Rect(40, 10), Rect(40, 20));
-        var placements = Layout(new FlexBlock(new BoxStyle { Height = 100 }) { Direction = FlexDirection.ColumnReverse }.Add(a).Add(b));
+        var placements = Layout(new FlexBlock(new BoxStyle { Height = 100 }) { FlexDirection = FlexDirection.ColumnReverse }.Add(a).Add(b));
 
         Assert.Equal((110.0, 120.0), Span(placements, a));
         Assert.Equal((90.0, 110.0), Span(placements, b));
@@ -138,7 +137,7 @@ public class HeightLayoutTests
     public void Min_height_gives_a_column_room_to_grow()
     {
         var (a, b) = (Rect(null, 10), Rect(null, 10));
-        var container = new FlexBlock(new BoxStyle { MinHeight = 100, Background = Gray }) { Direction = FlexDirection.Column }
+        var container = new FlexBlock(new BoxStyle { MinHeight = 100, Background = Gray }) { FlexDirection = FlexDirection.Column }
             .Add(new FlexItem(a) { Grow = 1 }).Add(b);
         var placements = Layout(container);
 
@@ -151,14 +150,14 @@ public class HeightLayoutTests
     {
         // Both ask for 80 in a 100 container: they shrink to 50 each. The third cannot shrink below its 30 pt content.
         var (a, b) = (Box(new BoxStyle { Height = 80, Background = Gray }, new SpacerBlock(10)), Box(new BoxStyle { Height = 80, Background = Gray }, new SpacerBlock(10)));
-        var placements = Layout(new FlexBlock(new BoxStyle { Height = 100 }) { Direction = FlexDirection.Column }.Add(a).Add(b));
+        var placements = Layout(new FlexBlock(new BoxStyle { Height = 100 }) { FlexDirection = FlexDirection.Column }.Add(a).Add(b));
 
         Assert.Equal((20.0, 70.0), Span(placements, a));
         Assert.Equal((70.0, 120.0), Span(placements, b));
 
         var content = Box(new BoxStyle { Height = 80, Background = Gray }, new SpacerBlock(70));
         var other = Box(new BoxStyle { Height = 80, Background = Gray }, new SpacerBlock(10));
-        var shrunk = Layout(new FlexBlock(new BoxStyle { Height = 100 }) { Direction = FlexDirection.Column }.Add(content).Add(other));
+        var shrunk = Layout(new FlexBlock(new BoxStyle { Height = 100 }) { FlexDirection = FlexDirection.Column }.Add(content).Add(other));
         Assert.Equal((20.0, 90.0), Span(shrunk, content));
         Assert.Equal((90.0, 120.0), Span(shrunk, other));
     }
@@ -167,7 +166,7 @@ public class HeightLayoutTests
     public void Percent_basis_in_a_column_refers_to_the_container_height()
     {
         var (a, b) = (Rect(null, 10), Rect(null, 10));
-        var placements = Layout(new FlexBlock(new BoxStyle { Height = 100 }) { Direction = FlexDirection.Column }
+        var placements = Layout(new FlexBlock(new BoxStyle { Height = 100 }) { FlexDirection = FlexDirection.Column }
             .Add(new FlexItem(a) { Basis = FlexBasis.Percent(30), Grow = 1 })
             .Add(new FlexItem(b) { Basis = FlexBasis.Percent(10), Grow = 1 }));
 
@@ -180,7 +179,7 @@ public class HeightLayoutTests
     public void A_column_wraps_into_columns_side_by_side()
     {
         var (a, b, c) = (Rect(40, 20), Rect(40, 20), Rect(50, 20));
-        var placements = Layout(new FlexBlock(new BoxStyle { Height = 45 }) { Direction = FlexDirection.Column, Wrap = FlexWrap.Wrap, AlignContent = AlignContent.FlexStart, ColumnGap = 10, RowGap = 5 }
+        var placements = Layout(new FlexBlock(new BoxStyle { Height = 45 }) { FlexDirection = FlexDirection.Column, Wrap = FlexWrap.Wrap, AlignContent = AlignContent.FlexStart, ColumnGap = 10, RowGap = 5 }
             .Add(a).Add(b).Add(c));
 
         Assert.Equal((20.0, 20.0), (Horizontal(placements, a), Span(placements, a).Top));
@@ -193,8 +192,8 @@ public class HeightLayoutTests
     {
         // The cover page pattern: main grows between header and footer and centers its content.
         var title = Rect(40, 10);
-        var main = new FlexBlock { Direction = FlexDirection.Column, JustifyContent = JustifyContent.Center, AlignItems = FlexAlignment.Center }.Add(title);
-        var placements = Layout(new FlexBlock(new BoxStyle { Height = 160 }) { Direction = FlexDirection.Column }
+        var main = new FlexBlock { FlexDirection = FlexDirection.Column, JustifyContent = JustifyContent.Center, AlignItems = FlexAlignment.Center }.Add(title);
+        var placements = Layout(new FlexBlock(new BoxStyle { Height = 160 }) { FlexDirection = FlexDirection.Column }
             .Add(Rect(null, 10)).Add(new FlexItem(main) { Grow = 1 }).Add(Rect(null, 10)));
 
         Assert.Equal((95.0, 105.0), Span(placements, title)); // Centered in 30-170.
@@ -204,7 +203,7 @@ public class HeightLayoutTests
     public void A_stretched_item_is_a_definite_height_for_its_own_flex_content()
     {
         var bottom = Rect(40, 10);
-        var card = new FlexBlock { Direction = FlexDirection.Column, JustifyContent = JustifyContent.FlexEnd }.Add(bottom);
+        var card = new FlexBlock { FlexDirection = FlexDirection.Column, JustifyContent = JustifyContent.FlexEnd }.Add(bottom);
         var placements = Layout(new FlexBlock().Add(Rect(40, 80)).Add(card));
 
         Assert.Equal((90.0, 100.0), Span(placements, bottom)); // At the bottom of the 80 pt line.

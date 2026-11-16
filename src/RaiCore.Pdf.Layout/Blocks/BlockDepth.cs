@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>Checks how deeply blocks nest before layout recurses over them.</summary>
 internal static class BlockDepth

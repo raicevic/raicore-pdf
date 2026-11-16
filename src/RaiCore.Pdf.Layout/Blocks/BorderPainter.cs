@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>
 /// Draws border sides in their styles, the way browsers do. Each side is a band from its outer edge inward by its

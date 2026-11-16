@@ -92,7 +92,7 @@ public sealed record InlineTag(int Start, int End, StructureTag Tag);
 
 /// <summary>
 /// Begins and ends tags on a canvas for layout objects (blocks, table cells, tagged runs, links), using the structure
-/// elements that <see cref="Blocks.FlowDocument.RenderTo"/> created for them. Does nothing in an untagged document.
+/// elements that <see cref="FlowDocument.RenderTo"/> created for them. Does nothing in an untagged document.
 /// </summary>
 internal static class LayoutTagging
 {

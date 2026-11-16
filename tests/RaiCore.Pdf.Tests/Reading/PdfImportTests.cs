@@ -239,12 +239,12 @@ public class PdfImportTests
         var pages = doc.ImportPages(source, new PdfImportOptions { KeepOutline = true });
 
         Assert.Equal(["Chapter 1", "Chapter 2 \u00E6\u00F8\u00E5"], doc.Outline.Select(item => item.Title));
-        Assert.Same(pages[0], doc.Outline[0].Page);
-        Assert.Equal(500, doc.Outline[0].Top);
+        Assert.Same(pages[0], doc.Outline[0].Destination.Page);
+        Assert.Equal((36, 500), (doc.Outline[0].Destination.Left, doc.Outline[0].Destination.Top));
         Assert.True(doc.Outline[0].IsOpen);
         Assert.Equal("Section 1.1", doc.Outline[0].Children[0].Title);
-        Assert.Same(pages[1], doc.Outline[0].Children[0].Page);
-        Assert.Same(pages[2], doc.Outline[1].Page);
+        Assert.Same(pages[1], doc.Outline[0].Children[0].Destination.Page);
+        Assert.Same(pages[2], doc.Outline[1].Destination.Page);
         Assert.False(doc.Outline[1].IsOpen);
 
         // The outline is written with destinations in the new document.
@@ -365,12 +365,12 @@ public class PdfImportTests
             canvas.SetFillColor(i == 1 ? new PdfColor(0, 0, 1) : new PdfColor(1, 0, 0)).Rectangle(60, 420, 120, 60).Fill();
         }
 
-        pages[0].AddLink(40, 500, 200, 30, new PdfDestination(pages[1], 300));
+        pages[0].AddLink(40, 500, 200, 30, new PdfDestination(pages[1], top: 300));
         pages[0].AddLink(40, 140, 200, 30, new Uri("http://example.com/"));
         pages[0].AddLink(40, 100, 200, 30, "chapter2");
-        doc.NamedDestinations["chapter2"] = new PdfDestination(pages[2], 700);
+        doc.NamedDestinations["chapter2"] = new PdfDestination(pages[2], top: 700);
 
-        var chapter = new PdfOutlineItem("Chapter 1", pages[0], 500);
+        var chapter = new PdfOutlineItem("Chapter 1", new PdfDestination(pages[0], left: 36, top: 500));
         chapter.Children.Add(new PdfOutlineItem("Section 1.1", pages[1], 300));
         var closed = new PdfOutlineItem("Chapter 2 \u00E6\u00F8\u00E5", pages[2], 700) { IsOpen = false };
         closed.Children.Add(new PdfOutlineItem("Section 2.1", pages[2], 400));

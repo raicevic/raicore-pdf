@@ -1,7 +1,6 @@
 using System.Text;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 using RaiCore.Pdf.Layout.Text;
 
 namespace RaiCore.Pdf.Tests.Layout;
@@ -86,7 +85,7 @@ public class LinkLayoutTests
     public void Block_links_work_on_flex_items_table_cells_and_inline_boxes()
     {
         var flex = new FlexBlock(null, new FlexItem(Para(1)) { Basis = FlexBasis.Points(60) }, new FlexItem(new ContainerBlock(null, Para(1)) { Link = Web }) { Basis = FlexBasis.Points(60) });
-        var table = new TableBlock { ColumnWidths = { TableWidth.Points(80), TableWidth.Points(80) } }
+        var table = new TableBlock { ColumnWidths = [TableWidth.Points(80), TableWidth.Points(80)] }
             .Add(new TableRow(new TableCell(Para(1)), new TableCell(new ParagraphBlock(new Paragraph(Text).AddLink("Cell", Web)))));
         var inline = new ParagraphBlock(new Paragraph(Text).Add("ab ").AddBox(new ContainerBlock(new BoxStyle { Width = 50 }, new ParagraphBlock(new Paragraph(Text).AddLink("Box", Web)))));
 
@@ -163,7 +162,7 @@ public class LinkLayoutTests
     {
         var flow = Flow(Para(1));
         flow.PageDecorator = (canvas, page) =>
-            FlowDocument.DrawBlocks(canvas, page.Setup.Size.Height, [new ParagraphBlock(new Paragraph(Text).AddLink("Home", Web))], 20, 5, 160);
+            FlowDocument.DrawBlocks(canvas, [new ParagraphBlock(new Paragraph(Text).AddLink("Home", Web))], 20, page.Setup.Size.Height - 5, 160);
 
         var link = Assert.Single(flow.Render().Pages[0].Links);
 

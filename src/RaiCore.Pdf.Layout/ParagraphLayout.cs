@@ -324,10 +324,10 @@ public sealed partial class ParagraphLayout
 
         var border = box.Border with
         {
-            Left = piece.StartEdge ? box.Border.Left : Blocks.BorderSide.None,
-            Right = piece.EndEdge ? box.Border.Right : Blocks.BorderSide.None,
+            Left = piece.StartEdge ? box.Border.Left : BorderSide.None,
+            Right = piece.EndEdge ? box.Border.Right : BorderSide.None,
         };
-        Blocks.BorderPainter.PaintBox(canvas, border, x, y, width, height, corners: corners);
+        BorderPainter.PaintBox(canvas, border, x, y, width, height, corners: corners);
     }
 
     private static void DrawDecoration(PdfCanvas canvas, InlineDecorationFragment piece, double lineX, double baseline)
@@ -346,7 +346,7 @@ public sealed partial class ParagraphLayout
             canvas.SetFillColor(background).Rectangle(left, bottom, right - left, top - bottom).Fill();
         }
 
-        void Side(Blocks.BorderSide side, double sx, double sy, double sw, double sh)
+        void Side(BorderSide side, double sx, double sy, double sw, double sh)
         {
             if (side.Width > 0)
             {
@@ -446,7 +446,7 @@ public sealed record InlineDecorationFragment(InlineDecoration Decoration, doubl
 /// <summary>An inline box on a line.</summary>
 public sealed class InlineBoxFragment
 {
-    internal InlineBoxFragment(InlineBox box, double x, double width, double height, double baseline, IReadOnlyList<Blocks.DrawOperation> content, double baselineShift = 0)
+    internal InlineBoxFragment(InlineBox box, double x, double width, double height, double baseline, IReadOnlyList<DrawOperation> content, double baselineShift = 0)
     {
         BaselineShift = baselineShift;
         Box = box;
@@ -479,7 +479,7 @@ public sealed class InlineBoxFragment
     public double OuterWidth => Box.Content.Style.Margin.Horizontal + Width;
 
     /// <summary>Drawing operations with the border box's top-left corner at x = 0 and y = the top passed in.</summary>
-    internal IReadOnlyList<Blocks.DrawOperation> Content { get; }
+    internal IReadOnlyList<DrawOperation> Content { get; }
 }
 
 /// <summary>An inline image on a line.</summary>

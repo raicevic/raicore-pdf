@@ -1,6 +1,5 @@
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 
 namespace RaiCore.Pdf.Tests.Layout;
 
@@ -77,7 +76,7 @@ public class BookmarkLayoutTests
         var row = new FlexBlock(null, new FlexItem(left), new FlexItem(right));
         var first = Para(1, bookmark: Mark("First"));
         var second = Para(1, bookmark: Mark("Second"));
-        var column = new FlexBlock { Direction = FlexDirection.Column }.Add(first).Add(second);
+        var column = new FlexBlock { FlexDirection = FlexDirection.Column }.Add(first).Add(second);
 
         var anchors = Flow(Para(1), row, column).Paginate().Anchors;
 
@@ -142,15 +141,15 @@ public class BookmarkLayoutTests
         Assert.Equal(3, doc.Pages.Count);
         Assert.Collection(
             doc.Outline,
-            item => Assert.Equal((doc.Pages[1], 180.0), (item.Page, item.Top)),
-            item => Assert.Equal((doc.Pages[2], 180.0), (item.Page, item.Top)));
+            item => Assert.Equal((doc.Pages[1], 180.0), (item.Destination.Page, item.Destination.Top)),
+            item => Assert.Equal((doc.Pages[2], 180.0), (item.Destination.Page, item.Destination.Top)));
     }
 
     [Fact]
     public void Blocks_drawn_by_page_decorators_add_no_bookmarks()
     {
         var flow = Flow(Para(1, bookmark: Mark("Body")));
-        flow.PageDecorator = (canvas, page) => FlowDocument.DrawBlocks(canvas, page.Setup.Size.Height, [Para(1, bookmark: Mark("Header"))], 20, 0, 160);
+        flow.PageDecorator = (canvas, page) => FlowDocument.DrawBlocks(canvas, [Para(1, bookmark: Mark("Header"))], 20, page.Setup.Size.Height, 160);
 
         Assert.Equal(["Body"], flow.Render().Outline.Select(i => i.Title));
     }

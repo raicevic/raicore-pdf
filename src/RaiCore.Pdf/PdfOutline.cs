@@ -10,26 +10,33 @@ namespace RaiCore.Pdf;
 /// <example>
 /// <code>
 /// var chapter = new PdfOutlineItem("Chapter 1", page, top: page.Height - 72);
-/// chapter.Children.Add(new PdfOutlineItem("Section 1.1", page, top: 400));
+/// chapter.Children.Add(new PdfOutlineItem("Section 1.1", new PdfDestination(page, left: 72, top: 400)));
 /// doc.Outline.Add(chapter);
 /// </code>
 /// </example>
 public sealed class PdfOutlineItem
 {
     private string _title;
-    private PdfPage _page;
+    private PdfDestination _destination;
+
+    /// <summary>Creates an entry that jumps to <paramref name="destination"/>.</summary>
+    /// <param name="title">The title shown in the viewer; any Unicode text.</param>
+    /// <param name="destination">The place to jump to. Its page must belong to the document the outline is saved with.</param>
+    public PdfOutlineItem(string title, PdfDestination destination)
+    {
+        ArgumentNullException.ThrowIfNull(title);
+        ArgumentNullException.ThrowIfNull(destination);
+        _title = title;
+        _destination = destination;
+    }
 
     /// <summary>Creates an entry that jumps to <paramref name="page"/>, scrolled so that <paramref name="top"/> is at the top of the window.</summary>
     /// <param name="title">The title shown in the viewer; any Unicode text.</param>
     /// <param name="page">The target page. It must belong to the document the outline is saved with.</param>
     /// <param name="top">The PDF y coordinate (from the bottom of the page) to show at the top of the window, or <c>null</c> to keep the viewer's position.</param>
     public PdfOutlineItem(string title, PdfPage page, double? top = null)
+        : this(title, new PdfDestination(page, top: top))
     {
-        ArgumentNullException.ThrowIfNull(title);
-        ArgumentNullException.ThrowIfNull(page);
-        _title = title;
-        _page = page;
-        Top = top;
     }
 
     /// <summary>The title shown in the viewer; any Unicode text.</summary>
@@ -43,22 +50,16 @@ public sealed class PdfOutlineItem
         }
     }
 
-    /// <summary>The target page. It must belong to the document the outline is saved with.</summary>
-    public PdfPage Page
+    /// <summary>The place the entry jumps to. Its page must belong to the document the outline is saved with.</summary>
+    public PdfDestination Destination
     {
-        get => _page;
+        get => _destination;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            _page = value;
+            _destination = value;
         }
     }
-
-    /// <summary>The PDF y coordinate (from the bottom of the page) to show at the top of the window, or <c>null</c> to keep the viewer's position.</summary>
-    public double? Top { get; set; }
-
-    /// <summary>The PDF x coordinate to show at the left of the window, or <c>null</c> (the default) to keep the viewer's position.</summary>
-    public double? Left { get; set; }
 
     /// <summary>Whether the entry starts expanded, showing its children. Defaults to <c>true</c>.</summary>
     public bool IsOpen { get; set; } = true;
@@ -130,7 +131,7 @@ internal static class PdfOutlineWriter
                 throw new InvalidOperationException($"The outline item \"{item.Title}\" appears more than once in the outline.");
             }
 
-            if (!pages.TryGetValue(item.Page, out var pageRef))
+            if (!pages.TryGetValue(item.Destination.Page, out var pageRef))
             {
                 throw new InvalidOperationException($"The outline item \"{item.Title}\" points to a page that is not in this document.");
             }
@@ -148,8 +149,7 @@ internal static class PdfOutlineWriter
                 dictionary["Next"] = refs[i + 1];
             }
 
-            var origin = item.Page.Origin; // Imported pages: positions are measured from the media box's corner.
-            dictionary["Dest"] = new PdfArray(pageRef, new PdfName("XYZ"), Number(item.Left + origin.X), Number(item.Top + origin.Y), PdfNull.Instance);
+            dictionary["Dest"] = item.Destination.ToArray(pageRef);
 
             // Count: the descendants shown when the item is open; negative when it is closed (how many it would show).
             var descendants = WriteItems(writer, dictionary, refs[i], item.Children, pages, seen);
@@ -163,7 +163,4 @@ internal static class PdfOutlineWriter
 
         return visible;
     }
-
-    /// <summary>A coordinate, or <c>null</c> to keep the viewer's current one.</summary>
-    private static PdfObject Number(double? value) => value is { } v ? new PdfReal(v) : PdfNull.Instance;
 }

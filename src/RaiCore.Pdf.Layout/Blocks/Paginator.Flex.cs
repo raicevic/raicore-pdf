@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>Size overrides for a flex item's border box.</summary>
 /// <param name="Height">A fixed border-box height (content that does not fit overflows).</param>
@@ -143,7 +143,7 @@ internal sealed partial class Paginator
         var inputs = items.Select(item => RowInput(item, width)).ToList();
         var lines = new List<RowLine>();
         var gap = flex.ColumnGap;
-        var mirrored = (flex.Direction == FlexDirection.RowReverse) != flex.RightToLeft;
+        var mirrored = (flex.FlexDirection == FlexDirection.RowReverse) != (flex.Direction == TextDirection.RightToLeft);
         foreach (var (start, end) in FlexAlgorithm.BreakLines(inputs, width, gap, flex.Wrap != FlexWrap.NoWrap))
         {
             var count = end - start;
@@ -414,7 +414,7 @@ internal sealed partial class Paginator
         var free = available - boxWidth;
 
         // The cross axis starts on the right in a right-to-left container, and wrap-reverse swaps its start and end.
-        var reverse = (flex.Wrap == FlexWrap.WrapReverse) != flex.RightToLeft;
+        var reverse = (flex.Wrap == FlexWrap.WrapReverse) != (flex.Direction == TextDirection.RightToLeft);
         var offset = auto switch
         {
             AutoMargins.Left | AutoMargins.Right => free / 2,
@@ -494,7 +494,7 @@ internal sealed partial class Paginator
             return widest;
         }).ToList();
 
-        var reverseLines = (flex.Wrap == FlexWrap.WrapReverse) != flex.RightToLeft;
+        var reverseLines = (flex.Wrap == FlexWrap.WrapReverse) != (flex.Direction == TextDirection.RightToLeft);
         var (lineStarts, extra) = wrap
             ? AlignLines(lineWidths, width, flex.ColumnGap, flex.AlignContent, reverse: false)
             : ([0.0], 0.0);
@@ -528,7 +528,7 @@ internal sealed partial class Paginator
                 var marginTop = (Auto(item) & AutoMargins.Top) != 0 ? autoMargin : margin.Top;
                 var marginBottom = (Auto(item) & AutoMargins.Bottom) != 0 ? autoMargin : MarginOrZero(item, AutoMargins.Bottom, margin.Bottom);
                 var top = starts[i];
-                if (flex.Direction == FlexDirection.ColumnReverse)
+                if (flex.FlexDirection == FlexDirection.ColumnReverse)
                 {
                     top = inner - top - (marginTop + sizes[i] + marginBottom);
                 }

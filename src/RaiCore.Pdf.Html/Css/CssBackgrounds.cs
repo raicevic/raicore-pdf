@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using RaiCore.Pdf.Layout.Blocks;
+using RaiCore.Pdf.Layout;
 
 namespace RaiCore.Pdf.Html.Css;
 
@@ -410,7 +410,7 @@ internal static partial class CssBackgrounds
             return null;
         }
 
-        return corner is { } c ? new LinearGradient(c.Right, c.Bottom, stops, repeating) : new LinearGradient(angle, stops, repeating);
+        return corner is { } c ? LinearGradient.ToCorner(c.Bottom ? (c.Right ? GradientCorner.BottomRight : GradientCorner.BottomLeft) : (c.Right ? GradientCorner.TopRight : GradientCorner.TopLeft), stops, repeating) : new LinearGradient(angle, stops, repeating);
     }
 
     private static RadialGradient? ParseRadial(List<string> arguments, bool repeating, double fontSize, double rootFontSize)

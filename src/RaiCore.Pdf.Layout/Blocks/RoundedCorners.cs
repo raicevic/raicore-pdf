@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>
 /// The corner radii of one box in points (see <see cref="CornerRadii.Resolve"/>), and the paths of rounded rectangles

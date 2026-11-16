@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>The main axis of a <see cref="FlexBlock"/> (CSS <c>flex-direction</c>).</summary>
 public enum FlexDirection
@@ -234,16 +234,16 @@ public sealed class FlexBlock : Block
     /// <summary>The items in document order (see <see cref="FlexItem.Order"/>).</summary>
     public IReadOnlyList<FlexItem> Items => _items;
 
-    /// <summary>The main axis.</summary>
-    public FlexDirection Direction { get; init; }
+    /// <summary>The main axis (CSS <c>flex-direction</c>).</summary>
+    public FlexDirection FlexDirection { get; init; }
 
     /// <summary>
-    /// The container's inline direction is right to left (CSS <c>direction: rtl</c>): a row starts on the right (so
-    /// <see cref="FlexDirection.Row"/> runs right to left and <see cref="FlexDirection.RowReverse"/> left to right), and
-    /// the cross axis of a column starts on the right (<see cref="FlexAlignment.FlexStart"/> aligns items to the right,
-    /// and wrapped columns are placed from right to left).
+    /// The container's inline direction (CSS <c>direction</c>). Right to left, a row starts on the right (so
+    /// <see cref="Layout.FlexDirection.Row"/> runs right to left and <see cref="Layout.FlexDirection.RowReverse"/> left
+    /// to right), and the cross axis of a column starts on the right (<see cref="FlexAlignment.FlexStart"/> aligns items
+    /// to the right, and wrapped columns are placed from right to left).
     /// </summary>
-    public bool RightToLeft { get; init; }
+    public TextDirection Direction { get; init; }
 
     /// <summary>Line wrapping.</summary>
     public FlexWrap Wrap { get; init; }
@@ -263,7 +263,7 @@ public sealed class FlexBlock : Block
     /// <summary>Horizontal space: between the items of a row, between the lines of a column (CSS <c>column-gap</c>).</summary>
     public double ColumnGap { get; init; }
 
-    internal bool IsRow => Direction is FlexDirection.Row or FlexDirection.RowReverse;
+    internal bool IsRow => FlexDirection is FlexDirection.Row or FlexDirection.RowReverse;
 
     /// <summary>Appends an item.</summary>
     public FlexBlock Add(FlexItem item)

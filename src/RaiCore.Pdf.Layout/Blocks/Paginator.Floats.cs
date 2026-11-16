@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>
 /// Floats (CSS 2.1 section 9.5): blocks taken out of the flow and moved to a side, with the text after them flowing

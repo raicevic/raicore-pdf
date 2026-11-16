@@ -8,7 +8,6 @@ text shaping with HarfBuzz (kerning, ligatures, Arabic, Indic) and per-character
 using RaiCore.Pdf;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 
 var fonts = BundledFonts.CreateCollection();
 var body = new TextStyle(fonts.Find("serif")!, 11) { LineHeight = LineHeight.Multiple(1.4) };

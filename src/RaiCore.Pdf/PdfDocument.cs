@@ -125,6 +125,65 @@ public sealed partial class PdfDocument
     /// </exception>
     public void Save(Stream stream)
     {
+        ThrowIfCannotSave(stream);
+        using var writer = new DocumentWriter(this, stream);
+        foreach (var page in _pages)
+        {
+            writer.WritePage(page, release: false);
+            writer.Flush();
+        }
+
+        writer.Finish();
+    }
+
+    /// <summary>
+    /// Writes the document to a stream asynchronously, as <see cref="Save(Stream)"/> does. The stream is left open.
+    /// Each page is encoded into a buffer and then written with <see cref="Stream.WriteAsync(ReadOnlyMemory{byte}, CancellationToken)"/>,
+    /// so <paramref name="stream"/> only receives asynchronous writes: use this for streams that forbid synchronous
+    /// writes, such as an ASP.NET Core response body. Encoding itself runs on the calling thread.
+    /// </summary>
+    /// <remarks>
+    /// The document must not be changed until the returned task completes. Like <see cref="Save(Stream)"/>, a rule that
+    /// can only be checked while an object is written leaves the stream with an incomplete file when it fails, and so
+    /// does cancellation.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// The document has no pages, or it is written page by page (<see cref="BeginSave"/>).
+    /// </exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+    public async Task SaveAsync(Stream stream, CancellationToken cancellationToken = default)
+    {
+        ThrowIfCannotSave(stream);
+        cancellationToken.ThrowIfCancellationRequested();
+        using var buffer = new MemoryStream();
+        using (var writer = new DocumentWriter(this, buffer))
+        {
+            foreach (var page in _pages)
+            {
+                writer.WritePage(page, release: false);
+                writer.Flush();
+                await DrainAsync(buffer, stream, cancellationToken).ConfigureAwait(false);
+            }
+
+            writer.Finish();
+        }
+
+        await DrainAsync(buffer, stream, cancellationToken).ConfigureAwait(false);
+        await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Writes what <paramref name="buffer"/> holds to <paramref name="stream"/> and empties the buffer.</summary>
+    private static async Task DrainAsync(MemoryStream buffer, Stream stream, CancellationToken cancellationToken)
+    {
+        if (buffer.Length > 0)
+        {
+            await stream.WriteAsync(buffer.GetBuffer().AsMemory(0, (int)buffer.Length), cancellationToken).ConfigureAwait(false);
+            buffer.SetLength(0);
+        }
+    }
+
+    private void ThrowIfCannotSave(Stream stream)
+    {
         ArgumentNullException.ThrowIfNull(stream);
         if (_saving is not null || _saved)
         {
@@ -135,15 +194,6 @@ public sealed partial class PdfDocument
         {
             throw new InvalidOperationException("A PDF document must contain at least one page.");
         }
-
-        using var writer = new DocumentWriter(this, stream);
-        foreach (var page in _pages)
-        {
-            writer.WritePage(page, release: false);
-            writer.Flush();
-        }
-
-        writer.Finish();
     }
 
     /// <summary>

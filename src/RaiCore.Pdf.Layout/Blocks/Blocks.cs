@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>A box in a <see cref="FlowDocument"/>: content that stacks vertically and flows across pages.</summary>
 public abstract class Block
@@ -144,8 +144,8 @@ public sealed class ImageBlock : Block
     /// <summary>Requested height in points, if any.</summary>
     public double? Height { get; }
 
-    /// <summary>Horizontal position within the available width.</summary>
-    public TextAlignment Alignment { get; init; } = TextAlignment.Left;
+    /// <summary>Horizontal position within the available width, when the image is narrower.</summary>
+    public BlockAlignment Alignment { get; init; }
 
     /// <summary>
     /// The drawn size: the requested or natural size within the width limits (scaled, keeping the aspect ratio, or

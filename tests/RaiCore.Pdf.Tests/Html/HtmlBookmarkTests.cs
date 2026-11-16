@@ -129,12 +129,12 @@ public class HtmlBookmarkTests
         var pdf = Encoding.Latin1.GetString(doc.ToArray());
 
         Assert.Equal(2, doc.Pages.Count);
-        Assert.Same(doc.Pages[0], doc.Outline[0].Page);
-        Assert.Same(doc.Pages[1], doc.Outline[1].Page);
+        Assert.Same(doc.Pages[0], doc.Outline[0].Destination.Page);
+        Assert.Same(doc.Pages[1], doc.Outline[1].Destination.Page);
 
         // Near the top of the page: below the 2 cm margin, by no more than the heading's own top margin.
         var contentTop = doc.Pages[1].Height - (72 / 2.54 * 2);
-        Assert.InRange(doc.Outline[1].Top!.Value, contentTop - 30, contentTop);
+        Assert.InRange(doc.Outline[1].Destination.Top!.Value, contentTop - 30, contentTop);
         Assert.Contains("/PageMode /UseOutlines", pdf, StringComparison.Ordinal);
     }
 

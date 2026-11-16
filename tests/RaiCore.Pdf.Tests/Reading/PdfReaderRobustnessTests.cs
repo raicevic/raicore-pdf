@@ -203,7 +203,7 @@ public class PdfReaderRobustnessTests
         var page = doc.AddPage(PdfPageSize.A5);
         page.Canvas.DrawText("Damaged", PdfFont.Load(Fixtures.Path("LiberationSans-Regular.ttf")), 20, 40, 500);
         var second = doc.AddPage(PdfPageSize.A5);
-        page.AddLink(40, 490, 100, 30, new PdfDestination(second, 300));
+        page.AddLink(40, 490, 100, 30, new PdfDestination(second, top: 300));
         doc.Outline.Add(new PdfOutlineItem("Second", second, 300));
         return doc.ToArray();
     }

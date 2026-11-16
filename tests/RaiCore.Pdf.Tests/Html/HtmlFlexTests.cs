@@ -1,6 +1,5 @@
 using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 
 namespace RaiCore.Pdf.Tests.Html;
 
@@ -18,7 +17,7 @@ public class HtmlFlexTests
             <div style="display: flex; flex-flow: row-reverse wrap; justify-content: space-between; align-items: center; gap: 10px 20px"></div>
             """);
 
-        Assert.Equal(FlexDirection.RowReverse, flex.Direction);
+        Assert.Equal(FlexDirection.RowReverse, flex.FlexDirection);
         Assert.Equal(FlexWrap.Wrap, flex.Wrap);
         Assert.Equal(JustifyContent.SpaceBetween, flex.JustifyContent);
         Assert.Equal(FlexAlignment.Center, flex.AlignItems);
@@ -160,7 +159,7 @@ public class HtmlFlexTests
 
         Assert.IsType<ImageBlock>(flex.Items[0].Content);
         var inner = Assert.IsType<FlexBlock>(flex.Items[1].Content);
-        Assert.Equal(FlexDirection.Column, inner.Direction);
+        Assert.Equal(FlexDirection.Column, inner.FlexDirection);
         Assert.Equal(2, inner.Items.Count);
     }
 

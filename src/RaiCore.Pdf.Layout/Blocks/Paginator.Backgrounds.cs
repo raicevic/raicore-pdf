@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>
 /// Background layers (CSS Backgrounds 3): images and gradients sized and positioned in the origin box, tiled if they
@@ -174,7 +174,9 @@ internal sealed partial class Paginator
                 // The direction, with y down (CSS): toward a corner it is perpendicular to the diagonal between the other
                 // two corners; an angle points up at 0 and turns clockwise.
                 var (dx, dy) = linear.Corner is { } corner
-                    ? Normalize(corner.X * height, corner.Y * width)
+                    ? Normalize(
+                        (corner is GradientCorner.TopRight or GradientCorner.BottomRight ? 1 : -1) * height,
+                        (corner is GradientCorner.BottomLeft or GradientCorner.BottomRight ? 1 : -1) * width)
                     : (Math.Sin(linear.Angle * Math.PI / 180), -Math.Cos(linear.Angle * Math.PI / 180));
                 var length = Math.Abs(width * dx) + Math.Abs(height * dy);
                 var stops = ResolveStops(gradient, length);

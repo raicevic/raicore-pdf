@@ -3,7 +3,6 @@ using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Html.Css;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 
 namespace RaiCore.Pdf.Tests.Html;
 
@@ -123,6 +122,10 @@ public class PagedMediaTests
         var red = Enumerable.Range(0, 56).SelectMany(y => Enumerable.Range(0, bitmap.Width).Where(x => bitmap.GetPixel(x, y) is { Red: > 200, Green: < 80, Blue: < 80 }).Select(x => (x, y))).ToList();
         Assert.NotEmpty(red);
         Assert.True(red.Min(p => p.x) > bitmap.Width / 2, "The top-right box is on the right.");
+
+        // Margin boxes center their content vertically by default: the text's middle is near the margin's (28 pt).
+        var middle = (red.Min(p => p.y) + red.Max(p => p.y)) / 2.0;
+        Assert.InRange(middle, 24, 32);
     }
 
     [Fact]
@@ -162,7 +165,7 @@ public class PagedMediaTests
         var page = doc.AddPage(PdfPageSize.A5);
 
         Assert.Equal(24, FlowDocument.MeasureBlocks(blocks, 100), 6);
-        Assert.Equal(24, FlowDocument.DrawBlocks(page.Canvas, page.Height, blocks, 50, 50, 100), 6);
+        Assert.Equal(24, FlowDocument.DrawBlocks(page.Canvas, blocks, 50, page.Height - 50, 100), 6);
         Assert.Contains("two", ExternalTools.ExtractText(doc.ToArray()), StringComparison.Ordinal);
     }
 

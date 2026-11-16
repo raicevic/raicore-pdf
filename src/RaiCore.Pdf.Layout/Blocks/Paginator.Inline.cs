@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>Inline boxes (CSS inline-block, inline-flex, inline-table): blocks laid out as one item in a line of text.</summary>
 internal sealed partial class Paginator

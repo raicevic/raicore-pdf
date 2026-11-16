@@ -1,7 +1,6 @@
 using PDFtoImage;
 using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 using SkiaSharp;
 
 namespace RaiCore.Pdf.Tests.Html;
@@ -25,7 +24,7 @@ public class HtmlSvgTests
             """);
 
         var block = Flatten(blocks).OfType<ImageBlock>().Single();
-        Assert.Equal(ImageFormat.Svg, block.Image.Format);
+        Assert.Equal(PdfImageFormat.Svg, block.Image.Format);
         Assert.Equal((300 * Px, 100 * Px), (block.Image.NaturalWidth, block.Image.NaturalHeight));
         Assert.Equal([(120 * Px, 32 * Px), (240 * Px, 64 * Px)], InlineImages(blocks).Select(i => (i.Width, i.Height)));
         Assert.Same(InlineImages(blocks)[0].Image, InlineImages(blocks)[1].Image); // Loaded once.
@@ -43,7 +42,7 @@ public class HtmlSvgTests
         Assert.Equal(
             [(20 * Px, 10 * Px), (20 * Px, 10 * Px), (20 * Px, 10 * Px)],
             InlineImages(blocks).Select(i => (i.Width, i.Height)));
-        Assert.All(InlineImages(blocks), i => Assert.Equal(ImageFormat.Svg, i.Image.Format));
+        Assert.All(InlineImages(blocks), i => Assert.Equal(PdfImageFormat.Svg, i.Image.Format));
     }
 
     [Fact]

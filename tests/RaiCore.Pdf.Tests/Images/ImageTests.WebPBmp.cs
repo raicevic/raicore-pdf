@@ -17,11 +17,11 @@ public partial class ImageTests
 
     [Theory]
     [MemberData(nameof(BmpFixtures))]
-    public void Decodes_bmp_variants_exactly(string file) => AssertDecodesToReference("Bmp", file, ImageFormat.Bmp);
+    public void Decodes_bmp_variants_exactly(string file) => AssertDecodesToReference("Bmp", file, PdfImageFormat.Bmp);
 
     [Theory]
     [MemberData(nameof(WebPFixtures))]
-    public void Decodes_webp_like_libwebp(string file) => AssertDecodesToReference("WebP", file, ImageFormat.WebP);
+    public void Decodes_webp_like_libwebp(string file) => AssertDecodesToReference("WebP", file, PdfImageFormat.WebP);
 
     [Theory]
     [InlineData("Bmp/1bit.bmp", "Indexed", 1)]
@@ -265,7 +265,7 @@ public partial class ImageTests
     private static TheoryData<string> FixtureNames(string folder, string pattern) =>
         [.. Directory.GetFiles(Fixtures.Path(folder), pattern).Select(f => Path.GetFileName(f)).Order()];
 
-    private static void AssertDecodesToReference(string folder, string file, ImageFormat format)
+    private static void AssertDecodesToReference(string folder, string file, PdfImageFormat format)
     {
         var image = PdfImage.Load(Fixtures.Path(Path.Combine(folder, file)));
         Assert.Equal(format, image.Format);

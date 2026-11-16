@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<!--
+Adapted from https://github.com/CourtBouillon/weasyprint-samples (ticket/, commit 6dc675b), public domain except the fonts (see LICENSE).
+Changes:
+  - Fonts replaced by the Liberation families (Corpus/fonts.css); web fonts and @font-face rules removed.
+  - Scripts and network resources removed.
+  - Added the A4 page size (WeasyPrint's default); the sample's own @page rules are kept.
+  - Added <!DOCTYPE html>, so browsers use standards mode.
+-->
+<html>
+  <head>
+<link rel="stylesheet" href="../fonts.css">
+<style>@page { size: A4; }</style>
+
+    <meta charset="utf-8">
+    <link href="ticket.css" rel="stylesheet">
+    <title>Boarding ticket</title>
+    <meta name="description" content="Boarding ticket">
+  </head>
+
+  <body>
+    <section id="informations">
+      <h1 id="name">Théodore Marcelin</h1>
+      <h1 id="destination">CDG ✈ LFLL</h1>
+      <dl>
+        <dt>Flight</dt>
+        <dd>DL31</dd>
+        <dt>Gate</dt>
+        <dd>29</dd>
+        <dt>Seat</dt>
+        <dd>26E</dd>
+        <dt>Zone</dt>
+        <dd>4</dd>
+      </dl>
+      <ul>
+        <li>5:10pm</li>
+        <li>Dec 15, 2018</li>
+        <li>Coach</li>
+        <li>1257797706706</li>
+      </ul>
+    </section>
+
+    <section id="ticket">
+      <p>1257797706706</p>
+      <h2>Théodore Marcelin</h2>
+      <dl>
+        <dt>Flight</dt>
+        <dd>DL31</dd>
+        <dt>Gate</dt>
+        <dd>29</dd>
+        <dt>Seat</dt>
+        <dd>26E</dd>
+        <dt>Zone</dt>
+        <dd>4</dd>
+      </dl>
+      <ul>
+        <li>CDG ✈ LFLL</li>
+        <li>5:10pm</li>
+      </ul>
+    </section>
+  </body>
+</html>

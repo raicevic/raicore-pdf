@@ -1,7 +1,6 @@
 using PDFtoImage;
 using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 
 namespace RaiCore.Pdf.Tests.Html;
 
@@ -227,7 +226,7 @@ public class HtmlConversionTests
         var images = inline.Paragraph.Spans.Where(s => s.Image is not null).Select(s => s.Image!).ToList();
         Assert.Equal([(24.0, 24.0), (48.0, 48.0)], images.Select(i => (i.Width, i.Height))); // 32 px natural; width=64 keeps 1:1
         var block = Find<ImageBlock>(blocks, _ => true);
-        Assert.Equal((36.0, TextAlignment.Center), (block.Width!.Value, block.Alignment));
+        Assert.Equal((36.0, BlockAlignment.Center), (block.Width!.Value, block.Alignment));
         Assert.Equal("[logo] [remote]", Text(Paragraphs(blocks).Last())); // Not found / network disabled: alt text.
     }
 
@@ -299,6 +298,32 @@ public class HtmlConversionTests
     // ---- helpers ----
 
     private static PageSetup PageWidth(double width) => new(new PdfPageSize(width + 100, 800), new Thickness(50, 50, 50, 50));
+
+    [Fact]
+    public void Colors_with_a_unit_on_their_alpha_are_dropped_wherever_they_come_from()
+    {
+        // AngleSharp.Css threw on rgb(1 2 3 / 4px) while parsing (fuzzing found it); CSS drops the declaration instead.
+        const string Bad = "rgb(1 2 3 / 4px)";
+        var diagnostics = new List<HtmlDiagnostic>();
+        var options = new HtmlConverterOptions
+        {
+            BaseUri = new Uri("https://example.com/"),
+            ResourceLoader = uri => uri.AbsolutePath == "/linked.css" ? System.Text.Encoding.UTF8.GetBytes($".linked {{ color: red; color: {Bad} }}") : null,
+            UserStyleSheet = $".user {{ color: red; color: {Bad} }}",
+            Diagnostics = diagnostics.Add,
+        };
+        var html = $$"""
+            <link rel="stylesheet" href="linked.css">
+            <style>.sheet { color: red; color: {{Bad}} } .valid { color: rgb(0 0 255 / 50%) }</style>
+            <p style="color: red; color: {{Bad}}">inline</p>
+            <p class="sheet">sheet</p><p class="linked">linked</p><p class="user">user</p><p class="valid">valid</p>
+            """;
+        var blocks = HtmlToPdf.CreateFlowDocument(html, options).Blocks;
+
+        Assert.All(new[] { "inline", "sheet", "linked", "user" }, text => Assert.Equal(PdfColor.FromRgb(255, 0, 0), Color(blocks, text)));
+        Assert.Equal(PdfColor.FromRgba(0, 0, 255, 0.5), Color(blocks, "valid"));
+        Assert.Contains(diagnostics, d => d.Kind == HtmlDiagnosticKind.UnsupportedValue && d.Subject.Contains("color", StringComparison.Ordinal));
+    }
 
     private static IReadOnlyList<Block> Blocks(string html, PageSetup? page = null, Uri? baseUri = null) =>
         HtmlToPdf.CreateFlowDocument(html, new HtmlConverterOptions { Page = page ?? new HtmlConverterOptions().Page, BaseUri = baseUri }).Blocks;

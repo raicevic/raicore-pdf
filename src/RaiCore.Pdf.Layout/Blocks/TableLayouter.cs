@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Layout.Blocks;
+namespace RaiCore.Pdf.Layout;
 
 /// <summary>A cell placed on the table grid.</summary>
 internal sealed record GridCell(TableCell Cell, int Row, int Column, int RowSpan, int ColumnSpan);
@@ -128,7 +128,7 @@ internal static class TableLayouter
         {
             throw new ResourceLimitExceededException(nameof(ResourceLimits.MaxTableCells), maxCells, $"The table has more than the limit of {maxCells} cells.");
         }
-        if (table.RightToLeft)
+        if (table.Direction == TextDirection.RightToLeft)
         {
             // A right-to-left table's first column is on the right (CSS 2.1 section 17.5): the grid is mirrored, so
             // the column widths, collapsed borders and placement all work on it unchanged.
@@ -255,7 +255,7 @@ internal static class TableLayouter
     /// <summary>The width specification of a grid column, which counts from the right in a right-to-left table.</summary>
     private static TableWidth? ColumnWidth(TableBlock table, int columns, int column)
     {
-        var index = table.RightToLeft ? columns - 1 - column : column;
+        var index = table.Direction == TextDirection.RightToLeft ? columns - 1 - column : column;
         return index < table.ColumnWidths.Count ? table.ColumnWidths[index] : null;
     }
 

@@ -1,6 +1,6 @@
 using AngleSharp.Dom;
 using RaiCore.Pdf.Html.Css;
-using RaiCore.Pdf.Layout.Blocks;
+using RaiCore.Pdf.Layout;
 
 namespace RaiCore.Pdf.Html.Boxes;
 
@@ -67,8 +67,8 @@ internal sealed partial class BoxBuilder
         return new FlexBlock(box, items)
         {
             Tag = TagFor(element, style),
-            Direction = style.FlexDirection,
-            RightToLeft = style.Rtl,
+            FlexDirection = style.FlexDirection,
+            Direction = style.Rtl ? TextDirection.RightToLeft : TextDirection.LeftToRight,
             Wrap = style.FlexWrap,
             JustifyContent = style.JustifyContent,
             AlignItems = style.AlignItems,

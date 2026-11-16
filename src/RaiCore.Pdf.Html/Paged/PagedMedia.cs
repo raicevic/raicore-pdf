@@ -3,7 +3,6 @@ using AngleSharp.Dom;
 using RaiCore.Pdf.Html.Boxes;
 using RaiCore.Pdf.Html.Css;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 
 namespace RaiCore.Pdf.Html.Paged;
 
@@ -219,7 +218,7 @@ internal sealed partial class PagedMedia
                     "bottom" => top + height - contentHeight,
                     _ => top + ((height - contentHeight) / 2),
                 };
-                FlowDocument.DrawBlocks(canvas, page.Setup.Size.Height, blocks, x, y, width);
+                FlowDocument.DrawBlocks(canvas, blocks, x, page.Setup.Size.Height - y, width);
             }
 
             foreach (var (name, value) in assignments)

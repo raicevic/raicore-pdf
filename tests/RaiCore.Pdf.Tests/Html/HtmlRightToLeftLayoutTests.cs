@@ -2,7 +2,6 @@ using PDFtoImage;
 using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Html.Css;
 using RaiCore.Pdf.Layout;
-using RaiCore.Pdf.Layout.Blocks;
 
 namespace RaiCore.Pdf.Tests.Html;
 
@@ -22,21 +21,21 @@ public class HtmlRightToLeftLayoutTests
     [InlineData("<table style=\"direction: rtl\"><tr><td>x</td></tr></table>", true)]
     [InlineData("<table><tr><td>x</td></tr></table>", false)]
     public void Tables_take_the_direction(string html, bool expected) =>
-        Assert.Equal(expected, Blocks(html).OfType<TableBlock>().Single().RightToLeft);
+        Assert.Equal(expected, Blocks(html).OfType<TableBlock>().Single().Direction == TextDirection.RightToLeft);
 
     [Theory]
     [InlineData("<div dir=\"rtl\"><div style=\"display: flex\"><div>x</div></div></div>", true)]
     [InlineData("<div style=\"display: flex\"><div>x</div></div>", false)]
     public void Flex_containers_take_the_direction(string html, bool expected) =>
-        Assert.Equal(expected, Blocks(html).OfType<FlexBlock>().Single().RightToLeft);
+        Assert.Equal(expected, Blocks(html).OfType<FlexBlock>().Single().Direction == TextDirection.RightToLeft);
 
     [Theory]
-    [InlineData("<div dir=\"rtl\"><table><tr><td>x</td></tr></table></div>", TextAlignment.Right)]
-    [InlineData("<div dir=\"rtl\"><table style=\"margin-right: auto\"><tr><td>x</td></tr></table></div>", TextAlignment.Left)]
-    [InlineData("<div dir=\"rtl\"><table style=\"margin: 0 auto\"><tr><td>x</td></tr></table></div>", TextAlignment.Center)]
-    [InlineData("<table dir=\"rtl\"><tr><td>x</td></tr></table>", TextAlignment.Left)] // The containing block is left to right.
-    [InlineData("<div dir=\"rtl\"><table dir=\"ltr\"><tr><td>x</td></tr></table></div>", TextAlignment.Right)]
-    public void A_shrink_to_fit_table_goes_to_the_start_of_its_containing_block(string html, TextAlignment expected) =>
+    [InlineData("<div dir=\"rtl\"><table><tr><td>x</td></tr></table></div>", BlockAlignment.Right)]
+    [InlineData("<div dir=\"rtl\"><table style=\"margin-right: auto\"><tr><td>x</td></tr></table></div>", BlockAlignment.Left)]
+    [InlineData("<div dir=\"rtl\"><table style=\"margin: 0 auto\"><tr><td>x</td></tr></table></div>", BlockAlignment.Center)]
+    [InlineData("<table dir=\"rtl\"><tr><td>x</td></tr></table>", BlockAlignment.Left)] // The containing block is left to right.
+    [InlineData("<div dir=\"rtl\"><table dir=\"ltr\"><tr><td>x</td></tr></table></div>", BlockAlignment.Right)]
+    public void A_shrink_to_fit_table_goes_to_the_start_of_its_containing_block(string html, BlockAlignment expected) =>
         Assert.Equal(expected, Blocks(html).OfType<TableBlock>().Single().Alignment);
 
     [Theory]
