@@ -1,5 +1,7 @@
 # RaiCore.Pdf
 
+[![CI](https://github.com/raicevic/raicore-pdf/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/raicevic/raicore-pdf/actions/workflows/ci.yml)
+
 An open-source .NET library for creating PDF documents and converting HTML, Razor and office documents to PDF, built on its own layout engine with no headless browser.
 
 > **Status:** in development toward 1.0, the first release. HTML and Razor conversion work, but nothing is published
@@ -839,6 +841,12 @@ Install [qpdf](https://github.com/qpdf/qpdf) and poppler's `pdftotext` to run th
 extraction tests locally, and a `verapdf` command for the PDF/A and PDF/UA checks; otherwise they are skipped (CI
 always runs them). See [CONTRIBUTING.md](CONTRIBUTING.md) for the package smoke test, fuzzing and the release process,
 and [tools/README.md](tools/README.md) for the maintainer scripts.
+
+## Support and security
+
+[SUPPORT.md](SUPPORT.md) says where to ask, which versions and .NET releases are supported and how often releases
+come. Report vulnerabilities privately, as [SECURITY.md](SECURITY.md) describes. Everyone taking part follows the
+[code of conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
