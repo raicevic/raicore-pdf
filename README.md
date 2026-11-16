@@ -73,6 +73,9 @@ needs:
 [samples/](samples/README.md) has runnable apps for typical jobs: an invoice, a report with a table of contents, a
 letter for a window envelope, an ASP.NET Core app with Razor components, a background worker and a Docker image.
 
+Coming from wkhtmltopdf, Puppeteer/Playwright, IronPDF, Aspose or SelectPdf? See the
+[migration guides](docs/migration/README.md).
+
 ### HTML to PDF
 
 ```csharp
