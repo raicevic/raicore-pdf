@@ -70,7 +70,7 @@
   </PropertyGroup>
 
   <!--
-    The public API of each package is listed in PublicAPI.Shipped.txt (what a released version has: empty until 1.0)
+    The public API of each package is listed in PublicAPI.Shipped.txt (what the last release has)
     and PublicAPI.Unshipped.txt (changed since). Changing the API without updating them fails the build (RS0016/RS0017),
     so every change to it shows up in review. See "Public API" in CONTRIBUTING.md.
   -->

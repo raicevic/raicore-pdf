@@ -20,8 +20,7 @@ a GitHub security advisory that credits you, unless you prefer not to be named.
 
 ## Supported versions
 
-Nothing has been released yet; the first release will be 1.0.0. After that, security fixes go into the latest minor
-release (see [SUPPORT.md](SUPPORT.md)).
+Security fixes go into the latest minor release (see [SUPPORT.md](SUPPORT.md)).
 
 ## Scope
 
