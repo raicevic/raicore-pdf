@@ -526,7 +526,7 @@ public static partial class HtmlToPdf
     }
 
     /// <summary>Rewrites CSS that AngleSharp would misread before it is parsed (see LegacyBreaks and LogicalSides).</summary>
-    private static string RewriteCss(string css) => CssBackgrounds.RewriteShorthand(LogicalSides.Rewrite(LegacyBreaks.Rewrite(StripShadows(css))));
+    private static string RewriteCss(string css) => CssTextDecoration.RewriteShorthand(CssBackgrounds.RewriteShorthand(LogicalSides.Rewrite(LegacyBreaks.Rewrite(StripShadows(css)))));
 
     /// <summary>
     /// Removes <c>box-shadow</c> and <c>text-shadow</c>, which are not drawn: AngleSharp throws a
