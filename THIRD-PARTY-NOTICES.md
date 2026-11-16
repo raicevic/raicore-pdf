@@ -26,8 +26,18 @@ These files are in the repository but in no package.
 | Source Sans 3 and Source Sans 3 VF (subsets, renamed RaiCore Sans3 because "Source" is a Reserved Font Name) | `tests/RaiCore.Pdf.Tests/Fixtures/RaiCoreSans3-Subset.otf`, `RaiCoreSans3VF-Subset.otf` | [SIL Open Font License 1.1](tests/RaiCore.Pdf.Tests/Fixtures/RaiCoreSans3-OFL.txt) |
 | Noto Sans JP (a subset) | `tests/RaiCore.Pdf.Tests/Fixtures/NotoSansJP-Subset.otf` | [SIL Open Font License 1.1](tests/RaiCore.Pdf.Tests/Fixtures/NotoSansCJK-OFL.txt) |
 | Liberation Sans as WOFF and WOFF2 | `tests/RaiCore.Pdf.Tests/Fixtures/LiberationSans-Regular.woff`, `.woff2` | [SIL Open Font License 1.1](tests/RaiCore.Pdf.Tests/Fixtures/LiberationSans-OFL.txt) |
+| [Simple HTML invoice template](https://github.com/sparksuite/simple-html-invoice-template) by Sparksuite | `tests/Fidelity/Corpus/sparksuite-invoice` | [MIT](tests/Fidelity/Corpus/sparksuite-invoice/LICENSE) |
+| [HTML invoice template](https://github.com/anvilco/html-pdf-invoice-template) by Anvil Foundry (HTML, CSS and the heart image) | `tests/Fidelity/Corpus/anvil-invoice` | [MIT](tests/Fidelity/Corpus/anvil-invoice/LICENSE) |
+| [Postmark templates](https://github.com/ActiveCampaign/postmark-templates) by Wildbit (invoice, receipt, welcome) | `tests/Fidelity/Corpus/postmark-*` | [MIT](tests/Fidelity/Corpus/postmark-invoice/LICENSE) |
+| [Responsive HTML email template](https://github.com/leemunroe/responsive-html-email-template) by Lee Munroe | `tests/Fidelity/Corpus/leemunroe-email` | [MIT](tests/Fidelity/Corpus/leemunroe-email/LICENSE) |
+| [Cerberus](https://github.com/emailmonday/Cerberus) email templates by Ted Goas (fluid, hybrid, responsive) | `tests/Fidelity/Corpus/cerberus-*` | [MIT](tests/Fidelity/Corpus/cerberus-fluid/LICENSE) |
+| [WeasyPrint samples](https://github.com/CourtBouillon/weasyprint-samples) by CourtBouillon (invoice, letter, report, ticket; without their fonts) | `tests/Fidelity/Corpus/weasyprint-*` | Public domain, per the repository's README (see [LICENSE](tests/Fidelity/Corpus/weasyprint-invoice/LICENSE)) |
+| [Bootstrap](https://getbootstrap.com) 5.3.8 by the Bootstrap Authors: `bootstrap.min.css` and four examples from `bootstrap-5.3.8-examples.zip` (pricing, checkout, blog, album; HTML, CSS and the Bootstrap logo) | `tests/Fidelity/Corpus/shared/bootstrap-5.3.8`, `tests/Fidelity/Corpus/bootstrap-*` | [MIT](tests/Fidelity/Corpus/shared/bootstrap-5.3.8/LICENSE). Bootstrap's documentation is under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/); this entry is also the attribution in case the examples count as documentation. |
+| [Start Bootstrap Resume](https://github.com/StartBootstrap/startbootstrap-resume) (HTML and CSS) | `tests/Fidelity/Corpus/startbootstrap-resume` | [MIT](tests/Fidelity/Corpus/startbootstrap-resume/LICENSE) |
 
 The other test fixtures (the `RaiCoreTest*` fonts, and the BMP, WebP, JPEG, GIF, SVG, PDF and invoice XML files) are made for this
 project by the scripts in `tools/` or by hand, and are under its Apache License 2.0.
+So are the fidelity corpus documents not listed above, and the placeholder images (`placeholder-*.svg`) that replace
+remote images in the adapted templates.
 So are the fuzzing seeds and the inputs fuzzing found (`tests/RaiCore.Pdf.Tests/Fixtures/Fuzz`): written by hand,
 converted from the `RaiCoreTest*` fonts, or mutated from those and from the fixtures above.

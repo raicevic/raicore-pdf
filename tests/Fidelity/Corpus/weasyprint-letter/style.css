@@ -1,0 +1,92 @@
+/* Fonts */
+
+/* Page rule */
+
+@page {
+  margin: 0;
+}
+
+
+/* Style */
+
+body {
+  font-family: 'Liberation Serif';
+  margin: 0;
+
+  > div {
+    margin: 0 auto;
+    padding: 0 12mm;
+
+    &:first-of-type, &:last-of-type {
+      margin: 2cm 0 1cm 0;
+    }
+  }
+}
+
+header {
+  background: no-repeat top left / 125% url('img/image-couleurs.png');
+
+  div {
+    height: 3cm;
+    padding: 5mm 5mm 12mm 5mm;
+  }
+
+  img {
+    width: 5cm;
+  }
+}
+
+hr {
+  border-top: 3px dashed gray;
+  border-bottom: none;
+  margin: 5mm 0;
+}
+
+p {
+  font-family: 'Liberation Serif';
+  line-height: 18pt;
+  margin-top: 5mm;
+}
+
+
+label {
+  display: block;
+  margin-bottom: 2mm;
+}
+
+legend {
+  font-family: 'Liberation Serif';
+  font-size: 18pt;
+  margin-bottom: 5mm;
+}
+
+input {
+  height: 1.5em;
+}
+
+textarea {
+  height: 4em;
+}
+
+input, textarea {
+  border: none;
+  display: block;
+  width: 100%;
+}
+
+input::before,
+textarea::before,
+textarea::after {
+  content: leader(dotted);
+  display: block;
+}
+
+footer p {
+  text-align: center;
+}
+
+@media print {
+  input[type="submit"] {
+    display: none;
+  }
+}
