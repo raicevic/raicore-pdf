@@ -171,6 +171,51 @@ public class NamedPageLayoutTests
         Assert.Equal(2, result.Placements.Single(p => p.Block == heading).Page);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void A_forced_break_on_a_first_child_after_a_page_name_change_is_one_break(int depth)
+    {
+        // The title page is named; the contents after it are not, and their heading forces a page break. Both breaks
+        // are at the same point, before the contents: one new page, not a blank one before the heading.
+        var heading = Para(1, new BoxStyle { BreakBefore = PageBreak.Page, Margin = new Thickness(12, 0, 0, 0) });
+        Block contents = heading;
+        for (var i = 0; i < depth; i++)
+        {
+            contents = new ContainerBlock(null, contents);
+        }
+
+        var result = Flow(Para(1, name: "title"), contents).Paginate();
+
+        Assert.Equal(2, result.Frames.Count);
+        Assert.Equal(1, result.Placements.Single(p => p.Block == heading).Page);
+    }
+
+    [Fact]
+    public void A_forced_break_on_a_first_child_moves_its_parent_to_the_new_page()
+    {
+        // The parent's top border is at the same break point as its first child's break-before, so it goes with it.
+        var heading = Para(1, new BoxStyle { BreakBefore = PageBreak.Page });
+        var section = new ContainerBlock(new BoxStyle { Border = Borders.All(2, PdfColor.Black) }, heading);
+
+        var result = Flow(Para(1), section).Paginate();
+
+        Assert.Equal(2, result.Frames.Count);
+        Assert.Equal(1, result.Placements.Single(p => p.Block == section).Page);
+        Assert.Equal(1, result.Placements.Single(p => p.Block == heading).Page);
+    }
+
+    [Fact]
+    public void A_forced_break_on_a_later_child_still_breaks()
+    {
+        var first = Para(1, new BoxStyle { BreakBefore = PageBreak.Page });
+        var second = Para(1, new BoxStyle { BreakBefore = PageBreak.Page });
+
+        var result = Flow(Para(1), new ContainerBlock(null, first, second)).Paginate();
+
+        Assert.Equal([1, 2], new[] { first, second }.Select(b => result.Placements.Single(p => p.Block == b).Page));
+    }
+
     [Fact]
     public void A_left_break_before_the_first_content_makes_the_first_page_a_left_page()
     {
