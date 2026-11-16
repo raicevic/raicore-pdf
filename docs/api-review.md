@@ -33,7 +33,8 @@ types that should be internal, and APIs that should be marked `[Experimental]`.
 ## Proposed changes
 
 Changes marked **B** break callers; all of them should land before 1.0. Changes marked **A** only add API and could
-also come later. **Decision** marks the points where I need your choice; each has a recommendation.
+also come later. **Decision** marks the points that needed the maintainer's choice. All five recommendations were
+accepted on 2026-11-16.
 
 ### 1. One length type in the layout API (B, decision)
 
