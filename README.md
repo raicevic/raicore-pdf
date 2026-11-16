@@ -1,22 +1,22 @@
 # RaiCore.Pdf
 
 [![CI](https://github.com/raicevic/raicore-pdf/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/raicevic/raicore-pdf/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/RaiCore.Pdf.Html)](https://www.nuget.org/packages/RaiCore.Pdf.Html)
 
 An open-source .NET library for creating PDF documents and converting HTML, Razor and office documents to PDF, built on its own layout engine with no headless browser.
 
-> **Status:** in development toward 1.0, the first release. HTML and Razor conversion work, but nothing is published
-> to NuGet yet and the API may change at any time. See the [roadmap](#roadmap).
-> See the [changelog](CHANGELOG.md) for what is supported.
+> **Status:** 1.0, the first release: HTML, CSS and Razor to PDF with a stable API. See the
+> [documentation](https://raicevic.github.io/raicore-pdf/), the [changelog](CHANGELOG.md) and the [roadmap](#roadmap).
 
 ## Packages
 
 | Package | Purpose | Status |
 |---|---|---|
-| `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | 🟡 Toward 1.0 |
-| `RaiCore.Pdf.Razor` | Razor components → PDF | 🟡 Toward 1.0 |
-| `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables, flexbox | 🟡 Toward 1.0 |
-| `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | 🟡 Toward 1.0 |
-| `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | 🟡 Toward 1.0 |
+| `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | ✅ 1.0 |
+| `RaiCore.Pdf.Razor` | Razor components → PDF | ✅ 1.0 |
+| `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables, flexbox | ✅ 1.0 |
+| `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | ✅ 1.0 |
+| `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | ✅ 1.0 |
 | `RaiCore.Pdf.Docx`, `.Xlsx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ After 1.0 |
 
 All packages target .NET 10 and run on Windows, Linux (glibc and musl, so Alpine too) and macOS, x64 and Arm64, with
@@ -25,16 +25,14 @@ Native AOT, and run in containers (see [below](#trimming-and-native-aot)).
 
 ## Installation
 
-The packages will be on NuGet from 1.0. Then you install the package for your input format, and the others come as
-dependencies:
+Install the package for your input format from NuGet; the others come as dependencies:
 
 ```sh
 dotnet add package RaiCore.Pdf.Html     # HTML and CSS
 dotnet add package RaiCore.Pdf.Razor    # Razor components (includes RaiCore.Pdf.Html)
 ```
 
-Symbols and SourceLink will be published too, so you can step into the library code while debugging. Until 1.0,
-reference the projects from a clone of this repository, or build packages locally with `dotnet pack`.
+Symbols and SourceLink are published too, so you can step into the library code while debugging.
 
 ### Trimming and Native AOT
 
@@ -816,8 +814,7 @@ Every input format is mapped to one shared document model and laid out by one en
 ## Roadmap
 
 1.0 is the first release: a stable, production-ready HTML/Razor to PDF library with its PDF writer and layout engine.
-Nothing is published before it. The way there is tracked in
-[GitHub milestones](https://github.com/raicevic/raicore-pdf/milestones):
+The way there and what comes next are tracked in [GitHub milestones](https://github.com/raicevic/raicore-pdf/milestones):
 
 1. **Done:** the PDF writer, fonts, images, text shaping, line breaking, block layout and pagination, HTML/CSS with
    tables, flexbox and CSS Paged Media, Razor, and packaging with a release pipeline.
@@ -827,7 +824,7 @@ Nothing is published before it. The way there is tracked in
    bidi, hyphenation, counters, named pages.
 4. **0.4 PDF standards:** PDF/A-3 and e-invoices, tagged PDF/PDF/UA, metadata, encryption, a PDF reader for merging.
 5. **0.5 Hardening:** visual comparison with browsers, fuzzing, resource limits, performance, deployment targets.
-6. **1.0:** API review and freeze, documentation, then the release.
+6. **Done, 1.0:** API review and freeze, documentation, the release.
 7. **After 1.0:** DOCX, XLSX, PPTX and XSL-FO as their own packages, PDF editing, grid layout.
 
 The 0.x milestones are internal stages, not releases.

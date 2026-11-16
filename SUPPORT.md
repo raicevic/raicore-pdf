@@ -12,7 +12,7 @@ Support is given on a best-effort basis by the maintainers; there is no commerci
 
 ## Supported versions
 
-Nothing has been released yet; the first release will be 1.0.0. From then on:
+1.0.0 is the first release. From it on:
 
 - **RaiCore.Pdf versions:** fixes, including security fixes, go into the latest minor release. Older versions get
   none, so stay on the latest minor (within a major version, minors are compatible: see below).

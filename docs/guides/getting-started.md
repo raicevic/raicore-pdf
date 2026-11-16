@@ -18,10 +18,6 @@ machine.
 dotnet add package RaiCore.Pdf.Html
 ```
 
-> [!NOTE]
-> Nothing is published to NuGet before 1.0.0. Until then, build the packages from the
-> [repository](https://github.com/raicevic/raicore-pdf) with `dotnet pack`.
-
 ## HTML to PDF
 
 [!code-csharp[](../snippets/GettingStarted.cs#html-to-pdf)]

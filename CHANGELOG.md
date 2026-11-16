@@ -5,28 +5,36 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-Nothing has been released yet: the first release will be 1.0.0, once the
-[roadmap milestones](https://github.com/raicevic/raicore-pdf/milestones) are done. Until then, the public API may
-change at any time, and this section lists what the packages can do so far.
+## [1.0.0] - 2026-11-16
 
-The public API reviewed for 1.0 (#60) is recorded in each package's `PublicAPI.Shipped.txt`, and the build fails
-when it changes without a matching line in `PublicAPI.Unshipped.txt` (#61), so changes before 1.0 are deliberate.
+The first release: HTML, CSS and Razor to PDF with RaiCore.Pdf's own layout engine, no browser involved, on Windows,
+Linux (also Alpine) and macOS, x64 and Arm64, trimmed or with Native AOT.
 
-Documentation site (#63): guides (getting started, CSS support, paged media, fonts, images, tables and pagination,
-flexbox, Razor and ASP.NET Core, the layout API, PDF/A and accessibility), the migration guides and the API reference,
-built with docfx from `docs/`; every code sample is compiled and run in CI. Not published yet.
+### Highlights
+- **HTML and CSS to PDF** with the cascade, flexbox, floats, positioning, tables that repeat their headers across
+  pages, backgrounds and gradients, web fonts, SVG, bidirectional text and hyphenation; see the
+  [CSS support](https://raicevic.github.io/raicore-pdf/guides/css-support.html).
+- **CSS Paged Media and GCPM:** page sizes and margins, headers and footers in margin boxes, page numbers, running
+  elements, named pages, `string-set`, tables of contents with `target-counter()` and `leader()`, and bookmarks.
+- **Razor components to PDF**, in any app or with ASP.NET Core dependency injection, also streamed into a response.
+- **A layout API** for documents built in code, and a **PDF API** for drawing, reading and merging PDFs.
+- **Standards:** PDF/A-2b and -3b, Factur-X/ZUGFeRD e-invoices, tagged PDF and PDF/UA-1, AES-256 encryption.
+- **Safe with untrusted input:** resource limits and time limits, no network access unless you allow it, and fuzz
+  testing in CI.
+- **The same output everywhere:** bundled metric-compatible fonts and deterministic bytes with a fixed clock.
 
-Samples (#65): runnable apps in [samples/](samples/README.md) (invoice, report with a table of contents, letter for a
-window envelope, ASP.NET Core with Razor, background worker, Docker image), built and run in CI.
-
-Migration guides (#64) from wkhtmltopdf/DinkToPdf, Puppeteer/Playwright, IronPDF, Aspose and SelectPdf, with
-side-by-side examples, option mappings and known differences: [docs/migration](docs/migration/README.md).
-
-Release trains (#62): the core packages share one version and depend on each other at exactly that version; future
-packages (such as DOCX conversion) get versions and release tags of their own (see "Releasing" in CONTRIBUTING.md).
-
-Project policies (#66): [SECURITY.md](SECURITY.md) (private vulnerability reporting), [SUPPORT.md](SUPPORT.md)
-(supported versions and .NET releases, versioning, release cadence) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+### Project
+- Documentation: [guides and API reference](https://raicevic.github.io/raicore-pdf/), with every code sample compiled
+  and run in CI; [migration guides](docs/migration/README.md) from wkhtmltopdf/DinkToPdf, Puppeteer/Playwright,
+  IronPDF, Aspose and SelectPdf; runnable [samples](samples/README.md) (invoice, report with a table of contents,
+  letter for a window envelope, ASP.NET Core with Razor, background worker, Docker image).
+- The public API is recorded in each package's `PublicAPI.Shipped.txt` and checked by the build, and packing checks
+  binary compatibility with the last release from 1.0.0 on. APIs marked `[Experimental]` are the exception
+  ([docs/experimental.md](docs/experimental.md)).
+- The core packages share one version and depend on each other at exactly that version; packages for further formats
+  will have versions of their own (see "Releasing" in [CONTRIBUTING.md](CONTRIBUTING.md)).
+- [SECURITY.md](SECURITY.md) (private vulnerability reporting), [SUPPORT.md](SUPPORT.md) (supported versions and .NET
+  releases, versioning, release cadence) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ### RaiCore.Pdf
 - PDF writer with compressed streams, document information and the 14 standard fonts.
@@ -174,10 +182,6 @@ Project policies (#66): [SECURITY.md](SECURITY.md) (private vulnerability report
 - `PdfException` is the base class of every exception the library throws for input it rejects: `PdfFormatException`,
   `PdfPasswordException`, `FontFormatException`, `ImageFormatException` and `ResourceLimitExceededException`.
 - `PdfPageSize.FromInches`.
-- API review (#60), breaking: `FontFormatException` moved to `RaiCore.Pdf.Fonts` and `ImageFormatException` to
-  `RaiCore.Pdf`; `ImageFormat` is now `PdfImageFormat`; `PdfAttachment`'s `mimeType` parameter is `mediaType`;
-  `PdfDestination` takes `(page, left, top)`; `PdfOutlineItem` holds a `Destination` in place of `Page`, `Top` and
-  `Left` (the `(title, page, top)` constructor stays).
 
 ### RaiCore.Pdf.Fonts
 - Bundled Liberation Sans, Serif and Mono (SIL OFL 1.1), metric-compatible with Arial, Times New Roman and Courier New.
@@ -195,31 +199,17 @@ Project policies (#66): [SECURITY.md](SECURITY.md) (private vulnerability report
   `Register` racing with lookups could leave them cached with the old answer.
 
 ### RaiCore.Pdf.Layout
-- API review (#60), breaking: the `RaiCore.Pdf.Layout.Blocks` namespace is merged into `RaiCore.Pdf.Layout`, so
-  blocks, `FlowDocument`, page setup and paragraphs need one `using`. `RaiCore.Pdf.Layout.Text` stays separate.
-- API review (#60), breaking: `FlexBlock.Direction` and `TableBlock.Direction` are a `TextDirection` (in place of
-  `RightToLeft`), and the flex main axis is `FlexBlock.FlexDirection`; `TextDirection` moved to `RaiCore.Pdf.Layout`.
-  `ImageBlock.Alignment` and `TableBlock.Alignment` are a `BlockAlignment`. `TableBlock.ColumnWidths` is set with
-  `init`, and so are `Paragraph.Alignment`, `Direction`, `FirstLineIndent`, `BreakLongWords` and `Ellipsis`. A corner
-  gradient is `LinearGradient.ToCorner(GradientCorner, ...)`. `FlowDocument.DrawBlocks` takes `top` as a PDF y
-  coordinate and no page height. `PageInfo` is `(Context, Count, Setup, Markers)`, with `Number` from the context.
-  `LinkTarget.Destination` is `DestinationName`.
-- API review (#60), breaking: one `Length` type (points plus a percentage, with an implicit conversion from a number
-  of points) replaces `BoxLength`, `Inset`, `TableWidth` and `RadiusLength`. `Thickness` is four `Length`s, and
-  `BoxStyle.Width`, `MinWidth` and `MaxWidth` are `Length?`: percentages go straight into the style, so
-  `BoxStyle.Percentages`, `BoxPercentages` and `RelativeThickness` are gone. `PageSetup.Margins` may hold percentages
-  of the page's width (left, right) or height (top, bottom).
-- API review (#60), breaking: `ParagraphSpan`, `InlineDecoration`, `InlineLink`, `InlineAnchor`, `InlineTag` and
-  `Paragraph.Spans`, `Decorations`, `Links`, `Anchors` and `Tags` are internal. `InlineLinkFragment`,
-  `InlineDecorationFragment` and `InlineImageFragment` are read-only classes without public constructors;
-  `InlineLinkFragment.Target` and `InlineDecorationFragment.Box` replace their `Link` and `Decoration`.
+- One namespace, `RaiCore.Pdf.Layout`, for blocks, `FlowDocument`, page setup and paragraphs; text processing
+  (shaping, line breaking, bidi, hyphenation) is in `RaiCore.Pdf.Layout.Text`.
+- One `Length` type (points plus a percentage, with an implicit conversion from a number of points) for widths,
+  margins, padding, insets and radii: `BoxStyle.Width`, `MinWidth` and `MaxWidth` and `Thickness` take percentages
+  directly, and `PageSetup.Margins` may hold percentages of the page's width or height.
 - Experimental APIs (`docs/experimental.md`): the PDF object model (`RCPDF001`: `RaiCore.Pdf.Objects`,
   `PdfReader.Trailer`/`Catalog`/`Resolve`, `PdfReaderPage.Dictionary`/`Resources`/`GetContent`) and text shaping
   (`RCPDF002`: `TextShaper`, `ShapedText`, `ShapedRun`, `ShapingOptions.Features`, `LineBreaker`,
-  `PdfCanvas.DrawGlyphs`, `PositionedGlyph`) need an opt-in and may change after 1.0.
-- API review (#60), breaking: `Hyphenator.Register` and its process-wide registry are gone. `TextStyle.Hyphenator`
-  sets the patterns for a style, and `Hyphenator.ForLanguage(language, hyphenators)` picks from your own by language
-  before the bundled ones.
+  `PdfCanvas.DrawGlyphs`, `PositionedGlyph`) need an opt-in and may change in minor versions.
+- `TextStyle.Hyphenator` sets a style's hyphenation patterns, and `Hyphenator.ForLanguage(language, hyphenators)`
+  picks from your own by language before the bundled ones. There is no process-wide registry.
 - The package includes the Unicode License v3 notice (`licenses/unicode.txt`) for its bidi and line break tables,
   generated from the Unicode Character Database, and its license expression names `Unicode-3.0`. All third-party
   material is listed in `THIRD-PARTY-NOTICES.md`.
@@ -372,16 +362,14 @@ Project policies (#66): [SECURITY.md](SECURITY.md) (private vulnerability report
   `FlowDocument.RenderTo` flushes each page as soon as it is drawn into a document written page by page.
 
 ### RaiCore.Pdf.Html
-- API review (#60), breaking: a `ResourceLoader` takes a `ResourceRequest` (`Uri`, `Kind`: style sheet, image or
-  font, and a `CancellationToken` canceled with the conversion) instead of a `Uri`, so it can grow without breaking
-  loaders again. The built-in loader and `DecodeDataUri` moved from `Resources` to `ResourceLoaders`. When migrating
-  a lambda such as `uri => Load(uri.ToString())`, use `request.Uri`: a record's `ToString()` still compiles.
-- `HtmlToPdf.ConvertToStreamAsync` writes the stream only asynchronously, from the caller's side, in chunks of up
-  to 64 KiB while the conversion runs on its own thread (it used to write synchronously from that thread, which
-  ASP.NET Core response bodies refuse). A slow stream makes the conversion wait; a failing one stops it and its
-  exception is thrown. New: `HtmlToPdf.ConvertToBytesAsync`.
+- A `ResourceLoader` gets a `ResourceRequest`: the `Uri`, the `Kind` of resource (style sheet, image or font) and a
+  `CancellationToken` canceled with the conversion or at its time limit. `ResourceLoaders.Default` loads `data:` and
+  `file:` URIs.
+- `HtmlToPdf.ConvertToStreamAsync` writes the stream only asynchronously, in chunks of up to 64 KiB while the
+  conversion runs on its own thread, so it can be an ASP.NET Core response body. A slow stream makes the conversion
+  wait; a failing one stops it and its exception is thrown. `HtmlToPdf.ConvertToBytesAsync` returns the bytes.
 - `HtmlConverterOptions.Hyphenators`: hyphenation patterns by language (matched like `lang`, so `de` covers `de-CH`),
-  in place of the removed global `Hyphenator.Register`.
+  for languages without bundled patterns or in place of them.
 - `rgb()`/`rgba()` colors whose alpha has a unit (`rgb(1 2 3 / 4px)`) no longer make the conversion throw
   (AngleSharp.Css throws on them while parsing; fuzzing found it): the declaration is dropped, as CSS requires.
 - HTML and CSS to PDF via AngleSharp: the cascade, inheritance, `!important`, custom properties and print media
@@ -551,7 +539,7 @@ Project policies (#66): [SECURITY.md](SECURITY.md) (private vulnerability report
   the creator is `RaiCore.Pdf.Razor` unless the options or a `<meta name="generator">` name another.
 - `RazorToPdf.ConvertToStreamAsync` and `RazorPdfRenderer.ConvertToStreamAsync` write the PDF page by page with
   asynchronous writes only, e.g. to an ASP.NET Core response body. `RazorPdfRenderer.CreateFlowDocumentAsync` takes a
-  component `Type` too, and lays out on the conversion thread instead of blocking the caller's.
+  component `Type` too, and lays out on the conversion thread.
 
 ### Trimming, Native AOT and containers
 - CI publishes the package smoke test trimmed and with Native AOT on Windows, Linux and macOS, runs it
@@ -669,3 +657,6 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
 - Writing page by page saves the memory of the drawn content only: `FlowDocument` and HTML lay out every page before
   drawing the first (page counts, `target-counter()`), so their peak memory is the layout's and hardly changes.
   Pages imported from other PDFs keep what they copy until `EndSave`.
+
+[Unreleased]: https://github.com/raicevic/raicore-pdf/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/raicevic/raicore-pdf/releases/tag/v1.0.0
