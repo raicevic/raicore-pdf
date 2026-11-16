@@ -1,6 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace RaiCore.Pdf.Layout.Text;
 
 /// <summary>Draws <see cref="ShapedText"/> on a <see cref="PdfCanvas"/>.</summary>
+[Experimental(ExperimentalApis.TextShaping, UrlFormat = ExperimentalApis.UrlFormat)]
 public static class ShapedTextCanvasExtensions
 {
     /// <summary>

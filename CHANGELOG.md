@@ -190,6 +190,14 @@ change at any time, and this section lists what the packages can do so far.
   `BoxStyle.Width`, `MinWidth` and `MaxWidth` are `Length?`: percentages go straight into the style, so
   `BoxStyle.Percentages`, `BoxPercentages` and `RelativeThickness` are gone. `PageSetup.Margins` may hold percentages
   of the page's width (left, right) or height (top, bottom).
+- API review (#60), breaking: `ParagraphSpan`, `InlineDecoration`, `InlineLink`, `InlineAnchor`, `InlineTag` and
+  `Paragraph.Spans`, `Decorations`, `Links`, `Anchors` and `Tags` are internal. `InlineLinkFragment`,
+  `InlineDecorationFragment` and `InlineImageFragment` are read-only classes without public constructors;
+  `InlineLinkFragment.Target` and `InlineDecorationFragment.Box` replace their `Link` and `Decoration`.
+- Experimental APIs (`docs/experimental.md`): the PDF object model (`RCPDF001`: `RaiCore.Pdf.Objects`,
+  `PdfReader.Trailer`/`Catalog`/`Resolve`, `PdfReaderPage.Dictionary`/`Resources`/`GetContent`) and text shaping
+  (`RCPDF002`: `TextShaper`, `ShapedText`, `ShapedRun`, `ShapingOptions.Features`, `LineBreaker`,
+  `PdfCanvas.DrawGlyphs`, `PositionedGlyph`) need an opt-in and may change after 1.0.
 - The package includes the Unicode License v3 notice (`licenses/unicode.txt`) for its bidi and line break tables,
   generated from the Unicode Character Database, and its license expression names `Unicode-3.0`. All third-party
   material is listed in `THIRD-PARTY-NOTICES.md`.

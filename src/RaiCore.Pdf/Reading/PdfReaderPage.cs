@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using RaiCore.Pdf.Objects;
 
 namespace RaiCore.Pdf;
@@ -30,6 +31,7 @@ public sealed class PdfReaderPage
     public int Index { get; }
 
     /// <summary>The page dictionary. References in it are to objects of the file; see <see cref="PdfReader.Resolve"/>.</summary>
+    [Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
     public PdfDictionary Dictionary { get; }
 
     /// <summary>The page's media box: the boundaries of the physical medium, in the page's own coordinates.</summary>
@@ -48,6 +50,7 @@ public sealed class PdfReaderPage
     public double Height => Rotate is 90 or 270 ? CropBox.Width : CropBox.Height;
 
     /// <summary>The page's resource dictionary (fonts, images, ...), inherited from the page tree when the page has none.</summary>
+    [Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
     public PdfDictionary Resources => Reader.Resolve(ResourcesObject) as PdfDictionary ?? new PdfDictionary();
 
     /// <summary>The reference to the page object, or <c>null</c> for a page written directly in its parent's <c>/Kids</c>.</summary>
@@ -73,6 +76,7 @@ public sealed class PdfReaderPage
     /// operators that draw the page.
     /// </summary>
     /// <exception cref="PdfFormatException">A content stream uses a filter that cannot be decoded.</exception>
+    [Experimental(ExperimentalApis.PdfObjects, UrlFormat = ExperimentalApis.UrlFormat)]
     public byte[] GetContent()
     {
         var streams = ContentStreams;

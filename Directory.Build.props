@@ -10,6 +10,8 @@
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Our own code may use the APIs marked [Experimental] (docs/experimental.md); users of the packages opt in. -->
+    <NoWarn>$(NoWarn);RCPDF001;RCPDF002</NoWarn>
   </PropertyGroup>
 
   <!-- Package metadata. -->

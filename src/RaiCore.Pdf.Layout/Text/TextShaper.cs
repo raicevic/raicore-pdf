@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using HarfBuzzSharp;
 using RaiCore.Pdf.Fonts;
@@ -17,6 +18,7 @@ namespace RaiCore.Pdf.Layout.Text;
 /// concurrent shaping with a font that is no longer changed); every call shapes into its own buffer. Fonts must be
 /// embedded fonts loaded with <see cref="PdfFont.Load(string, int)"/>.
 /// </remarks>
+[Experimental(ExperimentalApis.TextShaping, UrlFormat = ExperimentalApis.UrlFormat)]
 public static class TextShaper
 {
     /// <summary>The HarfBuzz objects of each font, for as long as the font is alive.</summary>

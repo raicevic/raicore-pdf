@@ -427,21 +427,52 @@ public sealed class LineLayout
     public IReadOnlyList<InlineLinkFragment> Links { get; internal init; } = [];
 }
 
-/// <summary>The piece of a link (<see cref="InlineLink"/>) on one line: it is clickable over the whole height of the line.</summary>
-/// <param name="Link">The link.</param>
-/// <param name="X0">Left edge, from the start of the line's content.</param>
-/// <param name="X1">Right edge.</param>
-public sealed record InlineLinkFragment(InlineLink Link, double X0, double X1);
+/// <summary>The piece of a link (<see cref="Paragraph.BeginLink"/>) on one line: it is clickable over the whole height of the line.</summary>
+public sealed class InlineLinkFragment
+{
+    internal InlineLinkFragment(InlineLink link, double x0, double x1) => (Link, X0, X1) = (link, x0, x1);
 
-/// <summary>The piece of an inline element's box (<see cref="InlineDecoration"/>) on one line.</summary>
-/// <param name="Decoration">The element's box.</param>
-/// <param name="X0">Left edge of the border box, from the start of the line's content.</param>
-/// <param name="X1">Right edge of the border box.</param>
-/// <param name="Above">Top of the border box above the line's baseline.</param>
-/// <param name="Below">Bottom of the border box below the line's baseline.</param>
-/// <param name="StartEdge">Its left border is drawn: a left-to-right element starts (a right-to-left one ends) here.</param>
-/// <param name="EndEdge">Its right border is drawn: a left-to-right element ends (a right-to-left one starts) here.</param>
-public sealed record InlineDecorationFragment(InlineDecoration Decoration, double X0, double X1, double Above, double Below, bool StartEdge, bool EndEdge);
+    /// <summary>Where the link goes.</summary>
+    public LinkTarget Target => Link.Target;
+
+    /// <summary>Left edge, from the start of the line's content.</summary>
+    public double X0 { get; }
+
+    /// <summary>Right edge.</summary>
+    public double X1 { get; }
+
+    internal InlineLink Link { get; }
+}
+
+/// <summary>The piece of an inline element's box (<see cref="Paragraph.BeginInline"/>) on one line.</summary>
+public sealed class InlineDecorationFragment
+{
+    internal InlineDecorationFragment(InlineDecoration decoration, double x0, double x1, double above, double below, bool startEdge, bool endEdge) =>
+        (Decoration, X0, X1, Above, Below, StartEdge, EndEdge) = (decoration, x0, x1, above, below, startEdge, endEdge);
+
+    /// <summary>The element's box style: its background, borders and padding.</summary>
+    public BoxStyle Box => Decoration.Box;
+
+    /// <summary>Left edge of the border box, from the start of the line's content.</summary>
+    public double X0 { get; }
+
+    /// <summary>Right edge of the border box.</summary>
+    public double X1 { get; }
+
+    /// <summary>Top of the border box above the line's baseline.</summary>
+    public double Above { get; }
+
+    /// <summary>Bottom of the border box below the line's baseline.</summary>
+    public double Below { get; }
+
+    /// <summary>Its left border is drawn: a left-to-right element starts (a right-to-left one ends) here.</summary>
+    public bool StartEdge { get; }
+
+    /// <summary>Its right border is drawn: a left-to-right element ends (a right-to-left one starts) here.</summary>
+    public bool EndEdge { get; }
+
+    internal InlineDecoration Decoration { get; }
+}
 
 /// <summary>An inline box on a line.</summary>
 public sealed class InlineBoxFragment
@@ -487,11 +518,19 @@ public sealed class InlineBoxFragment
 }
 
 /// <summary>An inline image on a line.</summary>
-/// <param name="Image">The image and its size.</param>
-/// <param name="X">Offset from the start of the line's content.</param>
-/// <param name="BaselineShift">How far the image's bottom is above the line's baseline (CSS <c>vertical-align</c>).</param>
-public sealed record InlineImageFragment(InlineImage Image, double X, double BaselineShift = 0)
+public sealed class InlineImageFragment
 {
+    internal InlineImageFragment(InlineImage image, double x, double baselineShift = 0) => (Image, X, BaselineShift) = (image, x, baselineShift);
+
+    /// <summary>The image and its size.</summary>
+    public InlineImage Image { get; }
+
+    /// <summary>Offset from the start of the line's content.</summary>
+    public double X { get; }
+
+    /// <summary>How far the image's bottom is above the line's baseline (CSS <c>vertical-align</c>).</summary>
+    public double BaselineShift { get; }
+
     /// <summary>The index of the image's character in the paragraph's text.</summary>
     internal int Start { get; init; }
 }

@@ -119,7 +119,7 @@ public sealed record InlineImageSizing(Length? Width = null, double? Height = nu
 /// <param name="Style">Its text style: the font's ascent and descent, raised by its vertical shift, make the content area.</param>
 /// <param name="HasStartEdge">False when the element started in an earlier paragraph (its start edge is there).</param>
 /// <param name="HasEndEdge">False when it continues in a later paragraph.</param>
-public sealed record InlineDecoration(int Start, int End, BoxStyle Box, TextStyle Style, bool HasStartEdge = true, bool HasEndEdge = true)
+internal sealed record InlineDecoration(int Start, int End, BoxStyle Box, TextStyle Style, bool HasStartEdge = true, bool HasEndEdge = true)
 {
     /// <summary>
     /// The element's direction: its start edge (where its margin, border and padding begin) is its left side when left
@@ -132,19 +132,19 @@ public sealed record InlineDecoration(int Start, int End, BoxStyle Box, TextStyl
 /// <param name="Start">Index in the paragraph text where the link starts.</param>
 /// <param name="End">Index where it ends (exclusive).</param>
 /// <param name="Target">Where it goes.</param>
-public sealed record InlineLink(int Start, int End, LinkTarget Target);
+internal sealed record InlineLink(int Start, int End, LinkTarget Target);
 
 /// <summary>A link destination inside a paragraph (see <see cref="Paragraph.AddAnchor"/>).</summary>
 /// <param name="Index">Index in the paragraph text: the destination is the line containing it.</param>
 /// <param name="Id">The id links refer to (<see cref="LinkTarget.ToDestination"/>).</param>
-public sealed record InlineAnchor(int Index, string Id);
+internal sealed record InlineAnchor(int Index, string Id);
 
 /// <summary>A run of text in one style, an inline image or an inline box.</summary>
 /// <param name="Text">The text; U+FFFC for an image or a box.</param>
 /// <param name="Style">The style (for an image or a box, the paragraph style).</param>
 /// <param name="Image">The image, or <c>null</c>.</param>
 /// <param name="Box">The inline box, or <c>null</c>.</param>
-public sealed record ParagraphSpan(string Text, TextStyle Style, InlineImage? Image = null, InlineBox? Box = null)
+internal sealed record ParagraphSpan(string Text, TextStyle Style, InlineImage? Image = null, InlineBox? Box = null)
 {
     /// <summary>
     /// The text is a leader's pattern (CSS <c>leader()</c>, see <see cref="Paragraph.AddLeader"/>), repeated to fill
@@ -248,19 +248,19 @@ public sealed class Paragraph
     internal int Version { get; private set; }
 
     /// <summary>The spans, in order.</summary>
-    public IReadOnlyList<ParagraphSpan> Spans => _spans;
+    internal IReadOnlyList<ParagraphSpan> Spans => _spans;
 
     /// <summary>The boxes of inline elements (see <see cref="BeginInline"/>), in the order they end.</summary>
-    public IReadOnlyList<InlineDecoration> Decorations => _decorations;
+    internal IReadOnlyList<InlineDecoration> Decorations => _decorations;
 
     /// <summary>The links in the text (see <see cref="BeginLink"/>), in the order they end.</summary>
-    public IReadOnlyList<InlineLink> Links => _links;
+    internal IReadOnlyList<InlineLink> Links => _links;
 
     /// <summary>The link destinations in the text (see <see cref="AddAnchor"/>), in order.</summary>
-    public IReadOnlyList<InlineAnchor> Anchors => _anchors;
+    internal IReadOnlyList<InlineAnchor> Anchors => _anchors;
 
     /// <summary>The tagged runs of the text (see <see cref="BeginTag"/>), in the order they end.</summary>
-    public IReadOnlyList<InlineTag> Tags => _tags;
+    internal IReadOnlyList<InlineTag> Tags => _tags;
 
     /// <summary>
     /// Starts a run with a structure tag for tagged documents: the text, images and boxes added until the matching
