@@ -84,6 +84,63 @@ internal sealed partial class BoxBuilder
     /// <summary>Where resources that fail to load and other issues are reported.</summary>
     public DiagnosticCollector Diagnostics { get; init; } = DiagnosticCollector.None;
 
+    /// <summary>The element each block was made for (blocks made without one of their own, such as anonymous paragraphs, belong to the nearest element around them).</summary>
+    private readonly Dictionary<Block, IElement> _blockElements = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>The element a block was made for, or <c>null</c> (for diagnostics about the block's layout).</summary>
+    public IElement? ElementOf(Block block) => _blockElements.GetValueOrDefault(block);
+
+    /// <summary>
+    /// Records <paramref name="element"/> as the element of <paramref name="block"/> and of the blocks inside it that have
+    /// none yet. Inner elements record theirs first, so each block keeps the nearest element. Only while diagnostics are
+    /// collected.
+    /// </summary>
+    private void Own(Block? block, IElement element)
+    {
+        if (block is null || !Diagnostics.IsEnabled || !_blockElements.TryAdd(block, element))
+        {
+            return;
+        }
+
+        switch (block)
+        {
+            case ContainerBlock container:
+                foreach (var child in container.Children)
+                {
+                    Own(child, element);
+                }
+
+                break;
+            case FlexBlock flex:
+                foreach (var item in flex.Items)
+                {
+                    Own(item.Content, element);
+                }
+
+                break;
+            case TableBlock table:
+                foreach (var cell in table.Rows.SelectMany(row => row.Cells))
+                {
+                    foreach (var child in cell.Content)
+                    {
+                        Own(child, element);
+                    }
+                }
+
+                break;
+            case ParagraphBlock paragraph:
+                foreach (var span in paragraph.Paragraph.Spans)
+                {
+                    if (span.Box is { } box)
+                    {
+                        Own(box.Content, element);
+                    }
+                }
+
+                break;
+        }
+    }
+
     public List<Block> Build(double contentWidth, double? contentHeight = null)
     {
         _pageContentWidth = contentWidth;
@@ -91,6 +148,7 @@ internal sealed partial class BoxBuilder
 
         // A document can be built more than once (to resolve page references); what one build generates starts over.
         _anonymous.Clear();
+        _blockElements.Clear();
         _generated.Clear();
         _generatedText.Clear();
         _usedPages.Clear();
@@ -213,6 +271,13 @@ internal sealed partial class BoxBuilder
     }
 
     private Block? BuildBlock(IElement element, ComputedStyle style, double containingWidth, string? marker, bool flexItem = false)
+    {
+        var block = BuildBlockOf(element, style, containingWidth, marker, flexItem);
+        Own(block, element);
+        return block;
+    }
+
+    private Block? BuildBlockOf(IElement element, ComputedStyle style, double containingWidth, string? marker, bool flexItem)
     {
         if (style.Display is CssDisplay.Flex or CssDisplay.InlineFlex)
         {
@@ -710,7 +775,9 @@ internal sealed partial class BoxBuilder
         Flush(collector, children);
         var (box, _) = BoxStyleFor(style with { Width = CssLength.Auto, Height = CssLength.Auto, MinHeight = CssLength.Auto, MaxHeight = CssLength.Auto }, containingWidth);
         var blockStart = children.Count;
-        children.Add(new ImageBlock(image, width, height, box) { Alignment = ShrinkToFitAlignment(style), Id = IdFor(element), Tag = ImageTag(element) });
+        var imageBlock = new ImageBlock(image, width, height, box) { Alignment = ShrinkToFitAlignment(style), Id = IdFor(element), Tag = ImageTag(element) };
+        Own(imageBlock, element);
+        children.Add(imageBlock);
         LinkBlocks(children, blockStart, collector.CurrentLink);
     }
 

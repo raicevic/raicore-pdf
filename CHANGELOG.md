@@ -466,7 +466,11 @@ change at any time, and this section lists what the packages can do so far.
   a rule applies to an element: properties it ignores (`Info` for those with no effect in print and vendor
   prefixes), values AngleSharp rejects and values laid out differently (`display: grid`, `contents`,
   `position: sticky`), pseudo-elements it does not generate and selectors it cannot match, and skipped at-rules
-  (`@import`, `@layer`, `@container`; `@keyframes` as `Info`).
+  (`@import`, `@layer`, `@container`; `@keyframes` as `Info`). Content that does not fit comes from the layout
+  engine (`FlowDocument.Diagnostics`, `LayoutDiagnostic`): lines wider than their box (unbreakable words, images,
+  inline boxes), tables and fixed-width boxes or images wider than their room (unless a box clips its overflow on
+  purpose), lines taller than a page (cut off) and images scaled down to fit a page, each with the page it is on;
+  a document from `CreateFlowDocument` reports them when it is rendered.
 
 ### RaiCore.Pdf.Razor
 - Razor components to PDF with Blazor's static `HtmlRenderer`: `RazorToPdf` for the simple case, `RazorPdfRenderer`

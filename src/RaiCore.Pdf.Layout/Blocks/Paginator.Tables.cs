@@ -64,7 +64,7 @@ internal sealed partial class Paginator
             tops[i] = top;
             foreach (var cell in layout.Cells.Where(c => c.Grid.Row == row))
             {
-                _pageIndex = top.Page;
+                SetPage(top.Page);
                 Y = top.Y + cell.InsetTop;
                 TruncateMargins = truncate;
                 var pending = default(CollapsedMargin);
@@ -88,7 +88,7 @@ internal sealed partial class Paginator
             }
 
             ends[i] = rowEnd;
-            _pageIndex = rowEnd.Page;
+            SetPage(rowEnd.Page);
             Y = rowEnd.Y;
             TruncateMargins = rowEnd.Page > top.Page || truncate;
         }

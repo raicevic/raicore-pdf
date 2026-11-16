@@ -43,6 +43,15 @@ public enum HtmlDiagnosticKind
 
     /// <summary>An at-rule the converter skips, such as <c>@import</c> or <c>@layer</c>.</summary>
     UnsupportedRule,
+
+    /// <summary>Content wider than its box (an unbreakable word, image or inline box; a table that needs more room): it runs past the box's edge.</summary>
+    Overflow,
+
+    /// <summary>Content taller than a page that cannot be split (a line made tall by an image or inline box): it is cut at the page's bottom.</summary>
+    Clipped,
+
+    /// <summary>An image taller than a page, scaled down to fit on one (a browser would cut it at the page's bottom).</summary>
+    ScaledToFit,
 }
 
 /// <summary>How much an <see cref="HtmlDiagnostic"/> matters.</summary>

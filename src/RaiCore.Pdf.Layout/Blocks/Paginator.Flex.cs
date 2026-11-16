@@ -352,7 +352,7 @@ internal sealed partial class Paginator
         var end = new FlexLineEnd { Page = startPage, Y = startY };
         foreach (var part in parts)
         {
-            _pageIndex = startPage;
+            SetPage(startPage);
             Y = startY;
             TruncateMargins = truncate;
             layout(part, end);
@@ -367,7 +367,7 @@ internal sealed partial class Paginator
             decorate();
         }
 
-        _pageIndex = end.Page;
+        SetPage(end.Page);
         Y = end.Y;
         TruncateMargins = end.Page > startPage || truncate;
     }

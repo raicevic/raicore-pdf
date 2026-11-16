@@ -159,7 +159,7 @@ public static partial class HtmlToPdf
             () =>
             {
                 var (flow, _, diagnostics) = Layout(html, options, CancellationToken.None);
-                diagnostics.Deliver();
+                diagnostics.DeliverAndGoLive(); // Layout issues come when the document is rendered, later.
                 return flow;
             },
             CancellationToken.None).GetAwaiter().GetResult();
@@ -280,7 +280,27 @@ public static partial class HtmlToPdf
             flow.PageDecorator = paged.CreateDecorator(builder, builder.Style(root));
         }
 
+        if (diagnostics.IsEnabled)
+        {
+            flow.Diagnostics = d => ReportLayout(diagnostics, d, builder.ElementOf(d.Block));
+        }
+
         return (flow, HtmlMetadata.Read(document), diagnostics);
+    }
+
+    /// <summary>Reports content that did not fit where it was laid out, at the element its block was made for.</summary>
+    private static void ReportLayout(DiagnosticCollector diagnostics, LayoutDiagnostic diagnostic, IElement? element)
+    {
+        var (kind, subject) = diagnostic.Kind switch
+        {
+            LayoutDiagnosticKind.Overflow when diagnostic.Block is ParagraphBlock => (HtmlDiagnosticKind.Overflow, "line wider than its box"),
+            LayoutDiagnosticKind.Overflow when diagnostic.Block is TableBlock => (HtmlDiagnosticKind.Overflow, "table wider than its container"),
+            LayoutDiagnosticKind.Overflow when diagnostic.Block is ImageBlock => (HtmlDiagnosticKind.Overflow, "image wider than its container"),
+            LayoutDiagnosticKind.Overflow => (HtmlDiagnosticKind.Overflow, "box wider than its container"),
+            LayoutDiagnosticKind.Clipped => (HtmlDiagnosticKind.Clipped, "content taller than a page"),
+            _ => (HtmlDiagnosticKind.ScaledToFit, "image taller than a page"),
+        };
+        diagnostics.Report(kind, HtmlDiagnosticSeverity.Warning, subject, $"{diagnostic.Message} (page {diagnostic.Page + 1})", element);
     }
 
     /// <summary>

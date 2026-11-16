@@ -48,7 +48,11 @@ internal readonly record struct PageFrame(PageContext Context, PageSetup Setup);
 /// <param name="Frames">Each page's context and setup.</param>
 internal sealed record PaginationResult(
     IReadOnlyList<IReadOnlyList<DrawOperation>> Pages, IReadOnlyList<Placement> Placements, IReadOnlyList<(int Page, object Marker)> Markers,
-    IReadOnlyList<Anchor> Anchors, IReadOnlyList<PageFrame> Frames);
+    IReadOnlyList<Anchor> Anchors, IReadOnlyList<PageFrame> Frames)
+{
+    /// <summary>Content that did not fit, collected when the document listens for it (<see cref="FlowDocument.Diagnostics"/>).</summary>
+    public IReadOnlyList<LayoutDiagnostic> Diagnostics { get; init; } = [];
+}
 
 /// <summary>
 /// Lays blocks out top to bottom and splits them across pages, following CSS block layout and fragmentation:
@@ -208,6 +212,16 @@ internal sealed partial class Paginator
     /// <summary>The current page. Flex items laid out side by side revisit pages, so this is not always the last one.</summary>
     private int PageIndex => _pageIndex;
 
+    /// <summary>Moves to a page (also telling static layouts, which report diagnostics, what page the document is on).</summary>
+    private void SetPage(int page)
+    {
+        _pageIndex = page;
+        if (!_static && _diagnostics is { } sink)
+        {
+            sink.Page = page;
+        }
+    }
+
     private double Y { get; set; }
 
     /// <summary>Nothing has been placed on the current page yet.</summary>
@@ -225,11 +239,71 @@ internal sealed partial class Paginator
     {
         BlockDepth.Check(document.Blocks);
         using var cache = LayoutCache.Enter();
-        var paginator = new Paginator(document.Setup, document);
-        var pendingMargin = new CollapsedMargin();
-        paginator.LayoutChildren(document.Blocks, document.Setup.Margins.Left, paginator.ContentWidthOf(0), ref pendingMargin, firstTopMarginApplied: false);
-        paginator.PlaceFixed();
-        return new PaginationResult(paginator.GroupedPages(), paginator._placements, paginator._markers, paginator._anchors, paginator._frames);
+
+        // Static layouts (table cells, inline boxes) report into the same list: it is per thread, for this pagination.
+        var outerDiagnostics = _diagnostics;
+        _diagnostics = document.Diagnostics is null ? null : new DiagnosticSink();
+        try
+        {
+            var paginator = new Paginator(document.Setup, document);
+            var pendingMargin = new CollapsedMargin();
+            paginator.LayoutChildren(document.Blocks, document.Setup.Margins.Left, paginator.ContentWidthOf(0), ref pendingMargin, firstTopMarginApplied: false);
+            paginator.PlaceFixed();
+            return new PaginationResult(paginator.GroupedPages(), paginator._placements, paginator._markers, paginator._anchors, paginator._frames)
+            {
+                Diagnostics = _diagnostics?.Items ?? [],
+            };
+        }
+        finally
+        {
+            _diagnostics = outerDiagnostics;
+        }
+    }
+
+    /// <summary>The diagnostics of the pagination running on this thread, if anyone listens (<see cref="FlowDocument.Diagnostics"/>).</summary>
+    [ThreadStatic]
+    private static DiagnosticSink? _diagnostics;
+
+    /// <summary>Reports content that did not fit, once per kind and block (a block laid out more than once reports once).</summary>
+    private void Report(LayoutDiagnosticKind kind, Block block, Func<string> message)
+    {
+        if (_diagnostics is { } sink)
+        {
+            sink.Add(kind, block, _static ? sink.Page : PageIndex, message);
+        }
+    }
+
+    /// <summary>Whether what is drawn now is inside a box that clips its overflow (so overflowing is intended).</summary>
+    private bool InClippingBox()
+    {
+        for (var scope = _scope; scope is not null; scope = scope.Parent)
+        {
+            if (scope.Clip is not null)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>The diagnostics of one pagination, without repeats.</summary>
+    private sealed class DiagnosticSink
+    {
+        private readonly HashSet<(LayoutDiagnosticKind, Block)> _seen = [];
+
+        public List<LayoutDiagnostic> Items { get; } = [];
+
+        /// <summary>The page the document's own pagination is on, for what static layouts (table cells, inline boxes) report.</summary>
+        public int Page { get; set; }
+
+        public void Add(LayoutDiagnosticKind kind, Block block, int page, Func<string> message)
+        {
+            if (_seen.Add((kind, block)))
+            {
+                Items.Add(new LayoutDiagnostic(kind, block, page, message()));
+            }
+        }
     }
 
     /// <summary>
@@ -368,7 +442,7 @@ internal sealed partial class Paginator
     /// </summary>
     private void NewPage(bool forced, string? name, bool blank)
     {
-        _pageIndex++;
+        SetPage(_pageIndex + 1);
         var created = _pageIndex == _pages.Count;
         if (created)
         {
@@ -621,6 +695,7 @@ internal sealed partial class Paginator
 
             var boxX = areaX + style.Margin.Left;
             var boxWidth = BoxWidth(block, areaWidth);
+            ReportWideBox(block, boxWidth + style.Margin.Horizontal, areaWidth);
             var alignment = block switch
             {
                 ImageBlock image when style.Width is null => image.Alignment,
@@ -987,7 +1062,7 @@ internal sealed partial class Paginator
             y = PageTop(page);
         }
 
-        _pageIndex = page;
+        SetPage(page);
         Y = y + height;
     }
 
@@ -1083,6 +1158,7 @@ internal sealed partial class Paginator
     private void LayoutImage(ImageBlock block, double x, double width)
     {
         var (w, h) = block.GetSize(width, ImageMaxHeight(block), ImageWidthLimits(StyleOf(block)));
+        ReportScaledImage(block, w, h);
         if (h > Remaining + Epsilon && !AtPageTop)
         {
             NewPage(); // Normally avoided by MinimumStartHeight; happens only inside a tall box.
@@ -1116,6 +1192,24 @@ internal sealed partial class Paginator
 
         Y += h;
         _placements.Add(new Placement(PageIndex, block, top, Y, -1, -1, left, w));
+    }
+
+    /// <summary>
+    /// Reports an image scaled down to fit on one page: its height is the page's limit, and its natural (or given) size
+    /// is taller. Its box may already have been narrowed for that (shrink-to-fit), so the size is taken without width.
+    /// </summary>
+    private void ReportScaledImage(ImageBlock block, double w, double h)
+    {
+        var max = ImageMaxHeight(block);
+        if (_diagnostics is null || _static || h < max - OverflowTolerance
+            || block.GetSize(double.PositiveInfinity, double.PositiveInfinity, ImageWidthLimits(StyleOf(block))).Height is var full && full <= h + OverflowTolerance)
+        {
+            return;
+        }
+
+        Report(LayoutDiagnosticKind.ScaledToFit, block, () => string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"The image is {full:0.#} pt tall, more than a page ({max:0.#} pt): it is scaled down to {w:0.#} x {h:0.#} pt to fit on one (a browser would cut it at the page's bottom)."));
     }
 
     /// <summary>An image is scaled down to fit on one page together with its own border and padding.</summary>
@@ -1175,6 +1269,13 @@ internal sealed partial class Paginator
 
                 // Even an empty page cannot satisfy the constraints: place what fits (at least one line).
                 take = Math.Max(1, Math.Min(fit, rest));
+                if (fit == 0)
+                {
+                    var tall = lines[i].Height;
+                    Report(LayoutDiagnosticKind.Clipped, block, () => string.Create(
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        $"A line is {tall:0.#} pt tall, more than a whole page ({Remaining:0.#} pt): it is cut at the bottom of the page."));
+                }
             }
 
             Place(block, layout, x, i, i + take, Y - from);
@@ -1193,11 +1294,65 @@ internal sealed partial class Paginator
     private void Place(ParagraphBlock block, ParagraphLayout layout, double x, int first, int end, double origin)
     {
         var top = origin + layout.Lines[first].Top;
+        ReportOverflowingLines(block, layout, first, end);
         _pages[PageIndex].Add((canvas, pageHeight) => layout.Draw(canvas, x, pageHeight - top, first, end));
         Y += layout.Lines[end - 1].Top + layout.Lines[end - 1].Height - layout.Lines[first].Top;
         _placements.Add(new Placement(PageIndex, block, top, Y, first, end, x, layout.AvailableWidth));
         AddParagraphAnchors(block, layout, x, top, first, end);
     }
+
+    /// <summary>
+    /// Reports lines [first, end) that are wider than the paragraph's box (an unbreakable word, image or inline box), unless
+    /// a box around them clips its overflow on purpose.
+    /// </summary>
+    private void ReportOverflowingLines(ParagraphBlock block, ParagraphLayout layout, int first, int end)
+    {
+        if (_diagnostics is null || InClippingBox())
+        {
+            return;
+        }
+
+        var widest = 0.0;
+        for (var i = first; i < end; i++)
+        {
+            widest = Math.Max(widest, layout.Lines[i].X + layout.Lines[i].Width);
+        }
+
+        var excess = widest - layout.AvailableWidth;
+        if (excess > OverflowTolerance)
+        {
+            Report(LayoutDiagnosticKind.Overflow, block, () => string.Create(
+                System.Globalization.CultureInfo.InvariantCulture,
+                $"A line is {excess:0.#} pt wider than its box ({layout.AvailableWidth:0.#} pt): a word, image or inline box that cannot be broken runs past the box's edge."));
+        }
+    }
+
+    /// <summary>
+    /// Reports a block whose border box (with its margins) is wider than the room it has: a table whose columns cannot be
+    /// narrower than their content, or a box, image or table with a fixed width.
+    /// </summary>
+    private void ReportWideBox(Block block, double outerWidth, double available)
+    {
+        var excess = outerWidth - available;
+        if (_diagnostics is null || excess <= OverflowTolerance || available <= MinimumContentWidth || InClippingBox())
+        {
+            return;
+        }
+
+        var what = block switch
+        {
+            TableBlock when StyleOf(block).Width is null => "The table's columns cannot be narrower than their content: it",
+            TableBlock => "The table",
+            ImageBlock => "The image",
+            _ => "The box",
+        };
+        Report(LayoutDiagnosticKind.Overflow, block, () => string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"{what} is {excess:0.#} pt wider than the {available:0.#} pt it has, and runs past its container's edge."));
+    }
+
+    /// <summary>How far content may run past its box before it counts as overflowing (rounding, hanging punctuation).</summary>
+    private const double OverflowTolerance = 0.5;
 
     /// <summary>
     /// Records the paragraph's anchors (<see cref="Paragraph.AddAnchor"/>) on lines [first, end), placed from
@@ -1255,6 +1410,14 @@ internal sealed partial class Paginator
         }
 
         var layout = TableLayouter.Layout(table, x, width);
+        if (_diagnostics is not null && layout.ColumnX[^1] - width is var columnsExcess && columnsExcess > OverflowTolerance && !InClippingBox())
+        {
+            // A table with a fixed width keeps it; its columns, which cannot be narrower than their content, overflow it.
+            Report(LayoutDiagnosticKind.Overflow, table, () => string.Create(
+                System.Globalization.CultureInfo.InvariantCulture,
+                $"The table's columns cannot be narrower than their content: they need {columnsExcess:0.#} pt more than its {width:0.#} pt width, and run past its edge."));
+        }
+
         var headerEnd = layout.HeaderRows;
         var footerStart = table.Rows.Count - layout.FooterRows;
         var anchoredCells = new HashSet<CellLayout>(ReferenceEqualityComparer.Instance);
@@ -1325,7 +1488,7 @@ internal sealed partial class Paginator
                     NewPage(); // Repeats the header rows.
                 }
 
-                // Taller than a whole page: split even a row that asked to stay whole. Rows joined by row spans overflow.
+                // Taller than a whole page: split even a row (or rows joined by row spans) that asked to stay whole.
                 if (Y + height <= ContentBottom + Epsilon || _static || !CanSplit(layout, groupStart, end, ignoreAvoid: true))
                 {
                     Place(groupStart, end);
