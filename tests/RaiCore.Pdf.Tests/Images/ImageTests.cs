@@ -58,7 +58,7 @@ public partial class ImageTests
         var bytes = File.ReadAllBytes(Fixtures.Path(Path.Combine("Images", file)));
         var image = PdfImage.Load(bytes);
 
-        Assert.Equal(ImageFormat.Jpeg, image.Format);
+        Assert.Equal(PdfImageFormat.Jpeg, image.Format);
         Assert.Equal((64, 48), (image.PixelWidth, image.PixelHeight));
         Assert.Equal(colorSpace, image.Image.ColorSpace.ToString());
         Assert.Equal(colorSpace == "Cmyk", image.Image.InvertCmyk);

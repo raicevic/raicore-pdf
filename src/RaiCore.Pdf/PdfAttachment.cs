@@ -41,19 +41,19 @@ public sealed partial class PdfAttachment
     /// <summary>Creates an attachment.</summary>
     /// <param name="fileName">The file name shown to the user, such as <c>invoice.xml</c> (Unicode is fine).</param>
     /// <param name="data">The file's content. It is copied.</param>
-    /// <param name="mimeType">The MIME type, such as <c>text/xml</c>, <c>application/pdf</c> or the default <c>application/octet-stream</c>.</param>
+    /// <param name="mediaType">The media (MIME) type, such as <c>text/xml</c>, <c>application/pdf</c> or the default <c>application/octet-stream</c>.</param>
     /// <exception cref="ArgumentException">The file name is empty, or the MIME type is not <c>type/subtype</c>.</exception>
-    public PdfAttachment(string fileName, ReadOnlySpan<byte> data, string mimeType = "application/octet-stream")
+    public PdfAttachment(string fileName, ReadOnlySpan<byte> data, string mediaType = "application/octet-stream")
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(mimeType);
-        if (!MimeType().IsMatch(mimeType))
+        ArgumentException.ThrowIfNullOrWhiteSpace(mediaType);
+        if (!MimeType().IsMatch(mediaType))
         {
-            throw new ArgumentException($"'{mimeType}' is not a MIME type such as text/xml (type/subtype).", nameof(mimeType));
+            throw new ArgumentException($"'{mediaType}' is not a MIME type such as text/xml (type/subtype).", nameof(mediaType));
         }
 
         FileName = fileName;
-        MediaType = mimeType;
+        MediaType = mediaType;
         _data = data.ToArray();
     }
 

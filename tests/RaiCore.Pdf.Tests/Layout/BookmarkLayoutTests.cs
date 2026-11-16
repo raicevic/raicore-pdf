@@ -142,8 +142,8 @@ public class BookmarkLayoutTests
         Assert.Equal(3, doc.Pages.Count);
         Assert.Collection(
             doc.Outline,
-            item => Assert.Equal((doc.Pages[1], 180.0), (item.Page, item.Top)),
-            item => Assert.Equal((doc.Pages[2], 180.0), (item.Page, item.Top)));
+            item => Assert.Equal((doc.Pages[1], 180.0), (item.Destination.Page, item.Destination.Top)),
+            item => Assert.Equal((doc.Pages[2], 180.0), (item.Destination.Page, item.Destination.Top)));
     }
 
     [Fact]

@@ -363,7 +363,7 @@ public class SvgParsingTests
     {
         var image = PdfImage.LoadSvg($"<svg xmlns='http://www.w3.org/2000/svg' {attributes}/>");
 
-        Assert.Equal(ImageFormat.Svg, image.Format);
+        Assert.Equal(PdfImageFormat.Svg, image.Format);
         Assert.Equal(R((width, height)), R((image.NaturalWidth, image.NaturalHeight)));
         Assert.Equal((int)Math.Round(width / 0.75), image.PixelWidth);
     }
@@ -377,13 +377,13 @@ public class SvgParsingTests
     {
         var image = PdfImage.Load(Encoding.UTF8.GetBytes(markup));
 
-        Assert.Equal((ImageFormat.Svg, 10, 10), (image.Format, image.PixelWidth, image.PixelHeight));
+        Assert.Equal((PdfImageFormat.Svg, 10, 10), (image.Format, image.PixelWidth, image.PixelHeight));
         Assert.True(image.HasTransparency);
     }
 
     [Fact]
     public void Utf16_svg_is_detected() =>
-        Assert.Equal(ImageFormat.Svg, PdfImage.Load([.. Encoding.Unicode.GetPreamble(), .. Encoding.Unicode.GetBytes("<svg width='4' height='4'/>")]).Format);
+        Assert.Equal(PdfImageFormat.Svg, PdfImage.Load([.. Encoding.Unicode.GetPreamble(), .. Encoding.Unicode.GetBytes("<svg width='4' height='4'/>")]).Format);
 
     [Theory]
     [InlineData("<svg><rect></svg>")]                         // Not well-formed.

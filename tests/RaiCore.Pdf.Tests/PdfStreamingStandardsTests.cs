@@ -218,7 +218,7 @@ public partial class PdfStreamingStandardsTests
         var third = document.AddPage();
         var figure = document.StructureRoot.AddChild(PdfStructureTypes.Paragraph); // Created after pages were written.
         third.Canvas.BeginTag(figure).DrawText("The end", font, 14, 72, 760).EndTag();
-        document.NamedDestinations["end"] = new PdfDestination(third, 780);
+        document.NamedDestinations["end"] = new PdfDestination(third, top: 780);
         afterPage?.Invoke(document);
 
         if (begin is not null)

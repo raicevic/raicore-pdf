@@ -272,7 +272,7 @@ public sealed class FlowDocument
             if (anchor.DestinationName is { } name && !destinations.ContainsKey(name))
             {
                 var page = pages[anchor.Page];
-                destinations[name] = new PdfDestination(page, page.Height - anchor.Top);
+                destinations[name] = new PdfDestination(page, top: page.Height - anchor.Top);
             }
         }
     }

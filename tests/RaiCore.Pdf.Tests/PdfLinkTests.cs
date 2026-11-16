@@ -46,8 +46,8 @@ public partial class PdfLinkTests
         var doc = NewDocument(out var first);
         var second = doc.AddPage();
         first.AddLink(72, 700, 50, 12, "chapter-2");
-        doc.NamedDestinations["chapter-2"] = new PdfDestination(second, 750);
-        doc.NamedDestinations["appendix"] = new PdfDestination(first, 100.25, 36);
+        doc.NamedDestinations["chapter-2"] = new PdfDestination(second, top: 750);
+        doc.NamedDestinations["appendix"] = new PdfDestination(first, left: 36, top: 100.25);
         doc.NamedDestinations["\u00C6"] = new PdfDestination(second);
 
         var pdf = Parse(doc);
@@ -67,7 +67,7 @@ public partial class PdfLinkTests
         var doc = NewDocument(out var page);
         page.AddLink(0, 0, 10, 10, "later");
         page.AddLink(0, 20, 10, 10, "missing");
-        doc.NamedDestinations["later"] = new PdfDestination(page, 500);
+        doc.NamedDestinations["later"] = new PdfDestination(page, top: 500);
 
         var pdf = Parse(doc);
 
@@ -80,7 +80,7 @@ public partial class PdfLinkTests
     {
         var doc = NewDocument(out var first);
         var second = doc.AddPage();
-        second.AddLink(0, 0, 10, 10, new PdfDestination(first, 400));
+        second.AddLink(0, 0, 10, 10, new PdfDestination(first, top: 400));
 
         var pdf = Parse(doc);
 
@@ -154,8 +154,8 @@ public partial class PdfLinkTests
         var second = doc.AddPage();
         first.AddLink(72, 700, 100, 14, new Uri("https://example.com/a b"));
         first.AddLink(72, 680, 100, 14, "two");
-        first.AddLink(72, 660, 100, 14, new PdfDestination(second, 300));
-        doc.NamedDestinations["two"] = new PdfDestination(second, 800);
+        first.AddLink(72, 660, 100, 14, new PdfDestination(second, top: 300));
+        doc.NamedDestinations["two"] = new PdfDestination(second, top: 800);
         doc.NamedDestinations["\u00C6"] = new PdfDestination(first);
 
         ExternalTools.AssertQpdfClean(doc.ToArray());

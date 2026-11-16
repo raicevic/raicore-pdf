@@ -47,9 +47,8 @@ internal static class PdfOutlineImporter
             {
                 var title = reader.Resolve(item["Title"]) is PdfString text ? PdfText.Decode(text.Bytes) : string.Empty;
                 var (left, top) = Position(reader, destination!);
-                var outlineItem = new PdfOutlineItem(title, page, top - page.Origin.Y)
+                var outlineItem = new PdfOutlineItem(title, new PdfDestination(page, left: left - page.Origin.X, top: top - page.Origin.Y))
                 {
-                    Left = left - page.Origin.X,
                     IsOpen = reader.Resolve(item["Count"]) is not PdfInteger { Value: < 0 },
                 };
 

@@ -6,7 +6,7 @@ using RaiCore.Pdf.Svg;
 namespace RaiCore.Pdf;
 
 /// <summary>Image file formats <see cref="PdfImage"/> can read.</summary>
-public enum ImageFormat
+public enum PdfImageFormat
 {
     /// <summary>JPEG (baseline or progressive; embedded without re-encoding).</summary>
     Jpeg,
@@ -43,7 +43,7 @@ public sealed class PdfImage
     private readonly DecodedImage? _raster;
     private readonly SvgImage? _svg;
 
-    private PdfImage(DecodedImage image, ImageFormat format)
+    private PdfImage(DecodedImage image, PdfImageFormat format)
     {
         _raster = image;
         Format = format;
@@ -52,11 +52,11 @@ public sealed class PdfImage
     private PdfImage(SvgImage svg)
     {
         _svg = svg;
-        Format = ImageFormat.Svg;
+        Format = PdfImageFormat.Svg;
     }
 
     /// <summary>The file format.</summary>
-    public ImageFormat Format { get; }
+    public PdfImageFormat Format { get; }
 
     /// <summary>
     /// Width in pixels as displayed (after applying the EXIF orientation of a JPEG). For SVG, the intrinsic width in
@@ -117,27 +117,27 @@ public sealed class PdfImage
 
         if (PngDecoder.IsPng(data))
         {
-            return new PdfImage(PngDecoder.Decode(data), ImageFormat.Png);
+            return new PdfImage(PngDecoder.Decode(data), PdfImageFormat.Png);
         }
 
         if (GifDecoder.IsGif(data))
         {
-            return new PdfImage(GifDecoder.Decode(data), ImageFormat.Gif);
+            return new PdfImage(GifDecoder.Decode(data), PdfImageFormat.Gif);
         }
 
         if (WebPDecoder.IsWebP(data))
         {
-            return new PdfImage(WebPDecoder.Decode(data), ImageFormat.WebP);
+            return new PdfImage(WebPDecoder.Decode(data), PdfImageFormat.WebP);
         }
 
         if (BmpDecoder.IsBmp(data))
         {
-            return new PdfImage(BmpDecoder.Decode(data), ImageFormat.Bmp);
+            return new PdfImage(BmpDecoder.Decode(data), PdfImageFormat.Bmp);
         }
 
         if (data.Length >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF)
         {
-            return new PdfImage(JpegReader.Read(data), ImageFormat.Jpeg);
+            return new PdfImage(JpegReader.Read(data), PdfImageFormat.Jpeg);
         }
 
         throw new ImageFormatException("Unsupported image format; JPEG, PNG, GIF, BMP, WebP and SVG are supported.");
