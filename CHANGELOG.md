@@ -5,7 +5,7 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-11-16
+## [1.0.0] - 2026-11-17
 
 The first release: HTML, CSS and Razor to PDF with RaiCore.Pdf's own layout engine, no browser involved, on Windows,
 Linux (also Alpine) and macOS, x64 and Arm64, trimmed or with Native AOT.
