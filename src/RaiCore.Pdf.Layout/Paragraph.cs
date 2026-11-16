@@ -200,7 +200,7 @@ public sealed class Paragraph
     public TextAlignment Alignment
     {
         get => _alignment;
-        set => _alignment = Changed(value);
+        init => _alignment = Changed(value);
     }
 
     /// <summary>
@@ -211,14 +211,14 @@ public sealed class Paragraph
     public ParagraphDirection Direction
     {
         get => _direction;
-        set => _direction = Changed(value);
+        init => _direction = Changed(value);
     }
 
     /// <summary>Indent of the first line in points (CSS <c>text-indent</c>; may be negative for hanging indents).</summary>
     public double FirstLineIndent
     {
         get => _firstLineIndent;
-        set => _firstLineIndent = Changed(value);
+        init => _firstLineIndent = Changed(value);
     }
 
     /// <summary>
@@ -228,7 +228,7 @@ public sealed class Paragraph
     public bool BreakLongWords
     {
         get => _breakLongWords;
-        set => _breakLongWords = Changed(value);
+        init => _breakLongWords = Changed(value);
     }
 
     /// <summary>
@@ -238,7 +238,7 @@ public sealed class Paragraph
     public bool Ellipsis
     {
         get => _ellipsis;
-        set => _ellipsis = Changed(value);
+        init => _ellipsis = Changed(value);
     }
 
     /// <summary>

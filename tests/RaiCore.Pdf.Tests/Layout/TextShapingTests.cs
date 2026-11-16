@@ -1,6 +1,7 @@
 using System.Text;
 using PDFtoImage;
 using RaiCore.Pdf.Fonts;
+using RaiCore.Pdf.Layout;
 using RaiCore.Pdf.Layout.Text;
 
 namespace RaiCore.Pdf.Tests.Layout;

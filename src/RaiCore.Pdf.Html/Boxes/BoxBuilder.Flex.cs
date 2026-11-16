@@ -67,8 +67,8 @@ internal sealed partial class BoxBuilder
         return new FlexBlock(box, items)
         {
             Tag = TagFor(element, style),
-            Direction = style.FlexDirection,
-            RightToLeft = style.Rtl,
+            FlexDirection = style.FlexDirection,
+            Direction = style.Rtl ? TextDirection.RightToLeft : TextDirection.LeftToRight,
             Wrap = style.FlexWrap,
             JustifyContent = style.JustifyContent,
             AlignItems = style.AlignItems,

@@ -226,7 +226,7 @@ public class HtmlConversionTests
         var images = inline.Paragraph.Spans.Where(s => s.Image is not null).Select(s => s.Image!).ToList();
         Assert.Equal([(24.0, 24.0), (48.0, 48.0)], images.Select(i => (i.Width, i.Height))); // 32 px natural; width=64 keeps 1:1
         var block = Find<ImageBlock>(blocks, _ => true);
-        Assert.Equal((36.0, TextAlignment.Center), (block.Width!.Value, block.Alignment));
+        Assert.Equal((36.0, BlockAlignment.Center), (block.Width!.Value, block.Alignment));
         Assert.Equal("[logo] [remote]", Text(Paragraphs(blocks).Last())); // Not found / network disabled: alt text.
     }
 

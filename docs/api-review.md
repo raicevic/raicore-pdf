@@ -27,8 +27,9 @@ types that should be internal, and APIs that should be marked `[Experimental]`.
   added later without breaking anyone.
 - **Async:** the HTML and Razor entry points have `Async` variants with a `CancellationToken`. The synchronous
   `HtmlToPdf.Convert` runs the conversion on its own thread, so it does not deadlock in a synchronization context.
-- **Units** are PDF points (1/72 inch) everywhere, and the core keeps PDF's bottom-left origin. The layout API
-  measures `top` from the top of the page. Both are documented on the methods.
+- **Units** are PDF points (1/72 inch) everywhere, and drawing uses PDF's bottom-left origin, including
+  `ParagraphLayout.Draw`, whose `top` is a PDF y coordinate. Only `FlowDocument.DrawBlocks` measured `top` from the
+  top of the page (corrected in part 3, see section 4).
 
 ## Proposed changes
 
@@ -101,8 +102,11 @@ moves in section 2, the names stay.
 - **Direction:** `FlexBlock.RightToLeft` and `TableBlock.RightToLeft` are `bool`, `Paragraph.Direction` is a
   `ParagraphDirection` (`LeftToRight`, `RightToLeft`, `Auto`), and `InlineDecoration.Direction` is a `TextDirection`.
   Use `Direction` properties everywhere: `ParagraphDirection` on paragraphs and `TextDirection` on blocks.
+  *Done in part 3:* `FlexBlock`'s main axis property, which was called `Direction`, is now `FlexDirection` (as in CSS),
+  and `TextDirection` moved from `RaiCore.Pdf.Layout.Text` to `RaiCore.Pdf.Layout`.
 - **Block alignment:** `ImageBlock.Alignment` and `TableBlock.Alignment` use `TextAlignment`, whose `Justify` means
-  nothing for a block. Give them a `BlockAlignment` enum (`Start`, `Center`, `End`, `Left`, `Right`).
+  nothing for a block. Give them a `BlockAlignment` enum. *Done in part 3* with `Left`, `Center` and
+  `Right` only: the layout never resolved `Start` and `End` for blocks.
 - **`TableBlock.ColumnWidths`** is a mutable `IList` while everything else on blocks is `init`. Make it an
   `IReadOnlyList<Length?>` with `init`.
 - **`TableRow.Background`** is a `PdfColor?`, while `TableCell` has a full `BoxStyle`. Give rows a `BoxStyle Style`
@@ -114,8 +118,9 @@ moves in section 2, the names stay.
   - The corner constructor `LinearGradient(bool right, bool bottom, ...)` and the `ValueTuple<int, int>? Corner`
     property are hard to read. Replace them with a `GradientCorner` enum
     (`TopLeft`, `TopRight`, `BottomLeft`, `BottomRight`) and a `LinearGradient.ToCorner(...)` factory.
-- **`FlowDocument.DrawBlocks(canvas, pageHeight, ...)`** asks for the page height, while `ParagraphLayout.Draw` takes
-  it from the canvas. Drop the `pageHeight` parameter.
+- **`FlowDocument.DrawBlocks(canvas, pageHeight, ...)`** asks for the page height because it measures `top` from the
+  top of the page, unlike `ParagraphLayout.Draw` and the canvas. *Done in part 3:* `DrawBlocks(canvas, blocks, x,
+  top, width)` takes `top` as a PDF y coordinate.
 - **`PageInfo`** repeats `Name`, `Side` and `IsBlank` from `PageContext` and also exposes `Context`. Keep `Number`,
   `Count`, `Setup`, `Markers` and `Context`, and drop the copies.
 - **`PdfAttachment`:** the constructor parameter is `mimeType`, the property `MediaType`. Rename the parameter to

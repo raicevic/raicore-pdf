@@ -77,7 +77,7 @@ public class MinMaxWidthTests
     [Fact]
     public void A_centered_image_is_centered_at_its_max_width()
     {
-        var image = new ImageBlock(Quadrants, style: new BoxStyle { MaxWidth = 24 }) { Alignment = TextAlignment.Center };
+        var image = new ImageBlock(Quadrants, style: new BoxStyle { MaxWidth = 24 }) { Alignment = BlockAlignment.Center };
 
         Assert.Equal((88.0, 24.0), Horizontal(Layout(image), image)); // 20 + (160 - 24) / 2
     }
@@ -149,7 +149,7 @@ public class MinMaxWidthTests
     public void Column_items_are_limited_across_the_container()
     {
         var (a, b) = (Rect(new BoxStyle { MaxWidth = 60 }), Rect(new BoxStyle { MinWidth = 180 }));
-        var placements = Layout(new FlexBlock { Direction = FlexDirection.Column }.Add(a).Add(b));
+        var placements = Layout(new FlexBlock { FlexDirection = FlexDirection.Column }.Add(a).Add(b));
 
         Assert.Equal(60, Horizontal(placements, a).Width, 6); // Stretched up to its maximum.
         Assert.Equal(180, Horizontal(placements, b).Width, 6);

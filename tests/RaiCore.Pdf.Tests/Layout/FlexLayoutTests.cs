@@ -53,7 +53,7 @@ public class FlexLayoutTests
     public void Row_reverse_starts_from_the_right()
     {
         var (a, b) = (Rect(40, 10), Rect(40, 10));
-        var placements = Layout(new FlexBlock { Direction = FlexDirection.RowReverse }.Add(a).Add(b));
+        var placements = Layout(new FlexBlock { FlexDirection = FlexDirection.RowReverse }.Add(a).Add(b));
 
         Assert.Equal(140, Horizontal(placements, a).Left);
         Assert.Equal(100, Horizontal(placements, b).Left);
@@ -180,7 +180,7 @@ public class FlexLayoutTests
     public void Columns_stack_items_with_gaps_and_align_them()
     {
         var (a, b, c) = (Rect(40, 10), Rect(60, 20), Rect(null, 10));
-        var placements = Layout(new FlexBlock { Direction = FlexDirection.Column, AlignItems = FlexAlignment.Center, RowGap = 5 }
+        var placements = Layout(new FlexBlock { FlexDirection = FlexDirection.Column, AlignItems = FlexAlignment.Center, RowGap = 5 }
             .Add(a).Add(b).Add(new FlexItem(c) { AlignSelf = FlexAlignment.Stretch }));
 
         Assert.Equal((80.0, Top), (Horizontal(placements, a).Left, Box(placements, a).Top));
@@ -193,7 +193,7 @@ public class FlexLayoutTests
     public void Column_reverse_reverses_the_order()
     {
         var (a, b) = (Rect(40, 10), Rect(40, 20));
-        var placements = Layout(new FlexBlock { Direction = FlexDirection.ColumnReverse }.Add(a).Add(b));
+        var placements = Layout(new FlexBlock { FlexDirection = FlexDirection.ColumnReverse }.Add(a).Add(b));
 
         Assert.Equal(Top, Box(placements, b).Top);
         Assert.Equal(40, Box(placements, a).Top);
@@ -245,7 +245,7 @@ public class FlexLayoutTests
     public void A_column_splits_between_and_inside_items()
     {
         var (a, b) = (Para(10), Para(10));
-        var placements = new FlowDocument(Small).Add(new FlexBlock { Direction = FlexDirection.Column }.Add(a).Add(b)).Paginate().Placements;
+        var placements = new FlowDocument(Small).Add(new FlexBlock { FlexDirection = FlexDirection.Column }.Add(a).Add(b)).Paginate().Placements;
 
         Assert.Equal([(0, 0, 10)], placements.Where(p => p.Block == a).Select(p => (p.Page, p.FirstLine, p.EndLine)));
         Assert.Equal([(0, 0, 6), (1, 6, 10)], placements.Where(p => p.Block == b).Select(p => (p.Page, p.FirstLine, p.EndLine)));
@@ -255,7 +255,7 @@ public class FlexLayoutTests
     public void Intrinsic_widths_add_up_items_in_a_row_and_take_the_widest_in_a_column()
     {
         FlexBlock Make(FlexDirection direction, FlexWrap wrap) =>
-            new FlexBlock { Direction = direction, Wrap = wrap, ColumnGap = 10 }.Add(Rect(40, 10)).Add(Rect(60, 10));
+            new FlexBlock { FlexDirection = direction, Wrap = wrap, ColumnGap = 10 }.Add(Rect(40, 10)).Add(Rect(60, 10));
 
         Assert.Equal((110.0, 110.0), Paginator.MeasureIntrinsic(Make(FlexDirection.Row, FlexWrap.NoWrap)));
         Assert.Equal((60.0, 110.0), Paginator.MeasureIntrinsic(Make(FlexDirection.Row, FlexWrap.Wrap)));

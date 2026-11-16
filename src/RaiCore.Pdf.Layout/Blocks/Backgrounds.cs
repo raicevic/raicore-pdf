@@ -117,18 +117,45 @@ public sealed class LinearGradient : Gradient
     public LinearGradient(double angle, IReadOnlyList<GradientStop> stops, bool repeating = false)
         : base(stops, repeating) => Angle = angle;
 
-    /// <summary>
-    /// A gradient toward a corner (CSS <c>to top right</c>): <paramref name="right"/> and <paramref name="bottom"/> pick it.
-    /// Its angle depends on the box's shape, so that the corners beside it get the middle color.
-    /// </summary>
-    public LinearGradient(bool right, bool bottom, IReadOnlyList<GradientStop> stops, bool repeating = false)
-        : base(stops, repeating) => Corner = (right ? 1 : -1, bottom ? 1 : -1);
+    private LinearGradient(GradientCorner corner, IReadOnlyList<GradientStop> stops, bool repeating)
+        : base(stops, repeating)
+    {
+        if (!Enum.IsDefined(corner))
+        {
+            throw new ArgumentOutOfRangeException(nameof(corner), corner, "Not a corner.");
+        }
+
+        Corner = corner;
+    }
 
     /// <summary>The angle in degrees, when not toward a corner.</summary>
     public double Angle { get; }
 
-    /// <summary>The corner, as (x, y) signs with y down, or <c>null</c> for <see cref="Angle"/>.</summary>
-    public (int X, int Y)? Corner { get; }
+    /// <summary>The corner the gradient runs toward, or <c>null</c> when it runs in the direction of <see cref="Angle"/>.</summary>
+    public GradientCorner? Corner { get; }
+
+    /// <summary>
+    /// A gradient toward a corner (CSS <c>to top right</c>). Its angle depends on the box's shape, so that the corners
+    /// beside it get the middle color.
+    /// </summary>
+    public static LinearGradient ToCorner(GradientCorner corner, IReadOnlyList<GradientStop> stops, bool repeating = false) =>
+        new(corner, stops, repeating);
+}
+
+/// <summary>The corner a <see cref="LinearGradient"/> runs toward.</summary>
+public enum GradientCorner
+{
+    /// <summary>The top-left corner (CSS <c>to top left</c>).</summary>
+    TopLeft,
+
+    /// <summary>The top-right corner (CSS <c>to top right</c>).</summary>
+    TopRight,
+
+    /// <summary>The bottom-left corner (CSS <c>to bottom left</c>).</summary>
+    BottomLeft,
+
+    /// <summary>The bottom-right corner (CSS <c>to bottom right</c>).</summary>
+    BottomRight,
 }
 
 /// <summary>The shape of a radial gradient's ending shape.</summary>

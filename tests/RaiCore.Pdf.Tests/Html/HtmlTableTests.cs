@@ -91,7 +91,7 @@ public class HtmlTableTests
         var table = blocks.OfType<TableBlock>().Single();
 
         Assert.True(blocks.IndexOf(caption) < blocks.IndexOf(table));
-        Assert.Equal(TextAlignment.Center, table.Alignment);
+        Assert.Equal(BlockAlignment.Center, table.Alignment);
         Assert.Equal(TextAlignment.Center, caption.Paragraph.Alignment);
     }
 
