@@ -292,7 +292,7 @@ internal sealed partial class BoxBuilder
             collector.SetMarker(marker);
         }
 
-        var outerHeight = EnterBox(box);
+        var outerHeight = EnterBox(box, containingWidth);
         var outerDecorations = EnterDecoration(style, 0);
         WithPageWidthFluid(!flexItem && box is { Width: null, MaxWidth: null }, () =>
         {
@@ -477,7 +477,7 @@ internal sealed partial class BoxBuilder
             return default;
         }
 
-        Inset? Side(CssLength length, bool vertical)
+        Length? Side(CssLength length, bool vertical)
         {
             if (length.IsAuto)
             {
@@ -487,9 +487,9 @@ internal sealed partial class BoxBuilder
             var reference = vertical ? containingHeight : containingWidth;
             return length.Kind switch
             {
-                CssLengthKind.Percent when style.Position != Positioning.Relative => Inset.Percent(length.Value),
+                CssLengthKind.Percent when style.Position != Positioning.Relative => Length.FromPercent(length.Value),
                 CssLengthKind.Percent or CssLengthKind.Calc when reference is null => null,
-                _ => Inset.Points(length.Resolve(reference ?? 0)),
+                _ => Length.FromPoints(length.Resolve(reference ?? 0)),
             };
         }
 
@@ -602,10 +602,10 @@ internal sealed partial class BoxBuilder
     /// Makes a box's content height the containing height of its descendants (or auto when the box has none).
     /// Returns the previous value, to restore when the box is done.
     /// </summary>
-    private double? EnterBox(BoxStyle box)
+    private double? EnterBox(BoxStyle box, double containingWidth)
     {
         var outer = _containingHeight;
-        _containingHeight = box.Height is { } height ? Math.Max(0, height - box.Padding.Vertical - box.Border.Widths.Vertical) : null;
+        _containingHeight = box.Height is { } height ? Math.Max(0, height - box.Padding.Vertical.Resolve(containingWidth) - box.Border.Widths.Vertical.Points) : null;
         return outer;
     }
 
@@ -758,10 +758,10 @@ internal sealed partial class BoxBuilder
             InlineImageSizing? sizing = null;
             if (style.Width.HasPercentage || style.MinWidth.HasPercentage || style.MaxWidth.HasPercentage)
             {
-                static BoxLength? Linear(CssLength length) =>
-                    !length.IsAuto && length.TryLinear(out var points, out var percent) ? new BoxLength(points, percent) : null;
+                static Length? Linear(CssLength length) =>
+                    !length.IsAuto && length.TryLinear(out var points, out var percent) ? new Length(points, percent) : null;
                 sizing = new InlineImageSizing(
-                    style.Width.HasPercentage ? Linear(style.Width) : width is { } fixedWidth ? new BoxLength(fixedWidth) : null,
+                    style.Width.HasPercentage ? Linear(style.Width) : width is { } fixedWidth ? new Length(fixedWidth) : null,
                     height,
                     Linear(style.MinWidth),
                     Linear(style.MaxWidth));
@@ -884,7 +884,7 @@ internal sealed partial class BoxBuilder
         var borders = new Borders(
             new BorderSide(style.BorderWidth[0], style.BorderColor[0], style.BorderStyle[0]), new BorderSide(style.BorderWidth[1], style.BorderColor[1], style.BorderStyle[1]),
             new BorderSide(style.BorderWidth[2], style.BorderColor[2], style.BorderStyle[2]), new BorderSide(style.BorderWidth[3], style.BorderColor[3], style.BorderStyle[3]));
-        var decoration = padding.Horizontal + borders.Widths.Horizontal;
+        var decoration = padding.Horizontal.Points + borders.Widths.Horizontal.Points;
 
         // Widths are content-box unless box-sizing: border-box; the layout engine works with border boxes and applies
         // the min and max widths itself (also to shrink-to-fit widths, which are only known there).
@@ -960,8 +960,8 @@ internal sealed partial class BoxBuilder
             ContainsFloats = style.ContainsFloats,
             ClipOverflow = style.ClipOverflow,
         };
-        box = box with { Percentages = PercentagesFor(style, box, containingWidth, flexItem) };
-        var content = Clamp(borderBoxWidth ?? (containingWidth - box.Margin.Horizontal)) - decoration;
+        var content = Clamp(borderBoxWidth ?? (containingWidth - box.Margin.Horizontal.Points)) - decoration;
+        box = WithPercentages(style, box, containingWidth, flexItem);
         return (box, Math.Max(1, content));
 
         // Heights are content-box unless box-sizing: border-box; a percentage (also in calc()) needs a definite
@@ -974,30 +974,30 @@ internal sealed partial class BoxBuilder
                 CssLengthKind.Percent or CssLengthKind.Calc when containingHeight is { } reference => length.Resolve(reference),
                 _ => null,
             };
-            var vertical = padding.Vertical + borders.Widths.Vertical;
+            var vertical = padding.Vertical.Points + borders.Widths.Vertical.Points;
             return value is { } v ? Math.Max(style.BorderBox ? Math.Max(v, vertical) : v + vertical, 0) : null;
         }
     }
 
     /// <summary>
-    /// The sizes of a box that depend on its containing block's width, for the layout to resolve against the width it
-    /// actually gets (e.g. a flex item's after flexing), or <c>null</c> when none does. <paramref name="box"/> has them
-    /// resolved against <paramref name="containingWidth"/>; lengths that are not linear in it (min(), max() and clamp()
-    /// of a percentage) keep those values, and so do auto margins, unless they are linear too (beside a width without
-    /// min or max widths, while they are not clamped at 0).
+    /// <paramref name="box"/> with the sizes that depend on its containing block's width given as lengths with
+    /// percentages, for the layout to resolve against the width it actually gets (e.g. a flex item's after flexing).
+    /// <paramref name="box"/> has them resolved against <paramref name="containingWidth"/>; lengths that are not linear in
+    /// it (min(), max() and clamp() of a percentage) keep those values, and so do auto margins, unless they are linear too
+    /// (beside a width without min or max widths, while they are not clamped at 0).
     /// </summary>
-    private static BoxPercentages? PercentagesFor(ComputedStyle style, BoxStyle box, double containingWidth, bool flexItem)
+    private static BoxStyle WithPercentages(ComputedStyle style, BoxStyle box, double containingWidth, bool flexItem)
     {
-        static BoxLength? Linear(CssLength length) => length.TryLinear(out var points, out var percent) ? new BoxLength(points, percent) : null;
-        static bool Relative(BoxLength? length) => length is { Percent: not 0 };
-        static RelativeThickness Sides(Func<int, BoxLength> side) => new(side(0), side(1), side(2), side(3));
-        static double Side(Thickness thickness, int side) => side switch { 0 => thickness.Top, 1 => thickness.Right, 2 => thickness.Bottom, _ => thickness.Left };
+        static Length? Linear(CssLength length) => length.TryLinear(out var points, out var percent) ? new Length(points, percent) : null;
+        static bool Relative(Length? length) => length is { HasPercent: true };
+        static Thickness FourSides(Func<int, Length> side) => new(side(0), side(1), side(2), side(3));
+        static Length Side(Thickness thickness, int side) => side switch { 0 => thickness.Top, 1 => thickness.Right, 2 => thickness.Bottom, _ => thickness.Left };
 
         // A content-box height includes the vertical padding as resolved here, so then that padding stays as it is.
         var fixedVertical = !style.BorderBox && !(style.Height.IsAuto && style.MinHeight.IsAuto && style.MaxHeight.IsAuto);
-        var padding = Sides(i => (i % 2 == 0 && fixedVertical ? null : Linear(style.Padding[i])) ?? new BoxLength(Side(box.Padding, i)));
-        var decoration = padding.Horizontal + new BoxLength(box.Border.Widths.Horizontal);
-        BoxLength? BorderBox(CssLength length) =>
+        var padding = FourSides(i => (i % 2 == 0 && fixedVertical ? null : Linear(style.Padding[i])) ?? Side(box.Padding, i));
+        var decoration = padding.Horizontal + box.Border.Widths.Horizontal;
+        Length? BorderBox(CssLength length) =>
             length.IsAuto || Linear(length) is not { } value ? null : style.BorderBox ? value : value + decoration;
 
         var width = BorderBox(style.Width);
@@ -1006,16 +1006,16 @@ internal sealed partial class BoxBuilder
 
         // Auto margins share the free space beside a width: linear while they are not clamped at 0 (CSS 2.1 section
         // 10.3.3); otherwise (and beside a width limited by min-width or max-width) they keep their points.
-        var margin = Sides(i => style.Margin[i].IsAuto ? new BoxLength(Side(box.Margin, i)) : Linear(style.Margin[i]) ?? new BoxLength(Side(box.Margin, i)));
+        var margin = FourSides(i => style.Margin[i].IsAuto ? Side(box.Margin, i) : Linear(style.Margin[i]) ?? Side(box.Margin, i));
         var (leftAuto, rightAuto) = (style.Margin[3].IsAuto, style.Margin[1].IsAuto);
         if (!flexItem && style.Float == FloatSide.None && width is { } used && style.MinWidth.IsAuto && style.MaxWidth.IsAuto
             && (leftAuto || rightAuto || style.ContainerRtl))
         {
-            var nonAuto = (leftAuto ? default : margin.Left) + (rightAuto ? default : margin.Right);
-            var free = new BoxLength(0, 100) + new BoxLength(-used.Points, -used.Percent) + new BoxLength(-nonAuto.Points, -nonAuto.Percent);
+            var nonAuto = (leftAuto ? Length.Zero : margin.Left) + (rightAuto ? Length.Zero : margin.Right);
+            var free = Length.FromPercent(100) - used - nonAuto;
             if (free.Resolve(containingWidth) >= 0)
             {
-                var half = new BoxLength(free.Points / 2, free.Percent / 2);
+                var half = free * 0.5;
                 margin = (leftAuto, rightAuto) switch
                 {
                     (true, true) => margin with { Left = half, Right = half },
@@ -1026,11 +1026,16 @@ internal sealed partial class BoxBuilder
             }
         }
 
-        return Relative(padding.Top) || Relative(padding.Right) || Relative(padding.Bottom) || Relative(padding.Left)
-            || Relative(width) || Relative(minWidth) || Relative(maxWidth)
-            || Relative(margin.Top) || Relative(margin.Right) || Relative(margin.Bottom) || Relative(margin.Left)
-            ? new BoxPercentages { Width = width, MinWidth = minWidth, MaxWidth = maxWidth, Margin = margin, Padding = padding }
-            : null;
+        return Relative(width) || Relative(minWidth) || Relative(maxWidth) || margin.HasPercent || padding.HasPercent
+            ? box with
+            {
+                Width = width ?? box.Width,
+                MinWidth = minWidth ?? box.MinWidth,
+                MaxWidth = maxWidth ?? box.MaxWidth,
+                Margin = margin,
+                Padding = padding,
+            }
+            : box;
     }
 
     /// <summary>
@@ -1045,23 +1050,23 @@ internal sealed partial class BoxBuilder
             return CornerRadii.None;
         }
 
-        RadiusLength Length(CssLength length, double reference)
+        Length Length(CssLength length, double reference)
         {
             switch (length.Kind)
             {
                 case CssLengthKind.Points:
-                    return RadiusLength.FromPoints(length.Value);
+                    return Layout.Length.FromPoints(length.Value);
                 case CssLengthKind.Percent:
-                    return RadiusLength.FromPercent(length.Value);
+                    return Layout.Length.FromPercent(length.Value);
                 case CssLengthKind.Calc:
                     // Points plus a percentage when linear (calc() with + and -), else the value for the reference.
                     var (zero, hundred, thousand) = (length.Resolve(0), length.Resolve(100), length.Resolve(1000));
                     var percent = hundred - zero;
                     return Math.Abs(zero + (10 * percent) - thousand) < 1e-6 * Math.Max(1, Math.Abs(thousand))
-                        ? new RadiusLength(zero, percent)
-                        : RadiusLength.FromPoints(Math.Max(0, length.Resolve(reference)));
+                        ? new Layout.Length(zero, percent)
+                        : Layout.Length.FromPoints(Math.Max(0, length.Resolve(reference)));
                 default:
-                    return RadiusLength.Zero;
+                    return Layout.Length.Zero;
             }
         }
 

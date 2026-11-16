@@ -1,26 +1,12 @@
 namespace RaiCore.Pdf.Layout;
 
-/// <summary>
-/// One radius of a rounded corner: a length in points plus a percentage of the border box's width (for horizontal
-/// radii) or height (for vertical radii), as CSS <c>calc(50% + 2px)</c>. Negative results count as 0.
-/// </summary>
-/// <param name="Points">The fixed part, in points.</param>
-/// <param name="Percent">The part that is a percentage (0-100) of the border box's width or height.</param>
-public readonly record struct RadiusLength(double Points, double Percent = 0)
+/// <summary>Resolving corner radii.</summary>
+internal static class RadiusLengths
 {
-    /// <summary>No radius.</summary>
-    public static RadiusLength Zero { get; }
-
-    /// <summary>A radius in points.</summary>
-    public static RadiusLength FromPoints(double points) => new(points);
-
-    /// <summary>A radius as a percentage (0-100) of the border box's width or height.</summary>
-    public static RadiusLength FromPercent(double percent) => new(0, percent);
-
-    /// <summary>The radius in points for a box dimension of <paramref name="reference"/> points, at least 0.</summary>
-    internal double Resolve(double reference)
+    /// <summary>A radius in points for a box dimension of <paramref name="reference"/> points, at least 0.</summary>
+    public static double ResolveRadius(this Length radius, double reference)
     {
-        var value = Points + (Percent / 100 * reference);
+        var value = radius.Resolve(reference);
         return double.IsFinite(value) && value > 0 ? value : 0;
     }
 }
@@ -31,20 +17,20 @@ public readonly record struct RadiusLength(double Points, double Percent = 0)
 /// </summary>
 /// <param name="Horizontal">The horizontal radius; percentages are of the border box's width.</param>
 /// <param name="Vertical">The vertical radius; percentages are of the border box's height.</param>
-public readonly record struct CornerRadius(RadiusLength Horizontal, RadiusLength Vertical)
+public readonly record struct CornerRadius(Length Horizontal, Length Vertical)
 {
     /// <summary>A square corner.</summary>
     public static CornerRadius Square { get; }
 
     /// <summary>A circular corner of a radius in points.</summary>
-    public static CornerRadius Circular(double points) => new(RadiusLength.FromPoints(points), RadiusLength.FromPoints(points));
+    public static CornerRadius Circular(double points) => new(Length.FromPoints(points), Length.FromPoints(points));
 
     /// <summary>An elliptical corner of a horizontal and a vertical radius in points.</summary>
     public static CornerRadius Elliptical(double horizontal, double vertical) =>
-        new(RadiusLength.FromPoints(horizontal), RadiusLength.FromPoints(vertical));
+        new(Length.FromPoints(horizontal), Length.FromPoints(vertical));
 
     /// <summary>A corner whose radii are a percentage (0-100) of the border box's width and height, as CSS <c>50%</c>.</summary>
-    public static CornerRadius Percentage(double percent) => new(RadiusLength.FromPercent(percent), RadiusLength.FromPercent(percent));
+    public static CornerRadius Percentage(double percent) => new(Length.FromPercent(percent), Length.FromPercent(percent));
 }
 
 /// <summary>

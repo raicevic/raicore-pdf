@@ -48,7 +48,7 @@ public class HtmlBorderRadiusTests
         var radii = Radii("border-radius: 50%; border-top-right-radius: 10% 30%");
 
         Assert.Equal(CornerRadius.Percentage(50), radii.TopLeft);
-        Assert.Equal(new CornerRadius(RadiusLength.FromPercent(10), RadiusLength.FromPercent(30)), radii.TopRight);
+        Assert.Equal(new CornerRadius(Length.FromPercent(10), Length.FromPercent(30)), radii.TopRight);
     }
 
     [Fact]
@@ -57,9 +57,9 @@ public class HtmlBorderRadiusTests
         // The box is 200 px (150 pt) wide: min(10px, 50%) is 10 px.
         var radii = Radii("width: 200px; border-radius: calc(50% - 10px); border-top-right-radius: min(10px, 50%)");
 
-        Assert.Equal(new RadiusLength(-10 * Px, 50), radii.TopLeft.Horizontal);
-        Assert.Equal(RadiusLength.FromPoints(10 * Px), radii.TopRight.Horizontal);
-        Assert.Equal(new RadiusLength(-10 * Px, 50), radii.BottomRight.Vertical);
+        Assert.Equal(new Length(-10 * Px, 50), radii.TopLeft.Horizontal);
+        Assert.Equal(Length.FromPoints(10 * Px), radii.TopRight.Horizontal);
+        Assert.Equal(new Length(-10 * Px, 50), radii.BottomRight.Vertical);
     }
 
     [Fact]

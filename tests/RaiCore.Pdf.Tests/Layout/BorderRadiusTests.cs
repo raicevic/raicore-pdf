@@ -30,7 +30,7 @@ public class BorderRadiusTests
     {
         var radii = new CornerRadii(
             CornerRadius.Percentage(10), CornerRadius.Elliptical(30, 5), CornerRadius.Circular(8),
-            new CornerRadius(new RadiusLength(4, 10), RadiusLength.FromPercent(20)));
+            new CornerRadius(new Length(4, 10), Length.FromPercent(20)));
 
         var corners = radii.Resolve(200, 100);
 

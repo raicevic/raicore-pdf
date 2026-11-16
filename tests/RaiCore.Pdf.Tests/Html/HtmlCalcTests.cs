@@ -24,11 +24,11 @@ public class HtmlCalcTests
             <div style="width: 200px"><div id="e" style="box-sizing: border-box; width: calc(100% - 20px); padding: 5px">e</div></div>
             """);
 
-        Assert.Equal(400 - (20 * Px), blocks["a"].Style.Width!.Value, 6);
-        Assert.Equal((200 - 20) * Px, blocks["b"].Style.Width!.Value, 6);
-        Assert.Equal((200 - 20) / 2 * Px, blocks["c"].Style.Width!.Value, 6);
-        Assert.Equal((200 - 20 + 12) * Px, blocks["d"].Style.Width!.Value, 6); // Content box plus padding and border.
-        Assert.Equal((200 - 20) * Px, blocks["e"].Style.Width!.Value, 6);
+        Assert.Equal(400 - (20 * Px), blocks["a"].Style.Width!.Value.Resolve(400), 6);
+        Assert.Equal((200 - 20) * Px, blocks["b"].Style.Width!.Value.Resolve(200 * Px), 6);
+        Assert.Equal((200 - 20) / 2 * Px, blocks["c"].Style.Width!.Value.Resolve(200 * Px), 6);
+        Assert.Equal((200 - 20 + 12) * Px, blocks["d"].Style.Width!.Value.Resolve(200 * Px), 6); // Content box plus padding and border.
+        Assert.Equal((200 - 20) * Px, blocks["e"].Style.Width!.Value.Resolve(200 * Px), 6);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class HtmlCalcTests
     {
         var blocks = Blocks(NoBodyMargin + """<div id="a" style="width: calc(50% - 1000px)">a</div>""");
 
-        Assert.Equal(0, blocks["a"].Style.Width);
+        Assert.Equal(0, blocks["a"].Style.Resolve(400).Width); // calc(50% - 750pt) in 400 pt.
     }
 
     [Fact]
@@ -49,10 +49,10 @@ public class HtmlCalcTests
             """);
 
         Assert.Null(blocks["a"].Style.Width); // The layout engine applies the max width.
-        Assert.Equal(400 * 0.9, blocks["a"].Style.MaxWidth!.Value, 6);
-        Assert.Equal(500 * Px, blocks["b"].Style.MaxWidth!.Value, 6);
-        Assert.Equal(200, blocks["c"].Style.Width!.Value, 6);
-        Assert.Equal(100, blocks["c"].Style.Margin.Left, 6); // Auto margins share what calc() leaves.
+        Assert.Equal(400 * 0.9, blocks["a"].Style.MaxWidth!.Value.Points, 6);
+        Assert.Equal(500 * Px, blocks["b"].Style.MaxWidth!.Value.Points, 6);
+        Assert.Equal(200, blocks["c"].Style.Width!.Value.Points, 6);
+        Assert.Equal(100, blocks["c"].Style.Margin.Left.Points, 6); // Auto margins share what calc() leaves.
     }
 
     [Fact]
@@ -85,15 +85,15 @@ public class HtmlCalcTests
             <div style="width: 100px"><div id="d" style="padding-left: clamp(1em, 5%, 3em); margin-left: calc(50% - 10px); font-size: 16px">d</div></div>
             """);
 
-        Assert.Equal(26 * Px, blocks["a"].Style.Margin.Top, 6);
-        Assert.Equal(40 - (5 * Px), blocks["a"].Style.Margin.Left, 6);
-        Assert.Equal(40 - (5 * Px), blocks["a"].Style.Margin.Right, 6);
-        Assert.Equal(8 * Px, blocks["b"].Style.Padding.Top, 6);
-        Assert.Equal(20, blocks["b"].Style.Padding.Left, 6); // 5% of 400 is between 1em (12) and 3em (36).
-        Assert.Equal(20, blocks["c"].Style.Margin.Left, 6);
-        Assert.Equal(-10 * Px, blocks["c"].Style.Margin.Right, 6);
-        Assert.Equal(16 * Px, blocks["d"].Style.Padding.Left, 6); // 5% of 75 is below 1em.
-        Assert.Equal((50 - 10) * Px, blocks["d"].Style.Margin.Left, 6);
+        Assert.Equal(26 * Px, blocks["a"].Style.Margin.Top.Resolve(400), 6);
+        Assert.Equal(40 - (5 * Px), blocks["a"].Style.Margin.Left.Resolve(400), 6);
+        Assert.Equal(40 - (5 * Px), blocks["a"].Style.Margin.Right.Resolve(400), 6);
+        Assert.Equal(8 * Px, blocks["b"].Style.Padding.Top.Resolve(400), 6);
+        Assert.Equal(20, blocks["b"].Style.Padding.Left.Resolve(400), 6); // 5% of 400 is between 1em (12) and 3em (36).
+        Assert.Equal(20, blocks["c"].Style.Margin.Left.Points, 6);
+        Assert.Equal(-10 * Px, blocks["c"].Style.Margin.Right.Points, 6);
+        Assert.Equal(16 * Px, blocks["d"].Style.Padding.Left.Points, 6); // 5% of 75 is below 1em.
+        Assert.Equal((50 - 10) * Px, blocks["d"].Style.Margin.Left.Resolve(100 * Px), 6);
     }
 
     [Fact]
@@ -237,9 +237,9 @@ public class HtmlCalcTests
             <div id="c" style="width: min(50vw, 50%)">c</div>
             """);
 
-        Assert.Equal(200 - (10 * Px), blocks["a"].Style.Width!.Value, Px);
+        Assert.Equal(200 - (10 * Px), blocks["a"].Style.Width!.Value.Points, Px);
         Assert.Equal(70 + 15, blocks["b"].Style.Height!.Value, Px);
-        Assert.Equal(200, blocks["c"].Style.Width!.Value, Px);
+        Assert.Equal(200, blocks["c"].Style.Width!.Value.Points, Px);
     }
 
     [Fact]
@@ -251,7 +251,7 @@ public class HtmlCalcTests
             <div id="a" style="width: calc(50vw + 1px); height: 50vh">a</div>
             """);
 
-        Assert.Equal(150 + Px, blocks["a"].Style.Width!.Value, 6);
+        Assert.Equal(150 + Px, blocks["a"].Style.Width!.Value.Points, 6);
         Assert.Equal(300, blocks["a"].Style.Height!.Value, 6);
     }
 
@@ -268,11 +268,11 @@ public class HtmlCalcTests
             </div>
             """);
 
-        Assert.Equal((400 - 24) / 3.0 * Px, blocks["a"].Style.Width!.Value, 6);
-        Assert.Equal(24 * Px, blocks["b"].Style.Width!.Value, 6);
-        Assert.Equal((80 + 5 - 10) * Px, blocks["c"].Style.Width!.Value, 6);
-        Assert.Equal((80 + 5) * Px, blocks["c"].Style.Margin.Left, 6);
-        Assert.Equal((400 - 20) * Px, blocks["d"].Style.Width!.Value, 6);
+        Assert.Equal((400 - 24) / 3.0 * Px, blocks["a"].Style.Width!.Value.Resolve(400 * Px), 6);
+        Assert.Equal(24 * Px, blocks["b"].Style.Width!.Value.Resolve(400 * Px), 6);
+        Assert.Equal((80 + 5 - 10) * Px, blocks["c"].Style.Width!.Value.Resolve(400 * Px), 6);
+        Assert.Equal((80 + 5) * Px, blocks["c"].Style.Margin.Left.Resolve(400 * Px), 6);
+        Assert.Equal((400 - 20) * Px, blocks["d"].Style.Width!.Value.Resolve(400 * Px), 6);
     }
 
     [Fact]
@@ -287,8 +287,8 @@ public class HtmlCalcTests
         var flex = Flex("<div style='display: flex; gap: calc(10% + var(--n))'><div style='flex-basis: calc(10% + var(--n))'>x</div></div>");
 
         Assert.Null(blocks["a"].Style.Width); // auto
-        Assert.Equal(0, blocks["a"].Style.Margin.Left);
-        Assert.Equal(0, blocks["a"].Style.Padding.Left);
+        Assert.Equal(0, blocks["a"].Style.Margin.Left.Points);
+        Assert.Equal(0, blocks["a"].Style.Padding.Left.Points);
         Assert.Null(blocks["c"].Style.Height);
         Assert.Null(blocks["c"].Style.MaxHeight);
         Assert.Equal(FlexBasis.Auto, flex.Items[0].Basis);
@@ -305,8 +305,8 @@ public class HtmlCalcTests
             </table>
             """).Blocks).OfType<TableBlock>().Single();
 
-        Assert.Equal(TableWidth.Points((100 + 10) * Px), table.ColumnWidths[0]);
-        Assert.Equal(TableWidth.Points((200 - 10) * Px), table.Rows[0].Cells[1].Width);
+        Assert.Equal(Length.FromPoints((100 + 10) * Px), table.ColumnWidths[0]);
+        Assert.Equal(Length.FromPoints((200 - 10) * Px), table.Rows[0].Cells[1].Width);
     }
 
     [Fact]
@@ -324,8 +324,8 @@ public class HtmlCalcTests
         var flow = HtmlToPdf.CreateFlowDocument("<style>@page { size: calc(100mm + 5mm) 200mm; margin: calc(1cm + 5mm) min(2cm, 30mm) }</style><p>x</p>");
 
         Assert.Equal(105 * 72 / 25.4, flow.Setup.Size.Width, 6);
-        Assert.Equal(15 * 72 / 25.4, flow.Setup.Margins.Top, 6);
-        Assert.Equal(20 * 72 / 25.4, flow.Setup.Margins.Left, 6);
+        Assert.Equal(15 * 72 / 25.4, flow.Setup.Margins.Top.Points, 6);
+        Assert.Equal(20 * 72 / 25.4, flow.Setup.Margins.Left.Points, 6);
     }
 
     private static FlowDocument Flow(string html) => HtmlToPdf.CreateFlowDocument(html, new HtmlConverterOptions { Page = Page });

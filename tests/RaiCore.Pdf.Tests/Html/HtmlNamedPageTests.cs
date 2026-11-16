@@ -67,8 +67,8 @@ public class HtmlNamedPageTests
             "@page { margin: 20mm } @page :left { margin-left: 30mm; margin-right: 15mm } @page :right { margin-left: 15mm; margin-right: 30mm }",
             "<p>one</p><p style='break-before: page'>two</p><p style='break-before: page'>three</p>");
 
-        Assert.Equal([15 * Mm, 30 * Mm, 15 * Mm], result.Frames.Select(f => f.Setup.Margins.Left), new Tolerance(0.01));
-        Assert.Equal([30 * Mm, 15 * Mm, 30 * Mm], result.Frames.Select(f => f.Setup.Margins.Right), new Tolerance(0.01));
+        Assert.Equal([15 * Mm, 30 * Mm, 15 * Mm], result.Frames.Select(f => f.Setup.Margins.Left.Points), new Tolerance(0.01));
+        Assert.Equal([30 * Mm, 15 * Mm, 30 * Mm], result.Frames.Select(f => f.Setup.Margins.Right.Points), new Tolerance(0.01));
     }
 
     [Theory]
@@ -97,7 +97,7 @@ public class HtmlNamedPageTests
         var result = HtmlToPdf.CreateFlowDocument(html).Paginate();
 
         Assert.Equal(3, Conversion.GetPageCount(bytes));
-        Assert.Equal(40 * Mm, result.Frames[1].Setup.Margins.Top, 0.01);
+        Assert.Equal(40 * Mm, result.Frames[1].Setup.Margins.Top.Points, 0.01);
         Assert.Equal([false, true, false], [.. Enumerable.Range(0, 3).Select(page => HasPixels(bytes, page, Red))]);
         Assert.Equal([true, false, true], [.. Enumerable.Range(0, 3).Select(page => HasPixels(bytes, page, Blue))]);
     }

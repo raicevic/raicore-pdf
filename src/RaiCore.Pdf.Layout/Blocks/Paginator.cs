@@ -136,7 +136,7 @@ internal sealed partial class Paginator
     private readonly List<(int FromPage, double Height)> _bottomReserves = [];
 
     /// <summary>
-    /// The used styles of blocks with <see cref="BoxStyle.Percentages"/>: resolved against the containing width they were
+    /// The used styles of blocks with percentages (<see cref="BoxStyle.HasPercent"/>): resolved against the containing width they were
     /// last given (see <see cref="ResolveStyle"/>), which is the one they are being laid out or measured in.
     /// </summary>
     private readonly Dictionary<Block, (double ContainingWidth, BoxStyle Style)> _used = new(ReferenceEqualityComparer.Instance);
@@ -150,7 +150,7 @@ internal sealed partial class Paginator
         NewPage(forced: true); // The first page keeps top margins, like the start of a CSS document.
     }
 
-    private double ContentTop => _frames[PageIndex].Setup.Margins.Top;
+    private double ContentTop => _frames[PageIndex].Setup.UsedMargins.Top;
 
     /// <summary>The content width of a page.</summary>
     private double ContentWidthOf(int page) => _frames[page].Setup.ContentWidth;
@@ -197,7 +197,7 @@ internal sealed partial class Paginator
     private double PageBottom(int page)
     {
         var setup = _frames[page].Setup;
-        var bottom = setup.Size.Height - setup.Margins.Bottom;
+        var bottom = setup.Size.Height - setup.UsedMargins.Bottom;
         foreach (var (fromPage, height) in _bottomReserves)
         {
             if (page >= fromPage)
@@ -247,7 +247,7 @@ internal sealed partial class Paginator
         {
             var paginator = new Paginator(document.Setup, document);
             var pendingMargin = new CollapsedMargin();
-            paginator.LayoutChildren(document.Blocks, document.Setup.Margins.Left, paginator.ContentWidthOf(0), ref pendingMargin, firstTopMarginApplied: false);
+            paginator.LayoutChildren(document.Blocks, document.Setup.UsedMargins.Left, paginator.ContentWidthOf(0), ref pendingMargin, firstTopMarginApplied: false);
             paginator.PlaceFixed();
             return new PaginationResult(paginator.GroupedPages(), paginator._placements, paginator._markers, paginator._anchors, paginator._frames)
             {
@@ -331,14 +331,14 @@ internal sealed partial class Paginator
         using var cache = LayoutCache.Enter();
         var style = block.Style.Intrinsic();
         var (min, max) = IntrinsicBorderBox(block);
-        return (min + style.Margin.Horizontal, max + style.Margin.Horizontal);
+        return (min + style.Margin.Fixed.Horizontal, max + style.Margin.Fixed.Horizontal);
     }
 
     /// <summary>The border-box min-content and max-content widths: a fixed width or the content's, within the min/max widths.</summary>
     private static (double Min, double Max) IntrinsicBorderBox(Block block)
     {
         var style = block.Style.Intrinsic();
-        var (min, max) = style.Width is { } fixedWidth ? (fixedWidth, fixedWidth) : IntrinsicContentBorderBox(block);
+        var (min, max) = style.Width?.Fixed is { } fixedWidth ? (fixedWidth, fixedWidth) : IntrinsicContentBorderBox(block);
         return (style.ClampWidth(min), style.ClampWidth(max));
     }
 
@@ -351,7 +351,7 @@ internal sealed partial class Paginator
         using var nesting = ResourceLimits.EnterNesting();
         ResourceLimits.Checkpoint();
         style ??= block.Style.Intrinsic();
-        var decoration = style.Border.Widths.Horizontal + style.Padding.Horizontal;
+        var decoration = style.Border.Widths.Fixed.Horizontal + style.Padding.Fixed.Horizontal;
         var (min, max) = block switch
         {
             ParagraphBlock paragraph => paragraph.Paragraph.MeasureIntrinsicWidths(),
@@ -366,7 +366,7 @@ internal sealed partial class Paginator
         // An image with a percentage width or max-width has no min-content width of its own: it can shrink with its
         // container (CSS Sizing 3 section 5.2.2, compressible replaced elements).
         static (double, double) Compressible(ImageBlock image, double width) =>
-            image.Style.Percentages is { } p && (p.Width is { Percent: not 0 } || p.MaxWidth is { Percent: not 0 }) ? (0, width) : (width, width);
+            image.Style.Width is { HasPercent: true } || image.Style.MaxWidth is { HasPercent: true } ? (0, width) : (width, width);
     }
 
     /// <summary>
@@ -378,8 +378,8 @@ internal sealed partial class Paginator
     private double BoxWidth(Block block, double width)
     {
         var style = StyleOf(block);
-        var available = Math.Max(0, width - style.Margin.Horizontal);
-        if (style.Width is { } fixedWidth)
+        var available = Math.Max(0, width - style.Margin.Fixed.Horizontal);
+        if (style.Width?.Fixed is { } fixedWidth)
         {
             return style.ClampWidth(fixedWidth);
         }
@@ -387,7 +387,7 @@ internal sealed partial class Paginator
         switch (block)
         {
             case ImageBlock image:
-                var decoration = style.Border.Widths.Horizontal + style.Padding.Horizontal;
+                var decoration = style.Border.Widths.Fixed.Horizontal + style.Padding.Fixed.Horizontal;
                 return Math.Min(available, image.GetSize(Math.Max(1e-3, available - decoration), ImageMaxHeight(image), ImageWidthLimits(style)).Width + decoration);
             case TableBlock:
                 var (min, max) = IntrinsicContentBorderBox(block, style);
@@ -400,18 +400,18 @@ internal sealed partial class Paginator
     /// <summary>An image's minimum and maximum content widths from its box's border-box limits (0 for none).</summary>
     private static (double Min, double Max) ImageWidthLimits(BoxStyle style)
     {
-        var decoration = style.Border.Widths.Horizontal + style.Padding.Horizontal;
-        return (Math.Max(0, (style.MinWidth ?? 0) - decoration), style.MaxWidth is { } max ? Math.Max(1e-3, max - decoration) : 0);
+        var decoration = style.Border.Widths.Fixed.Horizontal + style.Padding.Fixed.Horizontal;
+        return (Math.Max(0, (style.MinWidth?.Fixed ?? 0) - decoration), style.MaxWidth?.Fixed is { } max ? Math.Max(1e-3, max - decoration) : 0);
     }
 
     /// <summary>
-    /// Resolves a block's <see cref="BoxStyle.Percentages"/> against the width of its containing block (for a block in
+    /// Resolves a block's percentages (<see cref="BoxStyle.HasPercent"/>) against the width of its containing block (for a block in
     /// the flow, its parent's content width), making that its used style (<see cref="StyleOf"/>) until it is resolved
     /// against another width. Returns the used style.
     /// </summary>
     private BoxStyle ResolveStyle(Block block, double containingWidth)
     {
-        if (block.Style.Percentages is null)
+        if (!block.Style.HasPercent)
         {
             return block.Style;
         }
@@ -431,7 +431,7 @@ internal sealed partial class Paginator
     /// <see cref="ResolveStyle"/>), or its style when it has none (or was not given one yet).
     /// </summary>
     private BoxStyle StyleOf(Block block) =>
-        block.Style.Percentages is not null && _used.TryGetValue(block, out var used) ? used.Style : block.Style;
+        block.Style.HasPercent && _used.TryGetValue(block, out var used) ? used.Style : block.Style;
 
     /// <summary>Moves to the next page, creating it unless a side-by-side flex item already did. It keeps the page name.</summary>
     private void NewPage(bool forced = false) => NewPage(forced, _frames.Count > 0 ? _frames[PageIndex].Context.Name : null, blank: false);
@@ -611,8 +611,8 @@ internal sealed partial class Paginator
             if (TakesNoSpace(block))
             {
                 ApplyClearance(style.Clear, ref pending); // E.g. an empty clearing block after floats ("clearfix").
-                pending.Add(style.Margin.Top);
-                pending.Add(style.Margin.Bottom);
+                pending.Add(style.Margin.Fixed.Top);
+                pending.Add(style.Margin.Fixed.Bottom);
                 if (block.Marker is { } emptyMarker && !_static)
                 {
                     _markers.Add((PageIndex, emptyMarker));
@@ -620,7 +620,7 @@ internal sealed partial class Paginator
 
                 if (block.Bookmark is not null || block.Id is not null)
                 {
-                    _anchors.Add(new Anchor(block, PageIndex, Y, x + style.Margin.Left));
+                    _anchors.Add(new Anchor(block, PageIndex, Y, x + style.Margin.Fixed.Left));
                 }
 
                 continue;
@@ -646,8 +646,8 @@ internal sealed partial class Paginator
 
             if (!(i == 0 && firstTopMarginApplied))
             {
-                pending.Add(style.Margin.Top);
-                pending.Add(CollapseThroughTop(block)); // First descendants' top margins collapse with this one.
+                pending.Add(style.Margin.Fixed.Top);
+                pending.Add(CollapseThroughTop(block, available)); // First descendants' top margins collapse with this one.
             }
 
             ApplyClearance(style.Clear, ref pending);
@@ -662,7 +662,7 @@ internal sealed partial class Paginator
 
             if (style.BreakAfter == PageBreak.Avoid && next is not null)
             {
-                needed = Math.Max(needed, MeasureHeight(block, available) + Math.Max(style.Margin.Bottom, ResolveStyle(next, available).Margin.Top) + MinimumStartHeight(next, available));
+                needed = Math.Max(needed, MeasureHeight(block, available) + Math.Max(style.Margin.Fixed.Bottom, ResolveStyle(next, available).Margin.Fixed.Top) + MinimumStartHeight(next, available));
             }
 
             if (!AtPageTop && needed + pending.Value > Remaining + Epsilon && needed <= NextPageContentHeight + Epsilon)
@@ -693,9 +693,9 @@ internal sealed partial class Paginator
                 }
             }
 
-            var boxX = areaX + style.Margin.Left;
+            var boxX = areaX + style.Margin.Fixed.Left;
             var boxWidth = BoxWidth(block, areaWidth);
-            ReportWideBox(block, boxWidth + style.Margin.Horizontal, areaWidth);
+            ReportWideBox(block, boxWidth + style.Margin.Fixed.Horizontal, areaWidth);
             var alignment = block switch
             {
                 ImageBlock image when style.Width is null => image.Alignment,
@@ -705,7 +705,7 @@ internal sealed partial class Paginator
             if (alignment != BlockAlignment.Left)
             {
                 // Images and tables shrink to their content; the alignment then positions the whole box.
-                var free = Math.Max(0, areaWidth - style.Margin.Horizontal - boxWidth);
+                var free = Math.Max(0, areaWidth - style.Margin.Fixed.Horizontal - boxWidth);
                 boxX += alignment switch
                 {
                     BlockAlignment.Center => free / 2,
@@ -725,38 +725,42 @@ internal sealed partial class Paginator
                 // A clipped box of a fixed height that fits here: laid out in one piece, so what it hides makes no pages.
                 PlaceClipped(block, boxX, boxWidth, clippedHeight, width);
                 pending = default;
-                pending.Add(style.Margin.Bottom);
+                pending.Add(style.Margin.Fixed.Bottom);
                 continue;
             }
 
             var trailing = LayoutBlock(block, boxX, boxWidth);
 
             pending = trailing;
-            pending.Add(style.Margin.Bottom);
+            pending.Add(style.Margin.Fixed.Bottom);
         }
     }
 
     /// <summary>
     /// The top margins of a container's first descendants that collapse with its own (CSS 2.1 section 8.3.1):
-    /// only when the container has no top border or padding.
+    /// only when the container has no top border or padding. <paramref name="width"/> is the width the block is laid
+    /// out in (its used style is resolved against it); its children's percentages resolve against its content width.
     /// </summary>
-    private double CollapseThroughTop(Block block)
+    private double CollapseThroughTop(Block block, double width)
     {
         if (block is not ContainerBlock { Children.Count: > 0 } container || HasTopEdge(StyleOf(block)) || IsFloatRoot(block, default))
         {
             return 0;
         }
 
+        using var nesting = ResourceLimits.EnterNesting(); // Recursive: as deep as the first children are nested.
+        var style = StyleOf(block);
+        var contentWidth = Math.Max(MinimumContentWidth, BoxWidth(block, width) - style.Border.Widths.Fixed.Horizontal - style.Padding.Fixed.Horizontal);
         var first = container.Children[0];
         var margin = new CollapsedMargin();
-        margin.Add(StyleOf(first).Margin.Top);
-        margin.Add(CollapseThroughTop(first));
+        margin.Add(ResolveStyle(first, contentWidth).Margin.Fixed.Top);
+        margin.Add(CollapseThroughTop(first, contentWidth));
         return margin.Value;
     }
 
-    private static bool HasTopEdge(BoxStyle style) => style.Border.Top.Width > 0 || style.Padding.Top > 0;
+    private static bool HasTopEdge(BoxStyle style) => style.Border.Top.Width > 0 || style.Padding.Fixed.Top > 0;
 
-    private static bool HasBottomEdge(BoxStyle style) => style.Border.Bottom.Width > 0 || style.Padding.Bottom > 0;
+    private static bool HasBottomEdge(BoxStyle style) => style.Border.Bottom.Width > 0 || style.Padding.Fixed.Bottom > 0;
 
     /// <summary>Lays out one block in its opacity scope (see <see cref="LayoutBlock"/>).</summary>
     private CollapsedMargin LayoutBlockInScope(Block block, double x, double width, BoxSizing sizing)
@@ -898,7 +902,7 @@ internal sealed partial class Paginator
     private void LayoutBox(Block block, double x, double width, Action<double, double> layoutContent, BoxSizing sizing = default, BoxStyle? styleOverride = null)
     {
         var style = styleOverride ?? StyleOf(block);
-        var border = style.Border.Widths;
+        var border = style.Border.Widths.Fixed;
         var decorated = style.Background is not null || style.BackgroundLayers.Count > 0 || border.Vertical > 0 || border.Horizontal > 0;
         var link = block.Link;
 
@@ -920,9 +924,9 @@ internal sealed partial class Paginator
 
         try
         {
-            Y += border.Top + style.Padding.Top;
-            layoutContent(x + border.Left + style.Padding.Left, Math.Max(MinimumContentWidth, width - border.Horizontal - style.Padding.Horizontal));
-            Y += style.Padding.Bottom + border.Bottom;
+            Y += border.Top + style.Padding.Fixed.Top;
+            layoutContent(x + border.Left + style.Padding.Fixed.Left, Math.Max(MinimumContentWidth, width - border.Horizontal - style.Padding.Fixed.Horizontal));
+            Y += style.Padding.Fixed.Bottom + border.Bottom;
         }
         finally
         {
@@ -1130,11 +1134,11 @@ internal sealed partial class Paginator
     {
         var inset = style.BackgroundClip switch
         {
-            BackgroundClip.PaddingBox => style.Border.Widths,
-            BackgroundClip.ContentBox => new Thickness(
-                style.Border.Top.Width + style.Padding.Top, style.Border.Right.Width + style.Padding.Right,
-                style.Border.Bottom.Width + style.Padding.Bottom, style.Border.Left.Width + style.Padding.Left),
-            _ => Thickness.Zero,
+            BackgroundClip.PaddingBox => style.Border.Widths.Fixed,
+            BackgroundClip.ContentBox => new Sides(
+                style.Border.Top.Width + style.Padding.Fixed.Top, style.Border.Right.Width + style.Padding.Fixed.Right,
+                style.Border.Bottom.Width + style.Padding.Fixed.Bottom, style.Border.Left.Width + style.Padding.Fixed.Left),
+            _ => default(Sides),
         };
         var (top, bottom) = (first ? inset.Top : 0, last ? inset.Bottom : 0);
         var (areaWidth, areaHeight) = (width - inset.Horizontal, height - top - bottom);
@@ -1178,7 +1182,7 @@ internal sealed partial class Paginator
         else
         {
             // Clipped to the content box's curves: the border box's radii, reduced by the border and padding.
-            var (border, padding) = (block.Style.Border.Widths, StyleOf(block).Padding);
+            var (border, padding) = (block.Style.Border.Widths.Fixed, StyleOf(block).Padding.Fixed);
             var corners = block.Style.BorderRadius.Resolve(w + border.Horizontal + padding.Horizontal, h + border.Vertical + padding.Vertical)
                 .Inset(border.Top + padding.Top, border.Right + padding.Right, border.Bottom + padding.Bottom, border.Left + padding.Left);
             _pages[PageIndex].Add((canvas, pageHeight) =>
@@ -1214,7 +1218,7 @@ internal sealed partial class Paginator
 
     /// <summary>An image is scaled down to fit on one page together with its own border and padding.</summary>
     private double ImageMaxHeight(Block block) =>
-        Math.Max(1, ContentHeight - block.Style.Border.Widths.Vertical - StyleOf(block).Padding.Vertical);
+        Math.Max(1, ContentHeight - block.Style.Border.Widths.Fixed.Vertical - StyleOf(block).Padding.Fixed.Vertical);
 
     private void LayoutParagraph(ParagraphBlock block, double x, double width)
     {
@@ -1712,8 +1716,8 @@ internal sealed partial class Paginator
         using var nesting = ResourceLimits.EnterNesting();
         ResourceLimits.Checkpoint();
         var style = StyleOf(block);
-        var decoration = style.Border.Widths.Vertical + style.Padding.Vertical;
-        var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
+        var decoration = style.Border.Widths.Fixed.Vertical + style.Padding.Fixed.Vertical;
+        var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Fixed.Horizontal - style.Padding.Fixed.Horizontal);
         switch (block)
         {
             case SpacerBlock spacer:
@@ -1733,10 +1737,10 @@ internal sealed partial class Paginator
                 foreach (var child in container.Children)
                 {
                     var childStyle = ResolveStyle(child, contentWidth);
-                    margin.Add(childStyle.Margin.Top);
+                    margin.Add(childStyle.Margin.Fixed.Top);
                     height += margin.Value + MeasureHeight(child, contentWidth);
                     margin = new CollapsedMargin();
-                    margin.Add(childStyle.Margin.Bottom);
+                    margin.Add(childStyle.Margin.Fixed.Bottom);
                 }
 
                 return decoration + height + margin.Value;
@@ -1766,8 +1770,8 @@ internal sealed partial class Paginator
             return MeasureBox(block, boxWidth); // A fixed-height box is kept on one page when it fits on one.
         }
 
-        var top = style.Border.Top.Width + style.Padding.Top;
-        var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
+        var top = style.Border.Top.Width + style.Padding.Fixed.Top;
+        var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Fixed.Horizontal - style.Padding.Fixed.Horizontal);
         switch (block)
         {
             case ParagraphBlock paragraph:
@@ -1776,7 +1780,7 @@ internal sealed partial class Paginator
                 var orphans = Math.Max(1, style.Orphans);
                 var count = lines.Count < orphans + Math.Max(1, style.Widows) ? lines.Count : orphans;
                 var linesHeight = lines.Take(count).Sum(l => l.Height);
-                return top + (count == lines.Count ? linesHeight + style.Padding.Bottom + style.Border.Bottom.Width : linesHeight);
+                return top + (count == lines.Count ? linesHeight + style.Padding.Fixed.Bottom + style.Border.Bottom.Width : linesHeight);
             case ImageBlock image:
                 return MeasureBox(image, boxWidth); // Images are never split.
             case FlexBlock flex when flex.Items.Count > 0:
@@ -1804,14 +1808,14 @@ internal sealed partial class Paginator
                     firstEnd = table.Rows.Count;
                 }
 
-                return top + tableLayout.SpacingY + tableLayout.Height(0, firstEnd) + footer + (firstEnd == table.Rows.Count ? tableLayout.SpacingY + style.Padding.Bottom + style.Border.Bottom.Width : 0);
+                return top + tableLayout.SpacingY + tableLayout.Height(0, firstEnd) + footer + (firstEnd == table.Rows.Count ? tableLayout.SpacingY + style.Padding.Fixed.Bottom + style.Border.Bottom.Width : 0);
             case ContainerBlock container when container.Children.Count > 0:
                 var firstChild = container.Children[0];
-                return top + ResolveStyle(firstChild, contentWidth).Margin.Top + MinimumStartHeight(firstChild, contentWidth);
+                return top + ResolveStyle(firstChild, contentWidth).Margin.Fixed.Top + MinimumStartHeight(firstChild, contentWidth);
             case SpacerBlock:
                 return 0;
             default:
-                return top + style.Padding.Bottom + style.Border.Bottom.Width;
+                return top + style.Padding.Fixed.Bottom + style.Border.Bottom.Width;
         }
     }
 

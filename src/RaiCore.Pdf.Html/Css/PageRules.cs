@@ -74,16 +74,16 @@ internal sealed partial class PageRules
                         margins = ParseMargin(value, margins);
                         break;
                     case "margin-top":
-                        margins = margins with { Top = Length(value, margins.Top) };
+                        margins = margins with { Top = Length(value, margins.Top.Points) };
                         break;
                     case "margin-right":
-                        margins = margins with { Right = Length(value, margins.Right) };
+                        margins = margins with { Right = Length(value, margins.Right.Points) };
                         break;
                     case "margin-bottom":
-                        margins = margins with { Bottom = Length(value, margins.Bottom) };
+                        margins = margins with { Bottom = Length(value, margins.Bottom.Points) };
                         break;
                     case "margin-left":
-                        margins = margins with { Left = Length(value, margins.Left) };
+                        margins = margins with { Left = Length(value, margins.Left.Points) };
                         break;
                 }
             }
@@ -96,12 +96,12 @@ internal sealed partial class PageRules
             size = _defaults.Size;
         }
 
-        if (!(size.Width - margins.Horizontal > 0) || !double.IsFinite(margins.Horizontal))
+        if (!(size.Width - margins.Horizontal.Points > 0) || !double.IsFinite(margins.Horizontal.Points))
         {
             margins = margins with { Left = 0, Right = 0 };
         }
 
-        if (!(size.Height - margins.Vertical > 0) || !double.IsFinite(margins.Vertical))
+        if (!(size.Height - margins.Vertical.Points > 0) || !double.IsFinite(margins.Vertical.Points))
         {
             margins = margins with { Top = 0, Bottom = 0 };
         }

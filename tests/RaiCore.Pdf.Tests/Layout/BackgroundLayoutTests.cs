@@ -35,7 +35,7 @@ public class BackgroundLayoutTests
     [Fact]
     public void Hard_stops_make_sharp_edges_and_the_last_color_continues()
     {
-        var gradient = new LinearGradient(90, [new GradientStop(Red, Inset.Percent(50)), new GradientStop(Blue, Inset.Percent(50))]);
+        var gradient = new LinearGradient(90, [new GradientStop(Red, Length.FromPercent(50)), new GradientStop(Blue, Length.FromPercent(50))]);
         using var bitmap = Render(Box(Layer(gradient)));
 
         Assert.Equal(new SKColor(255, 0, 0), bitmap.GetPixel(98, 50));
@@ -46,7 +46,7 @@ public class BackgroundLayoutTests
     [Fact]
     public void A_hard_stop_at_the_end_keeps_its_color()
     {
-        var gradient = new LinearGradient(90, [new GradientStop(Red), new GradientStop(Green, Inset.Percent(80)), new GradientStop(Blue, Inset.Percent(80))]);
+        var gradient = new LinearGradient(90, [new GradientStop(Red), new GradientStop(Green, Length.FromPercent(80)), new GradientStop(Blue, Length.FromPercent(80))]);
         using var bitmap = Render(Box(Layer(gradient)));
 
         Assert.Equal(new SKColor(0, 0, 255), bitmap.GetPixel(170, 50));
@@ -116,7 +116,7 @@ public class BackgroundLayoutTests
     {
         var gradient = new LinearGradient(
             90,
-            [new GradientStop(Red, Inset.Points(0)), new GradientStop(Red, Inset.Points(10)), new GradientStop(Blue, Inset.Points(10)), new GradientStop(Blue, Inset.Points(20))],
+            [new GradientStop(Red, Length.FromPoints(0)), new GradientStop(Red, Length.FromPoints(10)), new GradientStop(Blue, Length.FromPoints(10)), new GradientStop(Blue, Length.FromPoints(20))],
             repeating: true);
         using var bitmap = Render(Box(Layer(gradient)));
 
@@ -133,9 +133,9 @@ public class BackgroundLayoutTests
         {
             RepeatX = BackgroundRepeat.NoRepeat,
             RepeatY = BackgroundRepeat.NoRepeat,
-            PositionX = new BackgroundPosition(Inset.Points(10), FromEnd: true),
-            PositionY = new BackgroundPosition(Inset.Percent(100)),
-            Size = new BackgroundSize(BackgroundSizeKind.Explicit, Inset.Points(20)),
+            PositionX = new BackgroundPosition(Length.FromPoints(10), FromEnd: true),
+            PositionY = new BackgroundPosition(Length.FromPercent(100)),
+            Size = new BackgroundSize(BackgroundSizeKind.Explicit, Length.FromPoints(20)),
         };
         using var bitmap = Render(Box(layer, background: Blue));
 
@@ -149,7 +149,7 @@ public class BackgroundLayoutTests
     [Fact]
     public void A_repeated_image_tiles_the_box_from_its_position()
     {
-        var layer = Layer(new ImageBackground(Quadrants())) with { Size = new BackgroundSize(BackgroundSizeKind.Explicit, Inset.Points(20), Inset.Points(20)) };
+        var layer = Layer(new ImageBackground(Quadrants())) with { Size = new BackgroundSize(BackgroundSizeKind.Explicit, Length.FromPoints(20), Length.FromPoints(20)) };
         using var bitmap = Render(Box(layer));
 
         // Each 20 pt tile has red top-left and bottom-right quadrants; tiles start at (20, 20).
@@ -185,7 +185,7 @@ public class BackgroundLayoutTests
         {
             RepeatX = BackgroundRepeat.NoRepeat,
             RepeatY = BackgroundRepeat.NoRepeat,
-            Size = new BackgroundSize(BackgroundSizeKind.Explicit, Inset.Points(10), Inset.Points(10)),
+            Size = new BackgroundSize(BackgroundSizeKind.Explicit, Length.FromPoints(10), Length.FromPoints(10)),
             Origin = BackgroundClip.ContentBox,
             Clip = BackgroundClip.PaddingBox,
         };
@@ -240,7 +240,7 @@ public class BackgroundLayoutTests
         {
             RepeatX = repeat,
             RepeatY = BackgroundRepeat.NoRepeat,
-            Size = new BackgroundSize(BackgroundSizeKind.Explicit, Inset.Points(23), Inset.Points(10)),
+            Size = new BackgroundSize(BackgroundSizeKind.Explicit, Length.FromPoints(23), Length.FromPoints(10)),
         };
         using var bitmap = Render(Box(layer, background: Blue));
 
@@ -270,7 +270,7 @@ public class BackgroundLayoutTests
     [Fact]
     public void A_stop_before_the_previous_one_moves_up_to_it()
     {
-        var gradient = new LinearGradient(90, [new GradientStop(Red, Inset.Percent(50)), new GradientStop(Blue, Inset.Percent(20))]);
+        var gradient = new LinearGradient(90, [new GradientStop(Red, Length.FromPercent(50)), new GradientStop(Blue, Length.FromPercent(20))]);
         using var bitmap = Render(Box(Layer(gradient)));
 
         Assert.Equal(new SKColor(255, 0, 0), bitmap.GetPixel(95, 50));
@@ -296,7 +296,7 @@ public class BackgroundLayoutTests
         {
             RepeatX = BackgroundRepeat.Round,
             RepeatY = BackgroundRepeat.NoRepeat,
-            Size = new BackgroundSize(BackgroundSizeKind.Explicit, Inset.Points(30), Inset.Points(30)),
+            Size = new BackgroundSize(BackgroundSizeKind.Explicit, Length.FromPoints(30), Length.FromPoints(30)),
         };
         using var bitmap = Render(Box(layer));
 
@@ -306,7 +306,7 @@ public class BackgroundLayoutTests
     [Fact]
     public void A_gradients_color_function_has_increasing_bounds()
     {
-        var gradient = new LinearGradient(90, [new GradientStop(Red, Inset.Percent(50)), new GradientStop(Blue, Inset.Percent(50)), new GradientStop(Green)]);
+        var gradient = new LinearGradient(90, [new GradientStop(Red, Length.FromPercent(50)), new GradientStop(Blue, Length.FromPercent(50)), new GradientStop(Green)]);
         var document = new FlowDocument(Small).Add(Box(Layer(gradient))).Render();
         document.CompressContent = false;
         var text = System.Text.Encoding.Latin1.GetString(document.ToArray());

@@ -129,6 +129,24 @@ public class PagedMediaTests
     }
 
     [Fact]
+    public void Margin_boxes_fill_page_margins_given_in_percent()
+    {
+        // A5 (420 x 595 pt) with a top margin of 20% of its height (119 pt): the text is centered in it.
+        const string html = """
+            <html><head><style>
+              @page { @top-right { content: "MARKED"; color: #ff0000; font-size: 20pt; font-weight: bold } }
+              body { margin: 0; font-family: sans-serif; }
+            </style></head><body><p>body</p></body></html>
+            """;
+        var page = new PageSetup(PdfPageSize.A5, new Thickness(Length.FromPercent(20), Length.FromPercent(10), 40, Length.FromPercent(10)));
+        using var bitmap = Conversion.ToImage(HtmlToPdf.ConvertToBytes(html, new HtmlConverterOptions { Page = page }), page: 0, options: new RenderOptions(Dpi: 72));
+
+        var red = Enumerable.Range(0, 119).SelectMany(y => Enumerable.Range(0, bitmap.Width).Where(x => bitmap.GetPixel(x, y) is { Red: > 200, Green: < 80, Blue: < 80 }).Select(x => (x, y))).ToList();
+        Assert.NotEmpty(red);
+        Assert.InRange((red.Min(p => p.y) + red.Max(p => p.y)) / 2.0, 54, 65);
+    }
+
+    [Fact]
     public void Pages_get_markers_of_the_blocks_that_start_on_them()
     {
         var style = new TextStyle(PdfFont.Load(Fixtures.Path("LiberationSans-Regular.ttf")), 10) { LineHeight = LineHeight.Points(10) };

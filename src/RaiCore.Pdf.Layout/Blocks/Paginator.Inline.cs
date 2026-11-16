@@ -10,14 +10,14 @@ internal sealed partial class Paginator
     /// </summary>
     public static double InlineBoxWidth(Block block, double availableWidth)
     {
-        var style = block.Style.Resolve(availableWidth) with { Margin = block.Style.Margin }; // Margins: see ParagraphLayouter.
-        if (style.Width is { } width)
+        var style = block.Style.Resolve(availableWidth); // The margins resolve the same way in ParagraphLayouter.
+        if (style.Width?.Fixed is { } width)
         {
             return style.ClampWidth(width);
         }
 
         var (min, max) = IntrinsicContentBorderBox(block, style);
-        return style.ClampWidth(Math.Min(max, Math.Max(min, availableWidth - style.Margin.Horizontal)));
+        return style.ClampWidth(Math.Min(max, Math.Max(min, availableWidth - style.Margin.Fixed.Horizontal)));
     }
 
     /// <summary>The min-content and max-content widths an inline box takes on a line, margins included.</summary>
@@ -44,7 +44,7 @@ internal sealed partial class Paginator
             _ => paginator.LastLineBaseline(),
         };
 
-        return (height, baseline ?? height + block.Style.Margin.Bottom, paginator._pages[0].Grouped());
+        return (height, baseline ?? height + block.Style.Margin.Bottom.Resolve(containingWidth), paginator._pages[0].Grouped());
     }
 
     /// <summary>
@@ -60,8 +60,8 @@ internal sealed partial class Paginator
 
         // With collapsed borders the table's own border is part of the grid lines (the cells' insets).
         var style = table.BorderCollapse == BorderCollapse.Collapse ? StyleOf(table) with { Border = Borders.None } : StyleOf(table);
-        var top = style.Border.Top.Width + style.Padding.Top;
-        var contentWidth = Math.Max(MinimumContentWidth, borderWidth - style.Border.Widths.Horizontal - style.Padding.Horizontal);
+        var top = style.Border.Top.Width + style.Padding.Fixed.Top;
+        var contentWidth = Math.Max(MinimumContentWidth, borderWidth - style.Border.Widths.Fixed.Horizontal - style.Padding.Fixed.Horizontal);
         var layout = TableLayouter.Layout(table, 0, contentWidth);
         double? best = null;
         foreach (var cell in layout.Cells.Where(c => c.Grid.Row == 0 && c.Grid.Cell.Content.Count > 0))
@@ -70,7 +70,7 @@ internal sealed partial class Paginator
             var firstStyle = ResolveStyle(first, cell.InnerWidth);
             if (FirstBaseline(first, BoxWidth(first, cell.InnerWidth)) is { } baseline)
             {
-                var candidate = top + layout.SpacingY + cell.InsetTop + firstStyle.Margin.Top + baseline;
+                var candidate = top + layout.SpacingY + cell.InsetTop + firstStyle.Margin.Fixed.Top + baseline;
                 best = best is null ? candidate : Math.Max(best.Value, candidate);
             }
         }

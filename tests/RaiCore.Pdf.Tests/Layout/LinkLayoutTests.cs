@@ -85,7 +85,7 @@ public class LinkLayoutTests
     public void Block_links_work_on_flex_items_table_cells_and_inline_boxes()
     {
         var flex = new FlexBlock(null, new FlexItem(Para(1)) { Basis = FlexBasis.Points(60) }, new FlexItem(new ContainerBlock(null, Para(1)) { Link = Web }) { Basis = FlexBasis.Points(60) });
-        var table = new TableBlock { ColumnWidths = [TableWidth.Points(80), TableWidth.Points(80)] }
+        var table = new TableBlock { ColumnWidths = [Length.FromPoints(80), Length.FromPoints(80)] }
             .Add(new TableRow(new TableCell(Para(1)), new TableCell(new ParagraphBlock(new Paragraph(Text).AddLink("Cell", Web)))));
         var inline = new ParagraphBlock(new Paragraph(Text).Add("ab ").AddBox(new ContainerBlock(new BoxStyle { Width = 50 }, new ParagraphBlock(new Paragraph(Text).AddLink("Box", Web)))));
 

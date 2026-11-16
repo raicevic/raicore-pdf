@@ -31,11 +31,11 @@ public class HtmlConversionTests
         var h1 = Paragraph(blocks, "Title");
         Assert.Equal(32 * Px, h1.Paragraph.Style.FontSize, 3); // 2em of 16px
         Assert.Equal(700, h1.Paragraph.Style.Fonts[0].Weight);
-        Assert.Equal(0.67 * 32 * Px, h1.Style.Margin.Top, 2);
+        Assert.Equal(0.67 * 32 * Px, h1.Style.Margin.Top.Points, 2);
         Assert.Equal(PageBreak.Avoid, h1.Style.BreakAfter);
-        Assert.Equal(16 * Px, Paragraph(blocks, "Text").Style.Margin.Top, 3); // 1em
+        Assert.Equal(16 * Px, Paragraph(blocks, "Text").Style.Margin.Top.Points, 3); // 1em
         Assert.Equal("LiberationSerif", Paragraph(blocks, "Text").Paragraph.Style.Fonts[0].PostScriptName); // serif default
-        Assert.Equal(8 * Px, Find<ContainerBlock>(blocks, b => b.Style.Margin.Left > 0).Style.Margin.Left, 3); // body margin
+        Assert.Equal(8 * Px, Find<ContainerBlock>(blocks, b => b.Style.Margin.Left.Points > 0).Style.Margin.Left.Points, 3); // body margin
     }
 
     [Fact]
@@ -145,14 +145,14 @@ public class HtmlConversionTests
         var blocks = Blocks(html, PageWidth(300)); // 300 pt of content; body has no margin
 
         var a = Paragraph(blocks, "a");
-        Assert.Equal((150 + 15 + 3), a.Style.Width!.Value, 3); // 50% of 300 pt content + padding + border
+        Assert.Equal((150 + 15 + 3), a.Style.Width!.Value.Resolve(300), 3); // 50% of 300 pt content + padding + border
         var b = Paragraph(blocks, "b");
-        Assert.Equal(150, b.Style.Width!.Value, 3); // border-box: padding included
-        Assert.Equal(75, b.Style.Margin.Left, 3); // (300 - 150) / 2
+        Assert.Equal(150, b.Style.Width!.Value.Resolve(300), 3); // border-box: padding included
+        Assert.Equal(75, b.Style.Margin.Left.Resolve(300), 3); // (300 - 150) / 2
         var c = Paragraph(blocks, "c");
         Assert.Null(c.Style.Width);
-        Assert.Equal(75, c.Style.MaxWidth!.Value, 3);
-        Assert.Equal(225, c.Style.Margin.Left, 3); // pushed right by the space the max width leaves
+        Assert.Equal(75, c.Style.MaxWidth!.Value.Resolve(300), 3);
+        Assert.Equal(225, c.Style.Margin.Left.Resolve(300), 3); // pushed right by the space the max width leaves
     }
 
     [Fact]
@@ -197,7 +197,7 @@ public class HtmlConversionTests
 
         Assert.Equal(width, flow.Setup.Size.Width, tolerance: 0.01);
         Assert.Equal(height, flow.Setup.Size.Height, tolerance: 0.01);
-        Assert.Equal(marginTop, flow.Setup.Margins.Top, tolerance: 0.01);
+        Assert.Equal(marginTop, flow.Setup.Margins.Top.Points, tolerance: 0.01);
     }
 
     [Theory]

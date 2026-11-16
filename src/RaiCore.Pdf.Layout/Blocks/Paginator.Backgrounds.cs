@@ -31,11 +31,11 @@ internal sealed partial class Paginator
                 // The origin box, of the whole box.
                 var inset = layer.Origin switch
                 {
-                    BackgroundClip.BorderBox => Thickness.Zero,
-                    BackgroundClip.ContentBox => new Thickness(
-                        style.Border.Top.Width + style.Padding.Top, style.Border.Right.Width + style.Padding.Right,
-                        style.Border.Bottom.Width + style.Padding.Bottom, style.Border.Left.Width + style.Padding.Left),
-                    _ => style.Border.Widths,
+                    BackgroundClip.BorderBox => default(Sides),
+                    BackgroundClip.ContentBox => new Sides(
+                        style.Border.Top.Width + style.Padding.Fixed.Top, style.Border.Right.Width + style.Padding.Fixed.Right,
+                        style.Border.Bottom.Width + style.Padding.Fixed.Bottom, style.Border.Left.Width + style.Padding.Fixed.Left),
+                    _ => style.Border.Widths.Fixed,
                 };
                 var origin = (X: x + inset.Left, Top: wholeTop - inset.Top, Width: Math.Max(0, width - inset.Horizontal), Height: Math.Max(0, wholeHeight - inset.Vertical));
                 PaintBackgroundLayer(canvas, layer, origin, (x, y, width, height));
@@ -194,8 +194,8 @@ internal sealed partial class Paginator
 
             case RadialGradient radial:
             {
-                var cx = radial.CenterX.Offset.IsPercent ? radial.CenterX.Offset.Value / 100 * width : radial.CenterX.Offset.Value;
-                var cyDown = radial.CenterY.Offset.IsPercent ? radial.CenterY.Offset.Value / 100 * height : radial.CenterY.Offset.Value;
+                var cx = radial.CenterX.Offset.Resolve(width);
+                var cyDown = radial.CenterY.Offset.Resolve(height);
                 cx = radial.CenterX.FromEnd ? width - cx : cx;
                 cyDown = radial.CenterY.FromEnd ? height - cyDown : cyDown;
                 var (rx, ry) = Radii(radial, cx, cyDown, width, height);

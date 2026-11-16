@@ -49,7 +49,7 @@ public class HtmlRightToLeftLayoutTests
         // A 400px wide body: the end margin, the left one in a right-to-left containing block, takes what is left.
         var box = Blocks($"<body style=\"margin: 0; width: 400px\">{html}</body>").Single(b => b.Id == "b");
 
-        Assert.Equal(marginLeftPx * Px, box.Style.Margin.Left, 3);
+        Assert.Equal(marginLeftPx * Px, box.Style.Margin.Left.Resolve(400 * Px), 3);
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public class HtmlRightToLeftLayoutTests
     {
         var list = Blocks("<ul dir=\"rtl\" id=\"l\"><li>x</li></ul>").Single(b => b.Id == "l");
 
-        Assert.Equal((0, 40 * Px), (list.Style.Padding.Left, list.Style.Padding.Right));
+        Assert.Equal((0, 40 * Px), (list.Style.Padding.Left.Points, list.Style.Padding.Right.Points));
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class HtmlRightToLeftLayoutTests
     {
         var list = Blocks("<div dir=\"rtl\"><ol id=\"l\"><li>x</li></ol></div>").Single(b => b.Id == "l");
 
-        Assert.Equal((0, 40 * Px), (list.Style.Padding.Left, list.Style.Padding.Right));
+        Assert.Equal((0, 40 * Px), (list.Style.Padding.Left.Points, list.Style.Padding.Right.Points));
     }
 
     [Theory]
@@ -86,8 +86,8 @@ public class HtmlRightToLeftLayoutTests
     {
         var list = Blocks($"<style>{css}</style><ul dir=\"rtl\" id=\"l\"><li>x</li></ul>").Single(b => b.Id == "l");
 
-        Assert.Equal(leftPx * Px, list.Style.Padding.Left, 3);
-        Assert.Equal(rightPx * Px, list.Style.Padding.Right, 3);
+        Assert.Equal(leftPx * Px, list.Style.Padding.Left.Points, 3);
+        Assert.Equal(rightPx * Px, list.Style.Padding.Right.Points, 3);
     }
 
     [Theory]
@@ -100,8 +100,8 @@ public class HtmlRightToLeftLayoutTests
     {
         var box = Blocks($"<body style=\"margin: 0\">{html}</body>").Single(b => b.Id == "b");
 
-        Assert.Equal(leftPx * Px, box.Style.Margin.Left, 3);
-        Assert.Equal(rightPx * Px, box.Style.Margin.Right, 3);
+        Assert.Equal(leftPx * Px, box.Style.Margin.Left.Points, 3);
+        Assert.Equal(rightPx * Px, box.Style.Margin.Right.Points, 3);
     }
 
     [Theory]

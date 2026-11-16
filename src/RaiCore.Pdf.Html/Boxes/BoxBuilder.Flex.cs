@@ -13,7 +13,7 @@ internal sealed partial class BoxBuilder
     private FlexBlock BuildFlex(IElement element, ComputedStyle style, double containingWidth, bool flexItem)
     {
         var (box, contentWidth) = BoxStyleFor(style, containingWidth, flexItem, _containingHeight);
-        var outerHeight = EnterBox(box);
+        var outerHeight = EnterBox(box, containingWidth);
         var outerDecorations = EnterDecoration(style, 0);
         var items = new List<FlexItem>();
         var collector = new InlineCollector(this, style, contentWidth);
@@ -127,8 +127,8 @@ internal sealed partial class BoxBuilder
         }
 
         var box = block.Style;
-        var horizontal = box.Padding.Horizontal + box.Border.Widths.Horizontal;
-        var vertical = box.Padding.Vertical + box.Border.Widths.Vertical;
+        var horizontal = box.Padding.Horizontal.Resolve(containerWidth) + box.Border.Widths.Horizontal.Points;
+        var vertical = box.Padding.Vertical.Resolve(containerWidth) + box.Border.Widths.Vertical.Points;
 
         // CSS sizes are content-box unless box-sizing: border-box; the layout engine works with border boxes.
         double? Width(CssLength length) => length.IsAuto ? null : Math.Max(0, length.Resolve(containerWidth) + (style.BorderBox ? 0 : horizontal));

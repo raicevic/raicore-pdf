@@ -92,7 +92,7 @@ public class HtmlMinMaxWidthTests
         var image = Flatten(flow.Blocks).OfType<ImageBlock>().Single();
         var placement = placements.Single(p => p.Block == image);
 
-        Assert.Equal(200, image.Style.MaxWidth);
+        Assert.Equal(Length.FromPercent(50), image.Style.MaxWidth); // Resolved in layout: 200 pt of 400 pt.
         Assert.Equal((150.0, 200.0, 200.0), (placement.Left, placement.Width, placement.Bottom - placement.Top)); // Square.
     }
 

@@ -272,6 +272,31 @@ public class HtmlPercentageTests
         Assert.Equal(120, placements.First(p => p.Block == block).Width, 6);
     }
 
+    [Fact]
+    public void A_border_box_heights_percentage_padding_leaves_its_children_the_rest()
+    {
+        // 10% of the 400 pt content width is 40 pt of padding: the child is half of the remaining 160 pt.
+        var (flow, placements) = Layout("""
+            <div style="box-sizing: border-box; height: 200pt; padding-top: 10%; background: #ddd">
+              <div style="height: 50%; background: #ccc">inner</div>
+            </div>
+            """);
+        var inner = Box(flow, placements, "inner");
+
+        Assert.Equal(80, inner.Bottom - inner.Top, 6);
+    }
+
+    [Fact]
+    public void A_flex_items_content_box_basis_adds_its_percentage_padding()
+    {
+        // flex-basis is content-box: 100 pt plus 10% of the 400 pt container on each side.
+        var (flow, placements) = Layout("""
+            <div style="display: flex; width: 400pt"><div style="flex: 0 0 100pt; padding: 0 10%; background: #ccc">item</div></div>
+            """);
+
+        Assert.Equal(180, Box(flow, placements, "item").Width, 6);
+    }
+
     private static (double Left, double Width) Horizontal(Placement placement) => (Math.Round(placement.Left, 6), Math.Round(placement.Width, 6));
 
     private static (FlowDocument Flow, IReadOnlyList<Placement> Placements) Layout(string html)

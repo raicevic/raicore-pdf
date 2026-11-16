@@ -111,7 +111,7 @@ internal static partial class ParagraphLayouter
         {
             var borderWidth = Paginator.InlineBoxWidth(box.Content, width);
             var (height, baseline, content) = Paginator.LayoutInlineBox(box.Content, borderWidth, width);
-            boxes[box] = new InlineBoxFragment(box, 0, borderWidth, height, baseline, content);
+            boxes[box] = new InlineBoxFragment(box, box.Content.Style.Margin.Resolve(width).Fixed, 0, borderWidth, height, baseline, content);
         }
 
         var prefix = MeasurePrefix(text, paragraph, spans, spanStarts, box => boxes[box].OuterWidth, image => image.Width);
@@ -519,9 +519,9 @@ internal static partial class ParagraphLayouter
             foreach (var part in opening[v])
             {
                 var box0 = part.Decoration.Box;
-                x += part.Left ? box0.Margin.Left : 0;
+                x += part.Left ? box0.Margin.Fixed.Left : 0;
                 part.X0 = x;
-                x += part.Left ? box0.Border.Left.Width + box0.Padding.Left : 0;
+                x += part.Left ? box0.Border.Left.Width + box0.Padding.Fixed.Left : 0;
             }
 
             if (image is not null)
@@ -531,7 +531,7 @@ internal static partial class ParagraphLayouter
             }
             else if (box is not null)
             {
-                var margin = box.Box.Content.Style.Margin;
+                var margin = box.Margin;
                 items[p] = (margin.Top + box.Baseline, box.Height - box.Baseline + margin.Bottom, box.Box.Alignment, x);
                 x += box.OuterWidth;
             }
@@ -546,9 +546,9 @@ internal static partial class ParagraphLayouter
             foreach (var part in closing[v])
             {
                 var box1 = part.Decoration.Box;
-                x += part.Right ? box1.Padding.Right + box1.Border.Right.Width : 0;
+                x += part.Right ? box1.Padding.Fixed.Right + box1.Border.Right.Width : 0;
                 decorationPieces.Add((part.Decoration, part.X0, x, part.Left, part.Right));
-                x += part.Right ? box1.Margin.Right : 0;
+                x += part.Right ? box1.Margin.Fixed.Right : 0;
             }
 
             foreach (var link in linkClosing[v])
@@ -609,7 +609,7 @@ internal static partial class ParagraphLayouter
             }
             else if (box is not null)
             {
-                lineBoxes.Add(new InlineBoxFragment(box.Box, itemX, box.Width, box.Height, box.Baseline, box.Content, shifts[p]));
+                lineBoxes.Add(new InlineBoxFragment(box.Box, box.Margin, itemX, box.Width, box.Height, box.Baseline, box.Content, shifts[p]));
             }
             else
             {
@@ -643,8 +643,8 @@ internal static partial class ParagraphLayouter
                 var (style, box) = (d.Decoration.Style, d.Decoration.Box);
                 var font = style.Fonts[0];
                 var shift = style.VerticalAlign.Kind == InlineAlignmentKind.Baseline ? style.VerticalAlign.Shift : 0;
-                var above = (font.Ascent * style.FontSize) + box.Padding.Top + box.Border.Top.Width + shift;
-                var below = (-font.Descent * style.FontSize) + box.Padding.Bottom + box.Border.Bottom.Width - shift;
+                var above = (font.Ascent * style.FontSize) + box.Padding.Fixed.Top + box.Border.Top.Width + shift;
+                var below = (-font.Descent * style.FontSize) + box.Padding.Fixed.Bottom + box.Border.Bottom.Width - shift;
                 return new InlineDecorationFragment(d.Decoration, d.X0, d.X1, above, below, d.StartEdge, d.EndEdge);
             })
             .ToList();
@@ -756,9 +756,9 @@ internal static partial class ParagraphLayouter
         return parts;
     }
 
-    private static double StartEdge(BoxStyle box) => box.Margin.Left + box.Border.Left.Width + box.Padding.Left;
+    private static double StartEdge(BoxStyle box) => box.Margin.Fixed.Left + box.Border.Left.Width + box.Padding.Fixed.Left;
 
-    private static double EndEdge(BoxStyle box) => box.Padding.Right + box.Border.Right.Width + box.Margin.Right;
+    private static double EndEdge(BoxStyle box) => box.Padding.Fixed.Right + box.Border.Right.Width + box.Margin.Fixed.Right;
 
     /// <summary>The height of a line holding only the paragraph's strut: its own font at its line height.</summary>
     private static double StrutHeight(TextStyle style)

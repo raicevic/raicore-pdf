@@ -88,8 +88,8 @@ internal sealed partial class Paginator
     {
         var style = ResolveStyle(block, width);
         var boxWidth = FloatBoxWidth(block, width);
-        var outerWidth = boxWidth + style.Margin.Horizontal;
-        var height = MeasureBox(block, boxWidth) + style.Margin.Vertical;
+        var outerWidth = boxWidth + style.Margin.Fixed.Horizontal;
+        var height = MeasureBox(block, boxWidth) + style.Margin.Fixed.Vertical;
 
         double top, left;
         while (true)
@@ -123,21 +123,21 @@ internal sealed partial class Paginator
         }
 
         var (page, y, truncate) = (PageIndex, Y, TruncateMargins);
-        Y = top + style.Margin.Top;
+        Y = top + style.Margin.Fixed.Top;
         TruncateMargins = false; // Out of the flow: nothing in it is truncated at the top of the page.
 
         var outerLayer = _layer;
         _layer = _layer.Group == PaintLayer.Flow ? new PaintLayer(PaintLayer.Floats, 0) : _layer; // In a positioned box: its layer.
         try
         {
-            LayoutBlock(block, left + style.Margin.Left, boxWidth);
+            LayoutBlock(block, left + style.Margin.Fixed.Left, boxWidth);
         }
         finally
         {
             _layer = outerLayer;
         }
 
-        var (endPage, endY) = (PageIndex, Y + style.Margin.Bottom);
+        var (endPage, endY) = (PageIndex, Y + style.Margin.Fixed.Bottom);
         for (var p = page; p <= endPage; p++)
         {
             var areaTop = p == page ? top : PageTop(p);
@@ -164,7 +164,7 @@ internal sealed partial class Paginator
             return BoxWidth(block, width);
         }
 
-        var available = Math.Max(0, width - style.Margin.Horizontal);
+        var available = Math.Max(0, width - style.Margin.Fixed.Horizontal);
         var (min, max) = IntrinsicContentBorderBox(block, style);
         return style.ClampWidth(Math.Min(Math.Max(min, available), max));
     }

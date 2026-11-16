@@ -45,7 +45,7 @@ public class HtmlTableTests
         Assert.Equal((2, 3), (cell.ColumnSpan, cell.RowSpan)); // As written; the grid clips it to the 2 rows that exist.
         Assert.Equal(2, TableLayouter.BuildGrid(table).Cells[0].RowSpan);
         Assert.Equal(VerticalAlignment.Bottom, cell.VerticalAlignment);
-        Assert.Equal(8 * Px, cell.Style.Padding.Top, 3);
+        Assert.Equal(8 * Px, cell.Style.Padding.Top.Points, 3);
         Assert.Equal(2 * Px, cell.Style.Border.Top.Width, 3);
         Assert.Equal(VerticalAlignment.Top, table.Rows[0].Cells[1].VerticalAlignment);
         Assert.Equal(VerticalAlignment.Middle, table.Rows[1].Cells[0].VerticalAlignment); // The default
@@ -69,9 +69,9 @@ public class HtmlTableTests
 
         Assert.Equal(1 * Px, table.Style.Border.Top.Width, 3);
         Assert.Equal(1 * Px, table.Rows[0].Cells[0].Style.Border.Left.Width, 3);
-        Assert.Equal(5 * Px, table.Rows[0].Cells[0].Style.Padding.Left, 3);
+        Assert.Equal(5 * Px, table.Rows[0].Cells[0].Style.Padding.Left.Points, 3);
         Assert.Equal((0, 0), Spacing(table));
-        Assert.Equal(200, table.Style.Width!.Value, 3);
+        Assert.Equal(200, table.Style.Width!.Value.Resolve(400), 3);
         Assert.Equal(TextAlignment.Right, CellParagraph(table.Rows[0].Cells[0]).Alignment);
     }
 
@@ -80,7 +80,7 @@ public class HtmlTableTests
     {
         var table = Table("<table><colgroup><col style='width: 40px'><col span='2' width='20%'></colgroup><tr><td>a</td><td>b</td><td>c</td></tr></table>");
 
-        Assert.Equal([TableWidth.Points(30), TableWidth.Percent(20), TableWidth.Percent(20)], table.ColumnWidths);
+        Assert.Equal([Length.FromPoints(30), Length.FromPercent(20), Length.FromPercent(20)], table.ColumnWidths);
     }
 
     [Fact]

@@ -26,7 +26,7 @@ public class InlineImageSizingTests
     [Fact]
     public void A_percentage_max_width_resolves_against_the_width_the_paragraph_is_laid_out_at()
     {
-        var paragraph = WithImage(new InlineImageSizing(MaxWidth: BoxLength.FromPercent(100)));
+        var paragraph = WithImage(new InlineImageSizing(MaxWidth: Length.FromPercent(100)));
 
         Assert.Equal((200.0, 50.0), (ImageAt(paragraph, 200).Image.Width, ImageAt(paragraph, 200).Image.Height));
         Assert.Equal((400.0, 100.0), (ImageAt(paragraph, 600).Image.Width, ImageAt(paragraph, 600).Image.Height)); // Not enlarged.
@@ -35,13 +35,13 @@ public class InlineImageSizingTests
     [Fact]
     public void A_percentage_width_keeps_the_aspect_ratio_unless_a_height_is_given()
     {
-        Assert.Equal((100.0, 25.0), Size(ImageAt(WithImage(new InlineImageSizing(Width: BoxLength.FromPercent(50))), 200)));
-        Assert.Equal((100.0, 70.0), Size(ImageAt(WithImage(new InlineImageSizing(Width: BoxLength.FromPercent(50), Height: 70)), 200)));
-        Assert.Equal((110.0, 27.5), Size(ImageAt(WithImage(new InlineImageSizing(Width: new BoxLength(10, 50))), 200))); // calc(50% + 10pt)
+        Assert.Equal((100.0, 25.0), Size(ImageAt(WithImage(new InlineImageSizing(Width: Length.FromPercent(50))), 200)));
+        Assert.Equal((100.0, 70.0), Size(ImageAt(WithImage(new InlineImageSizing(Width: Length.FromPercent(50), Height: 70)), 200)));
+        Assert.Equal((110.0, 27.5), Size(ImageAt(WithImage(new InlineImageSizing(Width: new Length(10, 50))), 200))); // calc(50% + 10pt)
 
         // With both sizes given, a limit squeezes the image instead of scaling it.
-        Assert.Equal((200.0, 70.0), Size(ImageAt(WithImage(new InlineImageSizing(Width: BoxLength.FromPoints(300), Height: 70, MaxWidth: BoxLength.FromPercent(100))), 200)));
-        Assert.Equal((200.0, 50.0), Size(ImageAt(WithImage(new InlineImageSizing(MaxWidth: BoxLength.FromPercent(100))), 200)));
+        Assert.Equal((200.0, 70.0), Size(ImageAt(WithImage(new InlineImageSizing(Width: Length.FromPoints(300), Height: 70, MaxWidth: Length.FromPercent(100))), 200)));
+        Assert.Equal((200.0, 50.0), Size(ImageAt(WithImage(new InlineImageSizing(MaxWidth: Length.FromPercent(100))), 200)));
 
         static (double, double) Size(InlineImageFragment fragment) => (fragment.Image.Width, fragment.Image.Height);
     }
@@ -49,7 +49,7 @@ public class InlineImageSizingTests
     [Fact]
     public void The_minimum_wins_over_the_maximum()
     {
-        var sizing = new InlineImageSizing(MinWidth: BoxLength.FromPoints(150), MaxWidth: BoxLength.FromPercent(100));
+        var sizing = new InlineImageSizing(MinWidth: Length.FromPoints(150), MaxWidth: Length.FromPercent(100));
 
         Assert.Equal(150, ImageAt(WithImage(sizing), 100).Image.Width);
         Assert.Equal(300, ImageAt(WithImage(sizing), 300).Image.Width);
@@ -59,12 +59,12 @@ public class InlineImageSizingTests
     public void Relative_images_add_nothing_to_min_content_but_their_size_to_max_content()
     {
         // The size given when building (50 x 12.5, resolved against a guess) does not count: max-content is natural.
-        Assert.Equal((0.0, 400.0), ParagraphLayouter.MeasureIntrinsic(WithImage(new InlineImageSizing(MaxWidth: BoxLength.FromPercent(100)), 50, 12.5)));
-        Assert.Equal((0.0, 400.0), ParagraphLayouter.MeasureIntrinsic(WithImage(new InlineImageSizing(Width: BoxLength.FromPercent(50)), 50, 12.5)));
+        Assert.Equal((0.0, 400.0), ParagraphLayouter.MeasureIntrinsic(WithImage(new InlineImageSizing(MaxWidth: Length.FromPercent(100)), 50, 12.5)));
+        Assert.Equal((0.0, 400.0), ParagraphLayouter.MeasureIntrinsic(WithImage(new InlineImageSizing(Width: Length.FromPercent(50)), 50, 12.5)));
 
         // A fixed minimum stays; a fixed width with only a percentage minimum is not compressible.
-        Assert.Equal((150.0, 400.0), ParagraphLayouter.MeasureIntrinsic(WithImage(new InlineImageSizing(MinWidth: BoxLength.FromPoints(150), MaxWidth: BoxLength.FromPercent(100)))));
-        Assert.Equal((80.0, 80.0), ParagraphLayouter.MeasureIntrinsic(WithImage(new InlineImageSizing(Width: BoxLength.FromPoints(80), MinWidth: BoxLength.FromPercent(10)), 80, 20)));
+        Assert.Equal((150.0, 400.0), ParagraphLayouter.MeasureIntrinsic(WithImage(new InlineImageSizing(MinWidth: Length.FromPoints(150), MaxWidth: Length.FromPercent(100)))));
+        Assert.Equal((80.0, 80.0), ParagraphLayouter.MeasureIntrinsic(WithImage(new InlineImageSizing(Width: Length.FromPoints(80), MinWidth: Length.FromPercent(10)), 80, 20)));
 
         // Without sizing an image is as wide as it is given.
         Assert.Equal((400.0, 400.0), ParagraphLayouter.MeasureIntrinsic(new Paragraph(Style).AddImage(Wide, 400, 100)));

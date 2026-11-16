@@ -39,6 +39,12 @@ accepted on 2026-11-16.
 
 ### 1. One length type in the layout API (B, decision)
 
+*Done in part 4.* Notes from doing it: a table column width with both points and a percentage counts as a percentage
+column (as before, when a width was one or the other); `PageSetup.Margins` percentages are of the page's width (left,
+right) or height (top, bottom); the layout reads lengths only after resolving them (debug builds throw otherwise),
+which moved two estimates the HTML builder used to store into the layout: an inline box's percentage margins and the
+top margin of a first child collapsing through its parent.
+
 The layout API has six structs for "points, a percentage, or both":
 
 | Type | Shape | Used by |

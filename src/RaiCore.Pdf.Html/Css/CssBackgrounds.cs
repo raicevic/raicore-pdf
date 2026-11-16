@@ -422,7 +422,7 @@ internal static partial class CssBackgrounds
 
         var shape = RadialShape.Ellipse;
         var extent = RadialExtent.FarthestCorner;
-        var radii = new List<Inset>();
+        var radii = new List<Length>();
         var (centerX, centerY) = (BackgroundPosition.Center, BackgroundPosition.Center);
         var stopsFrom = 0;
 
@@ -585,11 +585,11 @@ internal static partial class CssBackgrounds
         var x = BackgroundPosition.Center;
         var y = BackgroundPosition.Center;
         var lower = tokens.Select(t => t.ToLowerInvariant()).ToList();
-        BackgroundPosition Keyword(string keyword, Inset? offset = null) => keyword switch
+        BackgroundPosition Keyword(string keyword, Length? offset = null) => keyword switch
         {
-            "right" or "bottom" => new BackgroundPosition(offset ?? Inset.Percent(0), FromEnd: true),
+            "right" or "bottom" => new BackgroundPosition(offset ?? Length.FromPercent(0), FromEnd: true),
             "center" => BackgroundPosition.Center,
-            _ => new BackgroundPosition(offset ?? Inset.Percent(0)),
+            _ => new BackgroundPosition(offset ?? Length.FromPercent(0)),
         };
 
         if (lower.Count >= 3)
@@ -598,7 +598,7 @@ internal static partial class CssBackgrounds
             for (var i = 0; i < lower.Count; i++)
             {
                 var keyword = lower[i];
-                Inset? offset = i + 1 < lower.Count && !PositionKeywords.Contains(lower[i + 1]) ? ToInset(tokens[++i], fontSize, rootFontSize) : null;
+                Length? offset = i + 1 < lower.Count && !PositionKeywords.Contains(lower[i + 1]) ? ToInset(tokens[++i], fontSize, rootFontSize) : null;
                 if (keyword is "left" or "right")
                 {
                     x = Keyword(keyword, offset);
@@ -656,12 +656,12 @@ internal static partial class CssBackgrounds
     };
 
     /// <summary>A length or percentage (calc() resolves with percentages of 0); <c>null</c> for auto and invalid values.</summary>
-    private static Inset? ToInset(string token, double fontSize, double rootFontSize) =>
+    private static Length? ToInset(string token, double fontSize, double rootFontSize) =>
         CssValues.TryParseLength(token, fontSize, rootFontSize) switch
         {
-            { Kind: CssLengthKind.Points } length => Inset.Points(length.Value),
-            { Kind: CssLengthKind.Percent } length => Inset.Percent(length.Value),
-            { Kind: CssLengthKind.Calc } length => Inset.Points(length.Resolve(0)),
+            { Kind: CssLengthKind.Points } length => Length.FromPoints(length.Value),
+            { Kind: CssLengthKind.Percent } length => Length.FromPercent(length.Value),
+            { Kind: CssLengthKind.Calc } length => Length.FromPoints(length.Resolve(0)),
             _ => null,
         };
 

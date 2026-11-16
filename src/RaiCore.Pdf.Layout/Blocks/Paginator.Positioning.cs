@@ -61,9 +61,9 @@ internal sealed partial class Paginator
     private ContainingBox PageArea(int page)
     {
         var setup = _frames[page].Setup;
-        var top = setup.Margins.Top;
-        var bottom = _static ? Math.Max(top, Y) : setup.Size.Height - setup.Margins.Bottom;
-        return new ContainingBox(page, top, page, bottom, _setup.Margins.Left, ContentWidthOf(page), bottom - top);
+        var top = setup.UsedMargins.Top;
+        var bottom = _static ? Math.Max(top, Y) : setup.Size.Height - setup.UsedMargins.Bottom;
+        return new ContainingBox(page, top, page, bottom, _setup.UsedMargins.Left, ContentWidthOf(page), bottom - top);
     }
 
     /// <summary>
@@ -78,7 +78,7 @@ internal sealed partial class Paginator
         {
             var insets = style.Insets;
             dx = insets.Left?.Resolve(_containingWidth) ?? -(insets.Right?.Resolve(_containingWidth) ?? 0);
-            dy = insets.Top is { IsPercent: false } top ? top.Value : insets.Bottom is { IsPercent: false } bottom ? -bottom.Value : 0;
+            dy = insets.Top is { HasPercent: false } top ? top.Points : insets.Bottom is { HasPercent: false } bottom ? -bottom.Points : 0;
         }
 
         var (outerLayer, outerShift) = (_layer, _shift);
@@ -102,7 +102,7 @@ internal sealed partial class Paginator
         if (pending.Count > 0)
         {
             // The padding box, where the block was drawn (moved by its offset).
-            var border = style.Border.Widths;
+            var border = style.Border.Widths.Fixed;
             var (endPage, endY) = sizing.StretchTo is { } line ? (line.Page, line.Y - sizing.StretchInset) : (PageIndex, Y);
             var top = startY + border.Top + dy;
             var bottom = endY - border.Bottom + dy;
@@ -137,14 +137,14 @@ internal sealed partial class Paginator
     {
         var block = absolute.Block;
         var style = ResolveStyle(block, box.Width);
-        var (margin, insets) = (style.Margin, style.Insets);
+        var (margin, insets) = (style.Margin.Fixed, style.Insets);
         var left = insets.Left?.Resolve(box.Width);
         var right = insets.Right?.Resolve(box.Width);
         var top = insets.Top?.Resolve(box.Height);
         var bottom = insets.Bottom?.Resolve(box.Height);
 
         double boxWidth;
-        if (style.Width is { } fixedWidth)
+        if (style.Width?.Fixed is { } fixedWidth)
         {
             boxWidth = style.ClampWidth(fixedWidth);
         }

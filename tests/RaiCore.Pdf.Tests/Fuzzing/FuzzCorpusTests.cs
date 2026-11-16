@@ -210,7 +210,7 @@ public class FuzzCorpusTests
         var paragraph = flow.Blocks.SelectMany(Flatten).OfType<ParagraphBlock>().First();
 
         Assert.Equal(PdfColor.FromRgb(255, 0, 0), paragraph.Paragraph.Spans[0].Style.Color);
-        Assert.Equal(7, paragraph.Style.Margin.Left, 3);
+        Assert.Equal(7, paragraph.Style.Margin.Left.Points, 3);
     }
 
     private static IEnumerable<Block> Flatten(Block block) =>

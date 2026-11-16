@@ -27,7 +27,7 @@ public class HtmlPositioningTests
     {
         var insets = Box("<div id=\"b\" style=\"position: absolute; top: 10px; left: 25%\">x</div>").Style.Insets;
 
-        Assert.Equal(new BoxInsets(Inset.Points(10 * Px), null, null, Inset.Percent(25)), insets);
+        Assert.Equal(new BoxInsets(Length.FromPoints(10 * Px), null, null, Length.FromPercent(25)), insets);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class HtmlPositioningTests
     {
         var insets = Box("<body style=\"margin: 0; width: 400px\"><div id=\"b\" style=\"position: relative; left: 10%; top: 50%\">x</div></body>").Style.Insets;
 
-        Assert.Equal(new BoxInsets(Top: null, Left: Inset.Points(40 * Px)), insets); // top: 50% of an auto height is auto.
+        Assert.Equal(new BoxInsets(Top: null, Left: Length.FromPoints(40 * Px)), insets); // top: 50% of an auto height is auto.
     }
 
     [Theory]

@@ -133,7 +133,7 @@ public sealed partial class ParagraphLayout
             foreach (var box in line.Boxes)
             {
                 // The box's content was laid out at x = 0; move it to its place on the line.
-                var left = x + line.X + box.X + box.Box.Content.Style.Margin.Left;
+                var left = x + line.X + box.X + box.Margin.Left;
                 canvas.SaveState().Transform(1, 0, 0, 1, left, 0);
                 foreach (var draw in box.Content)
                 {
@@ -446,8 +446,9 @@ public sealed record InlineDecorationFragment(InlineDecoration Decoration, doubl
 /// <summary>An inline box on a line.</summary>
 public sealed class InlineBoxFragment
 {
-    internal InlineBoxFragment(InlineBox box, double x, double width, double height, double baseline, IReadOnlyList<DrawOperation> content, double baselineShift = 0)
+    internal InlineBoxFragment(InlineBox box, Sides margin, double x, double width, double height, double baseline, IReadOnlyList<DrawOperation> content, double baselineShift = 0)
     {
+        Margin = margin;
         BaselineShift = baselineShift;
         Box = box;
         X = x;
@@ -459,6 +460,9 @@ public sealed class InlineBoxFragment
 
     /// <summary>The inline box.</summary>
     public InlineBox Box { get; }
+
+    /// <summary>The box's margins, with percentages of the paragraph's width resolved.</summary>
+    internal Sides Margin { get; }
 
     /// <summary>Offset of the box's margin edge from the start of the line's content.</summary>
     public double X { get; }
@@ -476,7 +480,7 @@ public sealed class InlineBoxFragment
     public double BaselineShift { get; }
 
     /// <summary>Width including the horizontal margins: the space it takes on the line.</summary>
-    public double OuterWidth => Box.Content.Style.Margin.Horizontal + Width;
+    public double OuterWidth => Margin.Horizontal + Width;
 
     /// <summary>Drawing operations with the border box's top-left corner at x = 0 and y = the top passed in.</summary>
     internal IReadOnlyList<DrawOperation> Content { get; }

@@ -62,7 +62,7 @@ public class TableLayoutTests
     [Fact]
     public void Percentage_and_fixed_columns()
     {
-        var table = new TableBlock(new BoxStyle { Width = 260 }) { ColumnWidths = [TableWidth.Percent(50), TableWidth.Points(40)] }
+        var table = new TableBlock(new BoxStyle { Width = 260 }) { ColumnWidths = [Length.FromPercent(50), Length.FromPoints(40)] }
             .Add(new TableRow(Cell("a"), Cell("b"), Cell("c")));
         var layout = TableLayouter.Layout(table, 0, 260);
 
@@ -72,9 +72,20 @@ public class TableLayoutTests
     }
 
     [Fact]
+    public void A_column_width_with_a_percentage_is_a_percentage_column()
+    {
+        // calc(50% + 10pt) counts as 50%: column widths are either fixed or percentages.
+        var table = new TableBlock(new BoxStyle { Width = 260 }) { ColumnWidths = [new Length(10, 50), 40] }
+            .Add(new TableRow(Cell("a"), Cell("b"), Cell("c")));
+        var layout = TableLayouter.Layout(table, 0, 260);
+
+        Assert.Equal((130.0, 40.0), (Width(layout, 0), Width(layout, 1)));
+    }
+
+    [Fact]
     public void Fixed_layout_shares_the_rest_equally()
     {
-        var table = new TableBlock(new BoxStyle { Width = 260 }) { LayoutMode = TableLayoutMode.Fixed, ColumnWidths = [TableWidth.Points(60)] };
+        var table = new TableBlock(new BoxStyle { Width = 260 }) { LayoutMode = TableLayoutMode.Fixed, ColumnWidths = [Length.FromPoints(60)] };
         table.Add(new TableRow(Cell("a very long text that would want a lot of room"), Cell("b"), Cell("c")));
         var layout = TableLayouter.Layout(table, 0, 260);
 
@@ -247,7 +258,7 @@ public class TableLayoutTests
     private static double WidthOf(TableBlock table)
     {
         var (min, max) = TableLayouter.MeasureIntrinsic(table);
-        return table.Style.Width ?? Math.Max(min, Math.Min(260, max));
+        return table.Style.Width?.Points ?? Math.Max(min, Math.Min(260, max));
     }
 
     private static double Width(TableLayout layout, int column) => layout.ColumnX[column + 1] - layout.ColumnX[column] - layout.SpacingX;
