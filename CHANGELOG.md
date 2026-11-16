@@ -15,6 +15,9 @@ when it changes without a matching line in `PublicAPI.Unshipped.txt` (#61), so c
 Samples (#65): runnable apps in [samples/](samples/README.md) (invoice, report with a table of contents, letter for a
 window envelope, ASP.NET Core with Razor, background worker, Docker image), built and run in CI.
 
+Migration guides (#64) from wkhtmltopdf/DinkToPdf, Puppeteer/Playwright, IronPDF, Aspose and SelectPdf, with
+side-by-side examples, option mappings and known differences: [docs/migration](docs/migration/README.md).
+
 Release trains (#62): the core packages share one version and depend on each other at exactly that version; future
 packages (such as DOCX conversion) get versions and release tags of their own (see "Releasing" in CONTRIBUTING.md).
 
