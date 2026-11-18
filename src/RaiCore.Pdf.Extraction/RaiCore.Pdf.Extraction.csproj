@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Read what is on the pages of existing PDF files with RaiCore.Pdf: text, its position, and images.</Description>
+    <PackageTags>$(PackageTags);text-extraction;pdf-reader</PackageTags>
+    <!-- The glyph name table is the Adobe Glyph List (BSD-3-Clause): see Fonts/AGL-LICENSE.txt. -->
+    <PackageLicenseExpression>Apache-2.0 AND BSD-3-Clause</PackageLicenseExpression>
+    <!--
+      A core package (it reads the core's PDF parser, stream decoders and font tables through InternalsVisibleTo, so
+      it is released with the core at the same version). It has no released version to validate against yet: set the
+      baseline to the first release that includes it.
+    -->
+    <PackageValidationBaselineVersion></PackageValidationBaselineVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Fonts\AGL-LICENSE.txt" Pack="true" PackagePath="licenses/adobe-glyph-list.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RaiCore.Pdf\RaiCore.Pdf.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RaiCore.Pdf.Tests" />
+    <InternalsVisibleTo Include="RaiCore.Pdf.Fuzz" />
+  </ItemGroup>
+
+</Project>

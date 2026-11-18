@@ -11,6 +11,8 @@
     <InternalsVisibleTo Include="RaiCore.Pdf.Layout" />
     <!-- Resource limits: the HTML converter enforces them and checks the time limit while it builds boxes. -->
     <InternalsVisibleTo Include="RaiCore.Pdf.Html" />
+    <!-- Text and image extraction reads pages with the reader's parser, stream decoders and font tables. -->
+    <InternalsVisibleTo Include="RaiCore.Pdf.Extraction" />
   </ItemGroup>
 
   <ItemGroup>

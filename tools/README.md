@@ -15,6 +15,16 @@ PDF fonts. They come from the metric-compatible Liberation fonts:
 .venv/bin/python tools/generate_standard_font_metrics.py src/RaiCore.Pdf.Fonts/Liberation
 ```
 
+## `generate_glyph_list.py`
+
+Regenerates `src/RaiCore.Pdf.Extraction/Fonts/GlyphList.g.cs` (the Adobe Glyph List, which maps glyph names to
+Unicode) and `Encodings.g.cs` (StandardEncoding and MacRomanEncoding as code-to-character tables), which text
+extraction needs to read simple fonts:
+
+```sh
+.venv/bin/python tools/generate_glyph_list.py
+```
+
 ## `generate_test_fonts.py`
 
 Regenerates the font fixtures in `tests/RaiCore.Pdf.Tests/Fixtures`: WOFF/WOFF2 versions of Liberation Sans, a tiny

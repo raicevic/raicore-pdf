@@ -5,6 +5,15 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **RaiCore.Pdf.Extraction** (new package, no public API yet), the base for reading what is on the pages of
+  existing PDFs: a content-stream interpreter that follows the graphics and text state and form XObjects, and reports
+  each glyph (its text and its position, size and bounds on the displayed page, rotation and crop box applied) and
+  each image placement. Fonts are decoded to text through ToUnicode maps, the standard encodings, `/Differences` glyph
+  names (Adobe Glyph List), built-in encodings of embedded Type 1 fonts, composite fonts with Identity, Unicode and
+  embedded CMaps, Type 3 fonts, and the `cmap` of embedded TrueType fonts. Malformed content is skipped with
+  diagnostics, never thrown, within resource limits, and the interpreter has its own fuzz target (`extract`) (#184).
+
 ## [1.0.0] - 2026-11-17
 
 The first release: HTML, CSS and Razor to PDF with RaiCore.Pdf's own layout engine, no browser involved, on Windows,

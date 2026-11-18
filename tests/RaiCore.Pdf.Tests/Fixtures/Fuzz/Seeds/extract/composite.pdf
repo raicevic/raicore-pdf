@@ -1,0 +1,42 @@
+%PDF-1.7
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Resources << /Font << /F1 << /Type /Font /Subtype /Type0 /BaseFont /Mixed /Encoding 5 0 R /ToUnicode 6 0 R /DescendantFonts [<< /Type /Font /Subtype /CIDFontType0 /BaseFont /Mixed /W [65 [100] 1001 [200] 32 [250] 66 66 300] /DW 900 >>] >> /F2 << /Type /Font /Subtype /Type0 /BaseFont /V /Encoding /Identity-V /DescendantFonts [<< /Subtype /CIDFontType2 /DW2 [880 -1000] /W2 [1 [-500 250 800]] >>] >> /F3 << /Type /Font /Subtype /Type0 /Encoding /UniJIS-UTF16-H /DescendantFonts [<< /Subtype /CIDFontType0 >>] >> >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 84  >>
+stream
+BT /F1 10 Tf <41800120 42> Tj /F2 10 Tf <00010002> Tj /F3 10 Tf <0041D83DDE00> Tj ET
+endstream
+endobj
+5 0 obj
+<< /Length 196 /Type /CMap /WMode 0 >>
+stream
+/CMapName /Mixed def /Identity-H usecmap 2 begincodespacerange <00> <7F> <8000> <FFFF> endcodespacerange 2 begincidrange <00> <7F> 0 <8000> <80FF> 1000 endcidrange 1 begincidchar <42> 7 endcidchar
+endstream
+endobj
+6 0 obj
+<< /Length 183  >>
+stream
+1 begincodespacerange <00> <FF> endcodespacerange 2 beginbfchar <41> <0041> <8001> <00E9> endbfchar 2 beginbfrange <00> <10> <0061> <20> <22> [<0066006C> <D83DDE00> /space] endbfrange
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f
+0000000009 00000 n
+0000000058 00000 n
+0000000115 00000 n
+0000000721 00000 n
+0000000856 00000 n
+0000001124 00000 n
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1359
+%%EOF
