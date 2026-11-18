@@ -1,8 +1,8 @@
 name: Release
 
 # Two kinds of tags (#62; see "Releasing" in CONTRIBUTING.md):
-# - v1.2.0 (or v1.2.0-rc.1) releases the core packages (RaiCore.Pdf, .Fonts, .Layout, .Html, .Razor) together. The
-#   version must match CoreVersionPrefix in Directory.Build.props.
+# - v1.2.0 (or v1.2.0-rc.1) releases the core packages (RaiCore.Pdf, .Fonts, .Layout, .Html, .Razor, .Extraction)
+#   together. The version must match CoreVersionPrefix in Directory.Build.props.
 # - <PackageId>/v0.3.0, such as RaiCore.Pdf.Docx/v0.3.0, releases one package with its own version, which must match
 #   the VersionPrefix in its project file.
 # Nothing is released before 1.0: core tags below v1.0.0 (including 1.0.0 prereleases) are refused, and so is any

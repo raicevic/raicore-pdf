@@ -17,6 +17,7 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables, flexbox | ✅ 1.0 |
 | `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | ✅ 1.0 |
 | `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | ✅ 1.0 |
+| `RaiCore.Pdf.Extraction` | Read existing PDFs: text by page, text search with positions, images with their placement | 🚧 In development |
 | `RaiCore.Pdf.Docx`, `.Xlsx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ After 1.0 |
 
 All packages target .NET 10 and run on Windows, Linux (glibc and musl, so Alpine too) and macOS, x64 and Arm64, with

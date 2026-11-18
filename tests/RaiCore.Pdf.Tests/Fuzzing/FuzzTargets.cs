@@ -54,6 +54,7 @@ public static class FuzzTargets
         ["woff"] = Font,
         ["woff2"] = Font,
         ["pdf"] = Pdf,
+        ["extract"] = Extract,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -133,6 +134,17 @@ public static class FuzzTargets
         var document = new PdfDocument();
         document.ImportPages(reader);
         document.ToArray();
+    }
+
+    /// <summary>Reading pages: every page's content run through the extraction interpreter (fonts, CMaps, forms, images).</summary>
+    public static void Extract(byte[] input)
+    {
+        var reader = PdfReader.Open(input);
+        var interpreter = new RaiCore.Pdf.Extraction.Content.ContentInterpreter(reader, new CountingSink());
+        foreach (var page in reader.Pages)
+        {
+            interpreter.Run(page);
+        }
     }
 
     /// <summary>
@@ -239,4 +251,14 @@ public enum OutputMode
 
     /// <summary>A tagged PDF written page by page with <see cref="HtmlToPdf.ConvertToStream"/>.</summary>
     TaggedStream,
+}
+
+/// <summary>Takes what the interpreter reports and touches it, as text extraction would.</summary>
+internal sealed class CountingSink : RaiCore.Pdf.Extraction.Content.ContentSink
+{
+    public long Characters { get; private set; }
+
+    public override void Glyph(in RaiCore.Pdf.Extraction.Content.TextGlyph glyph) => Characters += glyph.Text.Length;
+
+    public override void Image(in RaiCore.Pdf.Extraction.Content.ImagePlacement image) => Characters++;
 }
