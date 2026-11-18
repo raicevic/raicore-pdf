@@ -52,5 +52,18 @@ internal static class Editing
         merged.Pages.Insert(2, PdfReader.Open("appendix.pdf"), [0, 0]);  // the appendix twice, after the terms
         merged.Save("contract-merged.pdf");
         #endregion
+
+        #region split
+        // Parts of at most 10 MB, for a mail server or an archive with a size limit.
+        var parts = PdfEditor.Open("contract-merged.pdf").SplitBySize(10 * 1024 * 1024);
+        foreach (var part in parts)
+        {
+            part.Save($"contract-part-{part.FirstPageIndex + 1}.pdf");
+            if (part.ExceedsLimit)
+            {
+                Console.WriteLine($"Page {part.FirstPageIndex + 1} is larger than the limit on its own ({part.Length} bytes).");
+            }
+        }
+        #endregion
     }
 }

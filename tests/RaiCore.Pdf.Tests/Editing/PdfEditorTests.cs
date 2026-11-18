@@ -12,7 +12,7 @@ public class PdfEditorTests
     /// A document of <paramref name="count"/> pages: "Page n" on each, an image of its own on each (64 x 64 noise, so
     /// that it compresses badly and pages differ in size), a bookmark per page and a named destination per page.
     /// </summary>
-    private static byte[] Document(int count, Action<PdfDocument, IReadOnlyList<PdfPage>>? more = null)
+    internal static byte[] Document(int count, Action<PdfDocument, IReadOnlyList<PdfPage>>? more = null)
     {
         var document = new PdfDocument();
         var pages = new List<PdfPage>();
@@ -31,7 +31,7 @@ public class PdfEditorTests
         return document.ToArray();
     }
 
-    private static PdfImage Noise(Random random)
+    internal static PdfImage Noise(Random random)
     {
         var pixels = new byte[64 * 64 * 3];
         random.NextBytes(pixels);
@@ -39,7 +39,7 @@ public class PdfEditorTests
     }
 
     /// <summary>Checks a file with qpdf where it is installed (CI); <see cref="Saved_files_pass_qpdf"/> shows when it is not.</summary>
-    private static void AssertValid(byte[] pdf)
+    internal static void AssertValid(byte[] pdf)
     {
         if (ExternalTools.Find("qpdf") is not null)
         {
@@ -47,10 +47,10 @@ public class PdfEditorTests
         }
     }
 
-    private static string[] Texts(byte[] pdf) =>
+    internal static string[] Texts(byte[] pdf) =>
         [.. new TextExtractor(PdfReader.Open(pdf)).ExtractPages().Select(p => p.Text)];
 
-    private static string[] Titles(PdfReader reader)
+    internal static string[] Titles(PdfReader reader)
     {
         var titles = new List<string>();
         void Walk(PdfObject? first, string indent)
@@ -83,7 +83,7 @@ public class PdfEditorTests
     }
 
     /// <summary>The image XObjects in a file, among all its objects.</summary>
-    private static int ImageObjects(byte[] pdf)
+    internal static int ImageObjects(byte[] pdf)
     {
         var reader = PdfReader.Open(pdf);
         return reader.Store.ObjectNumbers.Count(n => reader.Store.GetObject(n) is PdfStreamObject s && s.Dictionary["Subtype"] is PdfName { Value: "Image" });

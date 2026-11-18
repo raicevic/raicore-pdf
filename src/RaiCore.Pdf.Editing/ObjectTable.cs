@@ -45,6 +45,48 @@ internal sealed class ObjectTable
 
     public PdfDictionary? Dictionary(PdfObject? obj) => Resolve(obj) as PdfDictionary;
 
+    /// <summary>
+    /// A copy of the table whose dictionaries and arrays are copies too, so that changing it leaves this one as it is.
+    /// Stream data and immutable values (numbers, names, strings) are shared.
+    /// </summary>
+    public ObjectTable Clone()
+    {
+        var clone = new ObjectTable { _last = _last };
+        foreach (var (number, obj) in _objects)
+        {
+            clone._objects[number] = Copy(obj);
+        }
+
+        return clone;
+
+        static PdfObject Copy(PdfObject obj)
+        {
+            switch (obj)
+            {
+                case PdfStreamObject stream:
+                    var streamCopy = new PdfStreamObject(stream.Data, new PdfDictionary());
+                    Fill(stream.Dictionary, streamCopy.Dictionary);
+                    return streamCopy;
+                case PdfDictionary dictionary:
+                    var copy = new PdfDictionary();
+                    Fill(dictionary, copy);
+                    return copy;
+                case PdfArray array:
+                    return new PdfArray(array.Items.Select(Copy));
+                default:
+                    return obj;
+            }
+        }
+
+        static void Fill(PdfDictionary from, PdfDictionary to)
+        {
+            foreach (var (key, value) in from.Entries)
+            {
+                to.AddUnchecked(key, Copy(value));
+            }
+        }
+    }
+
     public PdfArray? Array(PdfObject? obj) => Resolve(obj) as PdfArray;
 }
 
