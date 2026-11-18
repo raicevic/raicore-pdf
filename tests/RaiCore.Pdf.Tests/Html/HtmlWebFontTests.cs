@@ -152,6 +152,21 @@ public class HtmlWebFontTests
     }
 
     [Fact]
+    public void Empty_local_sources_are_skipped()
+    {
+        // An empty local() threw when the font collection was asked for a family without a name (fuzzing found it).
+        var fonts = FontsOf("""
+            <style>
+              @font-face { font-family: Brand; src: local(), local(""), local("Liberation Mono"); }
+              p { font-family: Brand; }
+            </style>
+            <p>Hello</p>
+            """);
+
+        Assert.Equal("LiberationMono", fonts[0].PostScriptName);
+    }
+
+    [Fact]
     public void Fonts_can_be_embedded_as_data_uris_in_woff_and_woff2()
     {
         foreach (var file in new[] { "LiberationSans-Regular.woff", "LiberationSans-Regular.woff2" })

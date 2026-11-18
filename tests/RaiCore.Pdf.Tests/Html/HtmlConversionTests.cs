@@ -324,11 +324,19 @@ public class HtmlConversionTests
 
     private static PageSetup PageWidth(double width) => new(new PdfPageSize(width + 100, 800), new Thickness(50, 50, 50, 50));
 
-    [Fact]
-    public void Colors_with_a_unit_on_their_alpha_are_dropped_wherever_they_come_from()
+    [Theory]
+    [InlineData("rgb(1 2 3 / 4px)")]
+    [InlineData("rgb(1 2 3 / )")]
+    [InlineData("rgba(1 2 3 /)")]
+    [InlineData("lab(1 2 3 / 4px)")]
+    [InlineData("LCH(1 2 3 / 4PX)")]
+    [InlineData("oklab(1 2 3 / /**/ )")]
+    [InlineData("oklch(1 2 3 / +4e1px)")]
+    [InlineData("rgb(1 2 3 / 4\\70 x)")]
+    public void Colors_with_an_unreadable_alpha_are_dropped_wherever_they_come_from(string bad)
     {
-        // AngleSharp.Css threw on rgb(1 2 3 / 4px) while parsing (fuzzing found it); CSS drops the declaration instead.
-        const string Bad = "rgb(1 2 3 / 4px)";
+        // AngleSharp.Css throws on these while parsing (fuzzing found them); CSS drops the declaration instead.
+        var Bad = bad;
         var diagnostics = new List<HtmlDiagnostic>();
         var options = new HtmlConverterOptions
         {

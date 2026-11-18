@@ -53,6 +53,17 @@ public class HtmlDiagnosticsTests
     }
 
     [Fact]
+    public async Task Nesting_selectors_are_reported_as_unsupported()
+    {
+        // AngleSharp threw NullReferenceException matching "&" outside a nested rule (fuzzing found ",&{").
+        var found = await Diagnose("<style>p, & { color: red }</style><p>text</p>");
+
+        var diagnostic = Assert.Single(found, d => d.Kind == HtmlDiagnosticKind.UnsupportedSelector);
+        Assert.Equal("&", diagnostic.Subject);
+        Assert.Contains("nesting", diagnostic.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Relative_urls_without_a_base_uri_say_so()
     {
         var diagnostic = Assert.Single(await Diagnose("<img src='images/logo.png'>"));

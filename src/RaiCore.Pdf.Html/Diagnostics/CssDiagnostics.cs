@@ -115,6 +115,18 @@ internal static partial class CssDiagnostics
                 query = "*";
             }
 
+            // CSS nesting (#149) is not supported, and AngleSharp throws NullReferenceException matching a nesting
+            // selector outside a nested rule (fuzzing found ",&{").
+            if (query.Contains('&', StringComparison.Ordinal))
+            {
+                diagnostics.Report(
+                    HtmlDiagnosticKind.UnsupportedSelector,
+                    HtmlDiagnosticSeverity.Warning,
+                    Shorten(selector.Trim()),
+                    "CSS nesting (the & selector) is not supported: the rule is ignored.");
+                continue;
+            }
+
             try
             {
                 elements.AddRange(document.QuerySelectorAll(query));
