@@ -6,6 +6,12 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Image extraction** (`RaiCore.Pdf.Extraction`): `ImageExtractor` lists the images drawn on each page (image
+  XObjects, inline images, images in forms; hidden ones left out) with their bounds, displayed size and rotation in
+  the page's user space, pixel size, color space, bits per component and masks. `ExtractedImage.GetData` exports
+  JPEG and JPEG 2000 data as it is, other images as PNG (CMYK and indexed colors converted, soft masks, stencil
+  masks and color key masks as alpha), CCITT fax images as TIFF, and JBIG2 and other color spaces raw. See the
+  [image extraction guide](https://raicevic.github.io/raicore-pdf/guides/image-extraction.html) (#187).
 - **Text search** (`RaiCore.Pdf.Extraction`): `TextExtractor.Find` and `FindOnPage` find plain text (optionally
   ignoring case) or the matches of a regular expression, with each match's page, text and rectangles: one per line,
   in PDF points in the page's user space, so they can be drawn over the page or turned into annotations as they are.

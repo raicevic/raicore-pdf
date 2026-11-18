@@ -283,7 +283,7 @@ internal sealed class ContentInterpreter
                 case "BI":
                     if (operation.Image is { } inline)
                     {
-                        ReportImage(state, null, null, null, inline);
+                        ReportImage(state, resources, null, null, null, inline);
                     }
 
                     break;
@@ -420,7 +420,7 @@ internal sealed class ContentInterpreter
         switch ((_reader.Resolve(xObject.Dictionary["Subtype"]) as PdfName)?.Value)
         {
             case "Image":
-                ReportImage(state, xObject, entry as PdfReference, name.Value, null);
+                ReportImage(state, resources, xObject, entry as PdfReference, name.Value, null);
                 break;
             case "Form":
                 DrawForm(name, xObject, resources, state, formDepth);
@@ -478,7 +478,7 @@ internal sealed class ContentInterpreter
         }
     }
 
-    private void ReportImage(GraphicsState state, PdfStreamObject? xObject, PdfReference? reference, string? name, InlineImage? inline)
+    private void ReportImage(GraphicsState state, PdfDictionary resources, PdfStreamObject? xObject, PdfReference? reference, string? name, InlineImage? inline)
     {
         var ctm = state.Ctm;
         var bounds = Box.Around(ctm.Transform(0, 0), ctm.Transform(1, 0), ctm.Transform(1, 1), ctm.Transform(0, 1));
@@ -486,7 +486,7 @@ internal sealed class ContentInterpreter
         {
             var clipped = state.Clip is { } clip
                 && (clip.Right <= bounds.Left || clip.Left >= bounds.Right || clip.Bottom <= bounds.Top || clip.Top >= bounds.Bottom);
-            _sink.Image(new ImagePlacement(ctm, bounds, xObject, reference, name, inline, clipped));
+            _sink.Image(new ImagePlacement(ctm, bounds, xObject, reference, name, inline, clipped, resources));
         }
     }
 

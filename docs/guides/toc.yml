@@ -20,5 +20,7 @@
   href: standards.md
 - name: Text extraction
   href: text-extraction.md
+- name: Image extraction
+  href: image-extraction.md
 - name: Experimental APIs
   href: ../experimental.md

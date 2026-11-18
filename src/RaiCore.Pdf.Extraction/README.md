@@ -1,6 +1,6 @@
 # RaiCore.Pdf.Extraction
 
-Reads and searches the text of existing PDF files, page by page, for [RaiCore.Pdf](https://www.nuget.org/packages/RaiCore.Pdf).
+Reads and searches the text of existing PDF files, and extracts their images, page by page, for [RaiCore.Pdf](https://www.nuget.org/packages/RaiCore.Pdf).
 It works on files from any producer, in managed code with no native dependencies.
 
 ```csharp
@@ -29,13 +29,15 @@ foreach (var page in extractor.ExtractPages())
   - hidden text (clipped away or outside the page) is left out.
 - **Search:** `Find("{{name}}")` or `Find(regex)` gives each match's page and rectangles (one per line), in PDF
   points from the page's bottom-left corner, across font changes and line breaks.
+- **Images:** `ImageExtractor` lists each page's images with their place, displayed size and rotation, pixel size and
+  color space, and exports them: JPEG as it is, other images as PNG with their masks as alpha, fax images as TIFF.
 - **Scans:** `HasText` tells you which pages have no text, so you can send them to OCR. Invisible text, such as an
   existing OCR layer, is included unless you turn it off.
 - **Made for untrusted input:** malformed content is skipped and reported in `PageText.Diagnostics`, never thrown,
   and the work per page is bounded by the [resource limits](https://raicevic.github.io/raicore-pdf/).
 
-More: the [text extraction guide](https://raicevic.github.io/raicore-pdf/guides/text-extraction.html). Image extraction
-is coming next: see the [roadmap](https://github.com/raicevic/raicore-pdf/milestone/8).
+More: the [text extraction](https://raicevic.github.io/raicore-pdf/guides/text-extraction.html) and
+[image extraction](https://raicevic.github.io/raicore-pdf/guides/image-extraction.html) guides.
 
 The glyph name table is the Adobe Glyph List (BSD-3-Clause), and the presentation form table comes from the Unicode
 Character Database (Unicode License v3); both licenses are included in the package under `licenses/`. The code is
