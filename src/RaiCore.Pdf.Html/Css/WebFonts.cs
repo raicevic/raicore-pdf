@@ -272,7 +272,10 @@ internal sealed class WebFonts
                 var format = Function(entry, "format");
                 if (local is not null)
                 {
-                    sources.Add(new FontSource(null, local, null));
+                    if (!string.IsNullOrWhiteSpace(local))
+                    {
+                        sources.Add(new FontSource(null, local, null)); // An empty local() names no font (fuzzing found it).
+                    }
                 }
                 else if (url is { Length: > 0 })
                 {

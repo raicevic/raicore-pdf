@@ -14,6 +14,12 @@ and versions follow [Semantic Versioning](https://semver.org/).
   embedded CMaps, Type 3 fonts, and the `cmap` of embedded TrueType fonts. Malformed content is skipped with
   diagnostics, never thrown, within resource limits, and the interpreter has its own fuzz target (`extract`) (#184).
 
+### Fixed
+- HTML conversion no longer throws on CSS that fuzzing found: colors whose alpha is empty or a number with a unit
+  in `lab()`, `lch()`, `oklab()`, `oklch()` and `rgb()` (`rgb(1 2 3 / )`) are dropped as invalid; an empty
+  `local()` in an `@font-face` `src` is skipped; and a nesting selector (`&`) outside a nested rule is reported as
+  unsupported.
+
 ## [1.0.0] - 2026-11-17
 
 The first release: HTML, CSS and Razor to PDF with RaiCore.Pdf's own layout engine, no browser involved, on Windows,
