@@ -57,6 +57,7 @@ public static class FuzzTargets
         ["pdf"] = Pdf,
         ["extract"] = Extract,
         ["email"] = Email,
+        ["tiff"] = Tiff,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -106,6 +107,19 @@ public static class FuzzTargets
         var image = PdfImage.Load(input);
         var document = new PdfDocument();
         document.AddPage(PdfPageSize.A4).Canvas.DrawImage(image, 10, 10, 100, 100);
+        document.ToArray();
+    }
+
+    /// <summary>A TIFF: its pages (the first four) drawn on pages and written.</summary>
+    public static void Tiff(byte[] input)
+    {
+        var document = new PdfDocument();
+        var pages = Math.Min(PdfImage.GetPageCount(input), 4);
+        for (var i = 0; i < pages; i++)
+        {
+            document.AddPage(PdfPageSize.A4).Canvas.DrawImage(PdfImage.Load(input, i), 10, 10, 100, 100);
+        }
+
         document.ToArray();
     }
 

@@ -25,12 +25,19 @@ public enum PdfImageFormat
 
     /// <summary>WebP (lossy or lossless, with alpha; the first frame of an animation).</summary>
     WebP,
+
+    /// <summary>
+    /// TIFF (strips or tiles, uncompressed, PackBits, LZW, Deflate, JPEG or CCITT fax, with alpha; one page of a
+    /// multi-page file).
+    /// </summary>
+    Tiff,
 }
 
 /// <summary>
 /// An image that can be drawn on pages with <see cref="PdfCanvas.DrawImage"/>. JPEGs are embedded as they are;
-/// PNG, GIF, BMP and WebP are decoded and recompressed, with transparency kept. SVG is drawn as vector graphics (a form
-/// XObject), not rasterized. An image drawn several times, on any number of pages, is stored in the PDF once.
+/// PNG, GIF, BMP, WebP and TIFF are decoded and recompressed, with transparency kept (JPEG and fax data in a TIFF are
+/// embedded as they are). SVG is drawn as vector graphics (a form XObject), not rasterized. An image drawn several
+/// times, on any number of pages, is stored in the PDF once.
 /// </summary>
 /// <remarks>
 /// Immutable and thread-safe. Embedded color profiles are ignored; colors are treated as sRGB. For the supported
@@ -59,28 +66,30 @@ public sealed class PdfImage
     public PdfImageFormat Format { get; }
 
     /// <summary>
-    /// Width in pixels as displayed (after applying the EXIF orientation of a JPEG). For SVG, the intrinsic width in
-    /// CSS pixels, rounded; <see cref="NaturalWidth"/> is exact.
+    /// Width in pixels as displayed (after applying the EXIF orientation of a JPEG or the orientation of a TIFF). For
+    /// SVG, the intrinsic width in CSS pixels, rounded; <see cref="NaturalWidth"/> is exact.
     /// </summary>
     public int PixelWidth => _svg is { } svg ? ToPixels(svg.Width) : SwapsAxes ? Image.Height : Image.Width;
 
     /// <summary>
-    /// Height in pixels as displayed (after applying the EXIF orientation of a JPEG). For SVG, the intrinsic height in
-    /// CSS pixels, rounded; <see cref="NaturalHeight"/> is exact.
+    /// Height in pixels as displayed (after applying the EXIF orientation of a JPEG or the orientation of a TIFF). For
+    /// SVG, the intrinsic height in CSS pixels, rounded; <see cref="NaturalHeight"/> is exact.
     /// </summary>
     public int PixelHeight => _svg is { } svg ? ToPixels(svg.Height) : SwapsAxes ? Image.Width : Image.Height;
 
     /// <summary>
     /// The natural width in points, as CSS sizes an image: 0.75 points (one CSS pixel) per pixel, or an SVG's own
-    /// width (from its <c>width</c> attribute or <c>viewBox</c>, else 300 pixels).
+    /// width (from its <c>width</c> attribute or <c>viewBox</c>, else 300 pixels). A TIFF with a resolution (in
+    /// pixels per inch or centimeter) has its physical size instead, so a scan at 300 dpi is as large as the paper it
+    /// was scanned from and a fax with non-square pixels keeps its proportions.
     /// </summary>
-    public double NaturalWidth => _svg?.Width ?? PixelWidth * PointsPerPixel;
+    public double NaturalWidth => _svg?.Width ?? NaturalSize(PixelWidth, SwapsAxes ? Image.Resolution?.Y : Image.Resolution?.X);
 
     /// <summary>
     /// The natural height in points: 0.75 points (one CSS pixel) per pixel, or an SVG's own height (from its
-    /// <c>height</c> attribute or <c>viewBox</c>, else 150 pixels).
+    /// <c>height</c> attribute or <c>viewBox</c>, else 150 pixels). A TIFF with a resolution has its physical size.
     /// </summary>
-    public double NaturalHeight => _svg?.Height ?? PixelHeight * PointsPerPixel;
+    public double NaturalHeight => _svg?.Height ?? NaturalSize(PixelHeight, SwapsAxes ? Image.Resolution?.X : Image.Resolution?.Y);
 
     /// <summary>Whether the image has transparent or semi-transparent pixels. Always true for SVG, which has no background.</summary>
     public bool HasTransparency => _svg is not null || Image.Alpha is not null || Image.ColorKey is not null;
@@ -93,8 +102,17 @@ public sealed class PdfImage
 
     private bool SwapsAxes => Image.Orientation >= 5;
 
-    /// <summary>Loads an image file (JPEG, PNG, GIF, BMP, WebP or SVG; the format is detected from the content).</summary>
+    /// <summary>
+    /// Loads an image file (JPEG, PNG, GIF, BMP, WebP, TIFF or SVG; the format is detected from the content). Of a
+    /// multi-page TIFF, the first page.
+    /// </summary>
     public static PdfImage Load(string path) => Load(File.ReadAllBytes(path));
+
+    /// <summary>Loads one page of a multi-page TIFF file (any other image file has one page, index 0).</summary>
+    /// <param name="path">The file.</param>
+    /// <param name="pageIndex">The zero-based page index, less than <see cref="GetPageCount(string)"/>.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="pageIndex"/> is negative or not less than the page count.</exception>
+    public static PdfImage Load(string path, int pageIndex) => Load(File.ReadAllBytes(path), pageIndex);
 
     /// <summary>Loads an image from a stream. The stream is read to the end and left open.</summary>
     public static PdfImage Load(Stream stream)
@@ -109,6 +127,11 @@ public sealed class PdfImage
     public static PdfImage Load(byte[] data)
     {
         ArgumentNullException.ThrowIfNull(data);
+        if (TiffDecoder.IsTiff(data))
+        {
+            return new PdfImage(TiffDecoder.Decode(data), PdfImageFormat.Tiff);
+        }
+
         if (SvgDocument.IsSvg(data))
         {
             using var stream = new MemoryStream(data, writable: false);
@@ -140,7 +163,62 @@ public sealed class PdfImage
             return new PdfImage(JpegReader.Read(data), PdfImageFormat.Jpeg);
         }
 
-        throw new ImageFormatException("Unsupported image format; JPEG, PNG, GIF, BMP, WebP and SVG are supported.");
+        throw new ImageFormatException("Unsupported image format; JPEG, PNG, GIF, BMP, WebP, TIFF and SVG are supported.");
+    }
+
+    /// <summary>
+    /// Loads one page of a multi-page TIFF from bytes (any other image has one page, index 0). The array must not be
+    /// modified afterwards.
+    /// </summary>
+    /// <param name="data">The image file's bytes.</param>
+    /// <param name="pageIndex">The zero-based page index, less than <see cref="GetPageCount(byte[])"/>.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="pageIndex"/> is negative or not less than the page count.</exception>
+    /// <example>
+    /// <code>
+    /// var tiff = File.ReadAllBytes("fax.tif");
+    /// for (var i = 0; i &lt; PdfImage.GetPageCount(tiff); i++)
+    /// {
+    ///     var image = PdfImage.Load(tiff, i);
+    ///     document.AddPage(PdfPageSize.A4).Canvas.DrawImage(image, 0, 0, PdfPageSize.A4.Width, PdfPageSize.A4.Height);
+    /// }
+    /// </code>
+    /// </example>
+    public static PdfImage Load(byte[] data, int pageIndex)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentOutOfRangeException.ThrowIfNegative(pageIndex);
+        if (TiffDecoder.IsTiff(data))
+        {
+            return new PdfImage(TiffDecoder.Decode(data, pageIndex), PdfImageFormat.Tiff);
+        }
+
+        ArgumentOutOfRangeException.ThrowIfNotEqual(pageIndex, 0);
+        return Load(data);
+    }
+
+    /// <summary>The number of pages of an image file: those of a multi-page TIFF, 1 for any other format.</summary>
+    /// <param name="path">The file.</param>
+    /// <exception cref="ImageFormatException">The file is not an image in a supported format, or its pages cannot be read.</exception>
+    public static int GetPageCount(string path) => GetPageCount(File.ReadAllBytes(path));
+
+    /// <summary>
+    /// The number of pages of an image: those of a multi-page TIFF (its image file directories), 1 for any other
+    /// format. Only the file's structure is read, not the images.
+    /// </summary>
+    /// <param name="data">The image file's bytes.</param>
+    /// <exception cref="ImageFormatException">The data is not an image in a supported format, or its pages cannot be read.</exception>
+    public static int GetPageCount(byte[] data)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        if (TiffDecoder.IsTiff(data))
+        {
+            return TiffDecoder.CountPages(data);
+        }
+
+        return SvgDocument.IsSvg(data) || PngDecoder.IsPng(data) || GifDecoder.IsGif(data) || WebPDecoder.IsWebP(data) || BmpDecoder.IsBmp(data)
+            || (data.Length >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF)
+            ? 1
+            : throw new ImageFormatException("Unsupported image format; JPEG, PNG, GIF, BMP, WebP, TIFF and SVG are supported.");
     }
 
     /// <summary>
@@ -205,7 +283,7 @@ public sealed class PdfImage
         {
             // PDF/A allows device CMYK only with a CMYK output intent; the document's is sRGB.
             throw new InvalidOperationException(
-                "PDF/A documents use an sRGB output intent, which does not allow CMYK images: convert the CMYK JPEG image to RGB.");
+                "PDF/A documents use an sRGB output intent, which does not allow CMYK images: convert the CMYK image to RGB.");
         }
 
         PdfStreamObject stream;
@@ -213,6 +291,33 @@ public sealed class PdfImage
         {
             stream = new PdfStreamObject(image.Data);
             stream.Dictionary["Filter"] = new PdfName("DCTDecode");
+            if (image.ColorTransform is { } transform)
+            {
+                var parameters = new PdfDictionary();
+                parameters["ColorTransform"] = new PdfInteger(transform);
+                stream.Dictionary["DecodeParms"] = parameters;
+            }
+        }
+        else if (image.Ccitt is { } fax)
+        {
+            stream = new PdfStreamObject(image.Data);
+            stream.Dictionary["Filter"] = new PdfName("CCITTFaxDecode");
+            var parameters = new PdfDictionary();
+            parameters["K"] = new PdfInteger(fax.K);
+            parameters["Columns"] = new PdfInteger(image.Width);
+            parameters["Rows"] = new PdfInteger(image.Height);
+            parameters["EndOfBlock"] = PdfBoolean.False; // Rows says where the image ends: TIFF data need not have an end-of-block code.
+            if (fax.EncodedByteAlign)
+            {
+                parameters["EncodedByteAlign"] = PdfBoolean.True;
+            }
+
+            if (fax.BlackIs1)
+            {
+                parameters["BlackIs1"] = PdfBoolean.True;
+            }
+
+            stream.Dictionary["DecodeParms"] = parameters;
         }
         else
         {
@@ -261,4 +366,7 @@ public sealed class PdfImage
     }
 
     private static int ToPixels(double points) => (int)Math.Max(1, Math.Round(points / PointsPerPixel));
+
+    /// <summary>A length in points of <paramref name="pixels"/>: at <paramref name="pixelsPerInch"/> if known, else one CSS pixel each.</summary>
+    private static double NaturalSize(int pixels, double? pixelsPerInch) => pixelsPerInch is { } ppi ? pixels * 72 / ppi : pixels * PointsPerPixel;
 }

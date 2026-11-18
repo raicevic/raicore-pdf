@@ -14,6 +14,7 @@ case "$target" in
   gif) files=("$fixtures"/Images/*.gif) ;;
   bmp) files=("$fixtures"/Bmp/*.bmp) ;;
   webp) files=("$fixtures"/WebP/*.webp) ;;
+  tiff) files=("$fixtures"/Images/Tiff/*.tif) ;;
   svg) files=("$fixtures"/Svg/*.svg) ;;
   font) files=("$fixtures"/*.ttf "$fixtures"/*.otf "$fixtures"/*.ttc) ;;
   pdf) files=("$fixtures"/Reader/*.pdf "$fixtures"/Reader/Encrypted/*.pdf) ;;
