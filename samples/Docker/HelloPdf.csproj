@@ -9,8 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The newest version in ./packages (see nuget.config); name a fixed version once 1.0 is on NuGet. -->
-    <PackageReference Include="RaiCore.Pdf.Html" Version="*-*" />
+    <PackageReference Include="RaiCore.Pdf.Html" Version="1.0.0" />
   </ItemGroup>
 
 </Project>

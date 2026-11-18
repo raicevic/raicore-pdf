@@ -1,6 +1,5 @@
 # A small app that converts HTML to PDF with RaiCore.Pdf, built and run on Alpine Linux (musl), x64 or Arm64.
 #
-#   dotnet pack -c Release -o samples/Docker/packages    # until 1.0 is on NuGet (see nuget.config)
 #   docker build -t hello-pdf samples/Docker
 #   docker run --rm hello-pdf > hello.pdf
 #
