@@ -457,7 +457,8 @@ internal sealed partial class FontDecoder
             var byGlyph = new Dictionary<int, string>();
             foreach (var (codePoint, glyph) in CmapParser.Parse(font, out _).OrderBy(p => IsPrivateUse(p.Key)).ThenBy(p => p.Key))
             {
-                if (glyph != 0 && !IsPrivateUse(codePoint))
+                // A damaged cmap can map to surrogates or past U+10FFFF, which are no characters.
+                if (glyph != 0 && !IsPrivateUse(codePoint) && System.Text.Rune.IsValid(codePoint))
                 {
                     byGlyph.TryAdd(glyph, char.ConvertFromUtf32(codePoint));
                 }
