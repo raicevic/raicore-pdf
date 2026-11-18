@@ -52,4 +52,20 @@ Inserted pages keep their content, resources, annotations, boxes and rotation, a
 copied once. Links between inserted pages keep working; links to pages of the other file that were not inserted are
 dropped. The other file's outline, form fields and tagged structure are not copied.
 
+## Splitting by size
+
+`SplitBySize(maxBytes)` cuts the document into consecutive parts whose files are each at most `maxBytes` long, with as
+many pages in each as fit, for example for a mail server or an archive that limits file sizes. The document itself is
+not changed.
+
+[!code-csharp[](../snippets/Editing.cs#split)]
+
+- **Each part is a complete PDF file**, written as a save of the document with only the part's pages would be: fonts
+  and images its pages share are in it once, and bookmarks, named destinations and links to pages in other parts are
+  left out. Page labels are kept in the first part only.
+- **A page larger than the limit on its own** is a part by itself, with `ExceedsLimit` set.
+- **Fonts are not subset again:** a part carries the whole embedded font of the original file, even if its pages use a
+  few of the glyphs, so a part of one page is never smaller than the fonts and the images shared by all pages.
+- Sizes are measured by writing the parts: splitting writes each page a few times, and the parts are held in memory.
+
 An editor holds the whole file in memory, like `PdfReader`, and is not thread-safe.

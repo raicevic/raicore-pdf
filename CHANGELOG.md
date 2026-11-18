@@ -6,6 +6,10 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Split by size** (`RaiCore.Pdf.Editing`): `PdfEditor.SplitBySize(maxBytes)` cuts a document into consecutive parts
+  whose files stay below a size limit, each with as many pages as fit (shared fonts and images counted once per part;
+  bookmarks and links kept within each part), and reports pages larger than the limit on their own as parts of their own
+  (#189).
 - **Page editing** (`RaiCore.Pdf.Editing`, new package): `PdfEditor.Open` opens an existing PDF (path, stream, bytes
   or reader; encrypted files with their password), `Pages` deletes, inserts (from other files, any selection and
   order), moves and rotates pages, and `Save`/`SaveAsync`/`ToArray` write a new file any number of times. Each save

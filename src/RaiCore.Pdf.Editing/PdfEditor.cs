@@ -34,7 +34,7 @@ namespace RaiCore.Pdf.Editing;
 /// </example>
 public sealed class PdfEditor
 {
-    private readonly ObjectTable _table = new();
+    private readonly ObjectTable _table;
     private readonly PdfReference _catalog;
     private readonly PdfReference? _info;
 
@@ -45,7 +45,7 @@ public sealed class PdfEditor
     private readonly HashSet<int> _pageObjects = [];
 
     /// <summary>Outline items that lost their destination with a deleted page (see <see cref="DocumentCleanup"/>).</summary>
-    private readonly HashSet<PdfDictionary> _strippedOutlineItems = new(ReferenceEqualityComparer.Instance);
+    private readonly HashSet<int> _strippedOutlineItems = [];
 
     /// <summary>The pages as they were opened, to tell whether page labels still fit.</summary>
     private readonly List<PdfReference> _openedPages;
@@ -54,6 +54,7 @@ public sealed class PdfEditor
 
     private PdfEditor(PdfReader reader)
     {
+        _table = new ObjectTable();
         var copier = new GraphCopier(reader, _table);
         _catalog = copier.Copy(reader.Trailer["Root"]) switch
         {
@@ -91,6 +92,20 @@ public sealed class PdfEditor
         _openedPages = [.. pages];
         _version = reader.Version;
         Pages = new PdfEditorPages(this, pages);
+    }
+
+    /// <summary>A copy of an editor, sharing nothing it could change: saving the copy leaves the original as it was.</summary>
+    private PdfEditor(PdfEditor original)
+    {
+        _table = original._table.Clone();
+        _catalog = original._catalog;
+        _info = original._info;
+        _pageTree = original._pageTree;
+        _pageObjects = [.. original._pageObjects];
+        _strippedOutlineItems = [.. original._strippedOutlineItems];
+        _openedPages = original._openedPages;
+        _version = original._version;
+        Pages = new PdfEditorPages(this, [.. original.Pages.References]);
     }
 
     /// <summary>The pages, in order: delete, insert, move and rotate them here.</summary>
@@ -157,6 +172,93 @@ public sealed class PdfEditor
         using var buffer = new MemoryStream();
         Write(buffer);
         return buffer.ToArray();
+    }
+
+    /// <summary>
+    /// Splits the document into consecutive parts whose files are each at most <paramref name="maxBytes"/> long, each
+    /// with as many pages as fit. The document itself is not changed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each part is a complete PDF file, written as <see cref="ToArray"/> writes the document with only the part's pages:
+    /// fonts and images its pages share are in it once, and bookmarks, named destinations and links that lead to pages of
+    /// other parts are left out. A page that is larger than the limit on its own is a part by itself, marked with
+    /// <see cref="PdfSplitPart.ExceedsLimit"/>. Page labels are kept in the first part only.
+    /// </para>
+    /// <para>
+    /// The size of a part is measured by writing it, so splitting writes each page a few times (about twice the
+    /// logarithm of a part's page count); the parts are held in memory.
+    /// </para>
+    /// </remarks>
+    /// <param name="maxBytes">The largest size of a part's file in bytes.</param>
+    /// <returns>The parts, in page order; together they have every page once.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxBytes"/> is not positive.</exception>
+    /// <exception cref="InvalidOperationException">The document has no pages.</exception>
+    public IReadOnlyList<PdfSplitPart> SplitBySize(long maxBytes)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxBytes);
+        var total = Pages.Count;
+        if (total == 0)
+        {
+            throw new InvalidOperationException("The document has no pages: there is nothing to split.");
+        }
+
+        var parts = new List<PdfSplitPart>();
+        for (var start = 0; start < total;)
+        {
+            var first = start;
+            var remaining = total - start;
+            byte[] Write(int count)
+            {
+                var part = new PdfEditor(this);
+                part.Pages.Delete(first + count, total - first - count);
+                part.Pages.Delete(0, first);
+                return part.ToArray();
+            }
+
+            var best = Write(1);
+            if (best.Length > maxBytes)
+            {
+                parts.Add(new PdfSplitPart(start, 1, best, exceedsLimit: true));
+                start++;
+                continue;
+            }
+
+            // Double the page count while the part fits, then search between the last count that fits and the first
+            // that does not. Parts grow with their pages, so the search finds the largest count that fits.
+            var (fits, tooMany) = (1, remaining + 1);
+            for (var count = 2; fits < remaining; count *= 2)
+            {
+                count = Math.Min(count, remaining);
+                var data = Write(count);
+                if (data.Length > maxBytes)
+                {
+                    tooMany = count;
+                    break;
+                }
+
+                (fits, best) = (count, data);
+            }
+
+            while (tooMany - fits > 1 && fits < remaining)
+            {
+                var count = fits + ((tooMany - fits) / 2);
+                var data = Write(count);
+                if (data.Length > maxBytes)
+                {
+                    tooMany = count;
+                }
+                else
+                {
+                    (fits, best) = (count, data);
+                }
+            }
+
+            parts.Add(new PdfSplitPart(start, fits, best, exceedsLimit: false));
+            start += fits;
+        }
+
+        return parts;
     }
 
     /// <summary>Notes that pages of another file were inserted: the file is written in the higher of the two versions.</summary>

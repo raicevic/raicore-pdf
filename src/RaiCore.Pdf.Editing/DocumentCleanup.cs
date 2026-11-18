@@ -12,8 +12,11 @@ namespace RaiCore.Pdf.Editing;
 /// <param name="catalog">The document catalog.</param>
 /// <param name="pages">The pages left.</param>
 /// <param name="dead">The objects that were pages (or page tree nodes) and are no longer.</param>
-/// <param name="stripped">Outline items whose destination an earlier cleanup removed: they go once they have no items below them.</param>
-internal sealed class DocumentCleanup(ObjectTable table, PdfDictionary catalog, IReadOnlyList<PdfReference> pages, HashSet<int> dead, HashSet<PdfDictionary> stripped)
+/// <param name="stripped">
+/// The object numbers of outline items whose destination an earlier cleanup removed: they go once they have no items
+/// below them.
+/// </param>
+internal sealed class DocumentCleanup(ObjectTable table, PdfDictionary catalog, IReadOnlyList<PdfReference> pages, HashSet<int> dead, HashSet<int> stripped)
 {
     /// <summary>The deepest outline or field tree followed.</summary>
     private const int MaxDepth = 64;
@@ -247,7 +250,8 @@ internal sealed class DocumentCleanup(ObjectTable table, PdfDictionary catalog, 
                 item["Count"] = null;
             }
 
-            if (IsDead(DestinationOf(item)) || stripped.Contains(item))
+            var number = (reference as PdfReference)?.ObjectNumber ?? 0;
+            if (IsDead(DestinationOf(item)) || stripped.Contains(number))
             {
                 if (!hasChildren)
                 {
@@ -257,7 +261,7 @@ internal sealed class DocumentCleanup(ObjectTable table, PdfDictionary catalog, 
 
                 item["Dest"] = null;
                 item["A"] = null;
-                stripped.Add(item);
+                stripped.Add(number);
             }
 
             kept.Add((reference!, item));

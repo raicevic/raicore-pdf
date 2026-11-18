@@ -16,6 +16,8 @@ editor.Save("contract-edited.pdf");
 ```
 
 - **Pages:** `Delete`, `Insert` and `Add` (pages of other files, any selection and order), `Move`, `Rotation`.
+- **Split by size:** `SplitBySize(maxBytes)` cuts the document into consecutive parts below a size limit, each with
+  as many pages as fit; a page larger than the limit on its own is reported.
 - **Save again and again:** `Save`, `SaveAsync` and `ToArray` can be called any number of times, and editing goes on
   after each save.
 - **Nothing left behind:** each save writes only what is still used, so deleted pages' fonts and images leave the

@@ -1,9 +1,11 @@
 #nullable enable
+override RaiCore.Pdf.Editing.PdfSplitPart.ToString() -> string!
 RaiCore.Pdf.Editing.PdfEditor
 RaiCore.Pdf.Editing.PdfEditor.Pages.get -> RaiCore.Pdf.Editing.PdfEditorPages!
 RaiCore.Pdf.Editing.PdfEditor.Save(string! path) -> void
 RaiCore.Pdf.Editing.PdfEditor.Save(System.IO.Stream! stream) -> void
 RaiCore.Pdf.Editing.PdfEditor.SaveAsync(System.IO.Stream! stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+RaiCore.Pdf.Editing.PdfEditor.SplitBySize(long maxBytes) -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.Editing.PdfSplitPart!>!
 RaiCore.Pdf.Editing.PdfEditor.ToArray() -> byte[]!
 RaiCore.Pdf.Editing.PdfEditorPage
 RaiCore.Pdf.Editing.PdfEditorPage.CropBox.get -> RaiCore.Pdf.PdfRectangle
@@ -23,6 +25,14 @@ RaiCore.Pdf.Editing.PdfEditorPages.Insert(int index, RaiCore.Pdf.PdfReader! sour
 RaiCore.Pdf.Editing.PdfEditorPages.Insert(int index, RaiCore.Pdf.PdfReader! source, System.Collections.Generic.IEnumerable<int>! pageIndexes) -> void
 RaiCore.Pdf.Editing.PdfEditorPages.Move(int from, int to) -> void
 RaiCore.Pdf.Editing.PdfEditorPages.this[int index].get -> RaiCore.Pdf.Editing.PdfEditorPage!
+RaiCore.Pdf.Editing.PdfSplitPart
+RaiCore.Pdf.Editing.PdfSplitPart.Data.get -> System.ReadOnlyMemory<byte>
+RaiCore.Pdf.Editing.PdfSplitPart.ExceedsLimit.get -> bool
+RaiCore.Pdf.Editing.PdfSplitPart.FirstPageIndex.get -> int
+RaiCore.Pdf.Editing.PdfSplitPart.Length.get -> long
+RaiCore.Pdf.Editing.PdfSplitPart.PageCount.get -> int
+RaiCore.Pdf.Editing.PdfSplitPart.Save(string! path) -> void
+RaiCore.Pdf.Editing.PdfSplitPart.Save(System.IO.Stream! stream) -> void
 static RaiCore.Pdf.Editing.PdfEditor.Open(byte[]! data, string? password = null) -> RaiCore.Pdf.Editing.PdfEditor!
 static RaiCore.Pdf.Editing.PdfEditor.Open(RaiCore.Pdf.PdfReader! reader) -> RaiCore.Pdf.Editing.PdfEditor!
 static RaiCore.Pdf.Editing.PdfEditor.Open(string! path, string? password = null) -> RaiCore.Pdf.Editing.PdfEditor!
