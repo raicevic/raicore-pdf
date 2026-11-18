@@ -17,7 +17,7 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables, flexbox | ✅ 1.0 |
 | `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | ✅ 1.0 |
 | `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | ✅ 1.0 |
-| `RaiCore.Pdf.Extraction` | Read existing PDFs: text by page, text search with positions, images with their placement | 🚧 In development |
+| `RaiCore.Pdf.Extraction` | Read existing PDFs: text by page in reading order (text search with positions and images with their placement are coming) | 🚧 Text extraction ready |
 | `RaiCore.Pdf.Docx`, `.Xlsx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ After 1.0 |
 
 All packages target .NET 10 and run on Windows, Linux (glibc and musl, so Alpine too) and macOS, x64 and Arm64, with
@@ -592,6 +592,17 @@ permissions are the author's wishes, which the reader leaves to you to honor.
 var report = PdfReader.Open("report.pdf", password: "secret");
 ```
 
+The `RaiCore.Pdf.Extraction` package reads the text of existing PDFs from any producer, page by page and in reading
+order: columns one after the other, tables row by row, Arabic and Hebrew in logical order. `HasText` tells which pages
+are scans without text. See the [text extraction guide](https://raicevic.github.io/raicore-pdf/guides/text-extraction.html).
+
+```csharp
+foreach (var page in new TextExtractor(PdfReader.Open("report.pdf")).ExtractPages())
+{
+    Console.WriteLine(page.HasText ? page.Text : $"Page {page.PageIndex + 1} is a scan");
+}
+```
+
 ### Fonts
 
 Any TrueType or OpenType font (`.ttf`, `.otf`, `.ttc`, `.woff`, `.woff2`) can be embedded. Only the glyphs you use
@@ -826,7 +837,9 @@ The way there and what comes next are tracked in [GitHub milestones](https://git
 4. **0.4 PDF standards:** PDF/A-3 and e-invoices, tagged PDF/PDF/UA, metadata, encryption, a PDF reader for merging.
 5. **0.5 Hardening:** visual comparison with browsers, fuzzing, resource limits, performance, deployment targets.
 6. **Done, 1.0:** API review and freeze, documentation, the release.
-7. **After 1.0:** DOCX, XLSX, PPTX and XSL-FO as their own packages, PDF editing, grid layout.
+7. **1.x Reading, editing and conversions:** text extraction (done), text search, image extraction, page editing, forms,
+   PDF/A level A, TIFF, email and Office formats to PDF.
+8. **After 1.0:** XSL-FO, grid layout, multi-column layout, digital signatures.
 
 The 0.x milestones are internal stages, not releases.
 

@@ -6,13 +6,27 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Text extraction** (`RaiCore.Pdf.Extraction`): `TextExtractor` reads the text of existing PDF files page by page
+  (`ExtractPage`, `ExtractPages`, `ExtractText`), from any producer:
+  - **Reading order:** lines from top to bottom, word spaces from gaps where a file has no space characters, columns
+    read one after the other with headings across them kept in place, tables row by row, Arabic and Hebrew in logical
+    order, turned pages and vertical writing.
+  - **Other modes:** `TextExtractionMode.Layout` keeps columns in place on each line, as `pdftotext -layout` does, and
+    `Raw` follows the drawing order.
+  - **Clean-up:** ligatures and Arabic presentation forms become letters, text drawn twice for a bold effect is read
+    once, and text hidden by clipping or outside the page is left out.
+  - **Scans:** `PageText.HasText` finds pages that need OCR, and `IncludeInvisibleText` controls existing OCR layers.
+  - **Problems** are reported in `PageText.Diagnostics`, never thrown.
+
+  See the [text extraction guide](https://raicevic.github.io/raicore-pdf/guides/text-extraction.html) (#185).
 - **RaiCore.Pdf.Extraction** (new package, no public API yet), the base for reading what is on the pages of
   existing PDFs: a content-stream interpreter that follows the graphics and text state and form XObjects, and reports
   each glyph (its text and its position, size and bounds on the displayed page, rotation and crop box applied) and
   each image placement. Fonts are decoded to text through ToUnicode maps, the standard encodings, `/Differences` glyph
   names (Adobe Glyph List), built-in encodings of embedded Type 1 fonts, composite fonts with Identity, Unicode and
   embedded CMaps, Type 3 fonts, and the `cmap` of embedded TrueType fonts. Malformed content is skipped with
-  diagnostics, never thrown, within resource limits, and the interpreter has its own fuzz target (`extract`) (#184).
+  diagnostics, never thrown, within resource limits, and the interpreter has its own fuzz target (`extract`). It
+  follows clipping paths and form bounding boxes, so hidden text and images can be told apart (#184, #185).
 
 ### Fixed
 - HTML conversion no longer throws on CSS that fuzzing found: colors whose alpha is empty or a number with a unit

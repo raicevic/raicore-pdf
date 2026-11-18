@@ -136,7 +136,10 @@ public static class FuzzTargets
         document.ToArray();
     }
 
-    /// <summary>Reading pages: every page's content run through the extraction interpreter (fonts, CMaps, forms, images).</summary>
+    /// <summary>
+    /// Reading pages: every page's content run through the extraction interpreter (fonts, CMaps, forms, images), and
+    /// its text put together in each mode (lines, columns, bidi).
+    /// </summary>
     public static void Extract(byte[] input)
     {
         var reader = PdfReader.Open(input);
@@ -144,6 +147,11 @@ public static class FuzzTargets
         foreach (var page in reader.Pages)
         {
             interpreter.Run(page);
+        }
+
+        foreach (var mode in Enum.GetValues<RaiCore.Pdf.Extraction.TextExtractionMode>())
+        {
+            _ = new RaiCore.Pdf.Extraction.TextExtractor(reader, new RaiCore.Pdf.Extraction.TextExtractionOptions { Mode = mode }).ExtractText();
         }
     }
 
