@@ -19,6 +19,7 @@ var samples = new (string Name, Func<Task> Run)[]
     ("layout API", LayoutApi.RunAsync),
     ("PDF/A and accessibility", Standards.RunAsync),
     ("text extraction", TextExtraction.RunAsync),
+    ("image extraction", ImageExtraction.RunAsync),
 };
 
 foreach (var (name, run) in samples)

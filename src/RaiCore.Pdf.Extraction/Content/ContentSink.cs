@@ -50,6 +50,7 @@ internal readonly record struct TextGlyph(
 /// <param name="ResourceName">The image's name in the resources (<c>/Im1</c> without the slash), or <c>null</c> for an inline image.</param>
 /// <param name="Inline">The inline image, or <c>null</c> for an XObject.</param>
 /// <param name="IsClipped">Whether the image is hidden by clipping: it does not touch the clip at all (see <see cref="TextGlyph.IsClipped"/>).</param>
+/// <param name="Resources">The resources the image was drawn with: an inline image's named color space is looked up in them.</param>
 internal readonly record struct ImagePlacement(
     Matrix Transform,
     Box Bounds,
@@ -57,7 +58,8 @@ internal readonly record struct ImagePlacement(
     PdfReference? Reference,
     string? ResourceName,
     InlineImage? Inline,
-    bool IsClipped);
+    bool IsClipped,
+    PdfDictionary Resources);
 
 /// <summary>Receives what a content stream draws, in order. The default implementations ignore everything.</summary>
 internal abstract class ContentSink
