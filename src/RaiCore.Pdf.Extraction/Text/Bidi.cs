@@ -51,6 +51,21 @@ internal static class Bidi
     public static string ToLogical(IEnumerable<string> visual, bool? rightToLeft = null)
     {
         var tokens = visual as IReadOnlyList<string> ?? [.. visual];
+        var text = new StringBuilder();
+        foreach (var index in LogicalOrder(tokens, rightToLeft))
+        {
+            text.Append(tokens[index]);
+        }
+
+        return text.ToString();
+    }
+
+    /// <summary>
+    /// The logical order of tokens in visual order, in a paragraph of the given direction (by default, the tokens'
+    /// own): the indexes of the tokens, in the order they are read.
+    /// </summary>
+    public static int[] LogicalOrder(IReadOnlyList<string> tokens, bool? rightToLeft = null)
+    {
         var kinds = new Kind[tokens.Count];
         var hasRtl = false;
         for (var i = 0; i < tokens.Count; i++)
@@ -59,9 +74,10 @@ internal static class Bidi
             hasRtl |= kinds[i] == Kind.Rtl;
         }
 
+        var order = Enumerable.Range(0, tokens.Count).ToArray();
         if (!hasRtl)
         {
-            return string.Concat(tokens);
+            return order;
         }
 
         var baseLevel = rightToLeft ?? IsRightToLeft(tokens) ? 1 : 0;
@@ -115,7 +131,6 @@ internal static class Bidi
             };
         }
 
-        var order = Enumerable.Range(0, tokens.Count).ToArray();
         for (var level = levels.Max(); level >= 1; level--)
         {
             for (var start = 0; start < order.Length;)
@@ -137,13 +152,7 @@ internal static class Bidi
             }
         }
 
-        var text = new StringBuilder();
-        foreach (var index in order)
-        {
-            text.Append(tokens[index]);
-        }
-
-        return text.ToString();
+        return order;
     }
 
     /// <summary>N1 and N2: a neutral between two tokens of the same direction (numbers count as right-to-left) takes it; otherwise the paragraph's.</summary>

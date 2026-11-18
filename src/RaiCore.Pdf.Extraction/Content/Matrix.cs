@@ -26,6 +26,25 @@ internal readonly record struct Matrix(double A, double B, double C, double D, d
         (E * then.A) + (F * then.C) + then.E,
         (E * then.B) + (F * then.D) + then.F);
 
+    /// <summary>The inverse matrix, or <c>null</c> when this one cannot be inverted (it squeezes the plane to a line or point).</summary>
+    public Matrix? Invert()
+    {
+        var determinant = (A * D) - (B * C);
+        if (determinant == 0 || !double.IsFinite(1 / determinant))
+        {
+            return null;
+        }
+
+        var inverse = new Matrix(
+            D / determinant,
+            -B / determinant,
+            -C / determinant,
+            A / determinant,
+            ((C * F) - (D * E)) / determinant,
+            ((B * E) - (A * F)) / determinant);
+        return inverse.IsFinite ? inverse : null;
+    }
+
     /// <summary>Maps a point.</summary>
     public PdfPoint Transform(double x, double y) => new((A * x) + (C * y) + E, (B * x) + (D * y) + F);
 

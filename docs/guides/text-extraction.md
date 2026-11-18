@@ -51,6 +51,30 @@ stream that cannot be decoded, never throw: what they affect is skipped or guess
 `IncludeInvisibleText` (default `true`) controls invisible text, the OCR layer of scanned PDFs. `PageSeparator`
 (default `\f`) is what `ExtractText()` puts between pages.
 
+## Finding text
+
+`Find` searches every page and returns each match with its page and its place on the page; `FindOnPage` searches one
+page.
+
+[!code-csharp[](../snippets/TextExtraction.cs#search)]
+
+- **Plain text** is matched as it is, optionally ignoring case. Whitespace in it matches any whitespace on the page,
+  a line break included, so a phrase is found where it wraps. Ligatures on the page match the letters they stand for.
+- **Regular expressions** are matched against each page's text in reading order: lines end with `\n`, paragraphs with
+  an empty line. A match never spans two pages; empty matches are skipped.
+- **What matches:** the page text in reading order, whatever `Mode` says, so text matches across font changes and
+  across the pieces a producer draws a line in, but not from one column or table cell into the next. Right-to-left
+  text is searched in logical order. Invisible text follows `IncludeInvisibleText`, and hidden text is never found.
+- **Where:** `Rectangles` has one rectangle per line of the match, in reading order, and `Bounds` the rectangle around
+  them. Rectangles are `PdfRectangle`s in the page's user space: PDF points from the bottom-left corner of the page
+  before its `/Rotate`, the coordinates the page's content and annotations use. A rectangle covers the glyphs'
+  advance widths by the font's ascent and descent; for turned text, it is the axis-aligned rectangle around them.
+
+To mark the matches, draw over the pages imported into a new document. An imported page's canvas starts at the
+corner of its media box, so subtract that corner:
+
+[!code-csharp[](../snippets/TextExtraction.cs#highlight)]
+
 ## Untrusted files
 
 The work per page is bounded, and malformed content is skipped. To limit memory and time as well, run extraction

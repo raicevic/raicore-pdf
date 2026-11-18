@@ -12,7 +12,7 @@ internal static partial class PresentationForms
     private static readonly FrozenDictionary<char, string> Forms = Build();
 
     /// <summary>Whether a character is in the presentation-form blocks (U+FB00-FDFF, U+FE70-FEFF).</summary>
-    public static bool IsPresentationForm(char c) => c is (>= 'ﬀ' and <= '﷿') or (>= 'ﹰ' and <= '﻿');
+    public static bool IsPresentationForm(char c) => c is (>= '\uFB00' and <= '\uFDFF') or (>= '\uFE70' and <= '\uFEFF');
 
     /// <summary>The letters a presentation form decomposes to, or <c>null</c> when it has no decomposition.</summary>
     public static string? Decompose(char c) => Forms.GetValueOrDefault(c);

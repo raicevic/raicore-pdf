@@ -176,6 +176,7 @@ public class TextExtractorTests
     public void Actual_text_replaces_the_glyphs_it_covers()
     {
         Assert.Equal("BAfi", Text("BT /F1 10 Tf 100 700 Td (BA) Tj /Span << /ActualText (fi) >> BDC (AB) Tj EMC ET"));
+        Assert.Equal("a b", Text("BT /F1 10 Tf 100 700 Td /Span << /ActualText ( a   b ) >> BDC (AB) Tj EMC ET"));
     }
 
     [Fact]
@@ -285,11 +286,11 @@ public class TextExtractorTests
     }
 
     /// <summary>A simple font whose codes are ASCII, except A and B (see <see cref="HebrewToUnicode"/>); every glyph 500 units wide.</summary>
-    private static readonly string HebrewFont =
+    internal static readonly string HebrewFont =
         $"<< /Type /Font /Subtype /TrueType /BaseFont /Hebrew /FirstChar 32 /LastChar 126 /Widths [{string.Concat(Enumerable.Repeat("500 ", 95))}] /ToUnicode 5 0 R >>";
 
     /// <summary>The ToUnicode map of <see cref="HebrewFont"/>: A is alef, B is bet.</summary>
-    private static readonly string HebrewToUnicode =
+    internal static readonly string HebrewToUnicode =
         TestPdf.Stream("1 begincodespacerange <00> <FF> endcodespacerange 2 beginbfchar <41> <05D0> <42> <05D1> endbfchar");
 
     [Fact]

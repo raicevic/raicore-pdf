@@ -3,6 +3,7 @@ override RaiCore.Pdf.Extraction.PageText.ToString() -> string!
 override RaiCore.Pdf.Extraction.TextExtractionOptions.Equals(object? obj) -> bool
 override RaiCore.Pdf.Extraction.TextExtractionOptions.GetHashCode() -> int
 override RaiCore.Pdf.Extraction.TextExtractionOptions.ToString() -> string!
+override RaiCore.Pdf.Extraction.TextMatch.ToString() -> string!
 RaiCore.Pdf.Extraction.PageText
 RaiCore.Pdf.Extraction.PageText.Diagnostics.get -> System.Collections.Generic.IReadOnlyList<string!>!
 RaiCore.Pdf.Extraction.PageText.HasText.get -> bool
@@ -27,9 +28,18 @@ RaiCore.Pdf.Extraction.TextExtractor.ExtractPage(int pageIndex) -> RaiCore.Pdf.E
 RaiCore.Pdf.Extraction.TextExtractor.ExtractPages() -> System.Collections.Generic.IEnumerable<RaiCore.Pdf.Extraction.PageText!>!
 RaiCore.Pdf.Extraction.TextExtractor.ExtractPages(System.Collections.Generic.IEnumerable<int>! pageIndexes) -> System.Collections.Generic.IEnumerable<RaiCore.Pdf.Extraction.PageText!>!
 RaiCore.Pdf.Extraction.TextExtractor.ExtractText() -> string!
+RaiCore.Pdf.Extraction.TextExtractor.Find(string! text, bool ignoreCase = false) -> System.Collections.Generic.IEnumerable<RaiCore.Pdf.Extraction.TextMatch!>!
+RaiCore.Pdf.Extraction.TextExtractor.Find(System.Text.RegularExpressions.Regex! pattern) -> System.Collections.Generic.IEnumerable<RaiCore.Pdf.Extraction.TextMatch!>!
+RaiCore.Pdf.Extraction.TextExtractor.FindOnPage(int pageIndex, string! text, bool ignoreCase = false) -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.Extraction.TextMatch!>!
+RaiCore.Pdf.Extraction.TextExtractor.FindOnPage(int pageIndex, System.Text.RegularExpressions.Regex! pattern) -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.Extraction.TextMatch!>!
 RaiCore.Pdf.Extraction.TextExtractor.Options.get -> RaiCore.Pdf.Extraction.TextExtractionOptions!
 RaiCore.Pdf.Extraction.TextExtractor.Reader.get -> RaiCore.Pdf.PdfReader!
 RaiCore.Pdf.Extraction.TextExtractor.TextExtractor(RaiCore.Pdf.PdfReader! reader, RaiCore.Pdf.Extraction.TextExtractionOptions? options = null) -> void
+RaiCore.Pdf.Extraction.TextMatch
+RaiCore.Pdf.Extraction.TextMatch.Bounds.get -> RaiCore.Pdf.PdfRectangle
+RaiCore.Pdf.Extraction.TextMatch.PageIndex.get -> int
+RaiCore.Pdf.Extraction.TextMatch.Rectangles.get -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.PdfRectangle>!
+RaiCore.Pdf.Extraction.TextMatch.Text.get -> string!
 static RaiCore.Pdf.Extraction.TextExtractionOptions.Default.get -> RaiCore.Pdf.Extraction.TextExtractionOptions!
 static RaiCore.Pdf.Extraction.TextExtractionOptions.operator !=(RaiCore.Pdf.Extraction.TextExtractionOptions? left, RaiCore.Pdf.Extraction.TextExtractionOptions? right) -> bool
 static RaiCore.Pdf.Extraction.TextExtractionOptions.operator ==(RaiCore.Pdf.Extraction.TextExtractionOptions? left, RaiCore.Pdf.Extraction.TextExtractionOptions? right) -> bool

@@ -6,6 +6,11 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Text search** (`RaiCore.Pdf.Extraction`): `TextExtractor.Find` and `FindOnPage` find plain text (optionally
+  ignoring case) or the matches of a regular expression, with each match's page, text and rectangles: one per line,
+  in PDF points in the page's user space, so they can be drawn over the page or turned into annotations as they are.
+  Text matches across font changes and line breaks, in reading order, right-to-left text in logical order, on rotated
+  and cropped pages (#186).
 - **Text extraction** (`RaiCore.Pdf.Extraction`): `TextExtractor` reads the text of existing PDF files page by page
   (`ExtractPage`, `ExtractPages`, `ExtractText`), from any producer:
   - **Reading order:** lines from top to bottom, word spaces from gaps where a file has no space characters, columns
