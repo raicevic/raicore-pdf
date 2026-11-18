@@ -117,8 +117,8 @@ release.
 
 The packages are released in trains (#62):
 
-- **The core:** RaiCore.Pdf, RaiCore.Pdf.Fonts, RaiCore.Pdf.Layout, RaiCore.Pdf.Html, RaiCore.Pdf.Razor and
-  RaiCore.Pdf.Extraction share one version, `CoreVersionPrefix` in `Directory.Build.props`, and are always released together by a tag `v<version>`.
+- **The core:** RaiCore.Pdf, RaiCore.Pdf.Fonts, RaiCore.Pdf.Layout, RaiCore.Pdf.Html, RaiCore.Pdf.Razor,
+  RaiCore.Pdf.Extraction and RaiCore.Pdf.Editing share one version, `CoreVersionPrefix` in `Directory.Build.props`, and are always released together by a tag `v<version>`.
   They use each other's internals, so each depends on the others at exactly its own version (`[1.2.0]`).
 - **A package with its own version**, such as a future RaiCore.Pdf.Docx, sets `<IsCorePackage>false</IsCorePackage>`
   and its own `<VersionPrefix>` (it may start at 0.x) in its project file, and is released alone by a tag

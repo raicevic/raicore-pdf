@@ -18,6 +18,7 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | ✅ 1.0 |
 | `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | ✅ 1.0 |
 | `RaiCore.Pdf.Extraction` | Read existing PDFs: text by page in reading order, text search with positions, images with their placement and data | 🚧 Unreleased |
+| `RaiCore.Pdf.Editing` | Edit existing PDFs: delete, insert, move and rotate pages, save repeatedly | 🚧 Unreleased |
 | `RaiCore.Pdf.Docx`, `.Xlsx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ After 1.0 |
 
 All packages target .NET 10 and run on Windows, Linux (glibc and musl, so Alpine too) and macOS, x64 and Arm64, with
@@ -606,6 +607,17 @@ foreach (var page in new TextExtractor(PdfReader.Open("report.pdf")).ExtractPage
 }
 ```
 
+The `RaiCore.Pdf.Editing` package changes existing PDFs: delete, insert, move and rotate pages, and save as often as
+needed. Each save writes only what is still used, so deleted pages' fonts and images leave the file, along with the
+bookmarks and links that pointed at them. See the [editing guide](https://raicevic.github.io/raicore-pdf/guides/editing.html).
+
+```csharp
+var editor = PdfEditor.Open("contract.pdf");
+editor.Pages.Delete(0);
+editor.Pages.Add(PdfReader.Open("appendix.pdf"));
+editor.Save("contract-edited.pdf");
+```
+
 ### Fonts
 
 Any TrueType or OpenType font (`.ttf`, `.otf`, `.ttc`, `.woff`, `.woff2`) can be embedded. Only the glyphs you use
@@ -840,7 +852,7 @@ The way there and what comes next are tracked in [GitHub milestones](https://git
 4. **0.4 PDF standards:** PDF/A-3 and e-invoices, tagged PDF/PDF/UA, metadata, encryption, a PDF reader for merging.
 5. **0.5 Hardening:** visual comparison with browsers, fuzzing, resource limits, performance, deployment targets.
 6. **Done, 1.0:** API review and freeze, documentation, the release.
-7. **1.x Reading, editing and conversions:** text extraction, text search and image extraction (done), page editing, forms,
+7. **1.x Reading, editing and conversions:** text extraction, text search, image extraction and page editing (done), forms,
    PDF/A level A, TIFF, email and Office formats to PDF.
 8. **After 1.0:** XSL-FO, grid layout, multi-column layout, digital signatures.
 

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Edit existing PDF files with RaiCore.Pdf: delete, insert, move and rotate pages, and save as often as needed.</Description>
+    <PackageTags>$(PackageTags);pdf-editing;pdf-merge</PackageTags>
+    <!--
+      A core package (it uses the core's PDF reader and writer through InternalsVisibleTo, so it is released with the
+      core at the same version). It has no released version to validate against yet: set the baseline to the first
+      release that includes it.
+    -->
+    <PackageValidationBaselineVersion></PackageValidationBaselineVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RaiCore.Pdf\RaiCore.Pdf.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RaiCore.Pdf.Tests" />
+  </ItemGroup>
+
+</Project>

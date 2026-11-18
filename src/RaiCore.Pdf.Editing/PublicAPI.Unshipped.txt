@@ -1,0 +1,29 @@
+#nullable enable
+RaiCore.Pdf.Editing.PdfEditor
+RaiCore.Pdf.Editing.PdfEditor.Pages.get -> RaiCore.Pdf.Editing.PdfEditorPages!
+RaiCore.Pdf.Editing.PdfEditor.Save(string! path) -> void
+RaiCore.Pdf.Editing.PdfEditor.Save(System.IO.Stream! stream) -> void
+RaiCore.Pdf.Editing.PdfEditor.SaveAsync(System.IO.Stream! stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+RaiCore.Pdf.Editing.PdfEditor.ToArray() -> byte[]!
+RaiCore.Pdf.Editing.PdfEditorPage
+RaiCore.Pdf.Editing.PdfEditorPage.CropBox.get -> RaiCore.Pdf.PdfRectangle
+RaiCore.Pdf.Editing.PdfEditorPage.Height.get -> double
+RaiCore.Pdf.Editing.PdfEditorPage.MediaBox.get -> RaiCore.Pdf.PdfRectangle
+RaiCore.Pdf.Editing.PdfEditorPage.Rotation.get -> int
+RaiCore.Pdf.Editing.PdfEditorPage.Rotation.set -> void
+RaiCore.Pdf.Editing.PdfEditorPage.Width.get -> double
+RaiCore.Pdf.Editing.PdfEditorPages
+RaiCore.Pdf.Editing.PdfEditorPages.Add(RaiCore.Pdf.PdfReader! source) -> void
+RaiCore.Pdf.Editing.PdfEditorPages.Add(RaiCore.Pdf.PdfReader! source, System.Collections.Generic.IEnumerable<int>! pageIndexes) -> void
+RaiCore.Pdf.Editing.PdfEditorPages.Count.get -> int
+RaiCore.Pdf.Editing.PdfEditorPages.Delete(int index) -> void
+RaiCore.Pdf.Editing.PdfEditorPages.Delete(int index, int count) -> void
+RaiCore.Pdf.Editing.PdfEditorPages.GetEnumerator() -> System.Collections.Generic.IEnumerator<RaiCore.Pdf.Editing.PdfEditorPage!>!
+RaiCore.Pdf.Editing.PdfEditorPages.Insert(int index, RaiCore.Pdf.PdfReader! source) -> void
+RaiCore.Pdf.Editing.PdfEditorPages.Insert(int index, RaiCore.Pdf.PdfReader! source, System.Collections.Generic.IEnumerable<int>! pageIndexes) -> void
+RaiCore.Pdf.Editing.PdfEditorPages.Move(int from, int to) -> void
+RaiCore.Pdf.Editing.PdfEditorPages.this[int index].get -> RaiCore.Pdf.Editing.PdfEditorPage!
+static RaiCore.Pdf.Editing.PdfEditor.Open(byte[]! data, string? password = null) -> RaiCore.Pdf.Editing.PdfEditor!
+static RaiCore.Pdf.Editing.PdfEditor.Open(RaiCore.Pdf.PdfReader! reader) -> RaiCore.Pdf.Editing.PdfEditor!
+static RaiCore.Pdf.Editing.PdfEditor.Open(string! path, string? password = null) -> RaiCore.Pdf.Editing.PdfEditor!
+static RaiCore.Pdf.Editing.PdfEditor.Open(System.IO.Stream! stream, string? password = null) -> RaiCore.Pdf.Editing.PdfEditor!

@@ -12,6 +12,7 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="../../src/RaiCore.Pdf.Razor/RaiCore.Pdf.Razor.csproj" />
     <ProjectReference Include="../../src/RaiCore.Pdf.Extraction/RaiCore.Pdf.Extraction.csproj" />
+    <ProjectReference Include="../../src/RaiCore.Pdf.Editing/RaiCore.Pdf.Editing.csproj" />
   </ItemGroup>
 
 </Project>

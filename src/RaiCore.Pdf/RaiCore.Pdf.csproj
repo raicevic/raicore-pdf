@@ -13,6 +13,8 @@
     <InternalsVisibleTo Include="RaiCore.Pdf.Html" />
     <!-- Text and image extraction reads pages with the reader's parser, stream decoders and font tables. -->
     <InternalsVisibleTo Include="RaiCore.Pdf.Extraction" />
+    <!-- Editing copies and writes existing files with the reader's object store and the file writer. -->
+    <InternalsVisibleTo Include="RaiCore.Pdf.Editing" />
   </ItemGroup>
 
   <ItemGroup>
