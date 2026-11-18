@@ -14,9 +14,16 @@ namespace RaiCore.Pdf.IO;
 /// is filled in later is <see cref="Reserve">reserved</see> (it gets its number, so others can refer to it) and
 /// <see cref="Set"/> when it is complete. The cross-reference table lists objects by number, so they may be written in
 /// any order.
+/// <para>
+/// With <see cref="UseObjectStreams"/>, objects other than streams are collected and written compressed in object
+/// streams at the end, and the cross-reference table is a cross-reference stream (PDF 1.5).
+/// </para>
 /// </remarks>
 internal sealed class PdfFileWriter : IDisposable
 {
+    /// <summary>The most objects in one object stream.</summary>
+    private const int ObjectsPerStream = 200;
+
     /// <summary>The objects by number - 1: <c>null</c> once written, or while reserved and not set yet.</summary>
     private readonly List<PdfObject?> _objects = [];
 
@@ -25,6 +32,12 @@ internal sealed class PdfFileWriter : IDisposable
 
     /// <summary>The numbers of the objects added or set since the last flush.</summary>
     private readonly List<int> _pending = [];
+
+    /// <summary>Objects waiting for an object stream (see <see cref="UseObjectStreams"/>): their number and bytes.</summary>
+    private readonly List<(int Number, byte[] Bytes)> _packable = [];
+
+    /// <summary>Where objects written in object streams are: the stream's object number and the index in it.</summary>
+    private readonly Dictionary<int, (int Stream, int Index)> _packed = [];
 
     private PdfOutput? _output;
     private StandardSecurityHandler? _security;
@@ -40,6 +53,12 @@ internal sealed class PdfFileWriter : IDisposable
 
     /// <summary>The font that embeds a standard font in its place (see <c>PdfDocument.StandardFontSubstitute</c>), or <c>null</c>.</summary>
     public Func<Fonts.StandardFont, Fonts.PdfFont?>? StandardFontSubstitute { get; init; }
+
+    /// <summary>
+    /// Whether objects other than streams are written in compressed object streams and the cross-reference table as a
+    /// stream (PDF 1.5). Not with encryption.
+    /// </summary>
+    public bool UseObjectStreams { get; init; }
 
     /// <summary>Registers an indirect object and returns a reference to it.</summary>
     public PdfReference Add(PdfObject obj)
@@ -108,6 +127,11 @@ internal sealed class PdfFileWriter : IDisposable
             throw new InvalidOperationException("The file is already being written.");
         }
 
+        if (UseObjectStreams && security is not null)
+        {
+            throw new NotSupportedException("Object streams are not written in encrypted files.");
+        }
+
         _output = new PdfOutput(stream);
         _security = security;
 
@@ -128,10 +152,21 @@ internal sealed class PdfFileWriter : IDisposable
         var output = _output ?? throw new InvalidOperationException("The file is not being written.");
         var encryptRef = _security is null ? null : Add(_security.CreateEncryptDictionary());
         Flush(encryptRef?.ObjectNumber ?? 0);
-        var unset = _offsets.FindIndex(offset => offset == 0);
+        if (UseObjectStreams)
+        {
+            WriteObjectStreams();
+        }
+
+        var unset = Enumerable.Range(0, _offsets.Count).FirstOrDefault(i => _offsets[i] == 0 && !_packed.ContainsKey(i + 1), -1);
         if (unset >= 0)
         {
             throw new InvalidOperationException($"Object {unset + 1} was reserved but never set.");
+        }
+
+        if (UseObjectStreams)
+        {
+            FinishWithStream(output, root, info);
+            return;
         }
 
         // The file identifier is derived from the content, so identical input gives identical output. An encrypted
@@ -184,6 +219,22 @@ internal sealed class PdfFileWriter : IDisposable
         foreach (var number in _pending)
         {
             var obj = _objects[number - 1]!;
+            if (UseObjectStreams && obj is not PdfStreamObject)
+            {
+                // Kept for an object stream: written there (unencrypted, generation 0) at the end.
+                using var buffer = new MemoryStream();
+                using (var bytes = new PdfOutput(buffer))
+                {
+                    bytes.BeginObject(number, 0, null);
+                    obj.WriteTo(bytes);
+                    bytes.EndObject();
+                }
+
+                _packable.Add((number, buffer.ToArray()));
+                _objects[number - 1] = null;
+                continue;
+            }
+
             _offsets[number - 1] = output.Position;
             output.WriteInteger(number);
             output.WriteAscii(" 0 obj\n");
@@ -195,5 +246,103 @@ internal sealed class PdfFileWriter : IDisposable
         }
 
         _pending.Clear();
+    }
+
+    /// <summary>Writes the collected objects in object streams (ISO 32000-2, 7.5.7) of up to <see cref="ObjectsPerStream"/> objects.</summary>
+    private void WriteObjectStreams()
+    {
+        for (var start = 0; start < _packable.Count; start += ObjectsPerStream)
+        {
+            var group = _packable.Skip(start).Take(ObjectsPerStream).ToList();
+            var header = new System.Text.StringBuilder();
+            using var body = new MemoryStream();
+            foreach (var (number, bytes) in group)
+            {
+                header.Append(System.Globalization.CultureInfo.InvariantCulture, $"{number} {body.Length} ");
+                body.Write(bytes);
+                body.WriteByte((byte)'\n');
+            }
+
+            var headerBytes = System.Text.Encoding.ASCII.GetBytes(header.ToString());
+            var data = new byte[headerBytes.Length + body.Length];
+            headerBytes.CopyTo(data, 0);
+            body.ToArray().CopyTo(data, headerBytes.Length);
+            var stream = PdfStreamObject.CreateCompressed(data, new PdfDictionary
+            {
+                ["Type"] = new PdfName("ObjStm"),
+                ["N"] = new PdfInteger(group.Count),
+                ["First"] = new PdfInteger(headerBytes.Length),
+            });
+            var reference = Add(stream);
+            for (var i = 0; i < group.Count; i++)
+            {
+                _packed[group[i].Number] = (reference.ObjectNumber, i);
+            }
+
+            Flush(encryptNumber: 0);
+        }
+
+        _packable.Clear();
+    }
+
+    /// <summary>Writes the cross-reference stream (ISO 32000-2, 7.5.8), which holds the trailer, and the end of the file.</summary>
+    private void FinishWithStream(PdfOutput output, PdfReference root, PdfReference? info)
+    {
+        var id = new PdfString(output.PeekHash()[..16], hex: true);
+        var xrefNumber = _objects.Count + 1;
+        var xrefOffset = output.Position;
+        var offsetBytes = Math.Max(4, (int)Math.Ceiling(Math.Log2(xrefOffset + 1) / 8));
+        var rowLength = 1 + offsetBytes + 2;
+        var rows = new byte[(xrefNumber + 1) * rowLength];
+        void Row(int number, int type, long field2, int field3)
+        {
+            var at = number * rowLength;
+            rows[at] = (byte)type;
+            for (var b = 0; b < offsetBytes; b++)
+            {
+                rows[at + offsetBytes - b] = (byte)(field2 >> (8 * b));
+            }
+
+            rows[at + offsetBytes + 1] = (byte)(field3 >> 8);
+            rows[at + offsetBytes + 2] = (byte)field3;
+        }
+
+        Row(0, 0, 0, 0xFFFF);
+        for (var number = 1; number < xrefNumber; number++)
+        {
+            if (_packed.TryGetValue(number, out var location))
+            {
+                Row(number, 2, location.Stream, location.Index);
+            }
+            else
+            {
+                Row(number, 1, _offsets[number - 1], 0);
+            }
+        }
+
+        Row(xrefNumber, 1, xrefOffset, 0);
+        var dictionary = new PdfDictionary
+        {
+            ["Type"] = new PdfName("XRef"),
+            ["Size"] = new PdfInteger(xrefNumber + 1),
+            ["W"] = PdfArray.OfNumbers(1, offsetBytes, 2),
+            ["Root"] = root,
+        };
+        if (info is not null)
+        {
+            dictionary["Info"] = info;
+        }
+
+        dictionary["ID"] = new PdfArray(id, id);
+        var xref = PdfStreamObject.CreateCompressed(rows, dictionary);
+        output.WriteInteger(xrefNumber);
+        output.WriteAscii(" 0 obj\n");
+        output.BeginObject(xrefNumber, 0, null);
+        xref.WriteTo(output);
+        output.EndObject();
+        output.WriteAscii("\nendobj\nstartxref\n");
+        output.WriteInteger(xrefOffset);
+        output.WriteAscii("\n%%EOF\n");
+        Dispose();
     }
 }

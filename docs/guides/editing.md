@@ -52,6 +52,27 @@ Inserted pages keep their content, resources, annotations, boxes and rotation, a
 copied once. Links between inserted pages keep working; links to pages of the other file that were not inserted are
 dropped. The other file's outline, form fields and tagged structure are not copied.
 
+## Making files smaller
+
+Each save already leaves out every object nothing uses. `Optimize()` goes further, without changing how the pages look:
+
+[!code-csharp[](../snippets/Editing.cs#optimize)]
+
+- **Unused resources:** fonts, images, forms, graphics states, patterns, shadings, color spaces and marked-content
+  properties that a page's content (or a form's, pattern's or Type 3 font's) never names are removed, so what only
+  they used leaves the file. Resources shared with something whose content is not read are kept whole.
+- **Duplicates:** identical streams (images, embedded fonts, forms, content) and identical fonts, font descriptors,
+  encodings and graphics states become one object. Files merged from several PDFs often carry the same font or logo
+  once per source file.
+- **Compression:** streams without compression are compressed where that makes them smaller (XMP metadata stays
+  readable).
+- **Object streams:** later saves write the small objects in compressed object streams with a cross-reference stream
+  (PDF 1.5; older files are written as 1.5). `UseObjectStreams` turns this on or off on its own.
+
+`PdfOptimizationOptions` turns each step off, and the result says how many resources were removed, objects merged and
+streams compressed. The changes stay in the document for later saves. Images are not recompressed, and fonts are not
+subset again.
+
 ## Splitting by size
 
 `SplitBySize(maxBytes)` cuts the document into consecutive parts whose files are each at most `maxBytes` long, with as

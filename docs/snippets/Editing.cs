@@ -53,6 +53,17 @@ internal static class Editing
         merged.Save("contract-merged.pdf");
         #endregion
 
+        #region optimize
+        // Merging files repeats their fonts and logos: Optimize keeps one of each, drops resources nothing uses,
+        // compresses what is not compressed, and saves with object streams.
+        var bundle = PdfEditor.Open("contract.pdf");
+        bundle.Pages.Add(PdfReader.Open("contract.pdf"));
+        bundle.Pages.Add(PdfReader.Open("appendix.pdf"));
+        var result = bundle.Optimize();
+        Console.WriteLine($"{result.ObjectsMerged} duplicates merged, {result.ResourcesRemoved} unused resources removed");
+        bundle.Save("contract-bundle.pdf");
+        #endregion
+
         #region split
         // Parts of at most 10 MB, for a mail server or an archive with a size limit.
         var parts = PdfEditor.Open("contract-merged.pdf").SplitBySize(10 * 1024 * 1024);

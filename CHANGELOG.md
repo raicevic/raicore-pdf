@@ -6,6 +6,11 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Optimization** (`RaiCore.Pdf.Editing`): `PdfEditor.Optimize(options)` makes documents smaller without changing how
+  they look: resource entries no content uses are removed (pages, forms, patterns, Type 3 fonts; inherited and shared
+  resources by the union of their users), identical streams and fonts/font descriptors/encodings/graphics states are
+  merged, uncompressed streams are compressed, and `UseObjectStreams` writes object streams with a cross-reference
+  stream (PDF 1.5). Merged files with repeated fonts and images typically shrink to a third to two thirds (#193).
 - **Split by size** (`RaiCore.Pdf.Editing`): `PdfEditor.SplitBySize(maxBytes)` cuts a document into consecutive parts
   whose files stay below a size limit, each with as many pages as fit (shared fonts and images counted once per part;
   bookmarks and links kept within each part), and reports pages larger than the limit on their own as parts of their own

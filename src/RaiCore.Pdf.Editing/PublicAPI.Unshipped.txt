@@ -1,12 +1,21 @@
 #nullable enable
+override RaiCore.Pdf.Editing.PdfOptimizationOptions.Equals(object? obj) -> bool
+override RaiCore.Pdf.Editing.PdfOptimizationOptions.GetHashCode() -> int
+override RaiCore.Pdf.Editing.PdfOptimizationOptions.ToString() -> string!
+override RaiCore.Pdf.Editing.PdfOptimizationResult.Equals(object? obj) -> bool
+override RaiCore.Pdf.Editing.PdfOptimizationResult.GetHashCode() -> int
+override RaiCore.Pdf.Editing.PdfOptimizationResult.ToString() -> string!
 override RaiCore.Pdf.Editing.PdfSplitPart.ToString() -> string!
 RaiCore.Pdf.Editing.PdfEditor
+RaiCore.Pdf.Editing.PdfEditor.Optimize(RaiCore.Pdf.Editing.PdfOptimizationOptions? options = null) -> RaiCore.Pdf.Editing.PdfOptimizationResult!
 RaiCore.Pdf.Editing.PdfEditor.Pages.get -> RaiCore.Pdf.Editing.PdfEditorPages!
 RaiCore.Pdf.Editing.PdfEditor.Save(string! path) -> void
 RaiCore.Pdf.Editing.PdfEditor.Save(System.IO.Stream! stream) -> void
 RaiCore.Pdf.Editing.PdfEditor.SaveAsync(System.IO.Stream! stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 RaiCore.Pdf.Editing.PdfEditor.SplitBySize(long maxBytes) -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.Editing.PdfSplitPart!>!
 RaiCore.Pdf.Editing.PdfEditor.ToArray() -> byte[]!
+RaiCore.Pdf.Editing.PdfEditor.UseObjectStreams.get -> bool
+RaiCore.Pdf.Editing.PdfEditor.UseObjectStreams.set -> void
 RaiCore.Pdf.Editing.PdfEditorPage
 RaiCore.Pdf.Editing.PdfEditorPage.CropBox.get -> RaiCore.Pdf.PdfRectangle
 RaiCore.Pdf.Editing.PdfEditorPage.Height.get -> double
@@ -25,6 +34,29 @@ RaiCore.Pdf.Editing.PdfEditorPages.Insert(int index, RaiCore.Pdf.PdfReader! sour
 RaiCore.Pdf.Editing.PdfEditorPages.Insert(int index, RaiCore.Pdf.PdfReader! source, System.Collections.Generic.IEnumerable<int>! pageIndexes) -> void
 RaiCore.Pdf.Editing.PdfEditorPages.Move(int from, int to) -> void
 RaiCore.Pdf.Editing.PdfEditorPages.this[int index].get -> RaiCore.Pdf.Editing.PdfEditorPage!
+RaiCore.Pdf.Editing.PdfOptimizationOptions
+RaiCore.Pdf.Editing.PdfOptimizationOptions.<Clone>$() -> RaiCore.Pdf.Editing.PdfOptimizationOptions!
+RaiCore.Pdf.Editing.PdfOptimizationOptions.CompressStreams.get -> bool
+RaiCore.Pdf.Editing.PdfOptimizationOptions.CompressStreams.init -> void
+RaiCore.Pdf.Editing.PdfOptimizationOptions.Equals(RaiCore.Pdf.Editing.PdfOptimizationOptions? other) -> bool
+RaiCore.Pdf.Editing.PdfOptimizationOptions.MergeDuplicates.get -> bool
+RaiCore.Pdf.Editing.PdfOptimizationOptions.MergeDuplicates.init -> void
+RaiCore.Pdf.Editing.PdfOptimizationOptions.PdfOptimizationOptions() -> void
+RaiCore.Pdf.Editing.PdfOptimizationOptions.RemoveUnusedResources.get -> bool
+RaiCore.Pdf.Editing.PdfOptimizationOptions.RemoveUnusedResources.init -> void
+RaiCore.Pdf.Editing.PdfOptimizationOptions.UseObjectStreams.get -> bool
+RaiCore.Pdf.Editing.PdfOptimizationOptions.UseObjectStreams.init -> void
+RaiCore.Pdf.Editing.PdfOptimizationResult
+RaiCore.Pdf.Editing.PdfOptimizationResult.<Clone>$() -> RaiCore.Pdf.Editing.PdfOptimizationResult!
+RaiCore.Pdf.Editing.PdfOptimizationResult.Deconstruct(out int ResourcesRemoved, out int ObjectsMerged, out int StreamsCompressed) -> void
+RaiCore.Pdf.Editing.PdfOptimizationResult.Equals(RaiCore.Pdf.Editing.PdfOptimizationResult? other) -> bool
+RaiCore.Pdf.Editing.PdfOptimizationResult.ObjectsMerged.get -> int
+RaiCore.Pdf.Editing.PdfOptimizationResult.ObjectsMerged.init -> void
+RaiCore.Pdf.Editing.PdfOptimizationResult.PdfOptimizationResult(int ResourcesRemoved, int ObjectsMerged, int StreamsCompressed) -> void
+RaiCore.Pdf.Editing.PdfOptimizationResult.ResourcesRemoved.get -> int
+RaiCore.Pdf.Editing.PdfOptimizationResult.ResourcesRemoved.init -> void
+RaiCore.Pdf.Editing.PdfOptimizationResult.StreamsCompressed.get -> int
+RaiCore.Pdf.Editing.PdfOptimizationResult.StreamsCompressed.init -> void
 RaiCore.Pdf.Editing.PdfSplitPart
 RaiCore.Pdf.Editing.PdfSplitPart.Data.get -> System.ReadOnlyMemory<byte>
 RaiCore.Pdf.Editing.PdfSplitPart.ExceedsLimit.get -> bool
@@ -37,3 +69,8 @@ static RaiCore.Pdf.Editing.PdfEditor.Open(byte[]! data, string? password = null)
 static RaiCore.Pdf.Editing.PdfEditor.Open(RaiCore.Pdf.PdfReader! reader) -> RaiCore.Pdf.Editing.PdfEditor!
 static RaiCore.Pdf.Editing.PdfEditor.Open(string! path, string? password = null) -> RaiCore.Pdf.Editing.PdfEditor!
 static RaiCore.Pdf.Editing.PdfEditor.Open(System.IO.Stream! stream, string? password = null) -> RaiCore.Pdf.Editing.PdfEditor!
+static RaiCore.Pdf.Editing.PdfOptimizationOptions.Default.get -> RaiCore.Pdf.Editing.PdfOptimizationOptions!
+static RaiCore.Pdf.Editing.PdfOptimizationOptions.operator !=(RaiCore.Pdf.Editing.PdfOptimizationOptions? left, RaiCore.Pdf.Editing.PdfOptimizationOptions? right) -> bool
+static RaiCore.Pdf.Editing.PdfOptimizationOptions.operator ==(RaiCore.Pdf.Editing.PdfOptimizationOptions? left, RaiCore.Pdf.Editing.PdfOptimizationOptions? right) -> bool
+static RaiCore.Pdf.Editing.PdfOptimizationResult.operator !=(RaiCore.Pdf.Editing.PdfOptimizationResult? left, RaiCore.Pdf.Editing.PdfOptimizationResult? right) -> bool
+static RaiCore.Pdf.Editing.PdfOptimizationResult.operator ==(RaiCore.Pdf.Editing.PdfOptimizationResult? left, RaiCore.Pdf.Editing.PdfOptimizationResult? right) -> bool
