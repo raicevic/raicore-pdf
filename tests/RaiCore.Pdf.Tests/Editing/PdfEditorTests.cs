@@ -388,6 +388,7 @@ public class PdfEditorTests
 
         Assert.Single(reader.Pages);
         Assert.Equal(0, ImageObjects(saved));
+        Assert.NotNull(reader.Pages[0].Dictionary["Resources"]); // Required, so written even where the page had none.
         var element = (PdfDictionary)reader.Resolve(((PdfArray)reader.Resolve(((PdfDictionary)reader.Resolve(reader.Catalog["StructTreeRoot"])!)["K"])!).Items[0])!;
         Assert.Null(element["Pg"]);
         AssertValid(saved);

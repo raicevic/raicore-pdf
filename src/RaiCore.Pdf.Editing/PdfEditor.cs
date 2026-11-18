@@ -191,9 +191,10 @@ public sealed class PdfEditor
             page["Rotate"] = new PdfInteger(source.Rotate);
         }
 
-        if (page["Resources"] is null && copier.Copy(source.ResourcesObject) is { } resources)
+        if (page["Resources"] is null)
         {
-            page["Resources"] = resources;
+            // Required (ISO 32000-2, table 31): a page that has none, not even inherited, gets an empty one.
+            page["Resources"] = copier.Copy(source.ResourcesObject) ?? new PdfDictionary();
         }
 
         static PdfArray Box(PdfRectangle box) => PdfArray.OfNumbers(box.X, box.Y, box.Right, box.Top);
