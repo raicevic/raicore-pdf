@@ -208,7 +208,7 @@ public class TextExtractorTests
             Gadget 1 5.50
 
             Footer x2 and H2O
-            """,
+            """.ReplaceLineEndings("\n"),
             text);
     }
 

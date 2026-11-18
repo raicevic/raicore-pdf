@@ -71,11 +71,20 @@ public class OtherProducersTests
             _ => Fixtures.Read("Extraction/" + document),
         };
 
-        var (exitCode, output) = ExternalTools.RunOnPdf("pdftotext", pdf, "-enc", "UTF-8", "{pdf}", "-");
+        // Poppler breaks diagonal text apart, so it is left out (-nodiag): the line turned by 30 degrees in
+        // reportlab-truetype.pdf is compared with MuPDF instead (Glyphs_match_MuPDF).
+        var (exitCode, output) = ExternalTools.RunOnPdf("pdftotext", pdf, "-nodiag", "-enc", "UTF-8", "{pdf}", "-");
         Assert.Equal(0, exitCode);
         var ours = new TextExtractor(PdfReader.Open(pdf)).ExtractText();
+        if (document == "reportlab-truetype.pdf")
+        {
+            ours = ours.Replace("Turned 30 degrees", string.Empty, StringComparison.Ordinal);
+        }
 
-        Assert.Equal(Words(output), Words(ours));
+        var (expected, actual) = (Words(output), Words(ours));
+        Assert.True(
+            expected.SequenceEqual(actual),
+            $"Only pdftotext: {string.Join(' ', Except(expected, actual))}; only RaiCore: {string.Join(' ', Except(actual, expected))}");
     }
 
     private static byte[] RaiCoreStandard()
@@ -85,6 +94,26 @@ public class OtherProducersTests
         canvas.DrawText("Standard fonts: Gr\u00FC\u00DFe \u2013 1,50 \u20AC", RaiCore.Pdf.Fonts.StandardFont.Helvetica, 12, 72, 700);
         canvas.DrawText("Second line in Times", RaiCore.Pdf.Fonts.StandardFont.TimesRoman, 12, 72, 680);
         return document.ToArray();
+    }
+
+    /// <summary>The words of <paramref name="a"/> that <paramref name="b"/> lacks, counting repeats.</summary>
+    private static List<string> Except(List<string> a, List<string> b)
+    {
+        var rest = b.GroupBy(w => w).ToDictionary(g => g.Key, g => g.Count());
+        var result = new List<string>();
+        foreach (var word in a)
+        {
+            if (rest.TryGetValue(word, out var count) && count > 0)
+            {
+                rest[word] = count - 1;
+            }
+            else
+            {
+                result.Add(word);
+            }
+        }
+
+        return result;
     }
 
     private static List<string> Words(string text) =>
