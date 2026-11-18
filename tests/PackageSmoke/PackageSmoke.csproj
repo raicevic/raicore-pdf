@@ -13,8 +13,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Only the top-level package: the rest must arrive as its dependencies. -->
+    <!-- Only the top-level packages: the rest must arrive as their dependencies. -->
     <PackageReference Include="RaiCore.Pdf.Razor" Version="$(RaiCoreVersion)" />
+    <PackageReference Include="RaiCore.Pdf.Extraction" Version="$(RaiCoreVersion)" />
   </ItemGroup>
 
   <ItemGroup>

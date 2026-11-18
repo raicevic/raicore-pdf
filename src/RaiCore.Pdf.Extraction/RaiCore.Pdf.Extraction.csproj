@@ -3,8 +3,9 @@
   <PropertyGroup>
     <Description>Read what is on the pages of existing PDF files with RaiCore.Pdf: text, its position, and images.</Description>
     <PackageTags>$(PackageTags);text-extraction;pdf-reader</PackageTags>
-    <!-- The glyph name table is the Adobe Glyph List (BSD-3-Clause): see Fonts/AGL-LICENSE.txt. -->
-    <PackageLicenseExpression>Apache-2.0 AND BSD-3-Clause</PackageLicenseExpression>
+    <!-- The glyph name table is the Adobe Glyph List (BSD-3-Clause, Fonts/AGL-LICENSE.txt); the presentation form table
+         comes from the Unicode Character Database (Unicode-3.0). -->
+    <PackageLicenseExpression>Apache-2.0 AND BSD-3-Clause AND Unicode-3.0</PackageLicenseExpression>
     <!--
       A core package (it reads the core's PDF parser, stream decoders and font tables through InternalsVisibleTo, so
       it is released with the core at the same version). It has no released version to validate against yet: set the
@@ -15,6 +16,7 @@
 
   <ItemGroup>
     <None Include="Fonts\AGL-LICENSE.txt" Pack="true" PackagePath="licenses/adobe-glyph-list.txt" />
+    <None Include="..\RaiCore.Pdf.Layout\Text\UNICODE-LICENSE.txt" Link="Text\UNICODE-LICENSE.txt" Pack="true" PackagePath="licenses/unicode.txt" />
   </ItemGroup>
 
   <ItemGroup>

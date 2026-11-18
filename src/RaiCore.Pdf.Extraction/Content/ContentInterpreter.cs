@@ -23,7 +23,7 @@ internal sealed class ContentInterpreter
     internal const int MaxOperationsPerPage = 10_000_000;
 
     private readonly PdfReader _reader;
-    private readonly ContentSink _sink;
+    private ContentSink _sink;
     private readonly Dictionary<PdfDictionary, FontDecoder> _fonts = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<PdfStreamObject, byte[]?> _formContent = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<PdfStreamObject> _activeForms = new(ReferenceEqualityComparer.Instance);
@@ -59,6 +59,13 @@ internal sealed class ContentInterpreter
         };
     }
 
+    /// <summary>Runs a page's content, reporting to <paramref name="sink"/> (from now on) instead of the sink given at construction.</summary>
+    public void Run(PdfReaderPage page, ContentSink sink)
+    {
+        _sink = sink;
+        Run(page);
+    }
+
     /// <summary>Runs a page's content.</summary>
     public void Run(PdfReaderPage page)
     {
@@ -87,6 +94,8 @@ internal sealed class ContentInterpreter
         var openMarkedContent = 0;
         var inText = false;
         var text = new TextPosition();
+        Box? path = null;
+        var clipPending = false;
         while (parser.TryRead(out var operation))
         {
             if (++_operations > MaxOperations)
@@ -125,6 +134,39 @@ internal sealed class ContentInterpreter
                         state = saved.Pop();
                     }
 
+                    break;
+                case "m" or "l":
+                    path = Extend(path, state.Ctm, operands, 2);
+                    break;
+                case "c":
+                    path = Extend(path, state.Ctm, operands, 6);
+                    break;
+                case "v" or "y":
+                    path = Extend(path, state.Ctm, operands, 4);
+                    break;
+                case "re":
+                    if (operands.Count >= 4 && Number(operands[^4]) is { } rx && Number(operands[^3]) is { } ry
+                        && Number(operands[^2]) is { } rw && Number(operands[^1]) is { } rh)
+                    {
+                        path = Extend(path, state.Ctm, rx, ry);
+                        path = Extend(path, state.Ctm, rx + rw, ry + rh);
+                        path = Extend(path, state.Ctm, rx + rw, ry);
+                        path = Extend(path, state.Ctm, rx, ry + rh);
+                    }
+
+                    break;
+                case "W" or "W*":
+                    clipPending = true;
+                    break;
+                case "n" or "S" or "s" or "f" or "F" or "f*" or "B" or "B*" or "b" or "b*":
+                    // The clipping path takes effect when the path is ended (ISO 32000-2, 8.5.4).
+                    if (clipPending && path is { } clipBox)
+                    {
+                        state = state.ClippedTo(clipBox);
+                    }
+
+                    path = null;
+                    clipPending = false;
                     break;
                 case "cm":
                     if (MatrixOf(operands) is { } cm && cm.Then(state.Ctm) is { IsFinite: true } ctm)
@@ -241,7 +283,7 @@ internal sealed class ContentInterpreter
                 case "BI":
                     if (operation.Image is { } inline)
                     {
-                        ReportImage(state.Ctm, null, null, null, inline);
+                        ReportImage(state, null, null, null, inline);
                     }
 
                     break;
@@ -342,9 +384,13 @@ internal sealed class ContentInterpreter
 
             var mapped = font.Text(code, length);
             var em = trm.TransformVector(0, 1);
+            var flow = font.IsVertical ? trm.TransformVector(0, -1) : trm.TransformVector(1, 0);
+            var flowLength = Math.Sqrt((flow.X * flow.X) + (flow.Y * flow.Y));
+            var direction = flowLength > 0 ? new PdfPoint(flow.X / flowLength, flow.Y / flowLength) : new PdfPoint(1, 0);
             _sink.Glyph(new TextGlyph(
                 mapped?.Text ?? string.Empty, mapped?.IsGuess ?? false, code, length, origin, end, bounds,
-                Math.Sqrt((em.X * em.X) + (em.Y * em.Y)), font, state.RenderMode, isWordSpace));
+                Math.Sqrt((em.X * em.X) + (em.Y * em.Y)), font, state.RenderMode, isWordSpace, direction,
+                state.Clip is { } clip && !Contains(clip, (bounds.Left + bounds.Right) / 2, (bounds.Top + bounds.Bottom) / 2)));
         }
     }
 
@@ -374,7 +420,7 @@ internal sealed class ContentInterpreter
         switch ((_reader.Resolve(xObject.Dictionary["Subtype"]) as PdfName)?.Value)
         {
             case "Image":
-                ReportImage(state.Ctm, xObject, entry as PdfReference, name.Value, null);
+                ReportImage(state, xObject, entry as PdfReference, name.Value, null);
                 break;
             case "Form":
                 DrawForm(name, xObject, resources, state, formDepth);
@@ -414,7 +460,16 @@ internal sealed class ContentInterpreter
             var formResources = _reader.Resolve(form.Dictionary["Resources"]) as PdfDictionary ?? resources;
             using (ResourceLimits.EnterNesting())
             {
-                Run(content, formResources, state with { Ctm = matrix.Then(state.Ctm) }, formDepth + 1);
+                var formState = state with { Ctm = matrix.Then(state.Ctm) };
+                var box = _reader.Resolve(form.Dictionary["BBox"]) is PdfArray bbox ? [.. bbox.Items.Select(i => Number(_reader.Resolve(i)))] : new List<double?>();
+                if (box.Count == 4 && box.All(n => n is not null))
+                {
+                    var corners = Extend(Extend(null, formState.Ctm, box[0]!.Value, box[1]!.Value), formState.Ctm, box[2]!.Value, box[3]!.Value);
+                    corners = Extend(Extend(corners, formState.Ctm, box[0]!.Value, box[3]!.Value), formState.Ctm, box[2]!.Value, box[1]!.Value);
+                    formState = formState.ClippedTo(corners!.Value);
+                }
+
+                Run(content, formResources, formState, formDepth + 1);
             }
         }
         finally
@@ -423,12 +478,15 @@ internal sealed class ContentInterpreter
         }
     }
 
-    private void ReportImage(Matrix ctm, PdfStreamObject? xObject, PdfReference? reference, string? name, InlineImage? inline)
+    private void ReportImage(GraphicsState state, PdfStreamObject? xObject, PdfReference? reference, string? name, InlineImage? inline)
     {
+        var ctm = state.Ctm;
         var bounds = Box.Around(ctm.Transform(0, 0), ctm.Transform(1, 0), ctm.Transform(1, 1), ctm.Transform(0, 1));
         if (ctm.IsFinite)
         {
-            _sink.Image(new ImagePlacement(ctm, bounds, xObject, reference, name, inline));
+            var clipped = state.Clip is { } clip
+                && (clip.Right <= bounds.Left || clip.Left >= bounds.Right || clip.Bottom <= bounds.Top || clip.Top >= bounds.Bottom);
+            _sink.Image(new ImagePlacement(ctm, bounds, xObject, reference, name, inline, clipped));
         }
     }
 
@@ -468,6 +526,40 @@ internal sealed class ContentInterpreter
         }
     }
 
+    /// <summary>The path's bounding box (in display space) grown by the points among the last <paramref name="count"/> operands.</summary>
+    private static Box? Extend(Box? path, Matrix ctm, IReadOnlyList<PdfObject> operands, int count)
+    {
+        if (operands.Count < count)
+        {
+            return path;
+        }
+
+        for (var i = operands.Count - count; i + 1 < operands.Count; i += 2)
+        {
+            if (Number(operands[i]) is { } x && Number(operands[i + 1]) is { } y)
+            {
+                path = Extend(path, ctm, x, y);
+            }
+        }
+
+        return path;
+    }
+
+    private static Box? Extend(Box? path, Matrix ctm, double x, double y)
+    {
+        var p = ctm.Transform(x, y);
+        if (!double.IsFinite(p.X) || !double.IsFinite(p.Y))
+        {
+            return path;
+        }
+
+        return path is not { } box
+            ? new Box(p.X, p.Y, p.X, p.Y)
+            : new Box(Math.Min(box.Left, p.X), Math.Min(box.Top, p.Y), Math.Max(box.Right, p.X), Math.Max(box.Bottom, p.Y));
+    }
+
+    private static bool Contains(Box box, double x, double y) => x >= box.Left && x <= box.Right && y >= box.Top && y <= box.Bottom;
+
     private static PdfObject? Last(IReadOnlyList<PdfObject> operands) => operands.Count > 0 ? operands[^1] : null;
 
     private static double? Number(PdfObject? value) => FontDecoder.Number(value) is { } number && double.IsFinite(number) ? number : null;
@@ -506,9 +598,19 @@ internal sealed class ContentInterpreter
         double HorizontalScaling,
         double Leading,
         double Rise,
-        int RenderMode)
+        int RenderMode,
+        Box? Clip)
     {
-        public static GraphicsState Initial(Matrix ctm) => new(ctm, null, 0, 0, 0, 1, 0, 0, 0);
+        public static GraphicsState Initial(Matrix ctm) => new(ctm, null, 0, 0, 0, 1, 0, 0, 0, null);
+
+        /// <summary>The state with its clip narrowed to <paramref name="box"/> (the bounding box of a clipping path).</summary>
+        public GraphicsState ClippedTo(Box box) => this with
+        {
+            Clip = Clip is not { } clip ? box : new Box(
+                Math.Max(clip.Left, box.Left), Math.Max(clip.Top, box.Top),
+                Math.Max(Math.Max(clip.Left, box.Left), Math.Min(clip.Right, box.Right)),
+                Math.Max(Math.Max(clip.Top, box.Top), Math.Min(clip.Bottom, box.Bottom))),
+        };
     }
 
     /// <summary>The text matrix and text line matrix of a text object (ISO 32000-2, 9.4.2).</summary>

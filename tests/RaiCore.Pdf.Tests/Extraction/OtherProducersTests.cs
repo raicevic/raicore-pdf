@@ -1,4 +1,5 @@
 using System.Text.Json;
+using RaiCore.Pdf.Extraction;
 using static RaiCore.Pdf.Tests.Extraction.Interpret;
 
 namespace RaiCore.Pdf.Tests.Extraction;
@@ -50,6 +51,73 @@ public class OtherProducersTests
 
         Assert.Empty(sink.Diagnostics.Messages);
     }
+
+    public static TheoryData<string> Documents() => [.. Expected().Keys, "raicore-standard", "raicore-html"];
+
+    /// <summary>
+    /// The words of each document (in reading order) are those <c>pdftotext</c> (poppler) finds, as a multiset: the
+    /// same text cut into the same words, wherever the two readers put them. Runs where pdftotext is installed (CI).
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Documents))]
+    public void Words_match_pdftotext(string document)
+    {
+        var pdf = document switch
+        {
+            "raicore-standard" => RaiCoreStandard(),
+            "raicore-html" => RaiCore.Pdf.Html.HtmlToPdf.ConvertToBytes(
+                "<h1>Invoice 2026-001</h1><p>Thank you for your order. Payment is due in <b>30 days</b>.</p>"
+                + "<table><tr><th>Item</th><th>Qty</th><th>Price</th></tr><tr><td>Widget</td><td>2</td><td>10.00</td></tr></table>"),
+            _ => Fixtures.Read("Extraction/" + document),
+        };
+
+        // Poppler breaks diagonal text apart, so it is left out (-nodiag): the line turned by 30 degrees in
+        // reportlab-truetype.pdf is compared with MuPDF instead (Glyphs_match_MuPDF).
+        var (exitCode, output) = ExternalTools.RunOnPdf("pdftotext", pdf, "-nodiag", "-enc", "UTF-8", "{pdf}", "-");
+        Assert.Equal(0, exitCode);
+        var ours = new TextExtractor(PdfReader.Open(pdf)).ExtractText();
+        if (document == "reportlab-truetype.pdf")
+        {
+            ours = ours.Replace("Turned 30 degrees", string.Empty, StringComparison.Ordinal);
+        }
+
+        var (expected, actual) = (Words(output), Words(ours));
+        Assert.True(
+            expected.SequenceEqual(actual),
+            $"Only pdftotext: {string.Join(' ', Except(expected, actual))}; only RaiCore: {string.Join(' ', Except(actual, expected))}");
+    }
+
+    private static byte[] RaiCoreStandard()
+    {
+        var document = new PdfDocument();
+        var canvas = document.AddPage(PdfPageSize.A4).Canvas;
+        canvas.DrawText("Standard fonts: Gr\u00FC\u00DFe \u2013 1,50 \u20AC", RaiCore.Pdf.Fonts.StandardFont.Helvetica, 12, 72, 700);
+        canvas.DrawText("Second line in Times", RaiCore.Pdf.Fonts.StandardFont.TimesRoman, 12, 72, 680);
+        return document.ToArray();
+    }
+
+    /// <summary>The words of <paramref name="a"/> that <paramref name="b"/> lacks, counting repeats.</summary>
+    private static List<string> Except(List<string> a, List<string> b)
+    {
+        var rest = b.GroupBy(w => w).ToDictionary(g => g.Key, g => g.Count());
+        var result = new List<string>();
+        foreach (var word in a)
+        {
+            if (rest.TryGetValue(word, out var count) && count > 0)
+            {
+                rest[word] = count - 1;
+            }
+            else
+            {
+                result.Add(word);
+            }
+        }
+
+        return result;
+    }
+
+    private static List<string> Words(string text) =>
+        [.. text.Normalize(System.Text.NormalizationForm.FormKC).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Order(StringComparer.Ordinal)];
 
     /// <summary>
     /// Whether the sizes agree. RaiCore's is the em height on the page; MuPDF's is the geometric mean of the horizontal

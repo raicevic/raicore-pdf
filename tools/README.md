@@ -18,8 +18,9 @@ PDF fonts. They come from the metric-compatible Liberation fonts:
 ## `generate_glyph_list.py`
 
 Regenerates `src/RaiCore.Pdf.Extraction/Fonts/GlyphList.g.cs` (the Adobe Glyph List, which maps glyph names to
-Unicode) and `Encodings.g.cs` (StandardEncoding and MacRomanEncoding as code-to-character tables), which text
-extraction needs to read simple fonts:
+Unicode), `Encodings.g.cs` (StandardEncoding and MacRomanEncoding as code-to-character tables), which text
+extraction needs to read simple fonts, and `Text/PresentationForms.g.cs` (what ligatures and Arabic presentation
+forms decompose to):
 
 ```sh
 .venv/bin/python tools/generate_glyph_list.py

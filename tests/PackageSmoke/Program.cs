@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using PackageSmoke;
 using RaiCore.Pdf;
+using RaiCore.Pdf.Extraction;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Layout;
@@ -17,7 +18,7 @@ var output = Directory.CreateDirectory(args.Length > 0 ? args[0] : "smoke-output
 var failures = 0;
 
 // The assemblies must come from the restored packages, not from project references or the repository's bin folders.
-foreach (var assembly in new[] { typeof(PdfDocument), typeof(BundledFonts), typeof(FlowDocument), typeof(HtmlToPdf), typeof(RazorToPdf) }.Select(t => t.Assembly))
+foreach (var assembly in new[] { typeof(PdfDocument), typeof(BundledFonts), typeof(FlowDocument), typeof(HtmlToPdf), typeof(RazorToPdf), typeof(TextExtractor) }.Select(t => t.Assembly))
 {
     var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
     Console.WriteLine($"{assembly.GetName().Name} {version}");
@@ -138,6 +139,10 @@ await using (var scope = services.CreateAsyncScope())
     Check("injected service output", injectedHtml.Contains("Invoice for Contoso A/S", StringComparison.Ordinal));
     Save("razor-di", await renderer.ConvertAsync<CustomerInvoice>(new Dictionary<string, object?> { [nameof(CustomerInvoice.CustomerId)] = 7 }), expectedPages: 1, embedsFonts: true);
 }
+
+// RaiCore.Pdf.Extraction: the text of a converted document, read back (its glyph and Unicode tables are embedded).
+var extracted = new TextExtractor(PdfReader.Open(HtmlToPdf.ConvertToBytes("<h1>Smoke test</h1><p>Text \uFB01nds its way back, \u05E9\u05DC\u05D5\u05DD.</p>"))).ExtractPage(0);
+Check($"text extraction: {extracted.Text.ReplaceLineEndings(" | ")}", extracted.Text == "Smoke test\n\nText finds its way back, \u05E9\u05DC\u05D5\u05DD.");
 
 Console.WriteLine(failures == 0 ? $"Package smoke test passed. PDFs in {output}" : $"Package smoke test FAILED ({failures} checks).");
 return failures == 0 ? 0 : 1;

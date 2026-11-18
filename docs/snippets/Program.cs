@@ -18,6 +18,7 @@ var samples = new (string Name, Func<Task> Run)[]
     ("Razor", Razor.RunAsync),
     ("layout API", LayoutApi.RunAsync),
     ("PDF/A and accessibility", Standards.RunAsync),
+    ("text extraction", TextExtraction.RunAsync),
 };
 
 foreach (var (name, run) in samples)
