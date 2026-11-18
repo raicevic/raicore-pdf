@@ -31,33 +31,29 @@ internal static class TextLayout
     /// <summary>Two segments are on one line when their extents across the baseline overlap by at least this much of the smaller one.</summary>
     internal const double LineOverlap = 0.5;
 
-    public static string Compose(IReadOnlyList<TextItem> items, TextExtractionMode mode)
+    public static string Compose(IReadOnlyList<TextItem> items, TextExtractionMode mode) => mode switch
     {
-        if (items.Count == 0)
-        {
-            return string.Empty;
-        }
+        _ when items.Count == 0 => string.Empty,
+        TextExtractionMode.Raw => Raw(items),
+        TextExtractionMode.Layout => string.Join("\n\n", ByDirection(items).Select(Physical).Where(t => t.Length > 0)),
+        _ => ComposeReading(items).ToString(),
+    };
 
-        if (mode == TextExtractionMode.Raw)
-        {
-            return Raw(items);
-        }
+    /// <summary>The text in reading order (<see cref="TextExtractionMode.Reading"/>), with the item each character came from.</summary>
+    public static MappedText ComposeReading(IReadOnlyList<TextItem> items) =>
+        MappedText.Join("\n\n", ByDirection(items).Select(Reading).Where(t => t.Length > 0));
 
-        // Ordinary text first, then other directions in the order they first appear.
-        var groups = items.GroupBy(i => i.Angle).OrderBy(g => g.Key == 0 ? 0 : 1).ThenBy(g => g.Min(i => i.Order));
-        var parts = groups
-            .Select(g => mode == TextExtractionMode.Layout ? Physical([.. g]) : Reading([.. g]))
-            .Where(t => t.Length > 0);
-        return string.Join("\n\n", parts);
-    }
+    /// <summary>The items grouped by direction: ordinary text first, then other directions in the order they first appear.</summary>
+    private static IEnumerable<List<TextItem>> ByDirection(IReadOnlyList<TextItem> items) =>
+        items.GroupBy(i => i.Angle).OrderBy(g => g.Key == 0 ? 0 : 1).ThenBy(g => g.Min(i => i.Order)).Select(g => g.ToList());
 
     /// <summary>Reading order: blocks from the XY cut, their lines top to bottom, paragraphs separated by an empty line.</summary>
-    private static string Reading(List<TextItem> items)
+    private static MappedText Reading(List<TextItem> items)
     {
         var segments = Segments(items);
         if (segments.Count == 0)
         {
-            return string.Empty; // Only spaces.
+            return new MappedText(); // Only spaces.
         }
 
         var page = new PageContext(
@@ -66,17 +62,17 @@ internal static class TextLayout
             segments.Max(s => s.U1),
             Median(segments.Select(s => s.Size)));
         var blocks = Blocks(segments);
-        return string.Join("\n\n", blocks.Select(b => BlockText(b, page)).Where(b => b.Length > 0));
+        return MappedText.Join("\n\n", blocks.Select(b => BlockText(b, page)).Where(b => b.Length > 0));
     }
 
     /// <summary>
     /// A block's lines, in the block's direction (see <see cref="IsRightToLeft"/>).
     /// </summary>
-    private static string BlockText(List<Segment> block, PageContext page)
+    private static MappedText BlockText(List<Segment> block, PageContext page)
     {
         var lines = Lines(block);
         var rightToLeft = IsRightToLeft(block, lines, page);
-        return string.Join('\n', lines.Select(line => LineText(line, rightToLeft)));
+        return MappedText.Join("\n", lines.Select(line => LineText(line, rightToLeft)));
     }
 
     /// <summary>
@@ -412,32 +408,44 @@ internal static class TextLayout
     /// label and its value); each cell is put in logical order on its own, and the cells are read from the line's start:
     /// right to left in a right-to-left paragraph.
     /// </summary>
-    private static string LineText(List<Segment> line, bool rightToLeft)
+    private static MappedText LineText(List<Segment> line, bool rightToLeft)
     {
-        var cells = new List<string>();
-        var tokens = new List<string>();
+        var cells = new List<MappedText>();
+        var tokens = new List<Token>();
         for (var i = 0; i < line.Count; i++)
         {
             if (i > 0 && line[i].U0 - line[i - 1].U1 >= ColumnGap * line[i].Size)
             {
-                cells.Add(Bidi.ToLogical(tokens, rightToLeft));
+                cells.Add(Logical(tokens, rightToLeft));
                 tokens = [];
             }
             else if (i > 0 && IsWordBreak(line[i - 1], line[i]))
             {
-                tokens.Add(" ");
+                tokens.Add(Token.Space);
             }
 
-            tokens.AddRange(line[i].Tokens());
+            tokens.AddRange(line[i].MappedTokens());
         }
 
-        cells.Add(Bidi.ToLogical(tokens, rightToLeft));
+        cells.Add(Logical(tokens, rightToLeft));
         if (rightToLeft && cells.Count > 1)
         {
             cells.Reverse();
         }
 
-        return CollapseSpaces(string.Join(' ', cells.Select(c => c.Trim()))).Trim();
+        return MappedText.Join(" ", cells.Select(c => c.CollapseSpaces())).CollapseSpaces();
+    }
+
+    /// <summary>Tokens in visual order put in logical order (see <see cref="Bidi.LogicalOrder"/>).</summary>
+    private static MappedText Logical(List<Token> tokens, bool rightToLeft)
+    {
+        var text = new MappedText();
+        foreach (var index in Bidi.LogicalOrder([.. tokens.Select(t => t.Text)], rightToLeft))
+        {
+            text.Append(tokens[index].Text, tokens[index].Source);
+        }
+
+        return text;
     }
 
     /// <summary>
@@ -477,6 +485,12 @@ internal static class TextLayout
     {
         var sorted = values.Order().ToList();
         return sorted.Count == 0 ? 0 : sorted[sorted.Count / 2];
+    }
+
+    /// <summary>A piece of a line's text: a glyph's text and its item, or a space between words (no item).</summary>
+    internal readonly record struct Token(string Text, TextItem? Source)
+    {
+        public static Token Space { get; } = new(" ", null);
     }
 
     /// <summary>What a page's text is like: its direction and horizontal extent, and its typical font size.</summary>
@@ -540,7 +554,10 @@ internal static class TextLayout
         }
 
         /// <summary>The segment's text as tokens in drawing order: each glyph's text, and a space where words break.</summary>
-        public IEnumerable<string> Tokens()
+        public IEnumerable<string> Tokens() => MappedTokens().Select(t => t.Text);
+
+        /// <summary>The segment's tokens (see <see cref="Tokens"/>) with the items they come from.</summary>
+        public IEnumerable<Token> MappedTokens()
         {
             TextItem? previous = null;
             var spaced = false;
@@ -554,10 +571,10 @@ internal static class TextLayout
 
                 if (previous is not null && (spaced || item.U0 - previous.U1 > WordGap * item.Size))
                 {
-                    yield return " ";
+                    yield return Token.Space;
                 }
 
-                yield return item.Text;
+                yield return new Token(item.Text, item);
                 previous = item;
                 spaced = false;
             }

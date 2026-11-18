@@ -8,9 +8,9 @@ namespace RaiCore.Pdf.Extraction.Text;
 /// <summary>
 /// A piece of text on a page, in the frame of its writing direction: <see cref="U0"/> to <see cref="U1"/> along the
 /// baseline, <see cref="V"/> the baseline across it (growing downwards on the page), <see cref="Top"/> and
-/// <see cref="Bottom"/> its extent across.
+/// <see cref="Bottom"/> its extent across. <see cref="Bounds"/> is its box in display space.
 /// </summary>
-internal sealed record TextItem(string Text, int Angle, double U0, double U1, double V, double Top, double Bottom, double Size, int Order)
+internal sealed record TextItem(string Text, int Angle, double U0, double U1, double V, double Top, double Bottom, double Size, int Order, Box Bounds)
 {
     public bool IsSpace { get; } = string.IsNullOrWhiteSpace(Text);
 }
@@ -96,6 +96,7 @@ internal sealed class GlyphCollector(double pageWidth, double pageHeight, bool i
                     U1 = Math.Max(first.U1, item.U1),
                     Top = Math.Min(first.Top, item.Top),
                     Bottom = Math.Max(first.Bottom, item.Bottom),
+                    Bounds = Union(first.Bounds, item.Bounds),
                 };
             }
         }
@@ -134,15 +135,18 @@ internal sealed class GlyphCollector(double pageWidth, double pageHeight, bool i
             var box = glyph.Bounds;
             PdfPoint[] corners = [Frame(new(box.Left, box.Top)), Frame(new(box.Right, box.Top)), Frame(new(box.Right, box.Bottom)), Frame(new(box.Left, box.Bottom))];
             var (top, bottom) = (corners.Min(c => c.Y), corners.Max(c => c.Y));
-            return new TextItem(text, angle, corners.Min(c => c.X), corners.Max(c => c.X), (top + bottom) / 2, top, bottom, size, _order++);
+            return new TextItem(text, angle, corners.Min(c => c.X), corners.Max(c => c.X), (top + bottom) / 2, top, bottom, size, _order++, box);
         }
 
         var origin = Frame(glyph.Origin);
         var end = Frame(glyph.End);
         return new TextItem(
             text, angle, Math.Min(origin.X, end.X), Math.Max(origin.X, end.X), origin.Y,
-            origin.Y - (glyph.Font.Ascent * size), origin.Y - (glyph.Font.Descent * size), size, _order++);
+            origin.Y - (glyph.Font.Ascent * size), origin.Y - (glyph.Font.Descent * size), size, _order++, glyph.Bounds);
     }
+
+    private static Box Union(Box a, Box b) =>
+        new(Math.Min(a.Left, b.Left), Math.Min(a.Top, b.Top), Math.Max(a.Right, b.Right), Math.Max(a.Bottom, b.Bottom));
 
     /// <summary>Whether a glyph box touches the page (text outside it is hidden, often on purpose).</summary>
     private bool IsOnPage(Box box) =>
