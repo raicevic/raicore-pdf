@@ -20,6 +20,7 @@ var samples = new (string Name, Func<Task> Run)[]
     ("PDF/A and accessibility", Standards.RunAsync),
     ("text extraction", TextExtraction.RunAsync),
     ("image extraction", ImageExtraction.RunAsync),
+    ("editing", Editing.RunAsync),
 };
 
 foreach (var (name, run) in samples)

@@ -6,6 +6,13 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Page editing** (`RaiCore.Pdf.Editing`, new package): `PdfEditor.Open` opens an existing PDF (path, stream, bytes
+  or reader; encrypted files with their password), `Pages` deletes, inserts (from other files, any selection and
+  order), moves and rotates pages, and `Save`/`SaveAsync`/`ToArray` write a new file any number of times. Each save
+  writes only the objects still in use, so deleted pages' resources leave the file, along with bookmarks, named
+  destinations, links and form fields that pointed at them; the rest of the document (outline, forms, structure,
+  metadata, attachments) is kept. See the [editing guide](https://raicevic.github.io/raicore-pdf/guides/editing.html)
+  (#188).
 - **Image extraction** (`RaiCore.Pdf.Extraction`): `ImageExtractor` lists the images drawn on each page (image
   XObjects, inline images, images in forms; hidden ones left out) with their bounds, displayed size and rotation in
   the page's user space, pixel size, color space, bits per component and masks. `ExtractedImage.GetData` exports

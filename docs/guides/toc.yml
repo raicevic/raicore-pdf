@@ -22,5 +22,7 @@
   href: text-extraction.md
 - name: Image extraction
   href: image-extraction.md
+- name: Editing pages
+  href: editing.md
 - name: Experimental APIs
   href: ../experimental.md

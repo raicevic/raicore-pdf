@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using PackageSmoke;
 using RaiCore.Pdf;
+using RaiCore.Pdf.Editing;
 using RaiCore.Pdf.Extraction;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html;
@@ -143,6 +144,14 @@ await using (var scope = services.CreateAsyncScope())
 // RaiCore.Pdf.Extraction: the text of a converted document, read back (its glyph and Unicode tables are embedded).
 var extracted = new TextExtractor(PdfReader.Open(HtmlToPdf.ConvertToBytes("<h1>Smoke test</h1><p>Text \uFB01nds its way back, \u05E9\u05DC\u05D5\u05DD.</p>"))).ExtractPage(0);
 Check($"text extraction: {extracted.Text.ReplaceLineEndings(" | ")}", extracted.Text == "Smoke test\n\nText finds its way back, \u05E9\u05DC\u05D5\u05DD.");
+
+// RaiCore.Pdf.Editing: delete, insert and move pages of a converted document, and save it twice.
+var editor = PdfEditor.Open(HtmlToPdf.ConvertToBytes("<p>One</p><p style='break-before: page'>Two</p>"));
+editor.Pages.Delete(0);
+editor.Pages.Add(PdfReader.Open(HtmlToPdf.ConvertToBytes("<p>Three</p>")));
+editor.Pages.Move(1, 0);
+var edited = string.Join(' ', new TextExtractor(PdfReader.Open(editor.ToArray())).ExtractPages().Select(p => p.Text));
+Check($"editing: {edited}", edited == "Three Two" && editor.ToArray().AsSpan().SequenceEqual(editor.ToArray()));
 
 Console.WriteLine(failures == 0 ? $"Package smoke test passed. PDFs in {output}" : $"Package smoke test FAILED ({failures} checks).");
 return failures == 0 ? 0 : 1;
