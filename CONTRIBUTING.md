@@ -118,11 +118,11 @@ release.
 The packages are released in trains (#62):
 
 - **The core:** RaiCore.Pdf, RaiCore.Pdf.Fonts, RaiCore.Pdf.Layout, RaiCore.Pdf.Html, RaiCore.Pdf.Razor,
-  RaiCore.Pdf.Extraction, RaiCore.Pdf.Editing, RaiCore.Pdf.Email, RaiCore.Pdf.Sheets and RaiCore.Pdf.Slides share one version, `CoreVersionPrefix` in `Directory.Build.props`, and are always released together by a tag `v<version>`.
+  RaiCore.Pdf.Extraction, RaiCore.Pdf.Editing, RaiCore.Pdf.Email, RaiCore.Pdf.Sheets, RaiCore.Pdf.Slides and RaiCore.Pdf.Documents share one version, `CoreVersionPrefix` in `Directory.Build.props`, and are always released together by a tag `v<version>`.
   They use each other's internals, so each depends on the others at exactly its own version (`[1.2.0]`).
-- **A package with its own version**, such as a future RaiCore.Pdf.Docx, sets `<IsCorePackage>false</IsCorePackage>`
+- **A package with its own version**, such as a future RaiCore.Pdf.XslFo, sets `<IsCorePackage>false</IsCorePackage>`
   and its own `<VersionPrefix>` (it may start at 0.x) in its project file, and is released alone by a tag
-  `<PackageId>/v<version>` (`RaiCore.Pdf.Docx/v0.3.0`). It may use only the core's public API (no `InternalsVisibleTo`
+  `<PackageId>/v<version>` (`RaiCore.Pdf.XslFo/v0.3.0`). It may use only the core's public API (no `InternalsVisibleTo`
   from the core to it) and depends on the core from `CoreVersionPrefix` up to the next major version
   (`[1.2.0, 2.0.0)`), so release the core first when it needs unreleased core changes. It brings its own smoke test.
 
@@ -153,7 +153,7 @@ For each release:
 
    ```sh
    git tag v1.0.0                      # the core
-   git tag RaiCore.Pdf.Docx/v0.3.0     # a package with its own version
+   git tag RaiCore.Pdf.XslFo/v0.3.0     # a package with its own version
    git push origin <tag>
    ```
 

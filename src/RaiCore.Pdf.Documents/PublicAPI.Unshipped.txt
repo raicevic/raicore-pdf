@@ -1,0 +1,46 @@
+#nullable enable
+override RaiCore.Pdf.Documents.DocumentDiagnostic.Equals(object? obj) -> bool
+override RaiCore.Pdf.Documents.DocumentDiagnostic.GetHashCode() -> int
+override RaiCore.Pdf.Documents.DocumentDiagnostic.ToString() -> string!
+RaiCore.Pdf.Documents.DocumentConverterOptions
+RaiCore.Pdf.Documents.DocumentConverterOptions.Diagnostics.get -> System.Action<RaiCore.Pdf.Documents.DocumentDiagnostic!>?
+RaiCore.Pdf.Documents.DocumentConverterOptions.Diagnostics.init -> void
+RaiCore.Pdf.Documents.DocumentConverterOptions.FallbackFontFamilies.get -> System.Collections.Generic.IReadOnlyList<string!>!
+RaiCore.Pdf.Documents.DocumentConverterOptions.FallbackFontFamilies.init -> void
+RaiCore.Pdf.Documents.DocumentConverterOptions.FontFamily.get -> string!
+RaiCore.Pdf.Documents.DocumentConverterOptions.FontFamily.init -> void
+RaiCore.Pdf.Documents.DocumentConverterOptions.Fonts.get -> RaiCore.Pdf.Fonts.FontCollection?
+RaiCore.Pdf.Documents.DocumentConverterOptions.Fonts.init -> void
+RaiCore.Pdf.Documents.DocumentConverterOptions.HeadingBookmarks.get -> bool
+RaiCore.Pdf.Documents.DocumentConverterOptions.HeadingBookmarks.init -> void
+RaiCore.Pdf.Documents.DocumentConverterOptions.Limits.get -> RaiCore.Pdf.ResourceLimits!
+RaiCore.Pdf.Documents.DocumentConverterOptions.Limits.init -> void
+RaiCore.Pdf.Documents.DocumentConverterOptions.Tagged.get -> bool
+RaiCore.Pdf.Documents.DocumentConverterOptions.Tagged.init -> void
+RaiCore.Pdf.Documents.DocumentConverterOptions.Title.get -> string?
+RaiCore.Pdf.Documents.DocumentConverterOptions.Title.init -> void
+RaiCore.Pdf.Documents.DocumentDiagnostic
+RaiCore.Pdf.Documents.DocumentDiagnostic.<Clone>$() -> RaiCore.Pdf.Documents.DocumentDiagnostic!
+RaiCore.Pdf.Documents.DocumentDiagnostic.Deconstruct(out RaiCore.Pdf.Documents.DocumentDiagnosticKind Kind, out string! Message) -> void
+RaiCore.Pdf.Documents.DocumentDiagnostic.DocumentDiagnostic(RaiCore.Pdf.Documents.DocumentDiagnosticKind Kind, string! Message) -> void
+RaiCore.Pdf.Documents.DocumentDiagnostic.Equals(RaiCore.Pdf.Documents.DocumentDiagnostic? other) -> bool
+RaiCore.Pdf.Documents.DocumentDiagnostic.Kind.get -> RaiCore.Pdf.Documents.DocumentDiagnosticKind
+RaiCore.Pdf.Documents.DocumentDiagnostic.Kind.init -> void
+RaiCore.Pdf.Documents.DocumentDiagnostic.Message.get -> string!
+RaiCore.Pdf.Documents.DocumentDiagnostic.Message.init -> void
+RaiCore.Pdf.Documents.DocumentDiagnosticKind
+RaiCore.Pdf.Documents.DocumentDiagnosticKind.ImageNotLoaded = 1 -> RaiCore.Pdf.Documents.DocumentDiagnosticKind
+RaiCore.Pdf.Documents.DocumentDiagnosticKind.Layout = 2 -> RaiCore.Pdf.Documents.DocumentDiagnosticKind
+RaiCore.Pdf.Documents.DocumentDiagnosticKind.UnsupportedContent = 0 -> RaiCore.Pdf.Documents.DocumentDiagnosticKind
+RaiCore.Pdf.Documents.DocxConverterOptions
+RaiCore.Pdf.Documents.DocxConverterOptions.DocxConverterOptions() -> void
+RaiCore.Pdf.Documents.DocxToPdf
+static RaiCore.Pdf.Documents.DocumentDiagnostic.operator !=(RaiCore.Pdf.Documents.DocumentDiagnostic? left, RaiCore.Pdf.Documents.DocumentDiagnostic? right) -> bool
+static RaiCore.Pdf.Documents.DocumentDiagnostic.operator ==(RaiCore.Pdf.Documents.DocumentDiagnostic? left, RaiCore.Pdf.Documents.DocumentDiagnostic? right) -> bool
+static RaiCore.Pdf.Documents.DocxToPdf.Convert(byte[]! docx, RaiCore.Pdf.Documents.DocxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Documents.DocxToPdf.Convert(string! path, RaiCore.Pdf.Documents.DocxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Documents.DocxToPdf.Convert(System.IO.Stream! docx, RaiCore.Pdf.Documents.DocxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Documents.DocxToPdf.ConvertAsync(byte[]! docx, RaiCore.Pdf.Documents.DocxConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Documents.DocxToPdf.ConvertAsync(System.IO.Stream! docx, RaiCore.Pdf.Documents.DocxConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Documents.DocxToPdf.ConvertToBytes(byte[]! docx, RaiCore.Pdf.Documents.DocxConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Documents.DocxToPdf.ConvertToBytes(System.IO.Stream! docx, RaiCore.Pdf.Documents.DocxConverterOptions? options = null) -> byte[]!

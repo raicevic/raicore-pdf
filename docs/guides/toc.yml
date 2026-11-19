@@ -30,5 +30,7 @@
   href: sheets.md
 - name: PPTX to PDF
   href: slides.md
+- name: Word documents to PDF
+  href: documents.md
 - name: Experimental APIs
   href: ../experimental.md

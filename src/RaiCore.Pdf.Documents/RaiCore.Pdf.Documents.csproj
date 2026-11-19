@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Convert word-processing documents to PDF with RaiCore.Pdf: Word documents (.docx) with their styles, numbered and bulleted lists, tables with merged cells and repeated header rows, sections with page setup, headers and footers with page numbers, images, hyperlinks and footnotes.</Description>
+    <PackageTags>$(PackageTags);docx;word;docx-to-pdf;word-to-pdf;wordprocessingml;office</PackageTags>
+    <!--
+      A core package, released with the core at the same version. It uses only the public API of RaiCore.Pdf.Layout
+      and RaiCore.Pdf.Fonts. It has no released version to validate against yet: set the baseline to the first release
+      that includes it.
+    -->
+    <PackageValidationBaselineVersion></PackageValidationBaselineVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RaiCore.Pdf.Layout\RaiCore.Pdf.Layout.csproj" />
+    <ProjectReference Include="..\RaiCore.Pdf.Fonts\RaiCore.Pdf.Fonts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RaiCore.Pdf.Tests" />
+    <InternalsVisibleTo Include="RaiCore.Pdf.Fuzz" />
+  </ItemGroup>
+
+</Project>

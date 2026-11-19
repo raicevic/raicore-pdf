@@ -24,6 +24,7 @@ var samples = new (string Name, Func<Task> Run)[]
     ("email", Email.RunAsync),
     ("CSV", Sheets.RunAsync),
     ("PPTX", Slides.RunAsync),
+    ("Word documents", WordDocuments.RunAsync),
 };
 
 foreach (var (name, run) in samples)

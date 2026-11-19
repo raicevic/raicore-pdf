@@ -39,7 +39,7 @@ public partial class PdfStreamingStandardsTests
     [Fact]
     public void Html_tagged_as_PdfUA_written_page_by_page_is_the_saved_file()
     {
-        var html = Documents.ReportHtml(chapters: 2).Replace("<p>", "<p>See <a href=\"#c2\">chapter 2</a>. ", StringComparison.Ordinal);
+        var html = Benchmarks.Documents.ReportHtml(chapters: 2).Replace("<p>", "<p>See <a href=\"#c2\">chapter 2</a>. ", StringComparison.Ordinal);
         PdfDocument Configure(PdfDocument document)
         {
             document.Tagged = document.PdfUA = true;
@@ -71,7 +71,7 @@ public partial class PdfStreamingStandardsTests
     public void HtmlToPdf_converts_to_a_stream_like_Convert_with_tagging_and_PdfA(bool tagged, bool pdfUA, PdfAConformance level)
     {
         // With SVG text in a standard font, which PDF/A embeds as Liberation.
-        var html = Documents.InvoiceHtml().Replace(
+        var html = Benchmarks.Documents.InvoiceHtml().Replace(
             "<footer>", "<svg width=\"200\" height=\"30\" aria-label=\"Paid\"><text x=\"5\" y=\"20\" font-family=\"serif\">Paid</text></svg><footer>", StringComparison.Ordinal);
         var options = new HtmlConverterOptions { Tagged = tagged, PdfUA = pdfUA, PdfAConformance = level };
         var converted = HtmlToPdf.Convert(html, options).ToArray();

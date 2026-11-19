@@ -1,4 +1,5 @@
 using System.Text;
+using RaiCore.Pdf.Documents;
 using RaiCore.Pdf.Editing;
 using RaiCore.Pdf.Email;
 using RaiCore.Pdf.Fonts;
@@ -66,6 +67,7 @@ public static class FuzzTargets
         ["cfb"] = Cfb,
         ["xlsx"] = Xlsx,
         ["pptx"] = Pptx,
+        ["docx"] = Docx,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -350,6 +352,14 @@ public static class FuzzTargets
     /// The PNG with the CRC of every chunk corrected, so that mutated data gets past the CRC check to the decoder
     /// (random changes would almost always be rejected there).
     /// </summary>
+    public static void Docx(byte[] input) => DocxToPdf.ConvertToBytes(input, new DocxConverterOptions
+    {
+        Limits = Limits,
+        Tagged = input.Length % 3 == 0,
+        HeadingBookmarks = input.Length % 2 == 0,
+        Diagnostics = _ => { },
+    });
+
     public static byte[] WithValidPngCrcs(byte[] input)
     {
         var data = (byte[])input.Clone();

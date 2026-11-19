@@ -50,8 +50,8 @@ public sealed record ResourceLimits
     public int MaxNestingDepth { get; init; } = 256;
 
     /// <summary>
-    /// The most elements an HTML document may have, and the XML elements of all the parts of a PPTX presentation together
-    /// (<c>RaiCore.Pdf.Slides</c>). Defaults to 1,000,000.
+    /// The most elements an HTML document may have, and the XML elements of all the parts of a PPTX presentation or a
+    /// Word document together (<c>RaiCore.Pdf.Slides</c>, <c>RaiCore.Pdf.Documents</c>). Defaults to 1,000,000.
     /// </summary>
     public int MaxElements { get; init; } = 1_000_000;
 
@@ -74,8 +74,9 @@ public sealed record ResourceLimits
     public long MaxFontBytes { get; init; } = 64L * 1024 * 1024;
 
     /// <summary>
-    /// The most bytes one compressed PDF stream may decode to, and all the parts of an XLSX workbook or PPTX
-    /// presentation together (<c>RaiCore.Pdf.Sheets</c>, <c>RaiCore.Pdf.Slides</c>). Defaults to 256 MB.
+    /// The most bytes one compressed PDF stream may decode to, and all the parts of an XLSX workbook, PPTX presentation
+    /// or DOCX document together (<c>RaiCore.Pdf.Sheets</c>, <c>RaiCore.Pdf.Slides</c>, <c>RaiCore.Pdf.Documents</c>).
+    /// Defaults to 256 MB.
     /// </summary>
     public long MaxDecompressedBytes { get; init; } = 256L * 1024 * 1024;
 

@@ -9,6 +9,7 @@ using PackageSmoke;
 using RaiCore.Pdf;
 using RaiCore.Pdf.Editing;
 using RaiCore.Pdf.Email;
+using RaiCore.Pdf.Documents;
 using RaiCore.Pdf.Sheets;
 using RaiCore.Pdf.Slides;
 using RaiCore.Pdf.Extraction;
@@ -272,6 +273,41 @@ var pptxReader = PdfReader.Open(pptxPdf.ToArray());
 var pptxText = new TextExtractor(pptxReader).ExtractText();
 Check($"pptx: {pptxReader.Pages.Count} page {pptxReader.Pages[0].MediaBox.Width}x{pptxReader.Pages[0].MediaBox.Height}, {pptxText.Trim()}", pptxReader.Pages.Count == 1
     && Math.Abs(pptxReader.Pages[0].MediaBox.Width - 960) < 0.01 && pptxText.Contains("Caf\u00E9 slide", StringComparison.Ordinal) && pptxPdf.Tagged);
+
+// RaiCore.Pdf.Documents: a Word document (built here as a ZIP package) with a numbered list, a table whose header row
+// repeats over 80 rows, and a footer with page numbers.
+const string wordMain = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const string wordRelationships = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+var docxParts = new Dictionary<string, string>
+{
+    ["_rels/.rels"] = $"<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"r1\" Type=\"{wordRelationships}/officeDocument\" Target=\"word/document.xml\"/></Relationships>",
+    ["word/_rels/document.xml.rels"] = $"<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"r1\" Type=\"{wordRelationships}/numbering\" Target=\"numbering.xml\"/>"
+        + $"<Relationship Id=\"r2\" Type=\"{wordRelationships}/footer\" Target=\"footer1.xml\"/></Relationships>",
+    ["word/numbering.xml"] = $"<w:numbering xmlns:w=\"{wordMain}\"><w:abstractNum w:abstractNumId=\"0\"><w:lvl w:ilvl=\"0\"><w:start w:val=\"1\"/><w:numFmt w:val=\"upperRoman\"/><w:lvlText w:val=\"%1.\"/></w:lvl></w:abstractNum>"
+        + "<w:num w:numId=\"1\"><w:abstractNumId w:val=\"0\"/></w:num></w:numbering>",
+    ["word/footer1.xml"] = $"<w:ftr xmlns:w=\"{wordMain}\"><w:p><w:r><w:t xml:space=\"preserve\">Page </w:t></w:r><w:fldSimple w:instr=\"PAGE\"><w:r><w:t>1</w:t></w:r></w:fldSimple>"
+        + "<w:r><w:t xml:space=\"preserve\"> of </w:t></w:r><w:fldSimple w:instr=\"NUMPAGES\"><w:r><w:t>1</w:t></w:r></w:fldSimple></w:p></w:ftr>",
+    ["word/document.xml"] = $"<w:document xmlns:w=\"{wordMain}\" xmlns:r=\"{wordRelationships}\"><w:body>"
+        + "<w:p><w:pPr><w:numPr><w:ilvl w:val=\"0\"/><w:numId w:val=\"1\"/></w:numPr></w:pPr><w:r><w:t>Caf\u00E9 item</w:t></w:r></w:p>"
+        + "<w:tbl><w:tblGrid><w:gridCol w:w=\"4000\"/><w:gridCol w:w=\"4000\"/></w:tblGrid><w:tr><w:trPr><w:tblHeader/></w:trPr><w:tc><w:p><w:r><w:t>Head</w:t></w:r></w:p></w:tc><w:tc><w:p/></w:tc></w:tr>"
+        + string.Concat(Enumerable.Range(1, 80).Select(r => $"<w:tr><w:tc><w:p><w:r><w:t>Row {r}</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>{r}</w:t></w:r></w:p></w:tc></w:tr>"))
+        + "</w:tbl><w:sectPr><w:footerReference w:type=\"default\" r:id=\"r2\"/></w:sectPr></w:body></w:document>",
+};
+using var docxBuffer = new MemoryStream();
+using (var docxZip = new System.IO.Compression.ZipArchive(docxBuffer, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+{
+    foreach (var (name, xml) in docxParts)
+    {
+        using var writer = new StreamWriter(docxZip.CreateEntry(name).Open());
+        writer.Write(xml);
+    }
+}
+
+var docxPdf = DocxToPdf.Convert(docxBuffer.ToArray());
+var docxPages = new TextExtractor(PdfReader.Open(docxPdf.ToArray())).ExtractPages().Select(p => p.Text).ToList();
+Check($"docx: {docxPages.Count} pages, {docxPages[^1].Split('\n').Last()}", docxPages.Count > 1
+    && docxPages[0].StartsWith("I. Caf\u00E9 item", StringComparison.Ordinal) && docxPages.Skip(1).All(p => p.Contains("Head", StringComparison.Ordinal))
+    && docxPages[^1].Contains($"Page {docxPages.Count} of {docxPages.Count}", StringComparison.Ordinal));
 
 Console.WriteLine(failures == 0 ? $"Package smoke test passed. PDFs in {output}" : $"Package smoke test FAILED ({failures} checks).");
 return failures == 0 ? 0 : 1;

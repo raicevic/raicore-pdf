@@ -1,0 +1,121 @@
+# Word documents to PDF
+
+`RaiCore.Pdf.Documents` converts Word documents (`.docx`) to PDF with the layout engine: styles, numbered and bulleted
+lists, tables, sections with their page setup, headers and footers with page numbers, images, hyperlinks and notes. No
+word processor, no browser, no native dependencies. The package is the home of the word-processing formats: RTF, ODT
+and Word 97-2003 converters will share its document model and options.
+
+```sh
+dotnet add package RaiCore.Pdf.Documents
+```
+
+[!code-csharp[](../snippets/WordDocuments.cs#convert)]
+
+`DocxToPdf.Convert` takes a path, a stream or bytes; `ConvertAsync` (on the thread pool, with a cancellation token)
+and `ConvertToBytes` do the same. `.docx`, `.docm` (its macros are ignored), `.dotx` and strict Office Open XML
+documents are read.
+
+## What is converted
+
+- **Styles:** paragraph, character and table styles with their `basedOn` chains, the document defaults and the theme's
+  fonts and colors. A paragraph's format comes from the defaults, its table's style, its style, its list level and its
+  own properties, in that order, as in Word.
+- **Paragraphs:** alignment (justified too), indents (first line and hanging), space before and after (added together,
+  and left out between paragraphs of the same style with contextual spacing), line spacing (multiple, exact, at
+  least), borders (adjacent paragraphs with the same borders share a box) and shading, keep with next, keep lines
+  together, page break before, widow and orphan control, right-to-left paragraphs.
+- **Text:** fonts, sizes, bold, italic, underline (single, double, dotted, dashed, wavy), strikethrough, colors,
+  highlighting and shading, superscript and subscript, raised and lowered text, letter spacing, all capitals and small
+  capitals; hidden text is left out.
+- **Lists:** multi-level numbering with labels built from the level texts (`%1.%2.`), decimal, letters, roman
+  numerals, ordinals and bullets (the private-use bullets of Symbol and Wingdings drawn as Unicode bullets), start
+  values, restarts and lists that continue across other paragraphs; the label hangs in the indent, followed by a tab,
+  a space or nothing.
+- **Tabs:** left, center, right and decimal stops with dot, hyphen and underscore leaders, the default stops and the
+  hanging indent's stop. Tabs are measured on the line, so they are exact on lines that do not wrap before them; a
+  right tab with a leader at the right margin (a table of contents) always fills the line.
+- **Tables:** the grid's column widths (scaled down when wider than the page), cells merged across and down, borders
+  (the cell's own, else the table's outer and inside borders), shading, cell padding, vertical alignment, row heights,
+  rows that may not break across pages, header rows repeated on every page, nested tables, and table styles with their
+  conditional formats (first and last row and column, banded rows and columns).
+- **Sections:** page size, orientation and margins (the top and bottom margin grow when a header or footer needs the
+  room), and how the section starts: on a new page, on the same page (continuous, when the page setup stays the same),
+  or on the next even or odd page.
+- **Headers and footers:** for the first page of a section (with a title page), even pages (with different odd and
+  even headers) and the other pages, inherited from the section before when a section has none; with page numbers
+  (`PAGE`, `NUMPAGES`, `SECTIONPAGES`), restarted and formatted per section (decimal, roman, letters).
+- **Fields:** page references (`PAGEREF`, as a table of contents has them) show the PDF's page numbers: the document
+  is laid out twice when it has them. `HYPERLINK` fields are links; other fields (dates, document properties, cross
+  references) show the result the document was saved with.
+- **Images:** PNG, JPEG, GIF, BMP, TIFF and WebP, inline in the text or anchored. Anchored images with text wrapping
+  (square, tight, through) float at the left or right margin with the text around them; other anchored images stand
+  on a line of their own before their paragraph. Images are scaled down to the column and the page.
+- **Links and bookmarks:** hyperlinks to web addresses (http, https, mailto, ftp, tel; other schemes are shown as text
+  without a link) and to bookmarks, which become the PDF's named destinations.
+- **Notes:** footnotes after the section that refers to them, endnotes at the end of the document, each after a short
+  rule with its number, linked from its mark.
+- **Revisions and controls:** tracked changes as if accepted (insertions kept, deletions left out), content controls
+  and custom XML unwrapped. Equations are shown as their plain text.
+- **Outline and tagging:** headings (paragraphs with an outline level, such as Heading 1 to 9) become bookmarks of the
+  PDF, nested by level. With `Tagged`, the PDF has headings by level, paragraphs, tables with their header rows and
+  images with their alternative text; headers and footers are artifacts.
+
+## Options
+
+[!code-csharp[](../snippets/WordDocuments.cs#options)]
+
+| `DocxConverterOptions` | What it does |
+|---|---|
+| `Fonts`, `FontFamily`, `FallbackFontFamilies` | The fonts: a collection (default the bundled Liberation fonts), the family for text whose font the collection lacks (default `sans-serif`), and fallbacks for characters a font lacks; Liberation Sans comes last. |
+| `HeadingBookmarks` | Headings as the PDF's bookmarks (default `true`). |
+| `Title` | The document's title; by default the title of the document's properties. |
+| `Tagged` | A tagged (accessible) PDF (default `false`). |
+| `Diagnostics` | Receives what could not be shown as the document does, below. |
+| `Limits` | The `ResourceLimits` of the conversion, below. |
+
+Page size, margins and orientation come from the document's sections. The returned `PdfDocument` can be changed
+before it is saved: metadata, `Language` (set from the document's default language in a tagged PDF), `PdfUA`,
+`PdfAConformance`, encryption, attachments.
+
+## Fonts
+
+A run's font is found by its family in `Fonts`; when the collection lacks it, Calibri and Cambria look for their
+metric-compatible substitutes Carlito and Caladea, fonts known to be serif or monospace (Times New Roman, Cambria,
+Georgia, Courier New, Consolas) use the bundled Liberation Serif or Mono, and other fonts `FontFamily`. Liberation
+Sans, Serif and Mono have the widths of Arial, Times New Roman and Courier New, so text in those fonts breaks into
+lines as in Word. Documents in Calibri or Aptos (Word's defaults) break differently with the bundled fonts: add the
+system's fonts, or Carlito, for Word's line breaks.
+
+[!code-csharp[](../snippets/WordDocuments.cs#fonts)]
+
+## Diagnostics
+
+`Diagnostics` receives a `DocumentDiagnostic` (a kind and a message) for each distinct issue, once per conversion:
+
+- `UnsupportedContent`: charts, SmartArt, embedded objects (shown as their preview image when it can be drawn),
+  shapes and text boxes (their text is laid out after their paragraph), several text columns (laid out as one),
+  embedded document parts (`altChunk`), equations (shown as text).
+- `ImageNotLoaded`: images in formats that cannot be drawn (EMF, WMF), damaged, missing or linked images; they are
+  left out.
+- `Layout`: content wider than its box or taller than a page.
+
+## Untrusted documents
+
+Documents are ZIP packages of XML parts. They are read with no DTDs and nothing external resolved (a document with a
+DTD throws `PdfFormatException`), and within `Limits`: `MaxDecompressedBytes` bounds the decompressed size of all parts
+together (a ZIP bomb stops there), `MaxElements` the XML elements of all parts together (counted while they are read),
+`MaxNestingDepth` the nesting of XML elements and of tables, `MaxTableCells` the cells of each table, `MaxImagePixels`
+each image, and `MaxPages` and `Timeout` the pages and the time. Exceeding one throws `ResourceLimitExceededException`
+naming it.
+
+Malformed packages (not a ZIP file, no main document part, XML that is not well-formed) throw `PdfFormatException`.
+Password-protected (encrypted) documents and Word 97-2003 `.doc` files, which are Compound Files, throw
+`NotSupportedException`.
+
+## Not supported
+
+Floating text boxes and shapes as frames (their text is laid out after their paragraph), charts, SmartArt, embedded
+objects, EMF and WMF images, comments, several text columns, footnotes at the bottom of their page (they follow their
+section), line numbers, page borders and backgrounds, watermarks, drop caps, vertical and right-to-left text beyond what
+the layout engine does by itself, hyphenation settings, and fields that would need calculating (their saved result is
+shown).
