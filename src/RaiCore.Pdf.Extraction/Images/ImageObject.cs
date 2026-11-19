@@ -40,6 +40,9 @@ internal sealed class ImageObject
 
     private readonly PdfReader _reader;
 
+    /// <summary>The filters as they are in the dictionary (names), passed on when decoding: names are not made again from their text.</summary>
+    private readonly List<PdfObject?> _filterObjects;
+
     private ImageObject(PdfReader reader, PdfDictionary dictionary, byte[] data, bool isInline)
     {
         _reader = reader;
@@ -62,6 +65,7 @@ internal sealed class ImageObject
             _ => [],
         };
         Filters = [.. filters.Select(f => (f as PdfName)?.Value ?? "?")];
+        _filterObjects = filters;
         Format = FormatOf();
     }
 
@@ -124,8 +128,9 @@ internal sealed class ImageObject
         var dictionary = new PdfDictionary();
         foreach (var (key, value) in inline.Entries)
         {
-            var name = InlineKeys.GetValueOrDefault(key.Value, key.Value);
-            dictionary[name] = name switch
+            // Names come from the file as they are: an empty one (a lone "/") cannot be made again from its text.
+            PdfName name = InlineKeys.TryGetValue(key.Value, out var full) ? new PdfName(full) : key;
+            dictionary[name] = name.Value switch
             {
                 "Filter" => ExpandFilters(value),
                 "ColorSpace" when value is PdfName named && named.Value is not ("G" or "RGB" or "CMYK" or "DeviceGray" or "DeviceRGB" or "DeviceCMYK")
@@ -138,7 +143,7 @@ internal sealed class ImageObject
 
         static PdfObject ExpandFilters(PdfObject value) => value switch
         {
-            PdfName name => new PdfName(InlineFilters.GetValueOrDefault(name.Value, name.Value)),
+            PdfName name => InlineFilters.TryGetValue(name.Value, out var full) ? new PdfName(full) : name,
             PdfArray array => new PdfArray(array.Items.Select(ExpandFilters)),
             _ => value,
         };
@@ -159,7 +164,7 @@ internal sealed class ImageObject
 
         var dictionary = new PdfDictionary
         {
-            ["Filter"] = new PdfArray(Filters.Take(count).Select(f => (PdfObject)new PdfName(f))),
+            ["Filter"] = new PdfArray(_filterObjects.Take(count).Select(f => f ?? PdfNull.Instance)),
             ["DecodeParms"] = new PdfArray(Enumerable.Range(0, count).Select(i => (PdfObject?)ParametersOf(i) ?? PdfNull.Instance)),
         };
         return StreamDecoder.Decode(new PdfStreamObject(Data, dictionary), Resolve);

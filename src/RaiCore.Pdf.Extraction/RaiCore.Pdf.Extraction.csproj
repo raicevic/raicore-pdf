@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description>Read what is on the pages of existing PDF files with RaiCore.Pdf: text, its position, and images.</Description>
-    <PackageTags>$(PackageTags);text-extraction;pdf-reader</PackageTags>
+    <PackageTags>$(PackageTags);text-extraction;pdf-reader;pdf-search;image-extraction</PackageTags>
     <!-- The glyph name table is the Adobe Glyph List (BSD-3-Clause, Fonts/AGL-LICENSE.txt); the presentation form table
          comes from the Unicode Character Database (Unicode-3.0). -->
     <PackageLicenseExpression>Apache-2.0 AND BSD-3-Clause AND Unicode-3.0</PackageLicenseExpression>

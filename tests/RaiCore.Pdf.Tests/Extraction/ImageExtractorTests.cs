@@ -410,6 +410,30 @@ public class ImageExtractorTests
     }
 
     [Fact]
+    public void Every_kind_of_image_in_one_file_is_listed_and_exported()
+    {
+        // Fixtures/Extraction/images.pdf (make-images-fixture.py): also a seed of the extract fuzz target.
+        var page = Extract(Fixtures.Read("Extraction/images.pdf"));
+
+        Assert.Equal(
+            ["Png", "Png", "Png", "Png", "Png", "Png", "Jpeg", "Tiff", "Jpeg2000", "Png", "Png", "Png"],
+            page.Images.Select(i => i.Format.ToString()));
+        Assert.Equal([true, false, false, false, true, true, false, false, false, false, true, false], page.Images.Select(i => i.HasMask)); // The turned copy of the first has its soft mask too.
+        Assert.True(page.Images[9].IsStencilMask);
+        Assert.True(page.Images[11].IsInline);
+        AssertNear(90, page.Images[10].Rotation);
+        foreach (var image in page.Images)
+        {
+            var data = image.GetData();
+            Assert.NotEmpty(data);
+            if (image.Format == ExtractedImageFormat.Png)
+            {
+                Assert.Equal((image.PixelWidth, image.PixelHeight), (Rgba(data).Width, Rgba(data).Height));
+            }
+        }
+    }
+
+    [Fact]
     public void Arguments_are_checked()
     {
         var extractor = new ImageExtractor(PdfReader.Open(OnePage("", "<< >>")));
