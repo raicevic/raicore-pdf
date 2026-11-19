@@ -45,6 +45,46 @@ internal static class WordDocuments
         });
         withFonts.Save("letter-fonts.pdf");
         #endregion
+
+        // An OpenDocument text document to convert, as LibreOffice writes it (a ZIP package, mimetype first).
+        WriteOpenDocument("quarterly.odt");
+
+        #region odt
+        var report = OdtToPdf.Convert("quarterly.odt", new OdtConverterOptions
+        {
+            Tagged = true,
+            Diagnostics = d => Console.WriteLine($"  {d.Kind}: {d.Message}"),
+        });
+        report.Save("quarterly.pdf");
+        #endregion
+    }
+
+    /// <summary>Writes a minimal OpenDocument text document: a heading, a paragraph, a numbered list and a footer.</summary>
+    private static void WriteOpenDocument(string path)
+    {
+        const string ns = "xmlns:office=\"urn:oasis:names:tc:opendocument:xmlns:office:1.0\" xmlns:style=\"urn:oasis:names:tc:opendocument:xmlns:style:1.0\" "
+            + "xmlns:text=\"urn:oasis:names:tc:opendocument:xmlns:text:1.0\" xmlns:fo=\"urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0\"";
+        var parts = new Dictionary<string, string>
+        {
+            ["mimetype"] = "application/vnd.oasis.opendocument.text",
+            ["styles.xml"] = $"<office:document-styles {ns}><office:styles><style:style style:name=\"Heading_20_1\" style:family=\"paragraph\">"
+                + "<style:text-properties fo:font-size=\"16pt\" fo:font-weight=\"bold\" fo:color=\"#2f5496\"/></style:style></office:styles><office:automatic-styles>"
+                + "<style:page-layout style:name=\"pm1\"><style:page-layout-properties fo:page-width=\"21cm\" fo:page-height=\"29.7cm\" fo:margin=\"2cm\"/></style:page-layout>"
+                + "</office:automatic-styles><office:master-styles><style:master-page style:name=\"Standard\" style:page-layout-name=\"pm1\">"
+                + "<style:footer><text:p>Page <text:page-number>1</text:page-number></text:p></style:footer></style:master-page></office:master-styles></office:document-styles>",
+            ["content.xml"] = $"<office:document-content {ns}><office:automatic-styles><text:list-style style:name=\"L1\">"
+                + "<text:list-level-style-number text:level=\"1\" style:num-format=\"1\" style:num-suffix=\".\"/></text:list-style></office:automatic-styles>"
+                + "<office:body><office:text><text:h text:style-name=\"Heading_20_1\" text:outline-level=\"1\">Quarterly report</text:h>"
+                + "<text:p>Sales grew in every region:</text:p><text:list text:style-name=\"L1\"><text:list-item><text:p>North, 12%</text:p></text:list-item>"
+                + "<text:list-item><text:p>South, 8%</text:p></text:list-item></text:list></office:text></office:body></office:document-content>",
+        };
+        File.Delete(path);
+        using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
+        foreach (var (name, xml) in parts)
+        {
+            using var writer = new StreamWriter(zip.CreateEntry(name, name == "mimetype" ? CompressionLevel.NoCompression : CompressionLevel.Optimal).Open());
+            writer.Write(xml);
+        }
     }
 
     /// <summary>Writes a minimal Word document: styles with a heading, a paragraph and a numbered list.</summary>

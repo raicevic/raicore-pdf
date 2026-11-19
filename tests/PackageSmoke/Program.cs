@@ -309,6 +309,44 @@ Check($"docx: {docxPages.Count} pages, {docxPages[^1].Split('\n').Last()}", docx
     && docxPages[0].StartsWith("I. Caf\u00E9 item", StringComparison.Ordinal) && docxPages.Skip(1).All(p => p.Contains("Head", StringComparison.Ordinal))
     && docxPages[^1].Contains($"Page {docxPages.Count} of {docxPages.Count}", StringComparison.Ordinal));
 
+// RaiCore.Pdf.Documents: an OpenDocument text document (built here as a ZIP package, mimetype first) with a styled
+// heading, a bulleted list, a table whose header row repeats over 80 rows, and a footer with page numbers.
+const string odfNamespaces = "xmlns:office=\"urn:oasis:names:tc:opendocument:xmlns:office:1.0\" xmlns:style=\"urn:oasis:names:tc:opendocument:xmlns:style:1.0\" "
+    + "xmlns:text=\"urn:oasis:names:tc:opendocument:xmlns:text:1.0\" xmlns:table=\"urn:oasis:names:tc:opendocument:xmlns:table:1.0\" "
+    + "xmlns:fo=\"urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0\"";
+var odtParts = new Dictionary<string, string>
+{
+    ["mimetype"] = "application/vnd.oasis.opendocument.text",
+    ["styles.xml"] = $"<office:document-styles {odfNamespaces}><office:styles><style:style style:name=\"Heading_20_1\" style:family=\"paragraph\">"
+        + "<style:text-properties fo:font-size=\"18pt\" fo:font-weight=\"bold\"/></style:style></office:styles><office:automatic-styles>"
+        + "<style:page-layout style:name=\"pm1\"><style:page-layout-properties fo:page-width=\"21cm\" fo:page-height=\"29.7cm\" fo:margin=\"2cm\"/></style:page-layout>"
+        + "</office:automatic-styles><office:master-styles><style:master-page style:name=\"Standard\" style:page-layout-name=\"pm1\"><style:footer>"
+        + "<text:p>Page <text:page-number>1</text:page-number> of <text:page-count>1</text:page-count></text:p></style:footer></style:master-page></office:master-styles></office:document-styles>",
+    ["content.xml"] = $"<office:document-content {odfNamespaces}><office:automatic-styles><text:list-style style:name=\"L1\">"
+        + "<text:list-level-style-bullet text:level=\"1\" text:bullet-char=\"\u2022\"/></text:list-style></office:automatic-styles><office:body><office:text>"
+        + "<text:h text:style-name=\"Heading_20_1\" text:outline-level=\"1\">Caf\u00E9 heading</text:h><text:list text:style-name=\"L1\"><text:list-item><text:p>Bullet item</text:p></text:list-item></text:list>"
+        + "<table:table><table:table-column table:number-columns-repeated=\"2\"/><table:table-header-rows><table:table-row><table:table-cell><text:p>Head</text:p></table:table-cell>"
+        + "<table:table-cell/></table:table-row></table:table-header-rows>"
+        + string.Concat(Enumerable.Range(1, 80).Select(r => $"<table:table-row><table:table-cell><text:p>Row {r}</text:p></table:table-cell><table:table-cell><text:p>{r}</text:p></table:table-cell></table:table-row>"))
+        + "</table:table></office:text></office:body></office:document-content>",
+};
+using var odtBuffer = new MemoryStream();
+using (var odtZip = new System.IO.Compression.ZipArchive(odtBuffer, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+{
+    foreach (var (name, xml) in odtParts)
+    {
+        using var writer = new StreamWriter(odtZip.CreateEntry(name, name == "mimetype" ? System.IO.Compression.CompressionLevel.NoCompression : System.IO.Compression.CompressionLevel.Optimal).Open());
+        writer.Write(xml);
+    }
+}
+
+var odtPdf = OdtToPdf.Convert(odtBuffer.ToArray(), new OdtConverterOptions { Tagged = true });
+odtPdf.Save(Path.Combine(output, "opendocument.pdf"));
+var odtPages = new TextExtractor(PdfReader.Open(odtPdf.ToArray())).ExtractPages().Select(p => p.Text).ToList();
+Check($"odt: {odtPages.Count} pages, {odtPages[^1].Split('\n').Last()}", odtPages.Count > 1 && odtPdf.Outline.Count == 1
+    && odtPages[0].StartsWith("Caf\u00E9 heading", StringComparison.Ordinal) && odtPages[0].Contains("\u2022", StringComparison.Ordinal)
+    && odtPages.Skip(1).All(p => p.Contains("Head", StringComparison.Ordinal)) && odtPages[^1].Contains($"Page {odtPages.Count} of {odtPages.Count}", StringComparison.Ordinal));
+
 Console.WriteLine(failures == 0 ? $"Package smoke test passed. PDFs in {output}" : $"Package smoke test FAILED ({failures} checks).");
 return failures == 0 ? 0 : 1;
 

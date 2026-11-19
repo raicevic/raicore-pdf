@@ -1,9 +1,10 @@
 # Word documents to PDF
 
-`RaiCore.Pdf.Documents` converts Word documents (`.docx`) to PDF with the layout engine: styles, numbered and bulleted
-lists, tables, sections with their page setup, headers and footers with page numbers, images, hyperlinks and notes. No
-word processor, no browser, no native dependencies. The package is the home of the word-processing formats: RTF, ODT
-and Word 97-2003 converters will share its document model and options.
+`RaiCore.Pdf.Documents` converts Word documents (`.docx`) and OpenDocument text documents (`.odt`, see
+[below](#opendocument-text)) to PDF with the layout engine: styles, numbered and bulleted lists, tables, sections with
+their page setup, headers and footers with page numbers, images, hyperlinks and notes. No word processor, no browser,
+no native dependencies. The package is the home of the word-processing formats: the converters share its document
+model and options, and RTF and Word 97-2003 converters will too.
 
 ```sh
 dotnet add package RaiCore.Pdf.Documents
@@ -111,6 +112,54 @@ naming it.
 Malformed packages (not a ZIP file, no main document part, XML that is not well-formed) throw `PdfFormatException`.
 Password-protected (encrypted) documents and Word 97-2003 `.doc` files, which are Compound Files, throw
 `NotSupportedException`.
+
+## OpenDocument text
+
+`OdtToPdf` converts OpenDocument text documents, as LibreOffice and other office suites write them: `.odt` packages,
+`.ott` templates and flat `.fodt` XML documents, ODF 1.0 to 1.3. It has the same overloads as `DocxToPdf` and takes an
+`OdtConverterOptions`, which has the options above.
+
+[!code-csharp[](../snippets/WordDocuments.cs#odt)]
+
+- **Styles:** common styles, the automatic styles of the content and of the page styles, default styles, parent style
+  chains and font face declarations. Paragraph properties: margins, indents, alignment, line height (proportional,
+  fixed, at least, and leading), borders, background, keep with next, keep together, page breaks before and after,
+  widows and orphans, and tab stops with leaders (relative to the paragraph's indent, unless the document's settings
+  say otherwise). Text properties: fonts, sizes (also relative), bold, italic, underline styles, strikethrough,
+  colors, backgrounds, superscript, subscript and raised text, small capitals, upper case, lower case and capitalized
+  text, letter spacing and hidden text.
+- **Headings and lists:** headings have their outline level (and become bookmarks) and the outline style's numbering.
+  Lists take their list style's levels: numbers (`1`, `a`, `A`, `i`, `I`) with prefix, suffix, start value and the
+  higher levels they display (`1.2.3`), bullets (symbol-font bullets drawn in the paragraph's font) and picture bullets
+  (as round bullets); nested lists, list headers without a label, lists that continue an earlier one
+  (`text:continue-numbering`, `text:continue-list`), items that restart the numbering, and both ways of positioning
+  labels (label alignment with a tab stop, and the older label width and distance).
+- **Tables:** column widths (absolute, or relative and shared out of the table's width), table width and alignment,
+  header rows repeated on every page, cells spanning columns and rows, borders, padding, backgrounds (of the table,
+  row and cell), vertical alignment, row heights and rows kept together, nested tables, and repeated rows, columns and
+  cells.
+- **Page styles:** each master page used gives a section with its page layout (size, orientation, margins, the height
+  and spacing of its header and footer) and its headers and footers: for left pages, for the first page (ODF 1.3's
+  `style:header-first`, or a first page style followed by another), and the others, unless hidden. A paragraph or
+  table style with a master page starts a new page with it, and may restart the page numbers; page number formats come
+  from the page layout.
+- **Content:** sections (hidden ones left out), tables of contents and other indexes as their content, links to web
+  addresses and bookmarks, bookmarks, footnotes and endnotes (with their own citations, numbered as the notes
+  configuration says), page numbers, page counts and page references computed from the PDF's pages, other fields
+  (dates, titles, chapters, sequences) as their text, tracked changes as if accepted, comments left out.
+- **Frames:** images in the package (PNG, JPEG, GIF, BMP, TIFF, WebP, SVG) or embedded as base64 in flat documents;
+  of several alternatives the first that can be drawn. Frames anchored as characters are in the line; frames anchored
+  to the paragraph with text wrapping float at the left or right; others stand on a line of their own. Charts and
+  other embedded objects are shown as their replacement image (when it can be drawn: LibreOffice often stores it as a
+  StarView metafile, which cannot); the text of text boxes and shapes follows their paragraph.
+
+Not supported in OpenDocument text: drawing shapes (their text is kept), several columns of a page style or section,
+forms and their controls, scripts (ignored), comments, line numbering and page backgrounds; each is reported to
+`Diagnostics`. Password-protected (encrypted) documents throw `NotSupportedException`; malformed packages and XML that
+is not well-formed `PdfFormatException`. Linked images (outside the package) are left out. The `Limits` apply as to
+Word documents, the XML of flat documents included; table rows and cells that repeat others
+(`table:number-rows-repeated`, `table:number-columns-repeated`) count against `MaxElements`, and their cells against
+`MaxTableCells`.
 
 ## Not supported
 
