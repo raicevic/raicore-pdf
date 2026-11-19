@@ -48,6 +48,7 @@ page is always `Html.Page`.
 | `EmbedAttachments` | Embed the attachments in the PDF (default `true`). PDF/A-2 does not allow it; use PDF/A-3. |
 | `ListAttachments` | List the attachments in the header block (default `true`). |
 | `AppendAttachments` | Append what can be shown after the message (default `false`), see below. |
+| `EmbedOriginal` | Embed the message itself, byte for byte, as the PDF's source file (default `false`), see below. |
 
 The header block's elements have classes for styling: `raicore-email-header`, `raicore-email-subject`,
 `raicore-email-text` (plain text bodies) and `raicore-email-attachment` (appended attachments).
@@ -66,6 +67,27 @@ With `AppendAttachments`, each attachment that can be shown starts a new page af
 
 Other files are only listed and embedded. A damaged or encrypted PDF is left out (still embedded) and reported through
 `Html.Diagnostics`, and so is anything that would take the document past `ResourceLimits.MaxPages`.
+
+## Keeping the original message
+
+With `EmbedOriginal`, the message's own bytes are embedded in the PDF as an attached file, unchanged, so that the
+original can always be recovered from the archived PDF:
+
+[!code-csharp[](../snippets/Email.cs#original)]
+
+| | Email | Web archive |
+|---|---|---|
+| File name | the subject, `.eml` (`message.eml` without one) | the subject, `.mht` (`message.mht` without one) |
+| Media type | `message/rfc822` | `multipart/related` (MHTML, RFC 2557) |
+| Description | `Original message` | `Original web archive` |
+
+In the file name, the characters file systems do not allow (`/ \ : * ? " < > |`) become `_`. The file's relationship
+to the document is `Source` (`/AFRelationship /Source`, the file the document was made from, as PDF/A-3 describes it).
+The original is embedded once, whatever `EmbedAttachments` and `AppendAttachments` are; if an embedded attachment has
+the same name, the original gets ` (2)` and so on, like attachments of the same name do.
+
+PDF/A-2 does not allow it, as for the attachments: with `PdfA2B` or `PdfA2A` the original is not embedded and
+`Html.Diagnostics` reports a warning. Use `PdfA3B` or `PdfA3A` to archive the PDF with its original.
 
 ## Web archives
 

@@ -62,6 +62,16 @@ internal static class Email
             document.Save("message-custom.pdf");
         }
         #endregion
+
+        #region original
+        // PDF/A-3b with the message itself attached (named after its subject, the file the PDF was made from).
+        var archived = EmailToPdf.Convert("message.eml", new EmailConverterOptions
+        {
+            EmbedOriginal = true,
+            Html = new HtmlConverterOptions { PdfAConformance = RaiCore.Pdf.PdfAConformance.PdfA3B },
+        });
+        archived.Save("message-archived.pdf");
+        #endregion
     }
 
     private static byte[]? DownloadImage(Uri uri) => null; // A real loader would fetch it, e.g. with HttpClient.

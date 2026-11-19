@@ -38,7 +38,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
   configurable, styleable with CSS), the HTML body (or the plain text one, wrapped, with `format=flowed` and links)
   with its `cid:` and `Content-Location` images in place, and the attachments embedded as PDF file attachments, listed
   and optionally appended (images and text files as pages, PDFs imported, HTML files and attached messages converted).
-  MIME parsing of its own: multipart/alternative, related and mixed, quoted-printable and base64, charsets including
+  `EmbedOriginal` embeds the message itself, unchanged, as the PDF's source file (`message/rfc822` or
+  `multipart/related`, `/AFRelationship /Source`; not under PDF/A-2, as for attachments). MIME parsing of its own: multipart/alternative, related and mixed, quoted-printable and base64, charsets including
   ISO-2022-JP, Shift_JIS, GB18030, Big5 and EUC-KR, RFC 2047 encoded words and RFC 2231 parameters, malformed messages
   read leniently within `ResourceLimits`, and no local files loaded. See the
   [email guide](https://raicevic.github.io/raicore-pdf/guides/email.html) (#198).

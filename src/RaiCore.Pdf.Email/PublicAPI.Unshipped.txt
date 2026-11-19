@@ -5,6 +5,8 @@ RaiCore.Pdf.Email.EmailConverterOptions.AppendAttachments.init -> void
 RaiCore.Pdf.Email.EmailConverterOptions.EmailConverterOptions() -> void
 RaiCore.Pdf.Email.EmailConverterOptions.EmbedAttachments.get -> bool
 RaiCore.Pdf.Email.EmailConverterOptions.EmbedAttachments.init -> void
+RaiCore.Pdf.Email.EmailConverterOptions.EmbedOriginal.get -> bool
+RaiCore.Pdf.Email.EmailConverterOptions.EmbedOriginal.init -> void
 RaiCore.Pdf.Email.EmailConverterOptions.HeaderFields.get -> System.Collections.Generic.IReadOnlyList<string!>?
 RaiCore.Pdf.Email.EmailConverterOptions.HeaderFields.init -> void
 RaiCore.Pdf.Email.EmailConverterOptions.HeaderLabels.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
