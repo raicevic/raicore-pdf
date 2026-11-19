@@ -9,7 +9,7 @@ namespace RaiCore.Pdf.Sheets;
 /// (<see cref="ColumnFitter"/>), header rows repeated on every page, numbers and dates right-aligned, long words broken
 /// rather than clipped, and columns split into bands that each fit the page width when they cannot all fit.
 /// </summary>
-internal static class SheetRenderer
+internal static partial class SheetRenderer
 {
     /// <summary>The cell padding left and right, in ems.</summary>
     private const double PaddingX = 0.4;
@@ -58,6 +58,11 @@ internal static class SheetRenderer
     public static FlowDocument Layout(Sheet sheet, SheetOptions options, Action? checkpoint = null)
     {
         Validate(options);
+        if (sheet.Formatting is { } formatting)
+        {
+            return LayoutFormatted(sheet, formatting, options, checkpoint);
+        }
+
         var page = options.Landscape ? options.Page with { Size = options.Page.Size.Landscape } : options.Page;
         var available = Math.Max(1, page.ContentWidth - Slack);
         var (regular, bold) = ResolveFonts(options);

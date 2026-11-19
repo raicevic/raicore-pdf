@@ -38,6 +38,27 @@ RaiCore.Pdf.Sheets.SheetOptions.Tagged.get -> bool
 RaiCore.Pdf.Sheets.SheetOptions.Tagged.init -> void
 RaiCore.Pdf.Sheets.SheetOptions.Title.get -> string?
 RaiCore.Pdf.Sheets.SheetOptions.Title.init -> void
+RaiCore.Pdf.Sheets.SpreadsheetFormatException
+RaiCore.Pdf.Sheets.SpreadsheetFormatException.SpreadsheetFormatException() -> void
+RaiCore.Pdf.Sheets.SpreadsheetFormatException.SpreadsheetFormatException(string! message) -> void
+RaiCore.Pdf.Sheets.SpreadsheetFormatException.SpreadsheetFormatException(string! message, System.Exception! innerException) -> void
+RaiCore.Pdf.Sheets.XlsxConverterOptions
+RaiCore.Pdf.Sheets.XlsxConverterOptions.AutoFit.get -> bool
+RaiCore.Pdf.Sheets.XlsxConverterOptions.AutoFit.init -> void
+RaiCore.Pdf.Sheets.XlsxConverterOptions.Culture.get -> System.Globalization.CultureInfo?
+RaiCore.Pdf.Sheets.XlsxConverterOptions.Culture.init -> void
+RaiCore.Pdf.Sheets.XlsxConverterOptions.Sheet.get -> RaiCore.Pdf.Sheets.SheetOptions!
+RaiCore.Pdf.Sheets.XlsxConverterOptions.Sheet.init -> void
+RaiCore.Pdf.Sheets.XlsxConverterOptions.SheetIndexes.get -> System.Collections.Generic.IReadOnlyList<int>?
+RaiCore.Pdf.Sheets.XlsxConverterOptions.SheetIndexes.init -> void
+RaiCore.Pdf.Sheets.XlsxConverterOptions.SheetNames.get -> System.Collections.Generic.IReadOnlyList<string!>?
+RaiCore.Pdf.Sheets.XlsxConverterOptions.SheetNames.init -> void
+RaiCore.Pdf.Sheets.XlsxConverterOptions.ShowSheetNames.get -> bool
+RaiCore.Pdf.Sheets.XlsxConverterOptions.ShowSheetNames.init -> void
+RaiCore.Pdf.Sheets.XlsxConverterOptions.UsePageSetup.get -> bool
+RaiCore.Pdf.Sheets.XlsxConverterOptions.UsePageSetup.init -> void
+RaiCore.Pdf.Sheets.XlsxConverterOptions.XlsxConverterOptions() -> void
+RaiCore.Pdf.Sheets.XlsxToPdf
 static RaiCore.Pdf.Sheets.CsvToPdf.Convert(System.IO.Stream! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
 static RaiCore.Pdf.Sheets.CsvToPdf.Convert(byte[]! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
 static RaiCore.Pdf.Sheets.CsvToPdf.Convert(string! path, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
@@ -45,3 +66,10 @@ static RaiCore.Pdf.Sheets.CsvToPdf.ConvertAsync(System.IO.Stream! csv, RaiCore.P
 static RaiCore.Pdf.Sheets.CsvToPdf.ConvertAsync(byte[]! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
 static RaiCore.Pdf.Sheets.CsvToPdf.ConvertToBytes(System.IO.Stream! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null) -> byte[]!
 static RaiCore.Pdf.Sheets.CsvToPdf.ConvertToBytes(byte[]! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Sheets.XlsxToPdf.Convert(System.IO.Stream! xlsx, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Sheets.XlsxToPdf.Convert(byte[]! xlsx, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Sheets.XlsxToPdf.Convert(string! path, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Sheets.XlsxToPdf.ConvertAsync(System.IO.Stream! xlsx, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Sheets.XlsxToPdf.ConvertAsync(byte[]! xlsx, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Sheets.XlsxToPdf.ConvertToBytes(System.IO.Stream! xlsx, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Sheets.XlsxToPdf.ConvertToBytes(byte[]! xlsx, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> byte[]!

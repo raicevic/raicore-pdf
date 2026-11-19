@@ -1,14 +1,18 @@
 # RaiCore.Pdf.Sheets
 
-Converts CSV files to PDF with [RaiCore.Pdf](https://www.nuget.org/packages/RaiCore.Pdf)'s layout engine: a table
-with the header row repeated on every page, columns fitted to the content and the page, and numbers right-aligned. No
-spreadsheet program, no browser, no native dependencies.
+Converts CSV files and Excel workbooks (`.xlsx`) to PDF with [RaiCore.Pdf](https://www.nuget.org/packages/RaiCore.Pdf)'s
+layout engine: tables with header rows repeated on every page, columns fitted to the content and the page, numbers
+right-aligned, and for workbooks their own formats and styles. No spreadsheet program, no browser, no native
+dependencies.
 
 ```csharp
 using RaiCore.Pdf.Sheets;
 
 var pdf = CsvToPdf.Convert("orders.csv", new CsvConverterOptions { Sheet = new SheetOptions { Landscape = true } });
 pdf.Save("orders.pdf");
+
+var report = XlsxToPdf.Convert("report.xlsx");
+report.Save("report.pdf");
 ```
 
 - **CSV done properly:** RFC 4180 quoting (delimiters, line breaks and doubled quotes in fields), CRLF, LF or CR line
@@ -21,12 +25,22 @@ pdf.Save("orders.pdf");
   (down to a minimum size) so that the columns fit without wrapping.
 - **Spreadsheet alignment:** numbers (with signs, thousands separators, currency and percent signs) and dates right-aligned,
   text aligned to its direction (Hebrew and Arabic to the right).
-- **Untrusted input:** malformed data is read the way spreadsheet programs read it (stray quotes, ragged rows,
-  invalid bytes); cells, pages and time are bounded by `ResourceLimits`.
+- **Excel workbooks:** every visible sheet (or the ones you name) from a new page; values in their number formats
+  (thousands separators, decimals, percent, fractions, scientific, currency, dates and times, colors and conditions,
+  the 1900 and 1904 date systems), formulas as their last calculated values; fonts, colors, fills, borders, alignment,
+  wrapping and indents; merged cells; the sheet's column widths and row heights; hidden rows, columns and sheets left
+  out; text running on over empty cells as in a spreadsheet; the print area, rows repeated on every page, landscape,
+  print scale and fit to width from the page setup.
+- **Untrusted input:** malformed CSV is read the way spreadsheet programs read it (stray quotes, ragged rows, invalid
+  bytes); workbooks are read with no DTDs and nothing external, malformed ones throw `SpreadsheetFormatException`;
+  cells, decompressed bytes, pages and time are bounded by `ResourceLimits`.
+
+Not supported in workbooks: charts, images, conditional formatting, comments, headers and footers, pivot tables,
+formula calculation, `.xlsb`, `.xls` and password-protected files.
 
 Fonts, gridlines, tagging (accessible tables) and the page are set in `SheetOptions`.
 
-More: the [CSV guide](https://raicevic.github.io/raicore-pdf/guides/sheets.html).
+More: the [spreadsheet guide](https://raicevic.github.io/raicore-pdf/guides/sheets.html).
 
 ## More
 

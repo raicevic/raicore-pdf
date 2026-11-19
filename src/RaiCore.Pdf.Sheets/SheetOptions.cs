@@ -5,7 +5,7 @@ namespace RaiCore.Pdf.Sheets;
 
 /// <summary>
 /// How a sheet is laid out as a table on pages: page, orientation, font, gridlines, fitting, tagging and resource limits.
-/// Shared by the converters of this package (<see cref="CsvConverterOptions.Sheet"/>).
+/// Shared by the converters of this package (<see cref="CsvConverterOptions.Sheet"/>, <see cref="XlsxConverterOptions.Sheet"/>).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -36,10 +36,15 @@ public sealed class SheetOptions
     /// </summary>
     public bool FitToWidth { get; init; }
 
-    /// <summary>The font size in points. Defaults to 9.</summary>
+    /// <summary>
+    /// The font size in points. Defaults to 9. Workbooks (<see cref="XlsxToPdf"/>) keep their own font sizes instead.
+    /// </summary>
     public double FontSize { get; init; } = 9;
 
-    /// <summary>The smallest font size <see cref="FitToWidth"/> uses, in points. Defaults to 6.</summary>
+    /// <summary>
+    /// The smallest font size <see cref="FitToWidth"/> uses, in points. Defaults to 6. For workbooks it bounds the
+    /// workbook's default font size: the sheet is shrunk at most until that font reaches this size.
+    /// </summary>
     public double MinimumFontSize { get; init; } = 6;
 
     /// <summary>
@@ -51,7 +56,8 @@ public sealed class SheetOptions
 
     /// <summary>
     /// The font family of the text (the header row in its bold face), or a generic family such as <c>sans-serif</c>
-    /// (the default), <c>serif</c> or <c>monospace</c>.
+    /// (the default), <c>serif</c> or <c>monospace</c>. Workbook cells use their own font where <see cref="Fonts"/>
+    /// has it, a serif or monospace font for families known to be one, and this family otherwise.
     /// </summary>
     public string FontFamily { get; init; } = "sans-serif";
 
@@ -61,10 +67,16 @@ public sealed class SheetOptions
     /// </summary>
     public IReadOnlyList<string> FallbackFontFamilies { get; init; } = [];
 
-    /// <summary>Whether the cells have thin gray borders, as a spreadsheet's gridlines. Defaults to <c>true</c>.</summary>
+    /// <summary>
+    /// Whether the cells have thin gray borders, as a spreadsheet's gridlines. Defaults to <c>true</c>. A workbook
+    /// cell's own borders are drawn over them.
+    /// </summary>
     public bool Gridlines { get; init; } = true;
 
-    /// <summary>The document's title (its metadata), or <c>null</c> (the default) for none.</summary>
+    /// <summary>
+    /// The document's title (its metadata), or <c>null</c> (the default) for none; for a workbook, the title of its
+    /// document properties, if it has one.
+    /// </summary>
     public string? Title { get; init; }
 
     /// <summary>
@@ -76,7 +88,8 @@ public sealed class SheetOptions
 
     /// <summary>
     /// The limits that bound a conversion: <see cref="ResourceLimits.MaxTableCells"/> (rows times columns),
-    /// <see cref="ResourceLimits.MaxPages"/> and <see cref="ResourceLimits.Timeout"/>. Defaults to
+    /// <see cref="ResourceLimits.MaxPages"/> and <see cref="ResourceLimits.Timeout"/>, and for workbooks
+    /// <see cref="ResourceLimits.MaxDecompressedBytes"/> (all their parts together). Defaults to
     /// <see cref="ResourceLimits.Default"/>.
     /// </summary>
     public ResourceLimits Limits { get; init; } = ResourceLimits.Default;

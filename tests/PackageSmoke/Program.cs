@@ -207,6 +207,36 @@ var csvPages = new TextExtractor(PdfReader.Open(csvPdf.ToArray())).ExtractPages(
 Check($"csv: {csvPages.Count} pages, {csvPages[^1].Split('\n').Last()}", csvPages.Count > 1
     && csvPages.All(p => p.StartsWith("Item", StringComparison.Ordinal)) && csvPages[^1].Contains("Caf\u00E9 300", StringComparison.Ordinal));
 
+// RaiCore.Pdf.Sheets: an XLSX workbook (built here as a ZIP package) with a shared string, a number format, a date, a
+// merged cell and print titles repeated over 120 rows.
+var xlsxParts = new Dictionary<string, string>
+{
+    ["_rels/.rels"] = "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"r1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>",
+    ["xl/workbook.xml"] = "<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"><sheets><sheet name=\"Data\" sheetId=\"1\" r:id=\"r1\"/></sheets>"
+        + "<definedNames><definedName name=\"_xlnm.Print_Titles\" localSheetId=\"0\">Data!$1:$1</definedName></definedNames></workbook>",
+    ["xl/_rels/workbook.xml.rels"] = "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"r1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"sheet1.xml\"/>"
+        + "<Relationship Id=\"r2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/><Relationship Id=\"r3\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings\" Target=\"strings.xml\"/></Relationships>",
+    ["xl/styles.xml"] = "<styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><fonts><font><sz val=\"11\"/></font><font><b/></font></fonts><cellXfs><xf/><xf fontId=\"1\"/><xf numFmtId=\"4\"/><xf numFmtId=\"14\"/></cellXfs></styleSheet>",
+    ["xl/strings.xml"] = "<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><si><t>Caf\u00E9 header</t></si></sst>",
+    ["xl/sheet1.xml"] = "<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData><row r=\"1\"><c r=\"A1\" s=\"1\" t=\"s\"><v>0</v></c></row>"
+        + string.Concat(Enumerable.Range(2, 120).Select(r => $"<row r=\"{r}\"><c r=\"A{r}\" s=\"2\"><v>{r * 1000.5}</v></c><c r=\"B{r}\" s=\"3\"><v>46345</v></c></row>"))
+        + "</sheetData><mergeCells><mergeCell ref=\"A1:B1\"/></mergeCells></worksheet>",
+};
+using var xlsxBuffer = new MemoryStream();
+using (var xlsxZip = new System.IO.Compression.ZipArchive(xlsxBuffer, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+{
+    foreach (var (name, xml) in xlsxParts)
+    {
+        using var writer = new StreamWriter(xlsxZip.CreateEntry(name).Open());
+        writer.Write(xml);
+    }
+}
+
+var xlsxPdf = XlsxToPdf.Convert(xlsxBuffer.ToArray());
+var xlsxPages = new TextExtractor(PdfReader.Open(xlsxPdf.ToArray())).ExtractPages().Select(p => p.Text).ToList();
+Check($"xlsx: {xlsxPages.Count} pages, {xlsxPages[^1].Split('\n').Last()}", xlsxPages.Count > 1
+    && xlsxPages.All(p => p.StartsWith("Caf\u00E9 header", StringComparison.Ordinal)) && xlsxPages[^1].Contains("121,060.50 2026-11-19", StringComparison.Ordinal));
+
 Console.WriteLine(failures == 0 ? $"Package smoke test passed. PDFs in {output}" : $"Package smoke test FAILED ({failures} checks).");
 return failures == 0 ? 0 : 1;
 

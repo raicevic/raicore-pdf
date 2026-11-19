@@ -32,8 +32,11 @@ internal enum CellAlignment
     Right,
 }
 
-/// <summary>A cell of a sheet: its text as shown, what it is, and its alignment.</summary>
-internal readonly record struct SheetCell(string Text, CellKind Kind, CellAlignment Alignment = CellAlignment.General)
+/// <summary>
+/// A cell of a sheet: its text as shown, what it is, its alignment, and its format (font, fill, borders) where the
+/// source has one (a worksheet; CSV cells have none).
+/// </summary>
+internal readonly record struct SheetCell(string Text, CellKind Kind, CellAlignment Alignment = CellAlignment.General, CellFormat? Format = null)
 {
     /// <summary>An empty cell.</summary>
     public static SheetCell Empty { get; } = new(string.Empty, CellKind.Empty);
@@ -49,13 +52,19 @@ internal readonly record struct SheetCell(string Text, CellKind Kind, CellAlignm
 /// </summary>
 internal sealed class Sheet
 {
-    public Sheet(IReadOnlyList<SheetCell[]> rows, int headerRows)
+    public Sheet(IReadOnlyList<SheetCell[]> rows, int headerRows, int columnCount = 0)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(headerRows);
         Rows = rows;
         HeaderRows = Math.Min(headerRows, rows.Count);
-        ColumnCount = rows.Count == 0 ? 0 : rows.Max(r => r.Length);
+        ColumnCount = Math.Max(columnCount, rows.Count == 0 ? 0 : rows.Max(r => r.Length));
     }
+
+    /// <summary>
+    /// How a formatted sheet (a worksheet) is laid out, or <c>null</c> for a sheet of text only (CSV): its header rows
+    /// are then shown in bold on a gray background, and its columns fitted to the content.
+    /// </summary>
+    public SheetFormatting? Formatting { get; init; }
 
     /// <summary>The rows, top to bottom; header rows first.</summary>
     public IReadOnlyList<SheetCell[]> Rows { get; }

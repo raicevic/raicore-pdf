@@ -69,7 +69,10 @@ public sealed record ResourceLimits
     /// <summary>The largest font a WOFF or WOFF2 file may decompress to, in bytes. Defaults to 64 MB.</summary>
     public long MaxFontBytes { get; init; } = 64L * 1024 * 1024;
 
-    /// <summary>The most bytes one compressed PDF stream may decode to. Defaults to 256 MB.</summary>
+    /// <summary>
+    /// The most bytes one compressed PDF stream may decode to, and all the parts of an XLSX workbook together
+    /// (<c>RaiCore.Pdf.Sheets</c>). Defaults to 256 MB.
+    /// </summary>
     public long MaxDecompressedBytes { get; init; } = 256L * 1024 * 1024;
 
     /// <summary>The most pages a laid out document may have. Defaults to 10,000.</summary>
