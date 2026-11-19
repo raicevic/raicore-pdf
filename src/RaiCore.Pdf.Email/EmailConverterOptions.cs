@@ -68,4 +68,29 @@ public sealed class EmailConverterOptions
     /// listed and embedded. Defaults to <c>false</c>.
     /// </summary>
     public bool AppendAttachments { get; init; }
+
+    /// <summary>
+    /// Whether the message itself, its bytes unchanged, is embedded in the PDF as an attached file
+    /// (<see cref="PdfDocument.Attachments"/>), so that the original can be recovered from the PDF. Defaults to
+    /// <c>false</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The file is named after the subject (with <c>_</c> for the characters file systems do not allow, such as
+    /// <c>/</c> and <c>:</c>), or <c>message</c> if there is none: <c>.eml</c> with the media type
+    /// <c>message/rfc822</c> for an email, <c>.mht</c> with <c>multipart/related</c> (the type of an MHTML
+    /// document, RFC 2557) for a web archive. It is described as the original message (or web archive), its
+    /// relationship to the document is <see cref="PdfAttachmentRelationship.Source"/> (<c>/AFRelationship /Source</c>,
+    /// as PDF/A-3 asks of the file a document was made from), and it is embedded once, whatever
+    /// <see cref="EmbedAttachments"/> and <see cref="AppendAttachments"/> are; if an embedded attachment has the same
+    /// name, the original gets <c>(2)</c> and so on, like attachments of the same name do.
+    /// </para>
+    /// <para>
+    /// PDF/A-2 does not allow it, as for <see cref="EmbedAttachments"/>: with <see cref="PdfAConformance.PdfA2B"/> or
+    /// <see cref="PdfAConformance.PdfA2A"/>, the original is not embedded and a warning goes to
+    /// <see cref="HtmlConverterOptions.Diagnostics"/> (use <see cref="PdfAConformance.PdfA3B"/> or
+    /// <see cref="PdfAConformance.PdfA3A"/>).
+    /// </para>
+    /// </remarks>
+    public bool EmbedOriginal { get; init; }
 }

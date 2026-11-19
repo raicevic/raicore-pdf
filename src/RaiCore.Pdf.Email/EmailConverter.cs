@@ -17,10 +17,12 @@ internal sealed class EmailConverter
     private readonly ResourceLimits _limits;
     private readonly Stopwatch _clock;
     private readonly CancellationToken _cancellationToken;
+    private readonly byte[]? _original;
 
-    private EmailConverter(EmailConverterOptions options, Stopwatch clock, CancellationToken cancellationToken)
+    private EmailConverter(EmailConverterOptions options, Stopwatch clock, CancellationToken cancellationToken, byte[]? original = null)
     {
         _options = options;
+        _original = original;
         _limits = options.Html.Limits ?? throw new ArgumentException("The resource limits must not be null.", nameof(options));
         _clock = clock;
         _cancellationToken = cancellationToken;
@@ -39,7 +41,7 @@ internal sealed class EmailConverter
             root = MimeParser.Parse(data, limits);
         }
 
-        return new EmailConverter(options, clock, cancellationToken).ConvertAsync(root);
+        return new EmailConverter(options, clock, cancellationToken, data).ConvertAsync(root);
     }
 
     /// <summary>The options of a conversion, from the user's HTML options: the message's loader, styles, base and metadata.</summary>
@@ -98,6 +100,11 @@ internal sealed class EmailConverter
             }
         }
 
+        if (_options.EmbedOriginal && _original is not null)
+        {
+            EmbedOriginal(document, content.IsWebArchive, subject, _options.EmbedAttachments ? attachments.Select(a => a.FileName) : []);
+        }
+
         if (_options.EmbedAttachments && attachments.Count > 0)
         {
             if (document.PdfAConformance is PdfAConformance.PdfA2B or PdfAConformance.PdfA2A)
@@ -115,6 +122,28 @@ internal sealed class EmailConverter
         }
 
         return document;
+    }
+
+    /// <summary>
+    /// Embeds the message's own bytes as the document's source (<see cref="PdfAttachmentRelationship.Source"/>), named
+    /// after the subject and unique among the embedded attachments; under PDF/A-2 it is left out and reported, as the
+    /// attachments are.
+    /// </summary>
+    private void EmbedOriginal(PdfDocument document, bool webArchive, string subject, IEnumerable<string> taken)
+    {
+        var fileName = EmailAttachment.OriginalFileName(subject, webArchive, taken);
+        if (document.PdfAConformance is PdfAConformance.PdfA2B or PdfAConformance.PdfA2A)
+        {
+            Report(HtmlDiagnosticKind.ResourceNotLoaded, HtmlDiagnosticSeverity.Warning, fileName,
+                "The original message is not embedded: PDF/A-2 does not allow attached files (PDF/A-3 does).");
+            return;
+        }
+
+        document.Attachments.Add(new PdfAttachment(fileName, _original, webArchive ? "multipart/related" : "message/rfc822")
+        {
+            Description = webArchive ? "Original web archive" : "Original message",
+            Relationship = PdfAttachmentRelationship.Source,
+        });
     }
 
     /// <summary>How an attachment can be appended: by its media type, file name extension or content.</summary>

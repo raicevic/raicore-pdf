@@ -16,6 +16,8 @@ pdf.Save("message.pdf");
   place, from `cid:` references or `Content-Location`.
 - **Attachments:** embedded as PDF file attachments, listed in the header block, and optionally appended: images and
   text files on pages of their own, PDF files with their pages, HTML files and attached messages converted.
+- **The original kept:** `EmbedOriginal` embeds the message itself, byte for byte, as the PDF's source file
+  (`/AFRelationship /Source`), so a PDF/A-3 archive copy still holds the `.eml` or `.mht` it was made from.
 - **MIME done properly:** multipart/alternative, related and mixed; quoted-printable and base64; charsets from UTF-8
   and the Windows code pages to ISO-2022-JP, Shift_JIS, GB18030, Big5 and EUC-KR; encoded words (RFC 2047) and
   split, encoded file names (RFC 2231).

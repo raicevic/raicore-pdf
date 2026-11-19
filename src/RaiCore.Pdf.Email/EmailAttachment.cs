@@ -141,15 +141,42 @@ internal sealed partial class EmailAttachment
             }
         }
 
-        var result = text.ToString().Trim().Trim('.').Trim();
-        if (result.Length > 200)
+        return Cut(text.ToString().Trim().Trim('.').Trim());
+    }
+
+    /// <summary>
+    /// The file name of the embedded original message: its subject without control characters and with
+    /// <c>_</c> for the characters file systems do not allow (<c>/ \ : * ? " &lt; &gt; |</c>), runs of whitespace
+    /// as one space, without surrounding whitespace and dots and cut to 200 characters, or <c>message</c> if nothing
+    /// is left; then <c>.mht</c> for a web archive and <c>.eml</c> for an email, and <c>(2)</c> and so on if one
+    /// of <paramref name="taken"/> has the name.
+    /// </summary>
+    internal static string OriginalFileName(string subject, bool webArchive, IEnumerable<string> taken)
+    {
+        var text = new StringBuilder();
+        foreach (var c in subject)
         {
-            var cut = char.IsHighSurrogate(result[199]) ? 199 : 200;
-            result = result[..cut];
+            if (char.IsControl(c) || char.IsWhiteSpace(c))
+            {
+                if (text.Length > 0 && text[^1] != ' ')
+                {
+                    text.Append(' ');
+                }
+            }
+            else
+            {
+                text.Append(c is '/' or '\\' or ':' or '*' or '?' or '"' or '<' or '>' or '|' ? '_' : c);
+            }
         }
 
-        return result;
+        var stem = Cut(text.ToString().Trim().Trim('.').Trim()).TrimEnd(' ', '.');
+        var name = (stem.Length > 0 ? stem : "message") + (webArchive ? ".mht" : ".eml");
+        return Unique(name, new HashSet<string>(taken, StringComparer.OrdinalIgnoreCase), []);
     }
+
+    /// <summary>The text cut to 200 characters (not between the halves of a surrogate pair).</summary>
+    private static string Cut(string text) =>
+        text.Length <= 200 ? text : text[..(char.IsHighSurrogate(text[199]) ? 199 : 200)];
 
     /// <summary>The name, or <c>name (2).ext</c>, <c>name (3).ext</c> and so on if it is taken.</summary>
     private static string Unique(string name, HashSet<string> names, Dictionary<string, int> counters)
