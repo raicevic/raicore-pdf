@@ -247,4 +247,41 @@ public class PdfReaderRobustnessTests
 
         return [.. data];
     }
+
+    [Fact]
+    public void The_repair_finds_the_objects_after_an_unclosed_dictionary()
+    {
+        // Found by fuzzing: a ReportLab form whose object 10 has a dictionary cut off before its stream, and objects 11
+        // to 15 at the wrong offsets. Reading one of those starts the repair, whose scan parsed object 10 to the end of
+        // the file and lost every object after it: the catalog, the page tree and the page.
+        var reader = PdfReader.Open(Fixtures.Read("Reader/unclosed-dictionary.pdf"));
+        Assert.Single(reader.Pages);
+
+        _ = reader.Resolve(new PdfReference(13));
+
+        Assert.True(reader.IsRepaired);
+        Assert.IsType<PdfDictionary>(reader.Resolve(new PdfReference(26)));
+        Assert.Equal("Catalog", ((PdfName)((PdfDictionary)reader.Resolve(new PdfReference(27))!)["Type"]!).Value);
+        Assert.IsType<PdfDictionary>(reader.Resolve(new PdfReference(29)));
+    }
+
+    [Fact]
+    public void The_repair_skips_headers_inside_stream_data()
+    {
+        // Object 5's data holds text that looks like a later definition of the page; the file's offsets are all wrong,
+        // so the repair scans it, and must not take the text inside the stream for an object.
+        var pdf = TestPdf.Text(TestPdf.Build([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Contents 4 0 R >>",
+            TestPdf.Stream("q Q"),
+            TestPdf.Stream("3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 999 999] >>\nendobj"),
+        ]));
+        pdf = "%PDF-1.7\n%padding to move every object\n" + pdf[(pdf.IndexOf('\n', StringComparison.Ordinal) + 1)..];
+
+        var reader = PdfReader.Open(Encoding.Latin1.GetBytes(pdf));
+
+        Assert.True(reader.IsRepaired);
+        Assert.Equal(200, Assert.Single(reader.Pages).MediaBox.Width);
+    }
 }
