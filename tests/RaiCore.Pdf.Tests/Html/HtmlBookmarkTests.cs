@@ -87,6 +87,15 @@ public class HtmlBookmarkTests
     }
 
     [Fact]
+    public void Rules_with_nesting_selectors_match_nothing()
+    {
+        // Found by fuzzing: AngleSharp throws NullReferenceException matching a selector with '&'.
+        var outline = Outline("<style>,& h1 { bookmark-label: 'Nested'; } & { bookmark-level: 1; }</style><h1>A</h1><p>B</p>");
+
+        Assert.Equal("A", Tree(outline));
+    }
+
+    [Fact]
     public void Headings_without_text_are_skipped()
     {
         var outline = Outline("<h1>A</h1><h2> </h2><h2>B</h2>");
