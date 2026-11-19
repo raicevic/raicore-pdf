@@ -156,6 +156,28 @@ public sealed class PdfEditor
     public PdfFlattenResult FlattenForm() => new FormFlattener(_table, _table.Dictionary(_catalog)!, Pages.References).Flatten();
 
     /// <summary>
+    /// Flattens annotations: draws each one into its page as it looks when printed, then removes it, so that highlights,
+    /// ink, stamps, shapes and free text stay visible but can no longer be changed or deleted.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// An annotation is drawn with its normal appearance (in its current state) when it is shown and printed: hidden ones,
+    /// ones marked not to be shown on screen, and ones not printed are removed without being drawn, as is one without an
+    /// appearance (viewers make some, such as the icon of a note without one; flattening does not). A pop-up window goes
+    /// with the annotation it belongs to.
+    /// </para>
+    /// <para>
+    /// Links are kept unless <see cref="PdfAnnotationFlattenOptions.KeepLinks"/> is off, and
+    /// <see cref="PdfAnnotationFlattenOptions.Types"/> picks the types to flatten. Form fields are never touched: use
+    /// <see cref="FlattenForm"/>.
+    /// </para>
+    /// </remarks>
+    /// <param name="options">Which annotations; by default all but links.</param>
+    /// <returns>How many annotations were drawn and how many removed without being drawn.</returns>
+    public PdfFlattenResult FlattenAnnotations(PdfAnnotationFlattenOptions? options = null) =>
+        new AnnotationFlattener(_table, Pages.References, options ?? PdfAnnotationFlattenOptions.Default).Flatten();
+
+    /// <summary>
     /// Makes the document smaller without changing how it looks: removes resources (fonts, images, graphics states and
     /// the like) that the pages' content never uses, merges identical fonts, images and other streams into one object,
     /// and compresses streams that are not compressed (see <see cref="PdfOptimizationOptions"/>). The changes stay in the

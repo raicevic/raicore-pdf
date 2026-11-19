@@ -83,9 +83,26 @@ look, and the widgets, the fields and the form are removed, so the values stay v
   fields (single-line, multiline, comb, password, alignment, automatic size) and choice fields in the font and color of
   their default appearance, measured with the standard font of the same family, with their background and border;
   check boxes and radio buttons with their check character. Text is written in WinAnsi, so other characters show as `?`.
-- Hidden widgets are removed without being drawn. Other annotations (links, notes) stay.
+- Hidden widgets are removed without being drawn. Other annotations (links, notes) stay: see below.
 - A static XFA form goes with the form; a dynamic XFA form throws `NotSupportedException`, since its pages are laid out
   by the viewer.
+
+## Flattening annotations
+
+`FlattenAnnotations()` burns comments and markup into the pages: highlights, underlines, ink, shapes, free text, stamps
+and notes are drawn into the page content as they look when printed, then removed, so they can no longer be changed or
+deleted.
+
+[!code-csharp[](../snippets/Editing.cs#flatten-annotations)]
+
+- An annotation is drawn with its normal appearance (in its current state) at its rectangle, like form widgets above.
+- Only what prints is drawn: hidden annotations, ones marked not to be shown on screen and ones not printed are
+  removed without being drawn, as is one without an appearance (viewers make some themselves, such as the icon of a
+  note without one; flattening does not make them).
+- A note's pop-up window goes with its note.
+- Links are kept by default so that they still work (`KeepLinks = false` removes them too), and `Types` limits
+  flattening to some annotation types by their PDF names (`Highlight`, `Ink`, `FreeText`, `Stamp`, `Square`, `Text`,
+  ...). Form fields are never touched: flatten them with `FlattenForm()`.
 
 ## Making files smaller
 

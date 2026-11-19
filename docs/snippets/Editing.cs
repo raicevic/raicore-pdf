@@ -16,6 +16,7 @@ internal static class Editing
             <h1 style="break-before: page">Signatures</h1>
             """).Save("contract.pdf");
         HtmlToPdf.Convert("<h1>Appendix</h1>").Save("appendix.pdf");
+        File.Copy("contract.pdf", "contract-reviewed.pdf", overwrite: true); // Stands for a copy with reviewers' comments.
 
         #region pages
         var editor = PdfEditor.Open("contract.pdf");
@@ -85,6 +86,17 @@ internal static class Editing
         var flattened = filled.FlattenForm();
         Console.WriteLine($"{flattened.Drawn} fields drawn ({flattened.Generated} with a new appearance), {flattened.Removed} hidden ones removed");
         filled.Save("contract-flattened.pdf");
+        #endregion
+
+        #region flatten-annotations
+        // Burn the reviewers' highlights, ink and stamps into the pages; links keep working.
+        var reviewed = PdfEditor.Open("contract-reviewed.pdf");
+        var burnt = reviewed.FlattenAnnotations();
+        Console.WriteLine($"{burnt.Drawn} annotations drawn, {burnt.Removed} removed without being drawn (hidden, not printed or pop-ups)");
+
+        // Or only some types, links included.
+        reviewed.FlattenAnnotations(new PdfAnnotationFlattenOptions { Types = new HashSet<string> { "Stamp" }, KeepLinks = false });
+        reviewed.Save("contract-reviewed-flattened.pdf");
         #endregion
 
         #region split

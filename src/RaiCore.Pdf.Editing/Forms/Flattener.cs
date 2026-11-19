@@ -12,14 +12,16 @@ internal sealed class Flattener(ObjectTable table, IReadOnlyList<PdfReference> p
 {
     // Annotation flags (ISO 32000-2, table 167).
     private const int Hidden = 1 << 1;
+    private const int Print = 1 << 2;
     private const int NoView = 1 << 5;
 
     /// <summary>
-    /// Flattens the annotations <paramref name="select"/> chooses: hidden ones are removed without being drawn, the others
-    /// drawn with the appearance <paramref name="appearance"/> gives (and whether it was made rather than found) and removed;
-    /// one without an appearance is removed.
+    /// Flattens the annotations <paramref name="select"/> chooses: hidden ones (and, with <paramref name="printedOnly"/>,
+    /// ones not printed) are removed without being drawn, the others drawn with the appearance <paramref name="appearance"/>
+    /// gives (and whether it was made rather than found) and removed; one without an appearance is removed.
     /// </summary>
-    public PdfFlattenResult Flatten(Func<PdfDictionary, bool> select, Func<PdfDictionary, (PdfReference? Form, bool Generated)> appearance)
+    public PdfFlattenResult Flatten(
+        Func<PdfDictionary, bool> select, Func<PdfDictionary, (PdfReference? Form, bool Generated)> appearance, bool printedOnly = false)
     {
         int drawn = 0, generated = 0, removed = 0;
         foreach (var page in pages.Select(table.Dictionary).OfType<PdfDictionary>())
@@ -40,7 +42,8 @@ internal sealed class Flattener(ObjectTable table, IReadOnlyList<PdfReference> p
                 }
 
                 var flags = table.Resolve(annotation["F"]) is PdfInteger f ? f.Value : 0;
-                var (form, made) = (flags & (Hidden | NoView)) != 0 ? (null, false) : appearance(annotation);
+                var shown = (flags & (Hidden | NoView)) == 0 && (!printedOnly || (flags & Print) != 0);
+                var (form, made) = shown ? appearance(annotation) : (null, false);
                 if (form is null || !Draw(page, annotation, form, drawing))
                 {
                     removed++;
@@ -59,6 +62,25 @@ internal sealed class Flattener(ObjectTable table, IReadOnlyList<PdfReference> p
         }
 
         return new PdfFlattenResult(drawn, generated, removed);
+    }
+
+    /// <summary>
+    /// An annotation's normal appearance (<c>/AP /N</c>): a stream, or a dictionary of streams by state, picked by
+    /// <c>/AS</c> (else <paramref name="state"/>).
+    /// </summary>
+    public PdfReference? NormalAppearance(PdfDictionary annotation, PdfName? state = null)
+    {
+        var normal = table.Dictionary(annotation["AP"])?["N"];
+        switch (table.Resolve(normal))
+        {
+            case PdfStreamObject:
+                return normal as PdfReference;
+            case PdfDictionary states:
+                state = table.Resolve(annotation["AS"]) as PdfName ?? state;
+                return state is not null && states[state] is PdfReference chosen && table.Resolve(chosen) is PdfStreamObject ? chosen : null;
+            default:
+                return null;
+        }
     }
 
     /// <summary>

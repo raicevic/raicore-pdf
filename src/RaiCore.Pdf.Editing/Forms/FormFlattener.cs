@@ -43,9 +43,10 @@ internal sealed class FormFlattener(ObjectTable table, PdfDictionary catalog, IR
         }
 
         var regenerate = table.Resolve(_form["NeedAppearances"]) is PdfBoolean { Value: true };
-        var result = new Flattener(table, pages).Flatten(
+        var flattener = new Flattener(table, pages);
+        var result = flattener.Flatten(
             annotation => table.Resolve(annotation["Subtype"]) is PdfName { Value: "Widget" },
-            widget => Appearance(widget, regenerate));
+            widget => Appearance(widget, regenerate, flattener));
 
         // The form goes with its fields; a static XFA form goes with it. Viewers have nothing left to fill.
         catalog["AcroForm"] = null;
@@ -54,11 +55,12 @@ internal sealed class FormFlattener(ObjectTable table, PdfDictionary catalog, IR
     }
 
     /// <summary>A widget's appearance: its normal appearance in its current state, or one made from the field's value.</summary>
-    private (PdfReference? Form, bool Generated) Appearance(PdfDictionary widget, bool regenerate)
+    private (PdfReference? Form, bool Generated) Appearance(PdfDictionary widget, bool regenerate, Flattener flattener)
     {
         var field = Field.Of(widget, table);
         var isText = field.Type is "Tx" or "Ch";
-        if (!(regenerate && isText) && NormalAppearance(widget, field) is { } existing)
+        var state = table.Resolve(field.Value) as PdfName;
+        if (!(regenerate && isText) && flattener.NormalAppearance(widget, state) is { } existing)
         {
             return (existing, false);
         }
@@ -69,23 +71,7 @@ internal sealed class FormFlattener(ObjectTable table, PdfDictionary catalog, IR
             "Btn" when (field.Flags & PushButton) == 0 => ButtonAppearance(widget, field),
             _ => null,
         };
-        return made is null ? (NormalAppearance(widget, field), false) : (table.Add(made), true);
-    }
-
-    /// <summary>The normal appearance (<c>/AP /N</c>): a stream, or a dictionary of states picked by <c>/AS</c> (else the field's value).</summary>
-    private PdfReference? NormalAppearance(PdfDictionary widget, Field field)
-    {
-        var normal = table.Dictionary(widget["AP"])?["N"];
-        switch (table.Resolve(normal))
-        {
-            case PdfStreamObject:
-                return normal as PdfReference;
-            case PdfDictionary states:
-                var state = table.Resolve(widget["AS"]) as PdfName ?? table.Resolve(field.Value) as PdfName;
-                return state is not null && states[state] is PdfReference chosen && table.Resolve(chosen) is PdfStreamObject ? chosen : null;
-            default:
-                return null;
-        }
+        return made is null ? (flattener.NormalAppearance(widget, state), false) : (table.Add(made), true);
     }
 
     /// <summary>The appearance of a text field or a choice field (ISO 32000-2, 12.7.4.3): its value in the font of its <c>/DA</c>.</summary>

@@ -36,6 +36,11 @@ and versions follow [Semantic Versioning](https://semver.org/).
   `/NeedAppearances` (text: single-line, multiline, comb, password, alignment, auto size; choice; check boxes and radio
   buttons), and removes the widgets, the fields and the form; hidden widgets are not drawn, a static XFA form is
   removed with the form, and a dynamic XFA form is refused (#191).
+- **Annotation flattening** (`RaiCore.Pdf.Editing`): `PdfEditor.FlattenAnnotations(options)` draws the normal appearance
+  of each annotation that is shown and printed (highlights and other text markup, ink, shapes, free text, stamps,
+  notes) into the page content and removes it with its pop-up; hidden, screen-only and unprinted annotations are removed
+  without being drawn. Links are kept unless `KeepLinks` is off, `Types` picks annotation types, and form fields are
+  left to `FlattenForm()` (#192).
 - **Form reading** (`RaiCore.Pdf.Editing`): `PdfEditor.GetForm()` tells whether a document has an AcroForm and an XFA
   form (static or dynamic, by `/NeedsRendering`) and lists its fields: fully qualified name, type (text, check box,
   radio buttons, push button, list, combo, signature), values, choice options, read-only and required flags, and widgets
