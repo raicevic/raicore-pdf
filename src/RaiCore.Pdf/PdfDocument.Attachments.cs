@@ -92,9 +92,14 @@ public sealed partial class PdfDocument
             associated.Items.Add(specRef);
         }
 
-        // A name tree with a single leaf, keys sorted by their bytes.
+        // A name tree with a single leaf, keys sorted by their bytes. Keys in one encoding: an ASCII key and a UTF-16 one
+        // sort differently by bytes than by text, and validators (qpdf) compare the text, so when any name needs UTF-16,
+        // every key is written in UTF-16.
+        var utf16 = tree.Any(entry => entry.Key.Bytes is [0xFE, 0xFF, ..]);
         var entries = new PdfArray();
-        foreach (var (key, spec) in tree.OrderBy(entry => entry.Key.Bytes.ToArray(), Comparer<byte[]>.Create((x, y) => x.AsSpan().SequenceCompareTo(y))))
+        foreach (var (key, spec) in tree
+            .Select(entry => (Key: utf16 ? Utf16(entry.Key) : entry.Key, Spec: entry.FileSpec))
+            .OrderBy(entry => entry.Key.Bytes.ToArray(), Comparer<byte[]>.Create((x, y) => x.AsSpan().SequenceCompareTo(y))))
         {
             entries.Items.Add(key);
             entries.Items.Add(spec);
@@ -102,6 +107,10 @@ public sealed partial class PdfDocument
 
         names["EmbeddedFiles"] = writer.Add(new PdfDictionary { ["Names"] = entries });
         catalog["AF"] = associated;
+
+        static PdfString Utf16(PdfString key) => key.Bytes is [0xFE, 0xFF, ..]
+            ? key
+            : new PdfString([0xFE, 0xFF, .. System.Text.Encoding.BigEndianUnicode.GetBytes(System.Text.Encoding.ASCII.GetString(key.Bytes))]);
     }
 
     private static PdfString Date(DateTimeOffset date) => new(Encoding.ASCII.GetBytes(PdfDocumentInfo.FormatDate(date)));
