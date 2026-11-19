@@ -151,7 +151,11 @@ internal sealed partial class EmailAttachment
     /// is left; then <c>.mht</c> for a web archive and <c>.eml</c> for an email, and <c>(2)</c> and so on if one
     /// of <paramref name="taken"/> has the name.
     /// </summary>
-    internal static string OriginalFileName(string subject, bool webArchive, IEnumerable<string> taken)
+    internal static string OriginalFileName(string subject, bool webArchive, IEnumerable<string> taken) =>
+        OriginalFileName(subject, webArchive ? ".mht" : ".eml", taken);
+
+    /// <summary>The file name of the original message with an extension of its kind (<c>.eml</c>, <c>.mht</c>, <c>.msg</c>).</summary>
+    internal static string OriginalFileName(string subject, string extension, IEnumerable<string> taken)
     {
         var text = new StringBuilder();
         foreach (var c in subject)
@@ -170,7 +174,7 @@ internal sealed partial class EmailAttachment
         }
 
         var stem = Cut(text.ToString().Trim().Trim('.').Trim()).TrimEnd(' ', '.');
-        var name = (stem.Length > 0 ? stem : "message") + (webArchive ? ".mht" : ".eml");
+        var name = (stem.Length > 0 ? stem : "message") + extension;
         return Unique(name, new HashSet<string>(taken, StringComparer.OrdinalIgnoreCase), []);
     }
 

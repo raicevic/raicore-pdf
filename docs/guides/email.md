@@ -1,7 +1,7 @@
 # Email and web archives
 
-`RaiCore.Pdf.Email` converts email messages (`.eml`, RFC 5322 and MIME) and web archives (`.mht`, `.mhtml`) to PDF
-through the HTML engine.
+`RaiCore.Pdf.Email` converts email messages (`.eml`, RFC 5322 and MIME), Outlook messages (`.msg`) and web archives
+(`.mht`, `.mhtml`) to PDF through the HTML engine.
 
 ```sh
 dotnet add package RaiCore.Pdf.Email
@@ -75,11 +75,11 @@ original can always be recovered from the archived PDF:
 
 [!code-csharp[](../snippets/Email.cs#original)]
 
-| | Email | Web archive |
-|---|---|---|
-| File name | the subject, `.eml` (`message.eml` without one) | the subject, `.mht` (`message.mht` without one) |
-| Media type | `message/rfc822` | `multipart/related` (MHTML, RFC 2557) |
-| Description | `Original message` | `Original web archive` |
+| | Email | Outlook message | Web archive |
+|---|---|---|---|
+| File name | the subject, `.eml` (`message.eml` without one) | the subject, `.msg` | the subject, `.mht` (`message.mht` without one) |
+| Media type | `message/rfc822` | `application/vnd.ms-outlook` | `multipart/related` (MHTML, RFC 2557) |
+| Description | `Original message` | `Original message` | `Original web archive` |
 
 In the file name, the characters file systems do not allow (`/ \ : * ? " < > |`) become `_`. The file's relationship
 to the document is `Source` (`/AFRelationship /Source`, the file the document was made from, as PDF/A-3 describes it).
@@ -88,6 +88,19 @@ the same name, the original gets ` (2)` and so on, like attachments of the same 
 
 PDF/A-2 does not allow it, as for the attachments: with `PdfA2B` or `PdfA2A` the original is not embedded and
 `Html.Diagnostics` reports a warning. Use `PdfA3B` or `PdfA3A` to archive the PDF with its original.
+
+## Outlook messages
+
+An Outlook `.msg` file is recognized by its content (a compound file), whatever its name, and converted like the email
+it stands for:
+
+- **Header fields:** sender (the "sent representing" name and SMTP address, else the sender's), To, Cc and Bcc
+  recipients, the submit (else delivery) time and the subject, Unicode or in the message's code page.
+- **Body:** the HTML body; else the HTML encapsulated in the compressed RTF body (`\fromhtml1`, as Outlook stores HTML
+  mail); else the plain text body. RTF that encapsulates no HTML gives its text (its formatting is not kept).
+- **Attachments:** files with their names, media types and content ids; images the HTML shows by `cid:` stand in
+  place and stay out of the list, as Outlook shows them; attached messages are read the same way, recursively, and are
+  embedded and appended as `.eml` files. With `EmbedOriginal`, the `.msg` itself is embedded.
 
 ## Web archives
 
@@ -106,5 +119,6 @@ gets no header block, unless `HeaderFields` names fields.
   except `file:` URLs, which a message never loads; the default loader loads nothing from the network, so remote
   images stay out unless you supply a loader that fetches them.
 
-Not supported: Outlook's `.msg` files and TNEF (`winmail.dat`) attachments (embedded as they are), S/MIME and PGP
+Not supported: TNEF (`winmail.dat`) attachments (embedded as they are), Outlook items other than messages (contacts,
+appointments: their message properties are shown), OLE objects attached to `.msg` files, S/MIME and PGP
 encrypted messages (their parts are attachments), and uuencoded content.

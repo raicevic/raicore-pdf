@@ -1,0 +1,10 @@
+From: Grace Hopper <grace@example.com>
+To: Alan Turing <alan@example.org>
+Date: Sat, 14 Mar 2026 09:26:53 +0000
+Subject: Body in compressed RTF
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+<html><body><p>Hello from <b>RTF</b> &amp; HTML.</p><p>Second paragraph.</p><=
+/body></html>

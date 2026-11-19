@@ -33,6 +33,12 @@ and versions follow [Semantic Versioning](https://semver.org/).
   files; the Orientation tag is applied, and the resolution sets the natural size. Fax data in several strips,
   floating-point samples and old-style JPEG are rejected with an `ImageFormatException` saying so. A new `tiff` fuzz
   target covers the decoder (#196).
+- **Outlook messages** (`RaiCore.Pdf.Email`): `EmailToPdf` also converts `.msg` files (recognized by content), like
+  the email they stand for: sender, recipients, date and subject from the message's properties ([MS-OXMSG]); the HTML
+  body, else the HTML encapsulated in the compressed RTF body ([MS-OXRTFCP], [MS-OXRTF]), else the plain text one;
+  attachments with images shown by `cid:` in place, and attached messages read recursively and embedded or appended as
+  `.eml`. `EmbedOriginal` embeds the `.msg` itself. They are read by a new internal Compound File Binary reader
+  ([MS-CFB], with property sets [MS-OLEPS]), hardened with `ResourceLimits` and the new `cfb` fuzz target (#199, #200).
 - **Email to PDF** (`RaiCore.Pdf.Email`, new package): `EmailToPdf.Convert` converts email messages (`.eml`) and web
   archives (`.mht`, `.mhtml`) through the HTML engine: a header block (from, to, cc, date, subject; fields and labels
   configurable, styleable with CSS), the HTML body (or the plain text one, wrapped, with `format=flowed` and links)

@@ -38,7 +38,8 @@ internal sealed class EmailConverter
         MimeEntity root;
         using (limits.Enforce(cancellationToken))
         {
-            root = MimeParser.Parse(data, limits);
+            // An Outlook message is written as the MIME message it stands for, and read like one.
+            root = MimeParser.Parse(Cfb.CompoundFile.IsCompoundFile(data) ? Msg.MsgToMime.Write(Msg.MsgMessage.Read(data, limits)) : data, limits);
         }
 
         return new EmailConverter(options, clock, cancellationToken, data).ConvertAsync(root);
@@ -131,7 +132,10 @@ internal sealed class EmailConverter
     /// </summary>
     private void EmbedOriginal(PdfDocument document, bool webArchive, string subject, IEnumerable<string> taken)
     {
-        var fileName = EmailAttachment.OriginalFileName(subject, webArchive, taken);
+        var (extension, mediaType, description) = Cfb.CompoundFile.IsCompoundFile(_original) ? (".msg", "application/vnd.ms-outlook", "Original message")
+            : webArchive ? (".mht", "multipart/related", "Original web archive")
+            : (".eml", "message/rfc822", "Original message");
+        var fileName = EmailAttachment.OriginalFileName(subject, extension, taken);
         if (document.PdfAConformance is PdfAConformance.PdfA2B or PdfAConformance.PdfA2A)
         {
             Report(HtmlDiagnosticKind.ResourceNotLoaded, HtmlDiagnosticSeverity.Warning, fileName,
@@ -139,9 +143,9 @@ internal sealed class EmailConverter
             return;
         }
 
-        document.Attachments.Add(new PdfAttachment(fileName, _original, webArchive ? "multipart/related" : "message/rfc822")
+        document.Attachments.Add(new PdfAttachment(fileName, _original, mediaType)
         {
-            Description = webArchive ? "Original web archive" : "Original message",
+            Description = description,
             Relationship = PdfAttachmentRelationship.Source,
         });
     }

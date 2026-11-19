@@ -19,7 +19,7 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | ✅ 1.0 |
 | `RaiCore.Pdf.Extraction` | Read existing PDFs: text by page in reading order, text search with positions, images with their placement and data | 🚧 Unreleased |
 | `RaiCore.Pdf.Editing` | Edit existing PDFs: delete, insert, move and rotate pages, save repeatedly | 🚧 Unreleased |
-| `RaiCore.Pdf.Email` | Email (.eml) and web archives (.mht) → PDF: header block, inline images, attachments embedded or appended | 🚧 Unreleased |
+| `RaiCore.Pdf.Email` | Email (.eml, Outlook .msg) and web archives (.mht) → PDF: header block, inline images, attachments embedded or appended | 🚧 Unreleased |
 | `RaiCore.Pdf.Sheets` | CSV → PDF: paginated tables with repeated header rows, columns fitted to the page, numbers right-aligned | 🚧 Unreleased |
 | `RaiCore.Pdf.Docx`, `.Xlsx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ After 1.0 |
 
@@ -631,7 +631,8 @@ editor.Pages.Add(PdfReader.Open("appendix.pdf"));
 editor.Save("contract-edited.pdf");
 ```
 
-The `RaiCore.Pdf.Email` package converts email messages (`.eml`) and web archives (`.mht`) to PDF: a header block
+The `RaiCore.Pdf.Email` package converts email messages (`.eml`), Outlook messages (`.msg`) and web archives (`.mht`)
+to PDF: a header block
 (from, to, cc, date, subject), the HTML or plain text body with its inline images in place, and the attachments
 embedded, listed and, if you like, appended as pages (images, text, PDFs, HTML files and attached messages). See the
 [email guide](https://raicevic.github.io/raicore-pdf/guides/email.html).

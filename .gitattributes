@@ -6,3 +6,6 @@ tests/RaiCore.Pdf.Tests/Fixtures/Email/** -text
 
 # CSV fuzzing seeds are byte-exact too (line endings, UTF-16).
 tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Seeds/csv/** -text
+
+# Outlook message fixtures and their .eml twins are byte-exact.
+tests/RaiCore.Pdf.Tests/Fixtures/Msg/** -text
