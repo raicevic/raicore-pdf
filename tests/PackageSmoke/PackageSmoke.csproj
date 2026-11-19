@@ -19,6 +19,7 @@
     <PackageReference Include="RaiCore.Pdf.Editing" Version="$(RaiCoreVersion)" />
     <PackageReference Include="RaiCore.Pdf.Email" Version="$(RaiCoreVersion)" />
     <PackageReference Include="RaiCore.Pdf.Sheets" Version="$(RaiCoreVersion)" />
+    <PackageReference Include="RaiCore.Pdf.Slides" Version="$(RaiCoreVersion)" />
   </ItemGroup>
 
   <ItemGroup>

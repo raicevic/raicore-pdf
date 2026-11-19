@@ -14,8 +14,14 @@ tests/RaiCore.Pdf.Tests/Fixtures/Msg/** -text
 tests/RaiCore.Pdf.Tests/Fixtures/Sheets/*.xlsx -text
 tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Seeds/xlsx/** -text
 
+# Presentations are ZIP packages too.
+tests/RaiCore.Pdf.Tests/Fixtures/Slides/*.pptx -text
+tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Seeds/pptx/** -text
+tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Crashes/pptx/** -text
+
 # Apache POI sample files are byte-exact.
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.msg -text
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.doc -text
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.xls -text
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.ppt -text
+tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.pptx -text

@@ -6,6 +6,29 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **PPTX to PDF** (`RaiCore.Pdf.Slides`, new package): `PptxToPdf.Convert` converts PowerPoint presentations (`.pptx`,
+  `.pptm`, `.ppsx`, `.potx`, strict Office Open XML) with one page per slide at the slide's size. Each slide is drawn
+  with its master's and layout's shapes (unless hidden) and background (own, layout, master or theme background
+  style); placeholders inherit position, shape, fill and text styles from the layout and master (by index, then
+  type), text boxes use the presentation's default text style. Theme colors through the color map and its overrides
+  with their transforms (luminance, tint, shade, saturation, hue, alpha), theme fonts, and the style matrix of shapes
+  inserted with a style. More than 80 preset shapes with adjust values and free forms with guide formulas (other
+  presets as rectangles); solid, gradient (linear and radial), pattern (average color) and picture fills; lines with
+  dashes, caps, joins and arrowheads; rotation, flips and nested groups. Text frames with insets, anchoring, wrapping,
+  vertical text and autofit (the stored font scale and line spacing reduction, and further shrinking when the text
+  still overflows); paragraphs with alignment, indents, spacing, line spacing, character and symbol-font bullets and
+  automatic numbering; runs with font, size, bold, italic, underline, strikethrough, color, superscript, capitals,
+  character spacing and links. Pictures (cropped, clipped to their shape, translucent, with borders; the poster of
+  video and audio), tables (grid, rows growing to fit, merged cells, margins, fills, borders, the presentation's table
+  styles and PowerPoint's default Medium Style 2), SmartArt from its stored drawing and embedded objects from their
+  picture. Options: `Fonts`, `FallbackFontFamilies` (metric-compatible substitutes such as Carlito for Calibri are
+  tried first), `IncludeHiddenSlides`, `SlideNumbers`, `Title`, `Tagged` (sections per slide with headings,
+  paragraphs, tables and figures with alternative text), `Limits` and `Diagnostics` (the new `SlideDiagnostic`: charts,
+  EMF/WMF pictures, unknown presets and other content that is not drawn). Encrypted presentations and `.ppt` files
+  throw `NotSupportedException`; malformed packages the new `PresentationFormatException`. Parts are read with no
+  DTDs and nothing external, within `ResourceLimits` (`MaxDecompressedBytes` and `MaxElements` for all parts,
+  `MaxNestingDepth`, `MaxPages` for the slides, `MaxTableCells`, `Timeout`). The internal slide model is meant to be
+  shared with a future PowerPoint 97-2003 converter (#206). A new `pptx` fuzz target covers it (#69).
 - **PDF/A level A** (`PdfAConformance.PdfA2A` and `PdfA3A`): PDF/A-2a and PDF/A-3a, PDF/A-2b and -3b plus the logical
   structure. Choosing them tags the document (HTML and layout documents from their semantics), maps every glyph to
   Unicode in the fonts' ToUnicode maps, identifies the file as conformance A in XMP, and adds save-time checks that

@@ -7,6 +7,7 @@ using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Images;
 using RaiCore.Pdf.Layout.Text;
 using RaiCore.Pdf.Sheets;
+using RaiCore.Pdf.Slides;
 
 namespace RaiCore.Pdf.Tests.Fuzzing;
 
@@ -64,6 +65,7 @@ public static class FuzzTargets
         ["edit"] = Edit,
         ["cfb"] = Cfb,
         ["xlsx"] = Xlsx,
+        ["pptx"] = Pptx,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -84,7 +86,7 @@ public static class FuzzTargets
     /// <summary>Whether an exception is one a target may document for malformed or hostile input.</summary>
     public static bool IsExpected(Exception exception) => exception is ImageFormatException or FontFormatException
         or PdfFormatException or PdfPasswordException or ResourceLimitExceededException or OperationCanceledException or NotSupportedException
-        or SpreadsheetFormatException;
+        or SpreadsheetFormatException or PresentationFormatException;
 
     /// <summary>HTML conversion, with no resources loaded (data: URIs only).</summary>
     public static void Html(byte[] input) => Html(input, ModeOf(input));
@@ -329,6 +331,19 @@ public static class FuzzTargets
         },
         ShowSheetNames = input.Length % 2 == 0,
         AutoFit = input.Length % 5 == 0,
+    });
+
+    /// <summary>
+    /// A PPTX presentation: its package and parts read (presentation, slides, layouts, masters, themes, table styles,
+    /// SmartArt drawings, media), every slide drawn with its shapes, text, pictures and tables; every other input (by
+    /// length) with hidden slides too, every third one tagged.
+    /// </summary>
+    public static void Pptx(byte[] input) => PptxToPdf.ConvertToBytes(input, new PptxConverterOptions
+    {
+        Limits = Limits,
+        IncludeHiddenSlides = input.Length % 2 == 0,
+        Tagged = input.Length % 3 == 0,
+        Diagnostics = _ => { },
     });
 
     /// <summary>
