@@ -146,6 +146,17 @@ await using (var scope = services.CreateAsyncScope())
 var extracted = new TextExtractor(PdfReader.Open(HtmlToPdf.ConvertToBytes("<h1>Smoke test</h1><p>Text \uFB01nds its way back, \u05E9\u05DC\u05D5\u05DD.</p>"))).ExtractPage(0);
 Check($"text extraction: {extracted.Text.ReplaceLineEndings(" | ")}", extracted.Text == "Smoke test\n\nText finds its way back, \u05E9\u05DC\u05D5\u05DD.");
 
+// Search (plain text and a regular expression) and image extraction with PNG export, which trimming and AOT must keep.
+var searchSource = PdfReader.Open(HtmlToPdf.ConvertToBytes(
+    "<p>Invoice 1042 for {{customer}}</p><img style='width: 60pt' src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='>"));
+var searchFound = new TextExtractor(searchSource).Find("{{customer}}").Single();
+var searchNumber = new TextExtractor(searchSource).Find(new System.Text.RegularExpressions.Regex(@"Invoice \d+")).Single();
+var searchImages = new ImageExtractor(searchSource).ExtractPage(0).Images;
+var searchPng = searchImages.Count == 1 ? searchImages[0].GetData() : [];
+Check(
+    $"search and images: {searchFound.Text} at {searchFound.Bounds.X:0},{searchFound.Bounds.Y:0}; {searchNumber.Text}; {searchImages.Count} image, {searchPng.Length} bytes of {searchImages.FirstOrDefault()?.Format}",
+    searchFound.Bounds.Width > 0 && searchNumber.Text == "Invoice 1042" && searchImages.Count == 1 && searchPng.AsSpan().StartsWith((byte[])[0x89, (byte)'P', (byte)'N', (byte)'G']));
+
 // RaiCore.Pdf.Editing: delete, insert and move pages of a converted document, and save it twice.
 var editor = PdfEditor.Open(HtmlToPdf.ConvertToBytes("<p>One</p><p style='break-before: page'>Two</p>"));
 editor.Pages.Delete(0);

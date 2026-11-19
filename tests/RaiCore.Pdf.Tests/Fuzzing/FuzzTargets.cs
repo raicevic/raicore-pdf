@@ -153,8 +153,8 @@ public static class FuzzTargets
     }
 
     /// <summary>
-    /// Reading pages: every page's content run through the extraction interpreter (fonts, CMaps, forms, images), and
-    /// its text put together in each mode (lines, columns, bidi).
+    /// Reading pages: every page's content run through the extraction interpreter (fonts, CMaps, forms, images), its
+    /// text put together in each mode (lines, columns, bidi) and searched, and its images listed and exported.
     /// </summary>
     public static void Extract(byte[] input)
     {
@@ -169,7 +169,24 @@ public static class FuzzTargets
         {
             _ = new RaiCore.Pdf.Extraction.TextExtractor(reader, new RaiCore.Pdf.Extraction.TextExtractionOptions { Mode = mode }).ExtractText();
         }
+
+        // Search: plain text across whitespace and a regular expression, with rectangles mapped to user space.
+        var search = new RaiCore.Pdf.Extraction.TextExtractor(reader);
+        _ = search.Find("e a", ignoreCase: true).Count();
+        _ = search.Find(SearchPattern).Count();
+
+        // Images: every placement, and its data exported (decoded and converted to PNG or TIFF where it can be).
+        foreach (var page in new RaiCore.Pdf.Extraction.ImageExtractor(reader).ExtractPages())
+        {
+            foreach (var image in page.Images.Take(16))
+            {
+                _ = image.GetData();
+            }
+        }
     }
+
+    /// <summary>A pattern for the search part of <see cref="Extract"/>: non-backtracking, so its time is linear in the text.</summary>
+    private static readonly System.Text.RegularExpressions.Regex SearchPattern = new(@"\w+\s\d", System.Text.RegularExpressions.RegexOptions.NonBacktracking);
 
     /// <summary>
     /// An email message or web archive: parsed, read like a mail client and converted, with no resources loaded but the
