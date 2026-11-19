@@ -45,6 +45,19 @@ internal sealed class ObjectTable
 
     public PdfDictionary? Dictionary(PdfObject? obj) => Resolve(obj) as PdfDictionary;
 
+    /// <summary>A stream's decoded data, or nothing when its filters cannot be decoded.</summary>
+    public byte[] DecodeOrEmpty(PdfStreamObject stream)
+    {
+        try
+        {
+            return Filters.StreamDecoder.Decode(stream, Resolve);
+        }
+        catch (PdfFormatException)
+        {
+            return [];
+        }
+    }
+
     /// <summary>
     /// A copy of the table whose dictionaries and arrays are copies too, so that changing it leaves this one as it is.
     /// Stream data and immutable values (numbers, names, strings) are shared.

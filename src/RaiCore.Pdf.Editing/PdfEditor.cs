@@ -119,6 +119,22 @@ public sealed class PdfEditor
     public bool UseObjectStreams { get; set; }
 
     /// <summary>
+    /// Reads the document's interactive form as it is now: whether it has an AcroForm and XFA, and each field's name,
+    /// type, value, flags and widgets (with their page and rectangle on the current pages).
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var form = PdfEditor.Open("application.pdf").GetForm();
+    /// if (form.Xfa == PdfXfaKind.Dynamic) { /* the PDF pages are only a placeholder */ }
+    /// foreach (var field in form.Fields)
+    /// {
+    ///     Console.WriteLine($"{field.FullName} ({field.Type}) = {field.Value}");
+    /// }
+    /// </code>
+    /// </example>
+    public PdfForm GetForm() => FormReader.Read(_table, _table.Dictionary(_catalog)!, Pages.References);
+
+    /// <summary>
     /// Makes the document smaller without changing how it looks: removes resources (fonts, images, graphics states and
     /// the like) that the pages' content never uses, merges identical fonts, images and other streams into one object,
     /// and compresses streams that are not compressed (see <see cref="PdfOptimizationOptions"/>). The changes stay in the
