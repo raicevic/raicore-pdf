@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="RaiCore.Pdf.Tests" />
+    <InternalsVisibleTo Include="RaiCore.Pdf.Fuzz" />
   </ItemGroup>
 
 </Project>

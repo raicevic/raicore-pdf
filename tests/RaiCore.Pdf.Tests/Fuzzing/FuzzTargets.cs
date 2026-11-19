@@ -62,6 +62,7 @@ public static class FuzzTargets
         ["tiff"] = Tiff,
         ["csv"] = Csv,
         ["edit"] = Edit,
+        ["cfb"] = Cfb,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -264,6 +265,35 @@ public static class FuzzTargets
         AppendAttachments = input.Length % 2 == 0,
         Html = new HtmlConverterOptions { Limits = Limits, ResourceLoader = _ => null, Diagnostics = _ => { } },
     });
+
+    /// <summary>
+    /// A compound file (the container of .msg, .doc, .xls and .ppt): its header, FAT and directory read, every stream
+    /// read (at most 64 of them), and the property set streams (names starting with U+0005) parsed.
+    /// </summary>
+    public static void Cfb(byte[] input)
+    {
+        var file = RaiCore.Pdf.Email.Cfb.CompoundFile.Open(input, Limits);
+        var storages = new Stack<RaiCore.Pdf.Email.Cfb.CfbEntry>([file.Root]);
+        var read = 0;
+        while (storages.TryPop(out var storage) && read < 64)
+        {
+            foreach (var entry in storage.Children)
+            {
+                if (entry.Kind != RaiCore.Pdf.Email.Cfb.CfbEntryKind.Stream)
+                {
+                    storages.Push(entry);
+                }
+                else if (read++ < 64)
+                {
+                    var data = file.Read(entry);
+                    if (entry.Name.StartsWith('\u0005'))
+                    {
+                        _ = RaiCore.Pdf.Email.Cfb.PropertySetStream.Read(data);
+                    }
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// CSV data: decoded (encoding detected), split into records (delimiter detected), its cells classified, and laid

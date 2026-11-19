@@ -20,6 +20,7 @@ case "$target" in
   pdf) files=("$fixtures"/Reader/*.pdf "$fixtures"/Reader/Encrypted/*.pdf) ;;
   extract) files=("$fixtures"/Reader/*.pdf "$fixtures"/Extraction/*.pdf) ;;
   edit) files=("$fixtures"/Reader/*.pdf "$fixtures"/Forms/*.pdf "$fixtures"/Annotations/*.pdf "$fixtures"/Extraction/*.pdf) ;;
+  cfb) files=("$fixtures"/Cfb/*.cfb) ;;
   email) files=("$fixtures"/Email/*) ;;
   *) files=() ;;
 esac

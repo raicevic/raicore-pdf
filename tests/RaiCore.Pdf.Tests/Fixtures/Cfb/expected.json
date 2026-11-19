@@ -1,0 +1,125 @@
+{
+  "v3-basic.cfb": {
+    "author": "Ada Lovelace",
+    "created": "2022-06-18T04:26:40",
+    "fat_sectors": 1,
+    "streams": {
+      "\u0005DocumentSummaryInformation": {
+        "sha256": "9a8c56dde1cfd85d26d95a100ab04326fa069d0cd055890cc9c9ceb8d4a1a8d1",
+        "size": 220
+      },
+      "\u0005SummaryInformation": {
+        "sha256": "6d48bb90dc9b05a3252f577a722b09d659c1d45905bd2b4aa46a16d354cfee3f",
+        "size": 164
+      },
+      "Empty": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size": 0
+      },
+      "Exactly4096": {
+        "sha256": "2bdb60e2fb3c702ca3f3a842760c8b28148806a4ac40e8265cf34b45c4421f7b",
+        "size": 4096
+      },
+      "Large": {
+        "sha256": "8728658f2122c396dbcca85e183ff635bbce208d174a74ea4296c57e82c1e780",
+        "size": 10000
+      },
+      "Mini1": {
+        "sha256": "86983290a4074c49eb9f298de69b973b9c762fb2b343106c1ab8fbcf732e5ddd",
+        "size": 4000
+      },
+      "Mini2": {
+        "sha256": "23e9d5f0e5fa068354d5a4da13db76a2da4143b3121fae7b7fb04391f9e12bb9",
+        "size": 4000
+      },
+      "Mini3": {
+        "sha256": "8bdcca168604f9b277a4737cc1e86d46c4717bafc10a4ee9ded1a80e3a2e014c",
+        "size": 4000
+      },
+      "Small": {
+        "sha256": "f0d4de050c95dd66c6ac7120d8d8a27897678cb159e11987e2039ad55f2ad749",
+        "size": 100
+      },
+      "Sub/Deeper/Leaf": {
+        "sha256": "0edb9fcf9e5fccb0943ede872142a866faa10f1d78cf592149bdbeff87c969ff",
+        "size": 33
+      },
+      "Sub/Inner": {
+        "sha256": "b802c1bd018195d86c4f8251422427e1a6dfc3a3639bd8299d070b873ce2ea3a",
+        "size": 5000
+      }
+    },
+    "title": "R\u00e9sum\u00e9 of the quarter",
+    "version": 3
+  },
+  "v3-difat.cfb": {
+    "author": null,
+    "created": null,
+    "fat_sectors": 240,
+    "streams": {
+      "Data": {
+        "sha256": "f20b8006f76f21cc8a3bb6bcdac5b99a7b54b5c16b41068d6ad633f510b7db62",
+        "size": 6000
+      },
+      "Note": {
+        "sha256": "5c3d8fdffd20f84a74d66d1f2828d27b82169db8c24efad968eadf8f463be4db",
+        "size": 70
+      }
+    },
+    "title": null,
+    "version": 3
+  },
+  "v4-basic.cfb": {
+    "author": "Ada Lovelace",
+    "created": "2022-06-18T04:26:40",
+    "fat_sectors": 1,
+    "streams": {
+      "\u0005DocumentSummaryInformation": {
+        "sha256": "9a8c56dde1cfd85d26d95a100ab04326fa069d0cd055890cc9c9ceb8d4a1a8d1",
+        "size": 220
+      },
+      "\u0005SummaryInformation": {
+        "sha256": "6d48bb90dc9b05a3252f577a722b09d659c1d45905bd2b4aa46a16d354cfee3f",
+        "size": 164
+      },
+      "Empty": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size": 0
+      },
+      "Exactly4096": {
+        "sha256": "2bdb60e2fb3c702ca3f3a842760c8b28148806a4ac40e8265cf34b45c4421f7b",
+        "size": 4096
+      },
+      "Large": {
+        "sha256": "8728658f2122c396dbcca85e183ff635bbce208d174a74ea4296c57e82c1e780",
+        "size": 10000
+      },
+      "Mini1": {
+        "sha256": "86983290a4074c49eb9f298de69b973b9c762fb2b343106c1ab8fbcf732e5ddd",
+        "size": 4000
+      },
+      "Mini2": {
+        "sha256": "23e9d5f0e5fa068354d5a4da13db76a2da4143b3121fae7b7fb04391f9e12bb9",
+        "size": 4000
+      },
+      "Mini3": {
+        "sha256": "8bdcca168604f9b277a4737cc1e86d46c4717bafc10a4ee9ded1a80e3a2e014c",
+        "size": 4000
+      },
+      "Small": {
+        "sha256": "f0d4de050c95dd66c6ac7120d8d8a27897678cb159e11987e2039ad55f2ad749",
+        "size": 100
+      },
+      "Sub/Deeper/Leaf": {
+        "sha256": "0edb9fcf9e5fccb0943ede872142a866faa10f1d78cf592149bdbeff87c969ff",
+        "size": 33
+      },
+      "Sub/Inner": {
+        "sha256": "b802c1bd018195d86c4f8251422427e1a6dfc3a3639bd8299d070b873ce2ea3a",
+        "size": 5000
+      }
+    },
+    "title": "R\u00e9sum\u00e9 of the quarter",
+    "version": 4
+  }
+}
