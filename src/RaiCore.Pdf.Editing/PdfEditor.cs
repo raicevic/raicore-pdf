@@ -135,6 +135,27 @@ public sealed class PdfEditor
     public PdfForm GetForm() => FormReader.Read(_table, _table.Dictionary(_catalog)!, Pages.References);
 
     /// <summary>
+    /// Flattens the interactive form: draws each field's widgets into their pages as they look, then removes the widgets,
+    /// the fields and the form, so the values stay visible but can no longer be changed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A widget is drawn with its normal appearance (in its current state, for check boxes and radio buttons). Where it has
+    /// none, or the form asks viewers to make new ones (<c>/NeedAppearances</c>), an appearance is made: text fields
+    /// (single-line, multiline, comb, password, alignment, automatic size) and choice fields in the font and color of their
+    /// default appearance, measured with the standard font of the same family; check boxes and radio buttons with their
+    /// check character. Hidden widgets are removed without being drawn.
+    /// </para>
+    /// <para>
+    /// A static XFA form is removed with the form it comes with; a dynamic XFA form cannot be flattened, since its pages
+    /// are laid out by the viewer. Other annotations are not touched.
+    /// </para>
+    /// </remarks>
+    /// <returns>How many widgets were drawn (and how many of those with an appearance made for them) and removed.</returns>
+    /// <exception cref="NotSupportedException">The form is a dynamic XFA form.</exception>
+    public PdfFlattenResult FlattenForm() => new FormFlattener(_table, _table.Dictionary(_catalog)!, Pages.References).Flatten();
+
+    /// <summary>
     /// Makes the document smaller without changing how it looks: removes resources (fonts, images, graphics states and
     /// the like) that the pages' content never uses, merges identical fonts, images and other streams into one object,
     /// and compresses streams that are not compressed (see <see cref="PdfOptimizationOptions"/>). The changes stay in the

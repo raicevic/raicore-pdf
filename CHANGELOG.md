@@ -23,6 +23,11 @@ and versions follow [Semantic Versioning](https://semver.org/).
   ISO-2022-JP, Shift_JIS, GB18030, Big5 and EUC-KR, RFC 2047 encoded words and RFC 2231 parameters, malformed messages
   read leniently within `ResourceLimits`, and no local files loaded. See the
   [email guide](https://raicevic.github.io/raicore-pdf/guides/email.html) (#198).
+- **Form flattening** (`RaiCore.Pdf.Editing`): `PdfEditor.FlattenForm()` draws each widget's normal appearance (by
+  state, with its box and matrix) into the page content, makes appearances where there are none or the form sets
+  `/NeedAppearances` (text: single-line, multiline, comb, password, alignment, auto size; choice; check boxes and radio
+  buttons), and removes the widgets, the fields and the form; hidden widgets are not drawn, a static XFA form is
+  removed with the form, and a dynamic XFA form is refused (#191).
 - **Form reading** (`RaiCore.Pdf.Editing`): `PdfEditor.GetForm()` tells whether a document has an AcroForm and an XFA
   form (static or dynamic, by `/NeedsRendering`) and lists its fields: fully qualified name, type (text, check box,
   radio buttons, push button, list, combo, signature), values, choice options, read-only and required flags, and widgets

@@ -64,6 +64,10 @@ internal static class Pixels
     public static SKBitmap Render(byte[] pdf, int page, int dpi = 72) =>
         Conversion.ToImage(pdf, page: page, options: new RenderOptions(Dpi: dpi));
 
+    /// <summary>Renders a page with its annotations and form fields drawn, as a viewer shows them.</summary>
+    public static SKBitmap RenderWithAnnotations(byte[] pdf, int page, int dpi = 72, bool formFill = true) =>
+        Conversion.ToImage(pdf, page: page, options: new RenderOptions(Dpi: dpi, WithAnnotations: true, WithFormFill: formFill));
+
     /// <summary>How many pixels differ by more than <paramref name="tolerance"/> in any channel (the images must be the same size).</summary>
     public static int CountDifferences(SKBitmap a, SKBitmap b, int tolerance = 8)
     {
@@ -76,6 +80,49 @@ internal static class Pixels
                 var p = a.GetPixel(x, y);
                 var q = b.GetPixel(x, y);
                 if (Math.Abs(p.Red - q.Red) > tolerance || Math.Abs(p.Green - q.Green) > tolerance || Math.Abs(p.Blue - q.Blue) > tolerance)
+                {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    /// <summary>
+    /// How many pixels of <paramref name="a"/> have no near match in <paramref name="b"/>: a pixel matches when each
+    /// channel lies within the range of <paramref name="b"/>'s pixels at most one pixel away, widened by
+    /// <paramref name="tolerance"/>. Edges anti-aliased differently match; anything moved, missing or added does not.
+    /// </summary>
+    public static int CountDifferencesBeyondEdges(SKBitmap a, SKBitmap b, int tolerance = 8)
+    {
+        Assert.Equal((a.Width, a.Height), (b.Width, b.Height));
+        var count = 0;
+        for (var y = 0; y < a.Height; y++)
+        {
+            for (var x = 0; x < a.Width; x++)
+            {
+                var p = a.GetPixel(x, y);
+                int minR = 255, minG = 255, minB = 255, maxR = 0, maxG = 0, maxB = 0;
+                for (var dy = -1; dy <= 1; dy++)
+                {
+                    for (var dx = -1; dx <= 1; dx++)
+                    {
+                        var (nx, ny) = (x + dx, y + dy);
+                        if (nx < 0 || ny < 0 || nx >= b.Width || ny >= b.Height)
+                        {
+                            continue;
+                        }
+
+                        var q = b.GetPixel(nx, ny);
+                        (minR, maxR) = (Math.Min(minR, q.Red), Math.Max(maxR, q.Red));
+                        (minG, maxG) = (Math.Min(minG, q.Green), Math.Max(maxG, q.Green));
+                        (minB, maxB) = (Math.Min(minB, q.Blue), Math.Max(maxB, q.Blue));
+                    }
+                }
+
+                if (p.Red < minR - tolerance || p.Red > maxR + tolerance || p.Green < minG - tolerance || p.Green > maxG + tolerance
+                    || p.Blue < minB - tolerance || p.Blue > maxB + tolerance)
                 {
                     count++;
                 }
