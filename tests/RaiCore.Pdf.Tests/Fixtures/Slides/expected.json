@@ -1,0 +1,1383 @@
+{
+ "Poi/54542_cropped_bitmap.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": []
+   }
+  ],
+  "width": 720.0
+ },
+ "Poi/SmartArt.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": []
+   }
+  ],
+  "width": 960.0
+ },
+ "Poi/backgrounds.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 115.75,
+      "left": 54.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Solid Fill",
+      "top": 167.75,
+      "width": 612.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 138.0,
+      "left": 108.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Defined on the master slide:\nTan, darker 10%",
+      "top": 306.0,
+      "width": 504.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Gradient Fill",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 356.38,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Gradient stops",
+      "top": 126.0,
+      "width": 648.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Master Gradient Fill",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 356.38,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "hello",
+      "top": 126.0,
+      "width": 648.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Texture: papirus",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 159.95,
+      "left": 342.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Gradient Fill\nA\nA\nA\nA\nAa\na",
+      "top": 132.0,
+      "width": 204.0,
+      "wrap": true
+     }
+    ]
+   }
+  ],
+  "width": 720.0
+ },
+ "Poi/bar-chart.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "My Bar Chart",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     }
+    ]
+   }
+  ],
+  "width": 720.0
+ },
+ "Poi/bug58144-headers-footers-2007.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 115.75,
+      "left": 54.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Test file",
+      "top": 167.75,
+      "width": 612.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 138.0,
+      "left": 39.38,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Has some text in the headers and footers",
+      "top": 306.0,
+      "width": 646.87,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 28.75,
+      "left": 246.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Slide footer",
+      "top": 500.5,
+      "width": 228.0,
+      "wrap": null
+     }
+    ]
+   }
+  ],
+  "width": 720.0
+ },
+ "Poi/crop-to-0.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": []
+   },
+   {
+    "hidden": false,
+    "shapes": []
+   },
+   {
+    "hidden": false,
+    "shapes": []
+   }
+  ],
+  "width": 960.0
+ },
+ "Poi/layouts.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 115.75,
+      "left": 54.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Centered Title",
+      "top": 167.75,
+      "width": 612.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 138.0,
+      "left": 108.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "subtitle",
+      "top": 306.0,
+      "width": 504.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Title",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 356.38,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Content\nLevel 2\nLevel 3\nLevel 4\nLevel 5\nLevel 6\nLevel 7\nLevel 8\nLevel 9",
+      "top": 126.0,
+      "width": 648.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 107.25,
+      "left": 56.88,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Section Title",
+      "top": 347.0,
+      "width": 612.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 118.12,
+      "left": 56.88,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Section Header",
+      "top": 228.88,
+      "width": 612.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Title",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 356.38,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Left\nLevel 2\nLevel 3\nLevel 4\nLevel 5\nLevel 6",
+      "top": 126.0,
+      "width": 318.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 356.38,
+      "left": 366.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Right\nLevel 2\nLevel 3\nLevel 4\nLevel 5",
+      "top": 126.0,
+      "width": 318.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Title",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 50.37,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "file1",
+      "top": 120.88,
+      "width": 318.13,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 311.13,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Comparison1\nLevel 2\nLevel 3",
+      "top": 171.25,
+      "width": 318.13,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 50.37,
+      "left": 365.75,
+      "rotation": 0.0,
+      "table": false,
+      "text": "file2",
+      "top": 120.88,
+      "width": 318.25,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 311.13,
+      "left": 365.75,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Comparison2\nLevel 2\nLevel 3",
+      "top": 171.25,
+      "width": 318.25,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Title Only",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": null,
+      "left": null,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Blank with Default Title",
+      "top": null,
+      "width": null,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 29.08,
+      "left": 78.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Default Text",
+      "top": 228.0,
+      "width": 102.57,
+      "wrap": false
+     },
+     {
+      "grouped": false,
+      "height": 116.33,
+      "left": 288.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Default\nText with levels\nLevel 1\nLevel 2\nLevel 3",
+      "top": 234.0,
+      "width": 161.32,
+      "wrap": false
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 91.5,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Caption",
+      "top": 21.5,
+      "width": 236.88,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 460.88,
+      "left": 281.5,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Level 1\nLevel 2\nLevel 3\nLevel 4\nLevel 5",
+      "top": 21.5,
+      "width": 402.5,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 369.38,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Content with caption",
+      "top": 113.0,
+      "width": 236.88,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 44.63,
+      "left": 141.13,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Picture with Caption",
+      "top": 378.0,
+      "width": 432.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 63.37,
+      "left": 141.13,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Some text",
+      "top": 422.63,
+      "width": 432.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Headers & Footers",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 356.38,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "This slide has the following stuff:\nHeader\nDate/Time placeholder\nSlide Number\n",
+      "top": 126.0,
+      "width": 648.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 28.75,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Friday, October 21, 2011",
+      "top": 500.5,
+      "width": 168.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 28.75,
+      "left": 246.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Apache Software Foundation",
+      "top": 500.5,
+      "width": 228.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 28.75,
+      "left": 516.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "10",
+      "top": 500.5,
+      "width": 168.0,
+      "wrap": null
+     }
+    ]
+   }
+  ],
+  "width": 720.0
+ },
+ "Poi/missing-blip-fill.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": []
+   }
+  ],
+  "width": 960.0
+ },
+ "Poi/picture-transparency.pptx": {
+  "height": 446.5,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": []
+   },
+   {
+    "hidden": false,
+    "shapes": []
+   },
+   {
+    "hidden": false,
+    "shapes": []
+   },
+   {
+    "hidden": false,
+    "shapes": []
+   }
+  ],
+  "width": 793.75
+ },
+ "Poi/sample.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 115.75,
+      "left": 54.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Lorem ipsum dolor sit amet",
+      "top": 167.75,
+      "width": 612.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 138.0,
+      "left": 108.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Nunc at risus vel erat tempus posuere. Aenean non ante.\n",
+      "top": 306.0,
+      "width": 504.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Lorem ipsum dolor sit amet",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 356.38,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Lorem\nipsum\ndolor\nsit\namet\n",
+      "top": 126.0,
+      "width": 648.0,
+      "wrap": null
+     }
+    ]
+   }
+  ],
+  "width": 720.0
+ },
+ "Poi/shapes.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 29.08,
+      "left": 72.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Learning PPTX",
+      "top": 72.0,
+      "width": 180.0,
+      "wrap": true
+     },
+     {
+      "grouped": false,
+      "height": 136.48,
+      "left": 46.93,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Cloud",
+      "top": 210.63,
+      "width": 185.35,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 96.0,
+      "left": 300.0,
+      "rotation": 0.0,
+      "table": true,
+      "text": "Column1\nColumn2\nColumn3\ndata1\ndata2\ndata3",
+      "top": 372.0,
+      "width": 372.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 115.75,
+      "left": 54.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "PPTX Title",
+      "top": 167.75,
+      "width": 612.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 138.0,
+      "left": 108.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Subtitle\nAnd second line",
+      "top": 306.0,
+      "width": 504.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": []
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 175.2,
+      "left": 120.0,
+      "rotation": 0.0,
+      "table": true,
+      "text": "header1\nheader2\nheader3\nA1\nB1\nC1\nA2\n\n\nA3\nB3 and C3 are merged\n\nA4\n\n\nA5\n\n",
+      "top": 110.0,
+      "width": 480.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 146.0,
+      "left": 54.0,
+      "rotation": 0.0,
+      "table": true,
+      "text": "Link Type\nTarget URI\nWeb Page\nhttp://poi.apache.org/\nPlace in this document\n/ppt/slides/slide2.xml\nEmail\nmailto:dev@poi.apache.org?subject=Hi%20There\n\n",
+      "top": 168.0,
+      "width": 618.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Hyperlinks",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": []
+   }
+  ],
+  "width": 720.0
+ },
+ "Poi/table_test.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": []
+   }
+  ],
+  "width": 960.0
+ },
+ "Poi/themes.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 115.75,
+      "left": 54.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Standard Office theme",
+      "top": 167.75,
+      "width": 612.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 138.0,
+      "left": 108.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "No subtitle",
+      "top": 306.0,
+      "width": 504.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 102.0,
+      "left": 114.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Fill: RGB(79,129,189)\nText: white",
+      "top": 60.0,
+      "width": 228.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Office theme again",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 356.38,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "With a solid fill defined in the slide layout",
+      "top": 126.0,
+      "width": 648.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Radial Gradient Fill On Slide Layout",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 82.16,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Austin Theme",
+      "top": 80.92,
+      "width": 553.13,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 138.0,
+      "left": 366.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Text in a autoshape is white\nFill: RGB(148, 198,0)",
+      "top": 306.0,
+      "width": 234.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 82.16,
+      "rotation": 0.0,
+      "table": false,
+      "text": "This slide overrides master background with a texture fill",
+      "top": 80.92,
+      "width": 553.13,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 134.03,
+      "left": 372.71,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Title slide",
+      "top": 213.27,
+      "width": 260.89,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 99.26,
+      "left": 372.71,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Slide layout turns off graphics from the master slide",
+      "top": 348.12,
+      "width": 260.61,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 134.03,
+      "left": 372.71,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Overridden background",
+      "top": 213.27,
+      "width": 260.89,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 99.26,
+      "left": 372.71,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Slide background overrides slide master.\nAlso, background graphics is suppressed.",
+      "top": 348.12,
+      "width": 260.61,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 96.25,
+      "left": 30.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Treck theme is sandy",
+      "top": 382.16,
+      "width": 666.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 72.0,
+      "left": 30.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Text in the title is capitalized (in fact it is lower-case)",
+      "top": 306.0,
+      "width": 666.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 96.0,
+      "left": 30.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Darker background",
+      "top": 132.0,
+      "width": 666.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 93.29,
+      "left": 14.21,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Section header in the treck theme",
+      "top": 232.05,
+      "width": 684.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 177.29,
+      "left": 84.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Trade show ",
+      "top": 110.71,
+      "width": 486.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 88.45,
+      "left": 84.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "White text on a blue background",
+      "top": 307.55,
+      "width": 486.0,
+      "wrap": null
+     }
+    ]
+   }
+  ],
+  "width": 720.0
+ },
+ "Slides/basic.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 115.75,
+      "left": 54.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Quarterly Review",
+      "top": 167.75,
+      "width": 612.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 138.0,
+      "left": 108.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Converted with RaiCore",
+      "top": 306.0,
+      "width": 504.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Agenda",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 356.38,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "First level point\nSecond level detail\nThird level note\nBack to the first level\nBold words and a link",
+      "top": 126.0,
+      "width": 648.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 86.4,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Red box",
+      "top": 36.0,
+      "width": 144.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 86.4,
+      "left": 216.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Oval",
+      "top": 36.0,
+      "width": 144.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 86.4,
+      "left": 432.0,
+      "rotation": 30.0,
+      "table": false,
+      "text": "Turned",
+      "top": 36.0,
+      "width": 180.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 72.0,
+      "left": 180.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Next",
+      "top": 194.4,
+      "width": 180.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 108.0,
+      "left": 525.6,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Dashed",
+      "top": 180.0,
+      "width": 144.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 72.0,
+      "left": 360.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "A plain text box",
+      "top": 360.0,
+      "width": 288.0,
+      "wrap": false
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Pictures",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Results",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 172.8,
+      "left": 72.0,
+      "rotation": 0.0,
+      "table": true,
+      "text": "Region\nQ3\nQ4\nNorth and South\n120\n135\n\n98\n110\nTotal\n218\n245",
+      "top": 144.0,
+      "width": 576.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": true,
+      "height": 72.0,
+      "left": 72.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Grouped A",
+      "top": 72.0,
+      "width": 144.0,
+      "wrap": null
+     },
+     {
+      "grouped": true,
+      "height": 72.0,
+      "left": 252.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Grouped B",
+      "top": 72.0,
+      "width": 144.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 144.0,
+      "left": 432.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Flipped",
+      "top": 72.0,
+      "width": 144.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": true,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Hidden slide",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     }
+    ]
+   },
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 144.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Bottom right",
+      "top": 36.0,
+      "width": 288.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 144.0,
+      "left": 360.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Plan\nBuild\nShip",
+      "top": 36.0,
+      "width": 288.0,
+      "wrap": false
+     },
+     {
+      "grouped": false,
+      "height": 72.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "This text is far too long for its small box, so it shrinks to fit inside the frame.",
+      "top": 216.0,
+      "width": 216.0,
+      "wrap": true
+     },
+     {
+      "grouped": false,
+      "height": 144.0,
+      "left": 360.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Gradient",
+      "top": 216.0,
+      "width": 288.0,
+      "wrap": null
+     }
+    ]
+   }
+  ],
+  "width": 720.0
+ },
+ "Slides/widescreen.pptx": {
+  "height": 540.0,
+  "slides": [
+   {
+    "hidden": false,
+    "shapes": [
+     {
+      "grouped": false,
+      "height": 90.0,
+      "left": 36.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Wide slide",
+      "top": 21.63,
+      "width": 648.0,
+      "wrap": null
+     },
+     {
+      "grouped": false,
+      "height": 43.2,
+      "left": 792.0,
+      "rotation": 0.0,
+      "table": false,
+      "text": "Slide 9",
+      "top": 468.0,
+      "width": 144.0,
+      "wrap": false
+     }
+    ]
+   }
+  ],
+  "width": 959.98
+ }
+}

@@ -10,6 +10,7 @@ using RaiCore.Pdf;
 using RaiCore.Pdf.Editing;
 using RaiCore.Pdf.Email;
 using RaiCore.Pdf.Sheets;
+using RaiCore.Pdf.Slides;
 using RaiCore.Pdf.Extraction;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html;
@@ -236,6 +237,41 @@ var xlsxPdf = XlsxToPdf.Convert(xlsxBuffer.ToArray());
 var xlsxPages = new TextExtractor(PdfReader.Open(xlsxPdf.ToArray())).ExtractPages().Select(p => p.Text).ToList();
 Check($"xlsx: {xlsxPages.Count} pages, {xlsxPages[^1].Split('\n').Last()}", xlsxPages.Count > 1
     && xlsxPages.All(p => p.StartsWith("Caf\u00E9 header", StringComparison.Ordinal)) && xlsxPages[^1].Contains("121,060.50 2026-11-19", StringComparison.Ordinal));
+
+// RaiCore.Pdf.Slides: a PPTX presentation (built here as a ZIP package) of two slides, one hidden, with a theme color, a
+// rotated shape and an accented title; the hidden slide is left out.
+const string PptxA = "http://schemas.openxmlformats.org/drawingml/2006/main";
+const string PptxP = "http://schemas.openxmlformats.org/presentationml/2006/main";
+const string PptxR = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+static string PptxSlide(string text, string attributes) =>
+    $"<p:sld xmlns:a=\"{PptxA}\" xmlns:p=\"{PptxP}\" {attributes}><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id=\"2\" name=\"T\"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>"
+    + "<p:spPr><a:xfrm rot=\"1800000\"><a:off x=\"914400\" y=\"914400\"/><a:ext cx=\"4572000\" cy=\"914400\"/></a:xfrm><a:prstGeom prst=\"roundRect\"/>"
+    + "<a:solidFill><a:schemeClr val=\"accent1\"><a:lumMod val=\"75000\"/></a:schemeClr></a:solidFill></p:spPr>"
+    + $"<p:txBody><a:bodyPr anchor=\"ctr\"/><a:p><a:r><a:rPr sz=\"2800\"/><a:t>{text}</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>";
+var pptxParts = new Dictionary<string, string>
+{
+    ["_rels/.rels"] = $"<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"r1\" Type=\"{PptxR}/officeDocument\" Target=\"ppt/presentation.xml\"/></Relationships>",
+    ["ppt/presentation.xml"] = $"<p:presentation xmlns:p=\"{PptxP}\" xmlns:r=\"{PptxR}\"><p:sldIdLst><p:sldId id=\"256\" r:id=\"r1\"/><p:sldId id=\"257\" r:id=\"r2\"/></p:sldIdLst><p:sldSz cx=\"12192000\" cy=\"6858000\"/></p:presentation>",
+    ["ppt/_rels/presentation.xml.rels"] = $"<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"r1\" Type=\"{PptxR}/slide\" Target=\"slides/slide1.xml\"/><Relationship Id=\"r2\" Type=\"{PptxR}/slide\" Target=\"slides/slide2.xml\"/></Relationships>",
+    ["ppt/slides/slide1.xml"] = PptxSlide("Caf\u00E9 slide", string.Empty),
+    ["ppt/slides/slide2.xml"] = PptxSlide("Hidden", "show=\"0\""),
+};
+using var pptxBuffer = new MemoryStream();
+using (var pptxZip = new System.IO.Compression.ZipArchive(pptxBuffer, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+{
+    foreach (var (name, xml) in pptxParts)
+    {
+        using var writer = new StreamWriter(pptxZip.CreateEntry(name).Open());
+        writer.Write(xml);
+    }
+}
+
+var pptxPdf = PptxToPdf.Convert(pptxBuffer.ToArray(), new PptxConverterOptions { Tagged = true });
+pptxPdf.Save(Path.Combine(output, "slides.pdf"));
+var pptxReader = PdfReader.Open(pptxPdf.ToArray());
+var pptxText = new TextExtractor(pptxReader).ExtractText();
+Check($"pptx: {pptxReader.Pages.Count} page {pptxReader.Pages[0].MediaBox.Width}x{pptxReader.Pages[0].MediaBox.Height}, {pptxText.Trim()}", pptxReader.Pages.Count == 1
+    && Math.Abs(pptxReader.Pages[0].MediaBox.Width - 960) < 0.01 && pptxText.Contains("Caf\u00E9 slide", StringComparison.Ordinal) && pptxPdf.Tagged);
 
 Console.WriteLine(failures == 0 ? $"Package smoke test passed. PDFs in {output}" : $"Package smoke test FAILED ({failures} checks).");
 return failures == 0 ? 0 : 1;

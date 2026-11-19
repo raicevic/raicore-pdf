@@ -28,5 +28,7 @@
   href: email.md
 - name: CSV and XLSX to PDF
   href: sheets.md
+- name: PPTX to PDF
+  href: slides.md
 - name: Experimental APIs
   href: ../experimental.md

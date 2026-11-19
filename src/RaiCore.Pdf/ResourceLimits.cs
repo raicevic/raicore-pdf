@@ -44,11 +44,15 @@ public sealed record ResourceLimits
     /// The deepest nesting of HTML elements; blocks laid out with <c>FlowDocument</c> may nest twice as deep (an
     /// inline-block is a box in an anonymous paragraph). Defaults to 256. Independently of it, layout stops with this
     /// limit's exception rather than overflowing the stack when the thread's stack runs low. (SVG images have fixed
-    /// limits of their own: 256 levels of elements, 48 of them drawn.)
+    /// limits of their own: 256 levels of elements, 48 of them drawn.) For a PPTX presentation
+    /// (<c>RaiCore.Pdf.Slides</c>), the nesting of its XML, and so of its groups.
     /// </summary>
     public int MaxNestingDepth { get; init; } = 256;
 
-    /// <summary>The most elements an HTML document may have. Defaults to 1,000,000.</summary>
+    /// <summary>
+    /// The most elements an HTML document may have, and the XML elements of all the parts of a PPTX presentation together
+    /// (<c>RaiCore.Pdf.Slides</c>). Defaults to 1,000,000.
+    /// </summary>
     public int MaxElements { get; init; } = 1_000_000;
 
     /// <summary>
@@ -70,8 +74,8 @@ public sealed record ResourceLimits
     public long MaxFontBytes { get; init; } = 64L * 1024 * 1024;
 
     /// <summary>
-    /// The most bytes one compressed PDF stream may decode to, and all the parts of an XLSX workbook together
-    /// (<c>RaiCore.Pdf.Sheets</c>). Defaults to 256 MB.
+    /// The most bytes one compressed PDF stream may decode to, and all the parts of an XLSX workbook or PPTX
+    /// presentation together (<c>RaiCore.Pdf.Sheets</c>, <c>RaiCore.Pdf.Slides</c>). Defaults to 256 MB.
     /// </summary>
     public long MaxDecompressedBytes { get; init; } = 256L * 1024 * 1024;
 

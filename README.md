@@ -21,7 +21,8 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf.Editing` | Edit existing PDFs: delete, insert, move and rotate pages, save repeatedly | 🚧 Unreleased |
 | `RaiCore.Pdf.Email` | Email (.eml, Outlook .msg) and web archives (.mht) → PDF: header block, inline images, attachments embedded or appended | 🚧 Unreleased |
 | `RaiCore.Pdf.Sheets` | CSV and Excel (.xlsx) → PDF: paginated tables with repeated header rows, number formats, styles, merged cells, print areas | 🚧 Unreleased |
-| `RaiCore.Pdf.Docx`, `.Pptx`, `.XslFo` | Office and XML formats → PDF | ⚪ After 1.0 |
+| `RaiCore.Pdf.Slides` | PowerPoint (.pptx) → PDF: one page per slide with masters, layouts, themes, shapes, text, pictures, tables | 🚧 Unreleased |
+| `RaiCore.Pdf.Docx`, `.XslFo` | Office and XML formats → PDF | ⚪ After 1.0 |
 
 All packages target .NET 10 and run on Windows, Linux (glibc and musl, so Alpine too) and macOS, x64 and Arm64, with
 no native dependencies beyond HarfBuzz, which ships in the packages. Apps using them can be trimmed and published with
@@ -657,6 +658,17 @@ var report = XlsxToPdf.Convert("report.xlsx", new XlsxConverterOptions { SheetNa
 report.Save("report.pdf");
 ```
 
+The `RaiCore.Pdf.Slides` package converts PowerPoint presentations (`.pptx`) to PDF, one page per slide at the slide's
+size: the master's and layout's shapes and backgrounds, placeholders with their inherited positions and text styles,
+theme colors and fonts, preset and free-form shapes with gradient and picture fills, lines and arrowheads, text with
+bullets, numbering and autofit, cropped pictures, tables with their styles, groups and SmartArt drawings. See the
+[PPTX guide](https://raicevic.github.io/raicore-pdf/guides/slides.html).
+
+```csharp
+var deck = PptxToPdf.Convert("deck.pptx", new PptxConverterOptions { Tagged = true });
+deck.Save("deck.pdf");
+```
+
 ### Fonts
 
 Any TrueType or OpenType font (`.ttf`, `.otf`, `.ttc`, `.woff`, `.woff2`) can be embedded. Only the glyphs you use
@@ -895,7 +907,7 @@ The way there and what comes next are tracked in [GitHub milestones](https://git
 5. **0.5 Hardening:** visual comparison with browsers, fuzzing, resource limits, performance, deployment targets.
 6. **Done, 1.0:** API review and freeze, documentation, the release.
 7. **1.x Reading, editing and conversions:** text extraction, text search, image extraction and page editing (done), forms,
-   PDF/A level A, TIFF, email, CSV, XLSX and Office formats to PDF.
+   PDF/A level A, TIFF, email, CSV, XLSX, PPTX and Office formats to PDF.
 8. **After 1.0:** XSL-FO, grid layout, multi-column layout, digital signatures.
 
 The 0.x milestones are internal stages, not releases.
