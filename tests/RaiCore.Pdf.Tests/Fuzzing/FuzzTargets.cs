@@ -68,6 +68,7 @@ public static class FuzzTargets
         ["xlsx"] = Xlsx,
         ["pptx"] = Pptx,
         ["docx"] = Docx,
+        ["odt"] = Odt,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -349,8 +350,8 @@ public static class FuzzTargets
     });
 
     /// <summary>
-    /// The PNG with the CRC of every chunk corrected, so that mutated data gets past the CRC check to the decoder
-    /// (random changes would almost always be rejected there).
+    /// A Word document: its package and parts read (document, styles, numbering, settings, theme, headers, footers,
+    /// notes, media) and laid out; every third one (by length) tagged, every other one without heading bookmarks.
     /// </summary>
     public static void Docx(byte[] input) => DocxToPdf.ConvertToBytes(input, new DocxConverterOptions
     {
@@ -360,6 +361,22 @@ public static class FuzzTargets
         Diagnostics = _ => { },
     });
 
+    /// <summary>
+    /// An OpenDocument text document: its package (or flat XML document) and parts read (content, styles, meta,
+    /// settings, pictures) and laid out; every third one (by length) tagged, every other one without heading bookmarks.
+    /// </summary>
+    public static void Odt(byte[] input) => OdtToPdf.ConvertToBytes(input, new OdtConverterOptions
+    {
+        Limits = Limits,
+        Tagged = input.Length % 3 == 0,
+        HeadingBookmarks = input.Length % 2 == 0,
+        Diagnostics = _ => { },
+    });
+
+    /// <summary>
+    /// The PNG with the CRC of every chunk corrected, so that mutated data gets past the CRC check to the decoder
+    /// (random changes would almost always be rejected there).
+    /// </summary>
     public static byte[] WithValidPngCrcs(byte[] input)
     {
         var data = (byte[])input.Clone();

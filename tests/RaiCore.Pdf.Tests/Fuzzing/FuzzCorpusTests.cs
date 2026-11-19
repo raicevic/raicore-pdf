@@ -150,7 +150,7 @@ public class FuzzCorpusTests
     [Fact]
     public void Every_target_has_seeds()
     {
-        foreach (var target in new[] { "html", "css", "woff", "woff2", "xlsx", "pptx", "docx" })
+        foreach (var target in new[] { "html", "css", "woff", "woff2", "xlsx", "pptx", "docx", "odt" })
         {
             Assert.NotEmpty(Directory.GetFiles(Fixtures.Path(Path.Combine("Fuzz", "Seeds", target))));
         }

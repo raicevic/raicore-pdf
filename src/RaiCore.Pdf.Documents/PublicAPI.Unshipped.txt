@@ -35,6 +35,9 @@ RaiCore.Pdf.Documents.DocumentDiagnosticKind.UnsupportedContent = 0 -> RaiCore.P
 RaiCore.Pdf.Documents.DocxConverterOptions
 RaiCore.Pdf.Documents.DocxConverterOptions.DocxConverterOptions() -> void
 RaiCore.Pdf.Documents.DocxToPdf
+RaiCore.Pdf.Documents.OdtConverterOptions
+RaiCore.Pdf.Documents.OdtConverterOptions.OdtConverterOptions() -> void
+RaiCore.Pdf.Documents.OdtToPdf
 static RaiCore.Pdf.Documents.DocumentDiagnostic.operator !=(RaiCore.Pdf.Documents.DocumentDiagnostic? left, RaiCore.Pdf.Documents.DocumentDiagnostic? right) -> bool
 static RaiCore.Pdf.Documents.DocumentDiagnostic.operator ==(RaiCore.Pdf.Documents.DocumentDiagnostic? left, RaiCore.Pdf.Documents.DocumentDiagnostic? right) -> bool
 static RaiCore.Pdf.Documents.DocxToPdf.Convert(byte[]! docx, RaiCore.Pdf.Documents.DocxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
@@ -44,3 +47,10 @@ static RaiCore.Pdf.Documents.DocxToPdf.ConvertAsync(byte[]! docx, RaiCore.Pdf.Do
 static RaiCore.Pdf.Documents.DocxToPdf.ConvertAsync(System.IO.Stream! docx, RaiCore.Pdf.Documents.DocxConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
 static RaiCore.Pdf.Documents.DocxToPdf.ConvertToBytes(byte[]! docx, RaiCore.Pdf.Documents.DocxConverterOptions? options = null) -> byte[]!
 static RaiCore.Pdf.Documents.DocxToPdf.ConvertToBytes(System.IO.Stream! docx, RaiCore.Pdf.Documents.DocxConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Documents.OdtToPdf.Convert(byte[]! odt, RaiCore.Pdf.Documents.OdtConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Documents.OdtToPdf.Convert(string! path, RaiCore.Pdf.Documents.OdtConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Documents.OdtToPdf.Convert(System.IO.Stream! odt, RaiCore.Pdf.Documents.OdtConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Documents.OdtToPdf.ConvertAsync(byte[]! odt, RaiCore.Pdf.Documents.OdtConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Documents.OdtToPdf.ConvertAsync(System.IO.Stream! odt, RaiCore.Pdf.Documents.OdtConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Documents.OdtToPdf.ConvertToBytes(byte[]! odt, RaiCore.Pdf.Documents.OdtConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Documents.OdtToPdf.ConvertToBytes(System.IO.Stream! odt, RaiCore.Pdf.Documents.OdtConverterOptions? options = null) -> byte[]!

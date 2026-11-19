@@ -22,6 +22,17 @@ tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Crashes/pptx/** -text
 tests/RaiCore.Pdf.Tests/Fixtures/Documents/*.docx -text
 tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Seeds/docx/** -text
 
+# OpenDocument text: ZIP packages, and flat XML documents kept byte-exact.
+tests/RaiCore.Pdf.Tests/Fixtures/Documents/Odt/*.odt -text
+tests/RaiCore.Pdf.Tests/Fixtures/Documents/Odt/*.ott -text
+tests/RaiCore.Pdf.Tests/Fixtures/Documents/Odt/*.fodt -text
+tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Seeds/odt/** -text
+tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Crashes/odt/** -text
+
+# Apache Tika sample files are byte-exact.
+tests/RaiCore.Pdf.Tests/Fixtures/Tika/*.odt -text
+tests/RaiCore.Pdf.Tests/Fixtures/Tika/*.fodt -text
+
 # Apache POI sample files are byte-exact.
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.msg -text
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.doc -text

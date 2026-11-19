@@ -22,7 +22,7 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf.Email` | Email (.eml, Outlook .msg) and web archives (.mht) → PDF: header block, inline images, attachments embedded or appended | 🚧 Unreleased |
 | `RaiCore.Pdf.Sheets` | CSV and Excel (.xlsx) → PDF: paginated tables with repeated header rows, number formats, styles, merged cells, print areas | 🚧 Unreleased |
 | `RaiCore.Pdf.Slides` | PowerPoint (.pptx) → PDF: one page per slide with masters, layouts, themes, shapes, text, pictures, tables | 🚧 Unreleased |
-| `RaiCore.Pdf.Documents` | Word (.docx) → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | 🚧 Unreleased |
+| `RaiCore.Pdf.Documents` | Word (.docx) and OpenDocument text (.odt) → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | 🚧 Unreleased |
 | `RaiCore.Pdf.XslFo` | XSL-FO → PDF | ⚪ After 1.0 |
 
 All packages target .NET 10 and run on Windows, Linux (glibc and musl, so Alpine too) and macOS, x64 and Arm64, with
@@ -674,11 +674,14 @@ The `RaiCore.Pdf.Documents` package converts Word documents (`.docx`) to PDF: pa
 multi-level numbered and bulleted lists, tab stops, tables with merged cells and header rows repeated on every page,
 sections with their own page size and orientation, headers and footers for first, even and odd pages with page numbers,
 images (inline or floating), hyperlinks, bookmarks, footnotes and endnotes, and a table of contents with the PDF's page
-numbers. Headings become PDF bookmarks. See the [Word documents guide](https://raicevic.github.io/raicore-pdf/guides/documents.html).
+numbers. Headings become PDF bookmarks. It converts OpenDocument text documents (`.odt`, `.ott` and flat `.fodt`, as
+LibreOffice writes them) the same way: styles, lists, tables, page styles with their headers and footers, images and
+notes. See the [Word documents guide](https://raicevic.github.io/raicore-pdf/guides/documents.html).
 
 ```csharp
 var pdf = DocxToPdf.Convert("letter.docx", new DocxConverterOptions { Tagged = true });
 pdf.Save("letter.pdf");
+OdtToPdf.Convert("report.odt").Save("report.pdf");
 ```
 
 ### Fonts
@@ -897,9 +900,9 @@ can be an ASP.NET Core response body; while the stream is slow, the conversion w
 ## Architecture
 
 ```
- DOCX / XLSX / PPTX ─┐
- HTML + CSS / Razor ─┼─► Document model ─► Layout engine ─► PDF writer
- XML (XSL-FO)       ─┘
+ DOCX / ODT / XLSX / PPTX ─┐
+ HTML + CSS / Razor       ─┼─► Document model ─► Layout engine ─► PDF writer
+ XML (XSL-FO)             ─┘
 ```
 
 Every input format is mapped to one shared document model and laid out by one engine, so improvements to fonts, tables and pagination benefit all formats.

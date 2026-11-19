@@ -32,6 +32,9 @@ internal sealed class WordDocument
     /// <summary>The document's title (its properties), or <c>null</c>.</summary>
     public string? Title { get; set; }
 
+    /// <summary>The document's author (its properties), or <c>null</c>.</summary>
+    public string? Author { get; set; }
+
     /// <summary>The document's language (a BCP 47 tag such as <c>en-US</c>), or <c>null</c>.</summary>
     public string? Language { get; set; }
 }

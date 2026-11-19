@@ -6,6 +6,29 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **ODT to PDF** (`RaiCore.Pdf.Documents`): `OdtToPdf.Convert` converts OpenDocument text documents (`.odt`, `.ott`
+  templates and flat `.fodt` XML documents, ODF 1.0 to 1.3) with the shared word-processing model and renderer of
+  DOCX. Common, automatic and default styles with `style:parent-style-name` chains and font face declarations;
+  paragraph properties (margins, indents, alignment, proportional, fixed and at-least line height and leading,
+  borders, background, keep with next, keep together, page breaks before and after, widows and orphans, tab stops with
+  leaders, relative to the indent unless the settings say otherwise) and text properties (fonts, sizes, bold, italic,
+  underline styles, strikethrough, colors, backgrounds, superscript, subscript, raised text, small capitals, upper,
+  lower and capitalized text, letter spacing, hidden text); headings with outline levels and outline numbering; lists
+  with list styles (number formats, prefix, suffix, displayed levels, start values, bullets), nesting, continued
+  numbering (`text:continue-numbering`, `text:continue-list`), item start values, list headers and both indent modes;
+  tables (column widths, absolute or relative, repeated columns, header rows repeated on every page, column and row
+  spans, borders, padding, backgrounds, vertical alignment, row heights, nested tables, repeated rows and cells);
+  sections, tables of contents and other indexes as their content; master pages with their page layout (size,
+  orientation, margins, header and footer height), headers and footers for left, right and first pages (ODF 1.3
+  `style:header-first`, and the next page style of a first page style), switched by paragraph and table styles, with
+  page number restarts and formats; images in the package or embedded as base64 (the first drawable of several
+  alternatives, and the replacement images of charts and objects), inline, floating or on lines of their own; text
+  boxes and shape text after their paragraph; links, bookmarks, footnotes and endnotes with custom citations, page
+  numbers, page counts and page references computed, other fields as their text; tracked changes accepted; title and
+  author from the metadata. `OdtConverterOptions` has the options of `DocumentConverterOptions`. Encrypted documents
+  throw `NotSupportedException`, malformed ones `PdfFormatException`; repeated table rows and cells count against
+  `MaxElements` and `MaxTableCells`. A new `odt` fuzz target with uncompressed seeds; fixtures from a committed script,
+  checked against odfpy, and Apache Tika samples (#203).
 - **PPTX to PDF** (`RaiCore.Pdf.Slides`, new package): `PptxToPdf.Convert` converts PowerPoint presentations (`.pptx`,
   `.pptm`, `.ppsx`, `.potx`, strict Office Open XML) with one page per slide at the slide's size. Each slide is drawn
   with its master's and layout's shapes (unless hidden) and background (own, layout, master or theme background

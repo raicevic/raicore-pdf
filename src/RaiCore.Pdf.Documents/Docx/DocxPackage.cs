@@ -17,7 +17,8 @@ internal readonly record struct Relationship(string Id, string Type, string Targ
 /// <see cref="ResourceLimits.MaxDecompressedBytes"/> (all parts together), and parsed as XML with no DTDs and nothing
 /// external resolved, their elements counted against <see cref="ResourceLimits.MaxElements"/> (all parts together) and
 /// nested no deeper than <see cref="ResourceLimits.MaxNestingDepth"/>. Malformed ZIP or XML data throws
-/// <see cref="PdfFormatException"/>.
+/// <see cref="PdfFormatException"/>. The OpenDocument reader uses it too, for ODF packages (<see cref="OpenZip"/>) and
+/// flat XML documents (<see cref="ForXml"/>).
 /// </summary>
 internal sealed class DocxPackage : IDisposable
 {
@@ -31,17 +32,17 @@ internal sealed class DocxPackage : IDisposable
         MaxCharactersFromEntities = 1024,
     };
 
-    private readonly ZipArchive _zip;
+    private readonly ZipArchive? _zip;
     private readonly Dictionary<string, ZipArchiveEntry> _entries = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConversionContext _context;
     private long _read;
     private long _elements;
 
-    private DocxPackage(ZipArchive zip, ConversionContext context)
+    private DocxPackage(ZipArchive? zip, ConversionContext context)
     {
         _zip = zip;
         _context = context;
-        foreach (var entry in zip.Entries)
+        foreach (var entry in zip?.Entries ?? [])
         {
             _entries.TryAdd(entry.FullName.Replace('\\', '/').TrimStart('/'), entry);
         }
@@ -68,6 +69,13 @@ internal sealed class DocxPackage : IDisposable
                 : "The data is not a Word document (a ZIP package).");
         }
 
+        return OpenZip(data, context);
+    }
+
+    /// <summary>Opens a ZIP package of any kind, without checking what it holds.</summary>
+    /// <exception cref="PdfFormatException">The data is not a valid ZIP package.</exception>
+    public static DocxPackage OpenZip(byte[] data, ConversionContext context)
+    {
         try
         {
             return new DocxPackage(new ZipArchive(new MemoryStream(data, writable: false), ZipArchiveMode.Read), context);
@@ -77,6 +85,12 @@ internal sealed class DocxPackage : IDisposable
             throw new PdfFormatException("The data is not a valid ZIP package: " + ex.Message, ex);
         }
     }
+
+    /// <summary>A package with no parts, whose <see cref="Parse"/> reads XML documents within the same limits.</summary>
+    public static DocxPackage ForXml(ConversionContext context) => new(null, context);
+
+    /// <summary>The paths of the package's parts.</summary>
+    public IEnumerable<string> Paths => _entries.Keys;
 
     /// <summary>Whether the package has a part.</summary>
     public bool Contains(string path) => _entries.ContainsKey(path);
@@ -124,11 +138,15 @@ internal sealed class DocxPackage : IDisposable
     /// </summary>
     public XElement? Load(string path)
     {
-        if (Read(path) is not { } data)
-        {
-            return null;
-        }
+        return Read(path) is { } data ? Parse(data, path) : null;
+    }
 
+    /// <summary>
+    /// Parses XML bytes (a part, or a whole flat document) into a tree, its elements counted with the package's.
+    /// Malformed XML throws <see cref="PdfFormatException"/>.
+    /// </summary>
+    public XElement? Parse(byte[] data, string path)
+    {
         try
         {
             using var reader = XmlReader.Create(new StringReader(Decode(data)), XmlSettings);
@@ -332,5 +350,5 @@ internal sealed class DocxPackage : IDisposable
         return result;
     }
 
-    public void Dispose() => _zip.Dispose();
+    public void Dispose() => _zip?.Dispose();
 }

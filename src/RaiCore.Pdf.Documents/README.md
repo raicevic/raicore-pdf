@@ -1,14 +1,16 @@
 # RaiCore.Pdf.Documents
 
-Converts Word documents (`.docx`) to PDF with [RaiCore.Pdf](https://www.nuget.org/packages/RaiCore.Pdf)'s layout engine:
-styles, numbered and bulleted lists, tables, sections with their page setup, headers and footers with page numbers,
-images, hyperlinks and notes. No word processor, no browser, no native dependencies.
+Converts Word documents (`.docx`) and OpenDocument text documents (`.odt`, `.ott`, flat `.fodt`) to PDF with
+[RaiCore.Pdf](https://www.nuget.org/packages/RaiCore.Pdf)'s layout engine: styles, numbered and bulleted lists, tables,
+sections with their page setup, headers and footers with page numbers, images, hyperlinks and notes. No word
+processor, no browser, no native dependencies.
 
 ```csharp
 using RaiCore.Pdf.Documents;
 
 var pdf = DocxToPdf.Convert("letter.docx");
 pdf.Save("letter.pdf");
+OdtToPdf.Convert("report.odt").Save("report.pdf");
 ```
 
 - **Styles and formatting:** paragraph, character and table styles with their inheritance, document defaults and theme
@@ -23,13 +25,18 @@ pdf.Save("letter.pdf");
 - **More:** PNG, JPEG, GIF, BMP, TIFF and WebP images (inline, or floating with text wrapping around them), hyperlinks
   and bookmarks, footnotes and endnotes, tracked changes as if accepted, content controls, headings as PDF bookmarks,
   tagged (accessible) PDF.
-- **Untrusted input:** no DTDs, nothing external; decompressed bytes, XML elements, nesting, table cells, pages and time
-  are bounded by `ResourceLimits`. Malformed packages throw `PdfFormatException`; encrypted and `.doc` files
-  `NotSupportedException`.
+- **OpenDocument text:** common, automatic and default styles with their parent chains; lists with list styles
+  (numbers, letters, roman numerals, bullets, continued lists) and outline numbering of headings; tables with column
+  widths, spans, header rows and repeated rows; master pages with page layouts, headers and footers for left, right and
+  first pages, switched by paragraph styles; images in the package or embedded, the replacement images of charts;
+  notes, links, bookmarks, page numbers and page references; tracked changes as if accepted.
+- **Untrusted input:** no DTDs, nothing external; decompressed bytes, XML elements (and repeated table rows and cells),
+  nesting, table cells, pages and time are bounded by `ResourceLimits`. Malformed documents throw
+  `PdfFormatException`; encrypted documents and `.doc` files `NotSupportedException`.
 
-Not supported: text boxes and shapes as floating frames (their text follows their paragraph), charts, SmartArt,
-embedded objects, EMF and WMF images, comments, several text columns, footnotes at the bottom of the page. What is left
-out is reported to `DocxConverterOptions.Diagnostics`.
+Not supported: text boxes and shapes as floating frames (their text follows their paragraph), charts (an OpenDocument
+chart's replacement image is shown), SmartArt, embedded objects, EMF and WMF images, comments, forms, several text
+columns, footnotes at the bottom of the page. What is left out is reported to the options' `Diagnostics`.
 
 More: the [Word documents guide](https://raicevic.github.io/raicore-pdf/guides/documents.html).
 

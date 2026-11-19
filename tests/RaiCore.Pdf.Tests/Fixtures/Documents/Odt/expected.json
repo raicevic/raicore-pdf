@@ -1,0 +1,676 @@
+{
+ "Documents/Odt/fields.odt": [
+  "Fields and notes",
+  "Contents",
+  "Later section\t2",
+  "Title: Fixture title, author: Ann Author, date: 2026-01-01, time: 12:00:00, chapter: Fields and notes, sequence: Table 1.",
+  "See page for the later bookmark.",
+  "Footnote here and endnote and a custom mark.",
+  "Inserted new text stays.",
+  "Commented text.",
+  "Visible section text.",
+  "Two column section text.",
+  "Ruby base text.",
+  "Hidden field and a placeholder.",
+  "Soft page break.",
+  "The later bookmark on page two.",
+  "Page of in the body."
+ ],
+ "Documents/Odt/flat.fodt": [
+  "Flat heading",
+  "A flat document with bold text.",
+  "Flat item one",
+  "Flat item two",
+  [
+   "Flat cell A",
+   "Flat cell B"
+  ],
+  "Embedded image: ."
+ ],
+ "Documents/Odt/images.odt": [
+  "Images",
+  "Inline image: after the image.",
+  "Floating right: words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines",
+  "Centered block image paragraph.",
+  "Floating left: words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines",
+  "Alternatives: picks the bitmap.",
+  "Vector only: is drawn.",
+  "Chart: with its replacement.",
+  "Text box anchor.",
+  "Text box content.",
+  "Linked image: is left out.",
+  "Missing image: is left out.",
+  "Metafile: cannot be drawn.",
+  "Shape: end.",
+  "Shape text.",
+  "Described: .",
+  "Linked picture: .",
+  "After the page anchored image."
+ ],
+ "Documents/Odt/lists.odt": [
+  "Lists",
+  "First item",
+  "Second item",
+  "Nested item",
+  "Another nested item",
+  "Roman item",
+  "Back to the top level",
+  "A paragraph between lists.",
+  "Continued item",
+  "Level one",
+  "Level two",
+  "Level three",
+  "Bullet one",
+  "Circle bullet",
+  "Square bullet",
+  "Letter C item",
+  "Letter D item",
+  "Roman five",
+  "Roman six",
+  "Another paragraph.",
+  "Roman seven",
+  "Restarted at ten",
+  "Eleven",
+  "A list header without a label",
+  "Item after the header",
+  "Paragraph style list",
+  "Own indent item",
+  "Numbered paragraph",
+  "Private use bullet"
+ ],
+ "Documents/Odt/minimal.odt": [
+  "Hello, OpenDocument."
+ ],
+ "Documents/Odt/pages.odt": [
+  "Page one text.",
+  "Page two text.",
+  "Landscape page.",
+  "Title page text.",
+  "After the title page.",
+  "ODF 1.3 page.",
+  "Break after this paragraph.",
+  "ODF 1.3 second page.",
+  "Table starts the standard pages",
+  "Plain page seven."
+ ],
+ "Documents/Odt/styles.odt": [
+  "Document styles",
+  "Plain text, bold, italic, underlined, double underlined, dotted, wavy, struck, red, highlighted, E=mc2 and H2O, small caps, all caps, LOWER CASE, capitalized words, spaced, Liberation Mono, large, half size and raised.",
+  "Strong common style and inherited big strong.",
+  "Visible text continues.",
+  "Paragraph formats",
+  "Centered paragraph.",
+  "Right-aligned paragraph.",
+  "Justified paragraph: words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines",
+  "Indented paragraph with a hanging indent: words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines",
+  "Double spaced paragraph: words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines",
+  "Fixed line height paragraph: words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines",
+  "At least line height paragraph: words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines",
+  "Leading paragraph: words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines",
+  "A paragraph with a border and a background.",
+  "Margins on all sides of this paragraph.",
+  "Visit the example site or jump to the target.",
+  "Tabs and spaces",
+  "Name:\tValue\tRight\t3,25",
+  "Several spaces and collapsed white space Second line",
+  "Quote style paragraph.",
+  "Targets",
+  "The bookmarked target paragraph."
+ ],
+ "Documents/Odt/tables.odt": [
+  "Tables",
+  [
+   "Header A",
+   "Header B",
+   "Header C",
+   "Header D"
+  ],
+  [
+   "Spans two columns",
+   "C2",
+   "D2"
+  ],
+  [
+   "Spans two rows",
+   "B3",
+   "C3",
+   "D3"
+  ],
+  [
+   "B4",
+   "C4",
+   "D4"
+  ],
+  [
+   "Middle cell",
+   "Bottom cell",
+   "Dashed cell",
+   "Plain cell"
+  ],
+  [
+   "Outer",
+   "B6",
+   "C6",
+   "Nested one Nested two"
+  ],
+  [
+   "Repeated row",
+   "x",
+   "y",
+   "z"
+  ],
+  [
+   "Repeated row",
+   "x",
+   "y",
+   "z"
+  ],
+  [
+   "Repeated row",
+   "x",
+   "y",
+   "z"
+  ],
+  [
+   "Repeated cells",
+   "r",
+   "r",
+   "r"
+  ],
+  [
+   "Exact height row",
+   "e",
+   "f",
+   "g"
+  ],
+  "Between tables.",
+  [
+   "Long header",
+   "Second header"
+  ],
+  [
+   "Row 1",
+   "Value 1 filler filler filler"
+  ],
+  [
+   "Row 2",
+   "Value 2 filler filler filler"
+  ],
+  [
+   "Row 3",
+   "Value 3 filler filler filler"
+  ],
+  [
+   "Row 4",
+   "Value 4 filler filler filler"
+  ],
+  [
+   "Row 5",
+   "Value 5 filler filler filler"
+  ],
+  [
+   "Row 6",
+   "Value 6 filler filler filler"
+  ],
+  [
+   "Row 7",
+   "Value 7 filler filler filler"
+  ],
+  [
+   "Row 8",
+   "Value 8 filler filler filler"
+  ],
+  [
+   "Row 9",
+   "Value 9 filler filler filler"
+  ],
+  [
+   "Row 10",
+   "Value 10 filler filler filler"
+  ],
+  [
+   "Row 11",
+   "Value 11 filler filler filler"
+  ],
+  [
+   "Row 12",
+   "Value 12 filler filler filler"
+  ],
+  [
+   "Row 13",
+   "Value 13 filler filler filler"
+  ],
+  [
+   "Row 14",
+   "Value 14 filler filler filler"
+  ],
+  [
+   "Row 15",
+   "Value 15 filler filler filler"
+  ],
+  [
+   "Row 16",
+   "Value 16 filler filler filler"
+  ],
+  [
+   "Row 17",
+   "Value 17 filler filler filler"
+  ],
+  [
+   "Row 18",
+   "Value 18 filler filler filler"
+  ],
+  [
+   "Row 19",
+   "Value 19 filler filler filler"
+  ],
+  [
+   "Row 20",
+   "Value 20 filler filler filler"
+  ],
+  [
+   "Row 21",
+   "Value 21 filler filler filler"
+  ],
+  [
+   "Row 22",
+   "Value 22 filler filler filler"
+  ],
+  [
+   "Row 23",
+   "Value 23 filler filler filler"
+  ],
+  [
+   "Row 24",
+   "Value 24 filler filler filler"
+  ],
+  [
+   "Row 25",
+   "Value 25 filler filler filler"
+  ],
+  [
+   "Row 26",
+   "Value 26 filler filler filler"
+  ],
+  [
+   "Row 27",
+   "Value 27 filler filler filler"
+  ],
+  [
+   "Row 28",
+   "Value 28 filler filler filler"
+  ],
+  [
+   "Row 29",
+   "Value 29 filler filler filler"
+  ],
+  [
+   "Row 30",
+   "Value 30 filler filler filler"
+  ],
+  [
+   "Row 31",
+   "Value 31 filler filler filler"
+  ],
+  [
+   "Row 32",
+   "Value 32 filler filler filler"
+  ],
+  [
+   "Row 33",
+   "Value 33 filler filler filler"
+  ],
+  [
+   "Row 34",
+   "Value 34 filler filler filler"
+  ],
+  [
+   "Row 35",
+   "Value 35 filler filler filler"
+  ],
+  [
+   "Row 36",
+   "Value 36 filler filler filler"
+  ],
+  [
+   "Row 37",
+   "Value 37 filler filler filler"
+  ],
+  [
+   "Row 38",
+   "Value 38 filler filler filler"
+  ],
+  [
+   "Row 39",
+   "Value 39 filler filler filler"
+  ],
+  [
+   "Row 40",
+   "Value 40 filler filler filler"
+  ],
+  [
+   "Row 41",
+   "Value 41 filler filler filler"
+  ],
+  [
+   "Row 42",
+   "Value 42 filler filler filler"
+  ],
+  [
+   "Row 43",
+   "Value 43 filler filler filler"
+  ],
+  [
+   "Row 44",
+   "Value 44 filler filler filler"
+  ],
+  [
+   "Row 45",
+   "Value 45 filler filler filler"
+  ],
+  [
+   "Row 46",
+   "Value 46 filler filler filler"
+  ],
+  [
+   "Row 47",
+   "Value 47 filler filler filler"
+  ],
+  [
+   "Row 48",
+   "Value 48 filler filler filler"
+  ],
+  [
+   "Row 49",
+   "Value 49 filler filler filler"
+  ],
+  [
+   "Row 50",
+   "Value 50 filler filler filler"
+  ],
+  [
+   "Row 51",
+   "Value 51 filler filler filler"
+  ],
+  [
+   "Row 52",
+   "Value 52 filler filler filler"
+  ],
+  [
+   "Row 53",
+   "Value 53 filler filler filler"
+  ],
+  [
+   "Row 54",
+   "Value 54 filler filler filler"
+  ],
+  [
+   "Row 55",
+   "Value 55 filler filler filler"
+  ],
+  [
+   "Row 56",
+   "Value 56 filler filler filler"
+  ],
+  [
+   "Row 57",
+   "Value 57 filler filler filler"
+  ],
+  [
+   "Row 58",
+   "Value 58 filler filler filler"
+  ],
+  [
+   "Row 59",
+   "Value 59 filler filler filler"
+  ],
+  [
+   "Row 60",
+   "Value 60 filler filler filler"
+  ],
+  "After the long table.",
+  [
+   "Narrow",
+   "Wide relative column"
+  ],
+  "Table on a new page",
+  "The end."
+ ],
+ "Documents/Odt/template.ott": [
+  "Template text."
+ ],
+ "Tika/LibreOfficeWriter_odt_1.3.odt": [
+  "This is an example document"
+ ],
+ "Tika/testFooter.odt": [
+  "Here is some text...",
+  "Here is some text on page 2"
+ ],
+ "Tika/testNPEOpenDocument.odt": [
+  "Práctica de GnuPG",
+  "Traducción al castellano de la Práctica sobre GnuPG, vista en Bulma escrita por Leopoldo Palomo para sus alumnos universitarios para que conozcan el GnuPg, y basada en el artículo de Introducción al GnuPg de René Merou.",
+  "Práctica GnuPG",
+  "Enunciado de la práctica",
+  "Generar la clave",
+  "Generar el certificado de revocación",
+  "Enviar y recibir claves al servidor de claves",
+  "¿Y ahora, qué?",
+  "Fuentes de información",
+  "1. Enunciado de la práctica",
+  "La práctica consiste en enviar un mensaje criptografiado (cifrado) y firmado. Para poder realizarla, primero hay que generar un par de claves (privada y pública), configurar el gestor de correo. Por último, hay que enviar un correo al profesor, firmado y cifrado. Para hacerlo tendreis que comprobar las respectivas claves públicas e identidades.",
+  "2. Generar la clave",
+  "En el servidor hay instalado el programa GnuPG. Desde un terminal seguid los siguientes pasos:",
+  "leo@ranganathan:~$ gpg –gen-key",
+  "gpg (GnuPG) 1.4.3; Copyright (C) 2006 Free Software Foundation, Inc.",
+  "This program comes with ABSOLUTELY NO WARRANTY.",
+  "This is free software, and you are welcome to redistribute it under certain conditions. See the file COPYING for details.",
+  "Entonces nos hará una serie de preguntas que tendremos que responder:",
+  "¿Tipo de clave? seleccionar la opción predeterminada: 1",
+  "Seleccionar que tipo de clave quereis:",
+  "(1) DSA and Elgamal (default)",
+  "(2) DSA (sólo firmar)",
+  "(5) RSA (sólo firmar)",
+  "¿Vuestra selección?",
+  "¿Medida de la clave? Aceptar el valor por defecto: 2048",
+  "DSA keypair will have 1024 bits.",
+  "ELG-E keys may be between 1024 and 4096 bits long.",
+  "What keysize do you want? (2048)",
+  "La medida solicitada es 2048 bits",
+  "¿Tiempo de validez? Inroducir 1m, que quiere decir 1 mes, y ratificarlo.",
+  "Especificad el tiempo de validez de la clave.",
+  "0 = la clave no caduca",
+  "< n > = la clave caduca a los n dias",
+  "< n >w = la clave caduca a las n semanas",
+  "< n >m = la clave caduca a los n meses",
+  "< n >y = la clave caduca a los n años",
+  "Indicad la validez de la clave (0) 1m",
+  "Key expires at dl 19 jun 2006 12:26:54 CEST",
+  "Is this correct? (y/N) y",
+  "¿Nombre y apellidos? Pon tus datos:",
+  "You need a user ID to identify your key; the software constructs the user ID from the Real Name, Comment and Email Address in this form:",
+  "“Heinrich Heine (Der Dichter) ”",
+  "Nombre y apellidos: Shiyali Ramamrita Ranganathan",
+  "¿Dirección electrónica? Poned la de ranganathan o alguna vuestra:",
+  "Dirección electrónica: shiyalirr@ranganathan.ub.es",
+  "¿Comentario? Poned algún comentario que os identifique esa dirección o lo que creais conveniente",
+  "Comentario: Dirección Documentación",
+  "A partir de ahí sólo falta seguir la confirmación de todos los pasos. Para terminar pulsar la letra ‘o’",
+  "Está usando el juego de caracteres `utf-8′.",
+  "Ha elegido el identificador de usuario:",
+  "“Shiyali Ramamrita Ranganathan (Dirección Documentación) ”",
+  "Cambiar (N)ombre, (C)omentario, (E)mail o (O) de acuerdo / (X) ixo",
+  "Hace falta una contraseña para proteger la clave secreta. Es importante que podais recordar esta contraseña, pero no es recomendable escribirla en ningún sitio.",
+  "Introducid la contraseña:",
+  "Han de generarse muchos bits aleatóriamente. Es buena idea hacer alguna otra cosa (teclear, mover el ratón, usar los discos) durante la generación de números; esto da oportunidad al generador de números aleatorios de conseguir suficiente entropia.",
+  "+++++++++++++++++++++++++.+++++.++++++++++..++++++++++++++++++++++++++++ ++.+++++.+++++..++++++++++….+++++..++++++++++.+++++.+++++.+++++++++++ +++++++++>+++++>…+++++….",
+  "Finalmente, después de generar algo de entropía, obtendremos nuestra clave",
+  "gpg: key 70EDBB59 marked as ultimately trusted se han creado y firmado las claves y firmado las claves pública y secreta",
+  "gpg: se está comprobando la base de datos de confianza",
+  "gpg: 3 marginal(s) needed, 1 complete(s) needed, PGP trust model gpg: depth: 0 valid: 3 signed: 0 trust: 0-, 0q, 0n, 0m, 0f, 3u",
+  "gpg: la próxima comprobación de la base de datos de confianza será el 2006-06-09",
+  "pub 1024D/70EDBB59 2006-05-20 [expires: 2006-06-19] Key fingerprint = E555 61C8 0914 490A C525 6AF8 358E 895D 70ED BB59",
+  "uid Shiyali Ramamrita Ranganathan (Dirección Documentación) sub 2048g/2E182CC0 2006-05-20 [expires: 2006-06-19]",
+  "3. Generar el certificado de revocación",
+  "Un certificado de revocación sirve por si un dia se pierde la clave, no la utilizamos, etc. Para crearlo hacemos:",
+  "gpg –output cert_revoc_arch.asc –gen-revoke -armor 70EDBB59",
+  "sec 1024D/70EDBB59 2006-05-20 Shiyali Ramamrita Ranganathan (Dirección Documentación)",
+  "Create a revocation certificate for this key? (y/N)",
+  "Ahora hay que responder algunas preguntas:",
+  "Seleccionad la razón de la revocación:",
+  "0 = No se ha especificado ninguna razón",
+  "1 = La clave ha estado comprometida",
+  "2 = La clave ha estado substituida",
+  "3 = La clave ya no se usa",
+  "Q = Cancela",
+  "(Seguramente quereis seleccionar 1 aquí)",
+  "¿Vuestra decisión?",
+  "Podemos poner 3, ya que no la usamos, y en el texto Certificado por si perdemos la clave o la contraseña",
+  "¿Vuestra decisión? 3",
+  "Introducid una descripción opcional; finalizad con una línea en blanco:",
+  "> certificado por si perdemos la clave o el password",
+  ">",
+  "Razón de la revocación: La clave ya no se usa certificado por si perdemos la clave o el password",
+  "Is this okay? (y/N) y",
+  "You need a passphrase to unlock the secret key for user: “Shiyali Ramamrita Ranganathan (Adreça Documentació) ” 1024-bit DSA key, ID 70EDBB59, created 2006-05-20",
+  "Y vemos el resultado final:",
+  "Se ha creado un certificado de revocación. Por favor, guardarlo en un medio que podais esconder; si Mallory consigue acceso a ete certificado puede utilizarlo para hacer vuestra clave inservible. Es inteligente imprimir este certificado y esconderlo, por si el vuestro medio se vuelve ilegible. Pero ir con cuidado: el sistema de impresión de vuestra máquina podria almacenar los datos y hacerlos accesibles a otros.",
+  "Si hace falta más adelante activar definitivamente la revocación, sólo hará falta importar este (cert-revoc-arch.asc) y después mandarlo al servidor.",
+  "$gpg –import cert-revoc-arch.asc",
+  "$gpg –send-keys 70EDBB59",
+  "4. Enviar y recibir claves al sertvidor de claves",
+  "Si no tenemos ningún problema de configuración, solo falta enviar la clave al servidor por defecto (en el nuestro caso hkp://subkeys.pgp.net) utilizando el comando:",
+  "gpg –send-keys 70EDBB59",
+  "donde 70EDBB59 es el ID de nuestra clave. Para acabar, si queremos mostrar la imprenta ce la clave (fingerprint), sólo falta:",
+  "gpg –fingerprint 70EDBB59",
+  "5. ¿Y ahora, qué?",
+  "Una vez tenemos nuestra clave generada podemos configurar el gestor de correo para firmar y/o encriptar nuestros mensajes. Se ha de tener en cuenta que:",
+  "Firmar un correo es poner unas marcas de forma que, cualquier persona que tenga la parte pública con la que se ha firmado ese mensaje, pueda verificarlo.",
+  "Cifrar un mensaje es un proceso donde el emisor codifica el mensaje a través de la clave pública del destinatario y solamente se puede descifrar con la clave privada del destinatario.",
+  "Disponer de la clave pública de una persona no quiere decir nada en especial. Para asegurarnos que es esa persona la que ha emitido el mensaje, hemos de verificar con un documentos de identidad que esa persona es quien dice que es y que esa es su clave pública.",
+  "Una vez verificada la autentificación de la persona, entonces podemos firmar la clave de esa persona.",
+  "6. Fuentes de información",
+  "Fuente original del documento: http://bulma.net/body.phtml?nIdNoticia=1684"
+ ],
+ "Tika/testODFwithOOo3.odt": [
+  "Apache Tika Test Document",
+  "This is a rather difficult test document, with interesting features.",
+  "A rectangle",
+  "Another interesting project is [Solr]",
+  "Reference to the title: Apache Tika Test Document",
+  "First item",
+  "Second item",
+  "Third item",
+  "Lucene website",
+  "Bibliography",
+  "Solr: Various, Solr website, 2009, http://lucene.apache.org/solr"
+ ],
+ "Tika/testODTEmbedded.odt": [
+  "This document has bold and italic text."
+ ],
+ "Tika/testODTEmbeddedImageLink.odt": [],
+ "Tika/testODTMacro.fodt": [
+  "Hello dear user,",
+  "Click the smiley",
+  "Just one little click…",
+  "- hacker"
+ ],
+ "Tika/testODTMacro.odt": [
+  "Hello dear user,",
+  "Click the smiley",
+  "Just one little click…",
+  "- hacker"
+ ],
+ "Tika/testODTNoMeta.odt": [
+  "Test text"
+ ],
+ "Tika/testODTStyles2.odt": [
+  "Publicatie Onbekwaamverklaring tov Belgisch Staatsblad",
+  [
+   "Identificatie vredegerecht",
+   "Vredegerecht Name"
+  ],
+  [
+   "Naam verantwoordelijke hoofdgriffier/griffier",
+   "Griffier Name"
+  ],
+  [
+   "Taalrol",
+   "N"
+  ],
+  [
+   "Uniek referentienummer van bericht/dossier (vanuit Vredegerecht)",
+   "RefNr"
+  ],
+  [
+   "Onderwerp: (1 keuze) Aanstelling Vervanging Opheffing",
+   "Aanstelling"
+  ],
+  "Te publiceren tekst:",
+  "Bij beschikking van date heeft de Vrederechter van het kanton beschermingsmaatregelen uitgesproken met betrekking tot de persoon en de goederen, overeenkomstig de bepalingen van de wet van 17 maart 2013 tot hervorming van de regelingen inzake onbekwaamheid en tot instelling van een nieuwe beschermingsstatus die strookt met de menselijke waardigheid, betreffende:",
+  "name , geboren te Brussel (district 2) op 8 augustus 1926, gedomicilieerd te address, verblijvend in address",
+  "name, advocaat met kantoor te address werd aangesteld als bewindvoerder over de persoon en de goederen van de voornoemde beschermde persoon.",
+  "Voor eensluidend uittreksel,",
+  "De Griffier,",
+  "Van Bever L.",
+  "Vrijgesteld van het griffierecht",
+  "(art.280/1 en 162/18 W.Reg.)"
+ ],
+ "Tika/testODTStyles3.odt": [
+  "Publicatie Onbekwaamverklaring tov Belgisch Staatsblad",
+  [
+   "Identificatie vredegerecht",
+   "Vredegerecht van het kanton Houthalen-Helchteren"
+  ],
+  [
+   "Naam verantwoordelijke hoofdgriffier/griffier",
+   "Marleen Vrolix"
+  ],
+  [
+   "Taalrol",
+   "N"
+  ],
+  [
+   "Uniek referentienummer van bericht/dossier (vanuit Vredegerecht)",
+   "17B96 - Rep. 266/2017"
+  ],
+  [
+   "Onderwerp: (1 keuze) Aanstelling Vervanging Opheffing",
+   "Opheffing"
+  ],
+  "Te publiceren tekst:",
+  "Bij beschikking van de Vrederechter van het kanton HOUTHALEN-HELCHTEREN, verleend op 30 januari 2017, werd :",
+  "WOUTERS Rolf , advocaat, met burelen gevestigd te 3530 Houthalen-Helchteren, Hofstraat 16, aangewezen bij vonnis door Ons verleend op 28 oktober 2013 (rolnummer 13A1478-Rep.R. 2941/2013) tot voorlopig bewindvoerder over GHIJSENS Wilhelmine Marie, geboren te Borgloon op 20 januari 1925, gedomicilieerd te 3530 Houthalen-Helchteren, Guldensporenlaan 89, verblijvend Lunstraat 19 te 3530 Houthalen-Helchteren, (gepubliceerd in het Belgisch Staatsblad van 18 november 2013, blz. 86010 en onder nr. 75754 ), met ingang van 14 januari 2017 ontslagen van de opdracht, gezien de beschermde persoon overleden is.",
+  "Houthalen-Helchteren, 31 januari 2017",
+  "Voor eensluidend uittreksel,"
+ ],
+ "Tika/testODT_svgTitleInStyledSpan.odt": [
+  "國立雲林科技大學國際課程活動甄選—學生證影印本",
+  "正面 （請黏貼學生証影本正面於本線格內）",
+  "反面 （請黏貼學生証影本反面於本線格內）",
+  "科系：_________班級：______ 學號：________姓名：___________",
+  "學生簽章：____________"
+ ],
+ "Tika/testOpenOffice2.odt": [
+  "This is a sample Open Office document, written in NeoOffice 2.2.1 for the Mac."
+ ],
+ "Tika/testPhoneNumberExtractor.odt": [
+  "This is a test document with a list of phone numbers:",
+  "9498888888",
+  "9497777777",
+  "(949) 666 - 6666",
+  "ninefourninefive5fivefive5fivefive",
+  "4-1-9-3-4-0-4-6-4-5",
+  "[9][0][4] [4][6][8] [7][0][8][1]",
+  "TwO/6/zERo-FouR/0/NiNe-4/eIgHt/1/One"
+ ],
+ "Tika/testStyles.odt": [
+  "This is just a test.",
+  "And another test is here.",
+  "One",
+  "Two",
+  "Three",
+  "First",
+  "Second",
+  "Third"
+ ]
+}

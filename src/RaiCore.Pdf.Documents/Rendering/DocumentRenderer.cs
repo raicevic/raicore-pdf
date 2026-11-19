@@ -80,6 +80,7 @@ internal sealed partial class DocumentRenderer
         var pdf = new PdfDocument { Tagged = _options.Tagged };
         flow.RenderTo(pdf);
         pdf.Info.Title = _options.Title ?? _document.Title;
+        pdf.Info.Author = _document.Author;
         pdf.Info.Creator = creator;
         if (_options.Tagged && _document.Language is { } language)
         {
