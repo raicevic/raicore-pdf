@@ -531,4 +531,24 @@ public class PdfEditorTests
         Assert.Equal(200, page.MediaBox.Width);
         Assert.Equal("0 0 1 rg 10 10 50 50 re f", TestPdf.Text(page.GetContent()));
     }
+
+    [Fact]
+    public void A_catalog_the_repair_replaces_is_copied_from_the_catalog_read()
+    {
+        // Found by fuzzing: the page tree lists object 6, which no cross-reference entry has, so reading the pages starts
+        // the repair, which takes a later stray definition of object 1 (the catalog) as the object: a number.
+        var pdf = TestPdf.Text(TestPdf.Build([
+            "<< /Type /Catalog /Pages 2 0 R /PageLayout /TwoColumnLeft >>",
+            "<< /Type /Pages /Kids [3 0 R 6 0 R] /Count 2 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Contents 4 0 R >>",
+            TestPdf.Stream("q Q"),
+        ])) + "1 0 obj\n42\nendobj\n";
+        var editor = PdfEditor.Open(System.Text.Encoding.Latin1.GetBytes(pdf));
+
+        var reader = PdfReader.Open(editor.ToArray());
+
+        Assert.Equal("TwoColumnLeft", ((PdfName)reader.Catalog["PageLayout"]!).Value);
+        Assert.Single(reader.Pages);
+        Assert.False(editor.GetForm().HasAcroForm);
+    }
 }

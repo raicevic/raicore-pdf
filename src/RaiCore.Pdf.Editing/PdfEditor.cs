@@ -56,12 +56,16 @@ public sealed class PdfEditor
     {
         _table = new ObjectTable();
         var copier = new GraphCopier(reader, _table);
-        _catalog = copier.Copy(reader.Trailer["Root"]) switch
+        var catalog = copier.Copy(reader.Trailer["Root"]) switch
         {
             PdfReference reference => reference,
             PdfDictionary direct => _table.Add(direct),
-            _ => throw new PdfFormatException("The file has no document catalog."),
+            _ => null,
         };
+
+        // When /Root no longer gives a dictionary (a repair after opening took another object for it), the catalog as
+        // the reader read it is copied.
+        _catalog = catalog is not null && _table.Dictionary(catalog) is not null ? catalog : _table.Add(copier.Copy(reader.Catalog)!);
         _info = copier.Copy(reader.Trailer["Info"]) switch
         {
             PdfReference reference => reference,

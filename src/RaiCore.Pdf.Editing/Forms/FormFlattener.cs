@@ -249,7 +249,7 @@ internal sealed class FormFlattener(ObjectTable table, PdfDictionary catalog, IR
             switch (tokens[i])
             {
                 case "Tf" when i >= 2 && tokens[i - 2].StartsWith('/'):
-                    font = tokens[i - 2][1..];
+                    font = tokens[i - 2].Length > 1 ? tokens[i - 2][1..] : font; // An empty name: no resource can have it.
                     size = double.TryParse(tokens[i - 1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var s) && double.IsFinite(s) ? Math.Max(0, s) : 0;
                     break;
                 case "g" when i >= 1:
