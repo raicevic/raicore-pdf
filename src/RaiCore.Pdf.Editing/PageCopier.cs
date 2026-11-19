@@ -35,6 +35,12 @@ internal static class PageCopier
             if (first)
             {
                 copier.CopyInto(page.Reference!.ObjectNumber, copy);
+                if (table.Dictionary(copy) is null)
+                {
+                    // The object is no page dictionary any more (a repair of the source replaced or lost it): the page
+                    // as read is copied.
+                    table.Set(copy, (PdfDictionary)copier.Copy(page.Dictionary)!);
+                }
             }
             else
             {

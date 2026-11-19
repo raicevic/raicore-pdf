@@ -266,4 +266,21 @@ public class PdfFlattenTests
         Assert.Equal(new PdfFlattenResult(0, 0, 0), editor.FlattenForm());
         Assert.Equal(before, editor.ToArray());
     }
+
+    [Fact]
+    public void A_default_appearance_with_an_empty_font_name_uses_helvetica()
+    {
+        // Found by fuzzing: "/ 10 Tf" named the font with an empty name, which no resource dictionary can hold.
+        var pdf = FormPdf(
+            "/Fields [5 0 R] /NeedAppearances true",
+            "5 0 R",
+            "",
+            "<< /FT /Tx /T (name) /V (Plain) /DA (/ 10 Tf 0 g) /Type /Annot /Subtype /Widget /Rect [10 10 200 30] >>");
+        var editor = PdfEditor.Open(pdf);
+
+        Assert.Equal(new PdfFlattenResult(1, 1, 0), editor.FlattenForm());
+        var after = editor.ToArray();
+        Assert.Contains("Plain", Texts(after)[0], StringComparison.Ordinal);
+        Assert.Contains("/Helv 10 Tf", Assert.Single(AppearanceStreams(after)), StringComparison.Ordinal);
+    }
 }

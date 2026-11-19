@@ -579,7 +579,15 @@ internal sealed class PdfObjectStore
 
             _entries[number] = XrefEntry.InFile(start, generation);
             positions[number] = start;
-            position = Math.Max(position, end);
+
+            // Skip what the object spans (stream data may hold text that looks like a header), unless it ran past its
+            // own endobj (or there is none): an unclosed dictionary or array goes on parsing the objects after it, which
+            // must still be found.
+            var endobj = _data.AsSpan(keyword).IndexOf("endobj"u8);
+            if (obj is PdfStreamObject || (endobj >= 0 && end <= keyword + endobj))
+            {
+                position = Math.Max(position, end);
+            }
             var dictionary = obj switch
             {
                 PdfStreamObject stream => stream.Dictionary,

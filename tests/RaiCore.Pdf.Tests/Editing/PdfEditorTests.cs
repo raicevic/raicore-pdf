@@ -498,4 +498,78 @@ public class PdfEditorTests
         Assert.Null(reader.Catalog["Kids"]);
         AssertValid(editor.ToArray());
     }
+
+    [Fact]
+    public void A_damaged_file_whose_repair_loses_objects_keeps_its_pages()
+    {
+        // Found by fuzzing: copying the graph started the reader's repair; the page was then copied from the reader's
+        // page dictionary instead of failing with a NullReferenceException.
+        var editor = PdfEditor.Open(Fixtures.Read("Reader/unclosed-dictionary.pdf"));
+
+        var reader = PdfReader.Open(editor.ToArray());
+
+        var page = Assert.Single(reader.Pages);
+        Assert.NotEmpty(((PdfArray)reader.Resolve(page.Dictionary["Annots"])!).Items);
+    }
+
+    [Fact]
+    public void A_page_object_the_repair_replaces_is_copied_from_the_page_read()
+    {
+        // The catalog refers to object 5, which no cross-reference entry lists: copying it starts the repair, and the
+        // repair takes a later stray definition of object 3 (the page) as the object, a number. The page as read stays.
+        var pdf = TestPdf.Text(TestPdf.Build([
+            "<< /Type /Catalog /Extra 5 0 R /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Contents 4 0 R >>",
+            TestPdf.Stream("0 0 1 rg 10 10 50 50 re f"),
+        ])) + "3 0 obj\n42\nendobj\n";
+        var editor = PdfEditor.Open(System.Text.Encoding.Latin1.GetBytes(pdf));
+
+        var reader = PdfReader.Open(editor.ToArray());
+
+        var page = Assert.Single(reader.Pages);
+        Assert.Equal(200, page.MediaBox.Width);
+        Assert.Equal("0 0 1 rg 10 10 50 50 re f", TestPdf.Text(page.GetContent()));
+    }
+
+    [Fact]
+    public void A_catalog_the_repair_replaces_is_copied_from_the_catalog_read()
+    {
+        // Found by fuzzing: the page tree lists object 6, which no cross-reference entry has, so reading the pages starts
+        // the repair, which takes a later stray definition of object 1 (the catalog) as the object: a number.
+        var pdf = TestPdf.Text(TestPdf.Build([
+            "<< /Type /Catalog /Pages 2 0 R /PageLayout /TwoColumnLeft >>",
+            "<< /Type /Pages /Kids [3 0 R 6 0 R] /Count 2 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Contents 4 0 R >>",
+            TestPdf.Stream("q Q"),
+        ])) + "1 0 obj\n42\nendobj\n";
+        var editor = PdfEditor.Open(System.Text.Encoding.Latin1.GetBytes(pdf));
+
+        var reader = PdfReader.Open(editor.ToArray());
+
+        Assert.Equal("TwoColumnLeft", ((PdfName)reader.Catalog["PageLayout"]!).Value);
+        Assert.Single(reader.Pages);
+        Assert.False(editor.GetForm().HasAcroForm);
+    }
+
+    [Fact]
+    public void Pages_inserted_from_a_file_whose_repair_replaces_them_are_copied_as_read()
+    {
+        // Found by fuzzing: reading the other file's pages started its repair (object 6 is listed by no cross-reference
+        // entry), which took a later stray definition of its page (object 3) as the object, a number.
+        var damaged = TestPdf.Text(TestPdf.Build([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 6 0 R] /Count 2 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Contents 4 0 R >>",
+            TestPdf.Stream("0 0 1 rg 10 10 50 50 re f"),
+        ])) + "3 0 obj\n42\nendobj\n";
+        var editor = PdfEditor.Open(Document(1));
+
+        editor.Pages.Add(PdfReader.Open(System.Text.Encoding.Latin1.GetBytes(damaged)));
+
+        var reader = PdfReader.Open(editor.ToArray());
+        Assert.Equal(2, reader.Pages.Count);
+        Assert.Equal(200, reader.Pages[1].MediaBox.Width);
+        Assert.Equal("0 0 1 rg 10 10 50 50 re f", TestPdf.Text(reader.Pages[1].GetContent()));
+    }
 }
