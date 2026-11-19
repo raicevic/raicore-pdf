@@ -396,6 +396,13 @@ internal sealed partial class PagedMedia
 
     private static List<IElement> Select(IDocument document, string selector)
     {
+        // CSS nesting (#149) is not supported, and AngleSharp throws NullReferenceException matching a nesting selector
+        // (found by fuzzing): such rules match nothing, as in CssDiagnostics.
+        if (selector.Contains('&', StringComparison.Ordinal))
+        {
+            return [];
+        }
+
         try
         {
             return document.QuerySelectorAll(selector).ToList();
