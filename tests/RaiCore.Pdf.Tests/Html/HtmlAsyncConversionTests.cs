@@ -14,7 +14,7 @@ public class HtmlAsyncConversionTests
     [Fact(Timeout = 60_000)]
     public async Task Converting_to_a_stream_asynchronously_never_writes_synchronously()
     {
-        var html = Documents.ReportHtml(chapters: 40);
+        var html = Benchmarks.Documents.ReportHtml(chapters: 40);
         using var output = new AsyncOnlyStream();
         await HtmlToPdf.ConvertToStreamAsync(html, output, Fixed, TestContext.Current.CancellationToken);
 
@@ -31,7 +31,7 @@ public class HtmlAsyncConversionTests
         using var output = new AsyncOnlyStream(failAfter: 1000);
         var started = Stopwatch.StartNew();
 
-        var ex = await Assert.ThrowsAsync<IOException>(() => HtmlToPdf.ConvertToStreamAsync(Documents.ReportHtml(chapters: 40), output, Fixed, TestContext.Current.CancellationToken));
+        var ex = await Assert.ThrowsAsync<IOException>(() => HtmlToPdf.ConvertToStreamAsync(Benchmarks.Documents.ReportHtml(chapters: 40), output, Fixed, TestContext.Current.CancellationToken));
 
         Assert.Equal("The client disconnected.", ex.Message);
         Assert.True(started.Elapsed < TimeSpan.FromSeconds(30), $"Took {started.Elapsed}.");
@@ -43,7 +43,7 @@ public class HtmlAsyncConversionTests
         using var output = new AsyncOnlyStream();
         var options = new HtmlConverterOptions { Limits = ResourceLimits.Default with { MaxPages = 2 } };
 
-        var ex = await Assert.ThrowsAsync<ResourceLimitExceededException>(() => HtmlToPdf.ConvertToStreamAsync(Documents.ReportHtml(chapters: 8), output, options, TestContext.Current.CancellationToken));
+        var ex = await Assert.ThrowsAsync<ResourceLimitExceededException>(() => HtmlToPdf.ConvertToStreamAsync(Benchmarks.Documents.ReportHtml(chapters: 8), output, options, TestContext.Current.CancellationToken));
 
         Assert.Equal(nameof(ResourceLimits.MaxPages), ex.LimitName);
     }
@@ -62,7 +62,7 @@ public class HtmlAsyncConversionTests
     [Fact]
     public async Task Converting_to_bytes_asynchronously_gives_the_same_bytes()
     {
-        var html = Documents.ReportHtml(chapters: 1);
+        var html = Benchmarks.Documents.ReportHtml(chapters: 1);
 
         Assert.Equal(HtmlToPdf.ConvertToBytes(html, Fixed), await HtmlToPdf.ConvertToBytesAsync(html, Fixed, Ct));
     }

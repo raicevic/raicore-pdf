@@ -36,12 +36,12 @@ public class PdfStreamingTests
     public void A_flow_document_rendered_page_by_page_is_the_same_as_rendered_and_saved()
     {
         var fonts = BundledFonts.CreateCollection();
-        var saved = Dated(Documents.ReportFlow(fonts, chapters: 3).Render()).ToArray();
+        var saved = Dated(Benchmarks.Documents.ReportFlow(fonts, chapters: 3).Render()).ToArray();
 
         var document = Dated(new PdfDocument());
         using var output = new MemoryStream();
         document.BeginSave(output);
-        Documents.ReportFlow(fonts, chapters: 3).RenderTo(document);
+        Benchmarks.Documents.ReportFlow(fonts, chapters: 3).RenderTo(document);
         // Every page's content stream is written; the fonts, page dictionaries and outline are not yet.
         Assert.Equal(document.Pages.Count, Regex.Matches(Encoding.Latin1.GetString(output.ToArray()), "endobj").Count);
         document.EndSave();
@@ -152,7 +152,7 @@ public class PdfStreamingTests
     [Fact]
     public void Html_converted_to_a_stream_renders_like_the_converted_document()
     {
-        var html = Documents.ReportHtml(chapters: 2);
+        var html = Benchmarks.Documents.ReportHtml(chapters: 2);
         var converted = HtmlToPdf.Convert(html).ToArray();
         using var output = new MemoryStream();
         HtmlToPdf.ConvertToStream(html, output);

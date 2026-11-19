@@ -18,6 +18,9 @@ tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Seeds/xlsx/** -text
 tests/RaiCore.Pdf.Tests/Fixtures/Slides/*.pptx -text
 tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Seeds/pptx/** -text
 tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Crashes/pptx/** -text
+# Word documents are ZIP packages: binary, never converted.
+tests/RaiCore.Pdf.Tests/Fixtures/Documents/*.docx -text
+tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Seeds/docx/** -text
 
 # Apache POI sample files are byte-exact.
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.msg -text
@@ -25,3 +28,4 @@ tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.doc -text
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.xls -text
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.ppt -text
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.pptx -text
+tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.docx -text

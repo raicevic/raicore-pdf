@@ -29,6 +29,26 @@ and versions follow [Semantic Versioning](https://semver.org/).
   DTDs and nothing external, within `ResourceLimits` (`MaxDecompressedBytes` and `MaxElements` for all parts,
   `MaxNestingDepth`, `MaxPages` for the slides, `MaxTableCells`, `Timeout`). The internal slide model is meant to be
   shared with a future PowerPoint 97-2003 converter (#206). A new `pptx` fuzz target covers it (#69).
+- **DOCX to PDF** (`RaiCore.Pdf.Documents`, new package for the word-processing formats): `DocxToPdf.Convert` lays out
+  Word documents (`.docx`, `.docm`, `.dotx`, strict Office Open XML) with the layout engine. Styles (paragraph,
+  character and table styles with `basedOn` chains, document defaults, theme fonts and colors); paragraphs (alignment,
+  indents, spacing added as Word adds it, contextual spacing, line spacing, borders and shading, keep with next, keep
+  lines, page break before, widow control); text (fonts, sizes, bold, italic, underline styles, strikethrough, colors,
+  highlighting, superscript, subscript, capitals, small capitals, hidden text left out); multi-level numbering with
+  `%1.%2.` labels, letters, roman numerals, ordinals and bullets, start values and restarts; tab stops with leaders;
+  tables (grid widths, merged cells, borders, shading, padding, header rows repeated on every page, rows that do not
+  break, nested tables, table styles with conditional formats); sections (page size, orientation, margins, new page,
+  continuous, even or odd page) with headers and footers for first, even and other pages and page numbers (`PAGE`,
+  `NUMPAGES`, `SECTIONPAGES`, restarts and formats); `PAGEREF` with the PDF's page numbers (tables of contents);
+  PNG, JPEG, GIF, BMP, TIFF and WebP images inline or floating; hyperlinks and bookmarks; footnotes and endnotes;
+  tracked changes accepted; content controls unwrapped; headings as PDF bookmarks; tagged PDF. Options:
+  `Fonts`, `FontFamily`, `FallbackFontFamilies`, `HeadingBookmarks`, `Title`, `Tagged`, `Diagnostics` (unsupported
+  content such as charts and text boxes, images that cannot be drawn, layout overflow) and `Limits`
+  (`MaxDecompressedBytes`, `MaxElements` for the XML elements, `MaxNestingDepth`, `MaxTableCells`, `MaxPages`,
+  `Timeout`). Malformed packages throw `PdfFormatException`; encrypted documents and `.doc` files
+  `NotSupportedException`. A shared word-processing model and renderer for the RTF, ODT and `.doc` converters to come.
+  A new `docx` fuzz target with uncompressed seeds; fixtures from a committed python-docx script and Apache POI
+  samples. See the [Word documents guide](https://raicevic.github.io/raicore-pdf/guides/documents.html) (#67).
 - **PDF/A level A** (`PdfAConformance.PdfA2A` and `PdfA3A`): PDF/A-2a and PDF/A-3a, PDF/A-2b and -3b plus the logical
   structure. Choosing them tags the document (HTML and layout documents from their semantics), maps every glyph to
   Unicode in the fonts' ToUnicode maps, identifies the file as conformance A in XMP, and adds save-time checks that

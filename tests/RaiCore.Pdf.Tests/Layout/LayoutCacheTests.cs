@@ -20,22 +20,22 @@ public class LayoutCacheTests
         // Floats: lines beside them get the room the floats leave (not cached), the rest are cached.
         $"""
         <style>p {"{"} text-align: justify; hyphens: auto {"}"} .f {"{"} float: left; width: 120pt; height: 90pt; background: #ddd; margin: 4pt {"}"}</style>
-        <div lang="en"><div class="f"></div><p>{Documents.Text(1, 180)}</p><div class="f" style="float: right"></div><p>{Documents.Text(2, 260)}</p></div>
+        <div lang="en"><div class="f"></div><p>{Benchmarks.Documents.Text(1, 180)}</p><div class="f" style="float: right"></div><p>{Benchmarks.Documents.Text(2, 260)}</p></div>
         """,
         // Tables: automatic and fixed layout, spans, nested tables, header rows repeated across pages.
         $"""
         <style>td, th {"{"} border: 1px solid #888; padding: 3pt {"}"} table {"{"} border-collapse: collapse; width: 100% {"}"}</style>
         <table><thead><tr><th colspan="2">Head</th><th>Third</th></tr></thead><tbody>
-        {string.Concat(Enumerable.Range(0, 60).Select(i => $"<tr><td rowspan=\"{1 + (i % 3 == 0 ? 1 : 0)}\">{Documents.Text(i, 3 + (i % 7))}</td><td>{Documents.Text(i + 100, 1 + (i % 4))}</td><td>{(i % 10 == 0 ? $"<table><tr><td>{Documents.Text(i, 2)}</td><td>x</td></tr></table>" : Documents.Text(i + 7, 2))}</td></tr>"))}
+        {string.Concat(Enumerable.Range(0, 60).Select(i => $"<tr><td rowspan=\"{1 + (i % 3 == 0 ? 1 : 0)}\">{Benchmarks.Documents.Text(i, 3 + (i % 7))}</td><td>{Benchmarks.Documents.Text(i + 100, 1 + (i % 4))}</td><td>{(i % 10 == 0 ? $"<table><tr><td>{Benchmarks.Documents.Text(i, 2)}</td><td>x</td></tr></table>" : Benchmarks.Documents.Text(i + 7, 2))}</td></tr>"))}
         </tbody></table>
-        <table style="table-layout: fixed; width: 300pt"><tr><td style="width: 30%">{Documents.Text(5, 30)}</td><td>{Documents.Text(6, 12)}</td></tr></table>
+        <table style="table-layout: fixed; width: 300pt"><tr><td style="width: 30%">{Benchmarks.Documents.Text(5, 30)}</td><td>{Benchmarks.Documents.Text(6, 12)}</td></tr></table>
         """,
         // Flex: wrapping rows, columns, grow and shrink, nested containers.
-        Documents.FlexHtml(40),
+        Benchmarks.Documents.FlexHtml(40),
         $"""
         <div style="display: flex; flex-direction: column; height: 400pt; justify-content: space-between">
-          <div style="display: flex; gap: 6pt"><p style="flex: 2">{Documents.Text(3, 40)}</p><p style="flex: 1; min-width: 0">{Documents.Text(4, 9)}</p></div>
-          <div style="display: flex; flex-wrap: wrap-reverse; align-content: center">{string.Concat(Enumerable.Range(0, 30).Select(i => $"<span style=\"flex: 1 0 {40 + i}pt; border: 1px solid\">{Documents.Text(i, 1 + i % 3)}</span>"))}</div>
+          <div style="display: flex; gap: 6pt"><p style="flex: 2">{Benchmarks.Documents.Text(3, 40)}</p><p style="flex: 1; min-width: 0">{Benchmarks.Documents.Text(4, 9)}</p></div>
+          <div style="display: flex; flex-wrap: wrap-reverse; align-content: center">{string.Concat(Enumerable.Range(0, 30).Select(i => $"<span style=\"flex: 1 0 {40 + i}pt; border: 1px solid\">{Benchmarks.Documents.Text(i, 1 + i % 3)}</span>"))}</div>
         </div>
         """,
         // Inline boxes, letter and word spacing, ellipsis, leaders, links and anchors, generated content.
@@ -44,22 +44,22 @@ public class LayoutCacheTests
           .e {"{"} white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 150pt {"}"}
           li::marker {"{"} color: red {"}"} a::after {"{"} content: leader('.') target-counter(attr(href), page) {"}"}
         </style>
-        <p style="letter-spacing: 1pt; word-spacing: 3pt">{Documents.Text(8, 50)}</p>
-        <p>Before <span style="display: inline-block; width: 80pt; border: 1px solid">{Documents.Text(9, 12)}</span> after {Documents.Text(10, 20)}</p>
-        <div class="e">{Documents.Text(11, 30)}</div><div class="e" dir="rtl">{Hebrew} {Hebrew} {Hebrew} {Hebrew} {Hebrew}</div>
+        <p style="letter-spacing: 1pt; word-spacing: 3pt">{Benchmarks.Documents.Text(8, 50)}</p>
+        <p>Before <span style="display: inline-block; width: 80pt; border: 1px solid">{Benchmarks.Documents.Text(9, 12)}</span> after {Benchmarks.Documents.Text(10, 20)}</p>
+        <div class="e">{Benchmarks.Documents.Text(11, 30)}</div><div class="e" dir="rtl">{Hebrew} {Hebrew} {Hebrew} {Hebrew} {Hebrew}</div>
         <ol>{string.Concat(Enumerable.Range(1, 12).Select(i => $"<li><a href=\"#s{i}\">Section {i}</a></li>"))}</ol>
-        {string.Concat(Enumerable.Range(1, 12).Select(i => $"<h2 id=\"s{i}\">Section {i}</h2><p>{Documents.Text(i * 3, 90)}</p>"))}
+        {string.Concat(Enumerable.Range(1, 12).Select(i => $"<h2 id=\"s{i}\">Section {i}</h2><p>{Benchmarks.Documents.Text(i * 3, 90)}</p>"))}
         """,
         // Bidi, named pages of another width, page margin boxes.
         $"""
         <style>@page wide {"{"} size: A4 landscape {"}"} @page {"{"} @bottom-center {"{"} content: counter(page) " / " counter(pages) {"}"} {"}"} .w {"{"} page: wide {"}"}</style>
-        <p dir="rtl">{Hebrew} abc 123 {Hebrew} ({Hebrew}) {Documents.Text(12, 30)}</p>
-        <div class="w"><p>{Documents.Text(13, 400)}</p></div>
-        <p dir="auto">{Hebrew} {Documents.Text(14, 200)}</p>
+        <p dir="rtl">{Hebrew} abc 123 {Hebrew} ({Hebrew}) {Benchmarks.Documents.Text(12, 30)}</p>
+        <div class="w"><p>{Benchmarks.Documents.Text(13, 400)}</p></div>
+        <p dir="auto">{Hebrew} {Benchmarks.Documents.Text(14, 200)}</p>
         """,
-        Documents.InvoiceHtml(),
-        Documents.ReportHtml(chapters: 2),
-        Documents.TableHtml(rows: 150));
+        Benchmarks.Documents.InvoiceHtml(),
+        Benchmarks.Documents.ReportHtml(chapters: 2),
+        Benchmarks.Documents.TableHtml(rows: 150));
 
     [Theory]
     [MemberData(nameof(HtmlDocuments))]
@@ -88,7 +88,7 @@ public class LayoutCacheTests
             LayoutCache.Disabled = disabled;
             try
             {
-                var document = Documents.ReportFlow(BundledFonts.CreateCollection(), chapters: 2).Render();
+                var document = Benchmarks.Documents.ReportFlow(BundledFonts.CreateCollection(), chapters: 2).Render();
                 document.Info.CreationDate = document.Info.ModificationDate = Date;
                 return document.ToArray();
             }
@@ -104,7 +104,7 @@ public class LayoutCacheTests
     [Fact]
     public void A_pass_lays_a_paragraph_out_once_per_width()
     {
-        var paragraph = new Paragraph(Style()).Add(Documents.Text(1, 30));
+        var paragraph = new Paragraph(Style()).Add(Benchmarks.Documents.Text(1, 30));
         using (LayoutCache.Enter())
         {
             Assert.Same(paragraph.Layout(200), paragraph.Layout(200));
@@ -150,7 +150,7 @@ public class LayoutCacheTests
     [Fact]
     public void Lines_beside_floats_are_not_cached()
     {
-        var paragraph = new Paragraph(Style()).Add(Documents.Text(2, 40));
+        var paragraph = new Paragraph(Style()).Add(Benchmarks.Documents.Text(2, 40));
         using (LayoutCache.Enter())
         {
             var narrow = paragraph.Layout(200, (top, height, minWidth) => (top, 50, 150));
@@ -190,7 +190,7 @@ public class LayoutCacheTests
                 TextShaper.Shape("office", [sans], new ShapingOptions { Features = ["-kern"] }));
 
             // Long texts (whole spans and lines) are not kept.
-            var text = Documents.Text(3, 20);
+            var text = Benchmarks.Documents.Text(3, 20);
             Assert.True(text.Length > 64);
             Assert.NotSame(TextShaper.Shape(text, [sans]), TextShaper.Shape(text, [sans]));
             Assert.Same(TextShaper.Shape(text[..64], [sans]), TextShaper.Shape(text[..64], [sans]));
