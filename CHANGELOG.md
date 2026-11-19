@@ -6,6 +6,10 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Form reading** (`RaiCore.Pdf.Editing`): `PdfEditor.GetForm()` tells whether a document has an AcroForm and an XFA
+  form (static or dynamic, by `/NeedsRendering`) and lists its fields: fully qualified name, type (text, check box,
+  radio buttons, push button, list, combo, signature), values, choice options, read-only and required flags, and widgets
+  with their page, rectangle, hidden flag and appearance state; inherited attributes are followed (#190).
 - **Optimization** (`RaiCore.Pdf.Editing`): `PdfEditor.Optimize(options)` makes documents smaller without changing how
   they look: resource entries no content uses are removed (pages, forms, patterns, Type 3 fonts; inherited and shared
   resources by the union of their users), identical streams and fonts/font descriptors/encodings/graphics states are

@@ -52,6 +52,23 @@ Inserted pages keep their content, resources, annotations, boxes and rotation, a
 copied once. Links between inserted pages keep working; links to pages of the other file that were not inserted are
 dropped. The other file's outline, form fields and tagged structure are not copied.
 
+## Forms
+
+`GetForm()` reads the document's interactive form as it is now:
+
+[!code-csharp[](../snippets/Editing.cs#form)]
+
+- **`HasAcroForm`** tells whether the document has a form at all, and **`Xfa`** whether it has an XFA form: `Static`
+  (the PDF pages and their fields are what viewers without XFA show) or `Dynamic` (`/NeedsRendering`: the pages are laid
+  out from the XFA data, and the PDF pages are usually only a placeholder).
+- **`Fields`** lists the fields with a value, in the order of the field tree: `FullName` (the names of the field and its
+  parents joined by periods), `Type` (text, check box, radio buttons, push button, list box, combo box, signature),
+  `Value` and `Values` (several for multi-select lists), `Options` of list and combo boxes as shown, `IsReadOnly`,
+  `IsRequired`, and `Widgets`: where the field is shown, with the page index, rectangle (user space), whether it is
+  hidden, and the on/off state of check boxes and radio buttons.
+- Inherited attributes (type, flags, value, options) are followed down the field tree. Fields whose widgets are all on
+  deleted pages are not listed. `form["address.city"]` finds a field by its full name.
+
 ## Making files smaller
 
 Each save already leaves out every object nothing uses. `Optimize()` goes further, without changing how the pages look:

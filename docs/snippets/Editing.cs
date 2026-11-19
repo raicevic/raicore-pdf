@@ -64,6 +64,21 @@ internal static class Editing
         bundle.Save("contract-bundle.pdf");
         #endregion
 
+        #region form
+        // What a form asks for, and what was filled in.
+        var form = PdfEditor.Open("contract.pdf").GetForm();
+        if (form.Xfa == PdfXfaKind.Dynamic)
+        {
+            Console.WriteLine("A dynamic XFA form: its pages are drawn by the viewer from XML.");
+        }
+
+        foreach (var field in form.Fields)
+        {
+            var where = string.Join(", ", field.Widgets.Select(w => $"page {w.PageIndex + 1}"));
+            Console.WriteLine($"{field.FullName} ({field.Type}{(field.IsRequired ? ", required" : "")}) = {field.Value} on {where}");
+        }
+        #endregion
+
         #region split
         // Parts of at most 10 MB, for a mail server or an archive with a size limit.
         var parts = PdfEditor.Open("contract-merged.pdf").SplitBySize(10 * 1024 * 1024);
