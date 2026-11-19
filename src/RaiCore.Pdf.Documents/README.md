@@ -1,9 +1,9 @@
 # RaiCore.Pdf.Documents
 
-Converts Word documents (`.docx`) and OpenDocument text documents (`.odt`, `.ott`, flat `.fodt`) to PDF with
-[RaiCore.Pdf](https://www.nuget.org/packages/RaiCore.Pdf)'s layout engine: styles, numbered and bulleted lists, tables,
-sections with their page setup, headers and footers with page numbers, images, hyperlinks and notes. No word
-processor, no browser, no native dependencies.
+Converts Word documents (`.docx`), OpenDocument text documents (`.odt`, `.ott`, flat `.fodt`) and Rich Text Format
+documents (`.rtf`) to PDF with [RaiCore.Pdf](https://www.nuget.org/packages/RaiCore.Pdf)'s layout engine: styles,
+numbered and bulleted lists, tables, sections with their page setup, headers and footers with page numbers, images,
+hyperlinks and notes. No word processor, no browser, no native dependencies.
 
 ```csharp
 using RaiCore.Pdf.Documents;
@@ -11,6 +11,7 @@ using RaiCore.Pdf.Documents;
 var pdf = DocxToPdf.Convert("letter.docx");
 pdf.Save("letter.pdf");
 OdtToPdf.Convert("report.odt").Save("report.pdf");
+RtfToPdf.Convert("memo.rtf").Save("memo.pdf");
 ```
 
 - **Styles and formatting:** paragraph, character and table styles with their inheritance, document defaults and theme
@@ -30,15 +31,22 @@ OdtToPdf.Convert("report.odt").Save("report.pdf");
   widths, spans, header rows and repeated rows; master pages with page layouts, headers and footers for left, right and
   first pages, switched by paragraph styles; images in the package or embedded, the replacement images of charts;
   notes, links, bookmarks, page numbers and page references; tracked changes as if accepted.
+- **RTF:** RTF 1.9.1 with its code pages (`\ansicpg`, `\fcharset`, double-byte ones too) and Unicode escapes, the
+  font, color and style tables, lists (`\listtable`, old-style `\pn`), tables (merged and nested), sections, headers
+  and footers, fields (links, page numbers, page references), PNG and JPEG pictures, bookmarks and notes; groups,
+  tokens, nesting, table cells and pictures bounded by `ResourceLimits`, and data that is not RTF throws
+  `PdfFormatException`.
 - **Untrusted input:** no DTDs, nothing external; decompressed bytes, XML elements (and repeated table rows and cells),
   nesting, table cells, pages and time are bounded by `ResourceLimits`. Malformed documents throw
   `PdfFormatException`; encrypted documents and `.doc` files `NotSupportedException`.
 
 Not supported: text boxes and shapes as floating frames (their text follows their paragraph), charts (an OpenDocument
 chart's replacement image is shown), SmartArt, embedded objects, EMF and WMF images, comments, forms, several text
-columns, footnotes at the bottom of the page. What is left out is reported to the options' `Diagnostics`.
+columns, footnotes at the bottom of the page; in RTF also PICT pictures and drawing objects. What is left out is
+reported to the options' `Diagnostics`.
 
-More: the [Word documents guide](https://raicevic.github.io/raicore-pdf/guides/documents.html).
+More: the [Word documents guide](https://raicevic.github.io/raicore-pdf/guides/documents.html) and its
+[RTF section](https://raicevic.github.io/raicore-pdf/guides/documents.html#rtf-documents).
 
 ## More
 

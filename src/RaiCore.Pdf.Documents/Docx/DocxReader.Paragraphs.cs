@@ -531,7 +531,7 @@ internal sealed partial class DocxReader
     }
 
     /// <summary>The number format of a field's <c>\*</c> switch, or <c>null</c>.</summary>
-    private static NumberFormat? FormatSwitch(List<string> tokens)
+    internal static NumberFormat? FormatSwitch(List<string> tokens)
     {
         for (var i = 1; i + 1 < tokens.Count; i++)
         {
@@ -596,7 +596,7 @@ internal sealed partial class DocxReader
     /// A link's address as a URI for the PDF: absolute web, mail, FTP, telephone and news addresses (with the anchor as
     /// fragment); relative paths, files and other schemes give <c>null</c>.
     /// </summary>
-    private static Uri? LinkUri(string address, string? anchor)
+    internal static Uri? LinkUri(string address, string? anchor)
     {
         address = address.Trim();
         if (anchor is { Length: > 0 } && !address.Contains('#', StringComparison.Ordinal))

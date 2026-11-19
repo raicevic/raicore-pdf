@@ -69,6 +69,7 @@ public static class FuzzTargets
         ["pptx"] = Pptx,
         ["docx"] = Docx,
         ["odt"] = Odt,
+        ["rtf"] = Rtf,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -366,6 +367,18 @@ public static class FuzzTargets
     /// settings, pictures) and laid out; every third one (by length) tagged, every other one without heading bookmarks.
     /// </summary>
     public static void Odt(byte[] input) => OdtToPdf.ConvertToBytes(input, new OdtConverterOptions
+    {
+        Limits = Limits,
+        Tagged = input.Length % 3 == 0,
+        HeadingBookmarks = input.Length % 2 == 0,
+        Diagnostics = _ => { },
+    });
+
+    /// <summary>
+    /// RTF conversion (groups, destinations, code pages, lists, tables, fields, pictures), every third input (by length)
+    /// tagged, every other one without heading bookmarks.
+    /// </summary>
+    public static void Rtf(byte[] input) => RtfToPdf.ConvertToBytes(input, new RtfConverterOptions
     {
         Limits = Limits,
         Tagged = input.Length % 3 == 0,

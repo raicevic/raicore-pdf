@@ -46,6 +46,20 @@ internal static class WordDocuments
         withFonts.Save("letter-fonts.pdf");
         #endregion
 
+        // A small RTF document to convert (WordPad and other writers save the same control words).
+        File.WriteAllText("memo.rtf", @"{\rtf1\ansi\ansicpg1252\deff0{\fonttbl{\f0\fswiss Arial;}}{\colortbl;\red47\green84\blue150;}"
+            + @"{\info{\title Memo}}\pard\sa120\b\fs32\cf1 Memo\par\pard\sa120\plain\fs22 Caf\'e9 opens at \b 8:00\b0  on Monday.\par"
+            + @"\pard\fi-360\li720\sa60{\pntext 1.\tab}{\*\pn\pnlvlbody\pndec{\pntxta .}}Coffee\par"
+            + @"\pard\fi-360\li720\sa60{\pntext 2.\tab}{\*\pn\pnlvlbody\pndec{\pntxta .}}Tea\par}");
+
+        #region rtf
+        var memo = RtfToPdf.Convert("memo.rtf", new RtfConverterOptions
+        {
+            Diagnostics = d => Console.WriteLine($"  {d.Kind}: {d.Message}"), // EMF pictures, drawing objects and the like.
+        });
+        memo.Save("memo.pdf");
+        #endregion
+
         // An OpenDocument text document to convert, as LibreOffice writes it (a ZIP package, mimetype first).
         WriteOpenDocument("quarterly.odt");
 

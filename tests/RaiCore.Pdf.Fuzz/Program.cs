@@ -7,7 +7,7 @@ using SharpFuzz;
 //   local <target> <iterations> <seed> <out> <corpus>... a managed mutation loop, no native tools needed
 //   replay <target> <file or folder>...                  run inputs once, e.g. a crash libFuzzer found
 //   minimize <target> <file> <out>                      shrink a failing input while it fails the same way
-// Targets: see FuzzTargets.All (html, css, png, jpeg, gif, bmp, webp, svg, font, woff, woff2, pdf, extract, email, tiff, csv, edit, cfb, xlsx, pptx, docx, odt); seed-corpus.sh
+// Targets: see FuzzTargets.All (html, css, png, jpeg, gif, bmp, webp, svg, font, woff, woff2, pdf, extract, email, tiff, csv, edit, cfb, xlsx, pptx, docx, odt, rtf); seed-corpus.sh
 // collects the seeds of one. Locally, e.g.:
 //   tests/RaiCore.Pdf.Fuzz/seed-corpus.sh png /tmp/png
 //   dotnet run -c Release --project tests/RaiCore.Pdf.Fuzz -- local png 100000 1 /tmp/png-out /tmp/png
@@ -67,6 +67,9 @@ internal static class LocalFuzzer
             "xref", "trailer", "startxref", "%%EOF", "/Kids", "/Prev", "-2147483648", "4294967295",
             "<c r=\"XFD1048576\" t=\"s\"><v>0</v></c>", "<mergeCell ref=\"A1:XFD1048576\"/>", " t=\"d\"", " s=\"1\"", " numFmtId=\"14\"",
             "[h]:mm:ss.000", "#,##0.00;[Red](#,##0.00)", "# ??/??", "0.00E+00", "<si><r><t>", "_x0000_", "$1:$1048576",
+            "{\\*\\", "\\par ", "\\pard", "\\cell ", "\\nestcell ", "\\row ", "\\nestrow ", "\\trowd", "\\cellx99999", "\\clvmrg", "\\intbl\\itap3 ",
+            "\\'e9", "\\'82\\'b1", "\\u-3913?", "\\uc9", "\\bin9 ", "\\sect ", "\\ls1\\ilvl8 ", "{\\field{\\*\\fldinst PAGEREF x}{\\fldrslt ",
+            "{\\pict\\pngblip ", "{\\footnote ", "{\\header ", "\\f99999 ", "\\fs-1 ",
         }.Select(System.Text.Encoding.UTF8.GetBytes),
     ];
 

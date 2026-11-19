@@ -22,7 +22,7 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf.Email` | Email (.eml, Outlook .msg) and web archives (.mht) → PDF: header block, inline images, attachments embedded or appended | 🚧 Unreleased |
 | `RaiCore.Pdf.Sheets` | CSV and Excel (.xlsx) → PDF: paginated tables with repeated header rows, number formats, styles, merged cells, print areas | 🚧 Unreleased |
 | `RaiCore.Pdf.Slides` | PowerPoint (.pptx) → PDF: one page per slide with masters, layouts, themes, shapes, text, pictures, tables | 🚧 Unreleased |
-| `RaiCore.Pdf.Documents` | Word (.docx) and OpenDocument text (.odt) → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | 🚧 Unreleased |
+| `RaiCore.Pdf.Documents` | Word (.docx), OpenDocument text (.odt) and RTF → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | 🚧 Unreleased |
 | `RaiCore.Pdf.XslFo` | XSL-FO → PDF | ⚪ After 1.0 |
 
 All packages target .NET 10 and run on Windows, Linux (glibc and musl, so Alpine too) and macOS, x64 and Arm64, with
@@ -676,12 +676,15 @@ sections with their own page size and orientation, headers and footers for first
 images (inline or floating), hyperlinks, bookmarks, footnotes and endnotes, and a table of contents with the PDF's page
 numbers. Headings become PDF bookmarks. It converts OpenDocument text documents (`.odt`, `.ott` and flat `.fodt`, as
 LibreOffice writes them) the same way: styles, lists, tables, page styles with their headers and footers, images and
-notes. See the [Word documents guide](https://raicevic.github.io/raicore-pdf/guides/documents.html).
+notes. `RtfToPdf` converts Rich Text Format documents (`.rtf`) the same way too, with their code pages, lists,
+tables (nested ones too), sections, headers and footers, fields, pictures and notes. See the
+[Word documents guide](https://raicevic.github.io/raicore-pdf/guides/documents.html).
 
 ```csharp
 var pdf = DocxToPdf.Convert("letter.docx", new DocxConverterOptions { Tagged = true });
 pdf.Save("letter.pdf");
 OdtToPdf.Convert("report.odt").Save("report.pdf");
+RtfToPdf.Convert("memo.rtf").Save("memo.pdf");
 ```
 
 ### Fonts
@@ -900,9 +903,9 @@ can be an ASP.NET Core response body; while the stream is slow, the conversion w
 ## Architecture
 
 ```
- DOCX / ODT / XLSX / PPTX ─┐
- HTML + CSS / Razor       ─┼─► Document model ─► Layout engine ─► PDF writer
- XML (XSL-FO)             ─┘
+ DOCX / ODT / RTF / XLSX / PPTX ─┐
+ HTML + CSS / Razor             ─┼─► Document model ─► Layout engine ─► PDF writer
+ XML (XSL-FO)                   ─┘
 ```
 
 Every input format is mapped to one shared document model and laid out by one engine, so improvements to fonts, tables and pagination benefit all formats.
@@ -922,7 +925,7 @@ The way there and what comes next are tracked in [GitHub milestones](https://git
 5. **0.5 Hardening:** visual comparison with browsers, fuzzing, resource limits, performance, deployment targets.
 6. **Done, 1.0:** API review and freeze, documentation, the release.
 7. **1.x Reading, editing and conversions:** text extraction, text search, image extraction and page editing (done), forms,
-   PDF/A level A, TIFF, email, CSV, XLSX, PPTX, DOCX and Office formats to PDF.
+   PDF/A level A, TIFF, email, CSV, XLSX, PPTX, DOCX, RTF and Office formats to PDF.
 8. **After 1.0:** XSL-FO, grid layout, multi-column layout, digital signatures.
 
 The 0.x milestones are internal stages, not releases.

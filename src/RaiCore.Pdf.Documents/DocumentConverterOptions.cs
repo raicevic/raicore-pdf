@@ -4,7 +4,7 @@ namespace RaiCore.Pdf.Documents;
 
 /// <summary>
 /// The options the word-processing converters of this package share: fonts, outline, tagging, diagnostics and resource
-/// limits. See <see cref="DocxConverterOptions"/> and <see cref="OdtConverterOptions"/>.
+/// limits. See <see cref="DocxConverterOptions"/>, <see cref="OdtConverterOptions"/> and <see cref="RtfConverterOptions"/>.
 /// </summary>
 /// <remarks>
 /// <para>

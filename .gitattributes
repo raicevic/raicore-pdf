@@ -21,6 +21,11 @@ tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Crashes/pptx/** -text
 # Word documents are ZIP packages: binary, never converted.
 tests/RaiCore.Pdf.Tests/Fixtures/Documents/*.docx -text
 tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Seeds/docx/** -text
+# RTF documents are byte-exact (line endings, \bin data, code pages).
+tests/RaiCore.Pdf.Tests/Fixtures/Documents/Rtf/*.rtf -text
+tests/RaiCore.Pdf.Tests/Fixtures/Tika/*.rtf -text
+tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Seeds/rtf/** -text
+tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Crashes/rtf/** -text
 
 # OpenDocument text: ZIP packages, and flat XML documents kept byte-exact.
 tests/RaiCore.Pdf.Tests/Fixtures/Documents/Odt/*.odt -text
