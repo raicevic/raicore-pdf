@@ -1,0 +1,6 @@
+Name,Quantity,Price,Date,Notes
+Widget,12,"1,234.50",2026-11-19,"Line one
+line ""two"""
+Gadget,-3,0.5,19.11.2026,plain
+,,,,
+https://example.com/a/very/long/path/without/spaces,1e5,$12.00,8:30 PM,"x, y, z"

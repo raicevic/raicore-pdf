@@ -1,0 +1,47 @@
+#nullable enable
+RaiCore.Pdf.Sheets.CsvConverterOptions
+RaiCore.Pdf.Sheets.CsvConverterOptions.CsvConverterOptions() -> void
+RaiCore.Pdf.Sheets.CsvConverterOptions.DecimalSeparator.get -> char?
+RaiCore.Pdf.Sheets.CsvConverterOptions.DecimalSeparator.init -> void
+RaiCore.Pdf.Sheets.CsvConverterOptions.Delimiter.get -> char?
+RaiCore.Pdf.Sheets.CsvConverterOptions.Delimiter.init -> void
+RaiCore.Pdf.Sheets.CsvConverterOptions.Encoding.get -> System.Text.Encoding?
+RaiCore.Pdf.Sheets.CsvConverterOptions.Encoding.init -> void
+RaiCore.Pdf.Sheets.CsvConverterOptions.HasHeaderRow.get -> bool
+RaiCore.Pdf.Sheets.CsvConverterOptions.HasHeaderRow.init -> void
+RaiCore.Pdf.Sheets.CsvConverterOptions.Sheet.get -> RaiCore.Pdf.Sheets.SheetOptions!
+RaiCore.Pdf.Sheets.CsvConverterOptions.Sheet.init -> void
+RaiCore.Pdf.Sheets.CsvToPdf
+RaiCore.Pdf.Sheets.SheetOptions
+RaiCore.Pdf.Sheets.SheetOptions.FallbackFontFamilies.get -> System.Collections.Generic.IReadOnlyList<string!>!
+RaiCore.Pdf.Sheets.SheetOptions.FallbackFontFamilies.init -> void
+RaiCore.Pdf.Sheets.SheetOptions.FitToWidth.get -> bool
+RaiCore.Pdf.Sheets.SheetOptions.FitToWidth.init -> void
+RaiCore.Pdf.Sheets.SheetOptions.FontFamily.get -> string!
+RaiCore.Pdf.Sheets.SheetOptions.FontFamily.init -> void
+RaiCore.Pdf.Sheets.SheetOptions.FontSize.get -> double
+RaiCore.Pdf.Sheets.SheetOptions.FontSize.init -> void
+RaiCore.Pdf.Sheets.SheetOptions.Fonts.get -> RaiCore.Pdf.Fonts.FontCollection?
+RaiCore.Pdf.Sheets.SheetOptions.Fonts.init -> void
+RaiCore.Pdf.Sheets.SheetOptions.Gridlines.get -> bool
+RaiCore.Pdf.Sheets.SheetOptions.Gridlines.init -> void
+RaiCore.Pdf.Sheets.SheetOptions.Landscape.get -> bool
+RaiCore.Pdf.Sheets.SheetOptions.Landscape.init -> void
+RaiCore.Pdf.Sheets.SheetOptions.Limits.get -> RaiCore.Pdf.ResourceLimits!
+RaiCore.Pdf.Sheets.SheetOptions.Limits.init -> void
+RaiCore.Pdf.Sheets.SheetOptions.MinimumFontSize.get -> double
+RaiCore.Pdf.Sheets.SheetOptions.MinimumFontSize.init -> void
+RaiCore.Pdf.Sheets.SheetOptions.Page.get -> RaiCore.Pdf.Layout.PageSetup!
+RaiCore.Pdf.Sheets.SheetOptions.Page.init -> void
+RaiCore.Pdf.Sheets.SheetOptions.SheetOptions() -> void
+RaiCore.Pdf.Sheets.SheetOptions.Tagged.get -> bool
+RaiCore.Pdf.Sheets.SheetOptions.Tagged.init -> void
+RaiCore.Pdf.Sheets.SheetOptions.Title.get -> string?
+RaiCore.Pdf.Sheets.SheetOptions.Title.init -> void
+static RaiCore.Pdf.Sheets.CsvToPdf.Convert(System.IO.Stream! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Sheets.CsvToPdf.Convert(byte[]! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Sheets.CsvToPdf.Convert(string! path, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Sheets.CsvToPdf.ConvertAsync(System.IO.Stream! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Sheets.CsvToPdf.ConvertAsync(byte[]! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Sheets.CsvToPdf.ConvertToBytes(System.IO.Stream! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Sheets.CsvToPdf.ConvertToBytes(byte[]! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null) -> byte[]!

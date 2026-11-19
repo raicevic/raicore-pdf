@@ -14,6 +14,17 @@ and versions follow [Semantic Versioning](https://semver.org/).
   drawn before the document was tagged, and actual text for Private Use Area characters. Attachments need PDF/A-3a as
   they need PDF/A-3b, and `AttachFacturXInvoice` keeps PDF/A-3a. CI validates HTML, layout and canvas documents with
   veraPDF for 2a and 3a (#194).
+- **CSV to PDF** (`RaiCore.Pdf.Sheets`, new package): `CsvToPdf.Convert` lays out CSV data as a table with the
+  layout engine: the header row repeated on every page, column widths fitted to the content within the page width
+  (narrow columns whole, wide ones sharing the rest by how much text they hold), words wider than their column broken
+  and columns that cannot all get a readable width printed in bands, so text is never clipped; numbers (signs,
+  thousands separators, currency and percent signs) and dates right-aligned, text aligned to its direction. RFC 4180
+  parsing (quoted fields with delimiters, line breaks and doubled quotes; CRLF, LF or CR), detection of the delimiter
+  (comma, semicolon, tab, bar, Excel's `sep=` line), the encoding (byte order mark, UTF-8, UTF-16, Windows-1252) and
+  the decimal separator, or options for them; landscape pages, fit-to-width (smaller text down to a minimum size),
+  fonts with fallbacks, gridlines, tagged tables. Malformed data (stray quotes, ragged rows, invalid bytes) is read the
+  way spreadsheet programs read it, within `ResourceLimits` (cells, pages, time). A new `csv` fuzz target covers it.
+  See the [CSV guide](https://raicevic.github.io/raicore-pdf/guides/sheets.html) (#201).
 - **TIFF images** wherever images are accepted (`PdfImage.Load`, `<img>`, CSS backgrounds): bilevel, grayscale,
   palette, RGB and CMYK with 1 to 16 bits per sample, strips or tiles, separate planes, uncompressed, PackBits, LZW and
   Deflate (with the horizontal predictor), associated and unassociated alpha, both byte orders and BigTIFF. JPEG data
