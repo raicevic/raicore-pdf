@@ -69,6 +69,24 @@ dropped. The other file's outline, form fields and tagged structure are not copi
 - Inherited attributes (type, flags, value, options) are followed down the field tree. Fields whose widgets are all on
   deleted pages are not listed. `form["address.city"]` finds a field by its full name.
 
+### Flattening a form
+
+`FlattenForm()` burns the form into the pages: each field's widgets are drawn into the page content exactly as they
+look, and the widgets, the fields and the form are removed, so the values stay visible but can no longer be changed.
+
+[!code-csharp[](../snippets/Editing.cs#flatten)]
+
+- A widget is drawn with its normal appearance, in its current state for check boxes and radio buttons, at its
+  rectangle (the appearance's box and matrix are followed). The page's own content is wrapped so that a graphics state
+  it leaves changed cannot move the drawing.
+- Where a widget has no appearance, or the form asks viewers to make new ones (`/NeedAppearances`), one is made: text
+  fields (single-line, multiline, comb, password, alignment, automatic size) and choice fields in the font and color of
+  their default appearance, measured with the standard font of the same family, with their background and border;
+  check boxes and radio buttons with their check character. Text is written in WinAnsi, so other characters show as `?`.
+- Hidden widgets are removed without being drawn. Other annotations (links, notes) stay.
+- A static XFA form goes with the form; a dynamic XFA form throws `NotSupportedException`, since its pages are laid out
+  by the viewer.
+
 ## Making files smaller
 
 Each save already leaves out every object nothing uses. `Optimize()` goes further, without changing how the pages look:

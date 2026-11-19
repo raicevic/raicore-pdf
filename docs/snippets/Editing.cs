@@ -79,6 +79,14 @@ internal static class Editing
         }
         #endregion
 
+        #region flatten
+        // Burn the filled-in values into the pages: they stay visible but can no longer be changed.
+        var filled = PdfEditor.Open("contract.pdf");
+        var flattened = filled.FlattenForm();
+        Console.WriteLine($"{flattened.Drawn} fields drawn ({flattened.Generated} with a new appearance), {flattened.Removed} hidden ones removed");
+        filled.Save("contract-flattened.pdf");
+        #endregion
+
         #region split
         // Parts of at most 10 MB, for a mail server or an archive with a size limit.
         var parts = PdfEditor.Open("contract-merged.pdf").SplitBySize(10 * 1024 * 1024);
