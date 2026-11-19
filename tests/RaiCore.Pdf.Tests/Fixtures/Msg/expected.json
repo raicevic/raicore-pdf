@@ -1,0 +1,52 @@
+{
+  "delegate": {
+    "attachments": [],
+    "body": "Sent by the assistant for Ada.",
+    "cc": null,
+    "html": "<html><body>Sent by the assistant for Ada.</body></html>",
+    "sender": "Assistant <assistant@example.com>",
+    "subject": "Sent on behalf",
+    "to": "Charles Babbage <charles@example.com>"
+  },
+  "embedded": {
+    "attachments": [
+      "Inner message.msg"
+    ],
+    "body": "",
+    "cc": null,
+    "html": "<html><body><p>See the attached message.</p></body></html>",
+    "sender": "Hedy Lamarr <hedy@example.com>",
+    "subject": "Forwarding the inner message",
+    "to": "Katherine Johnson <katherine@example.com>"
+  },
+  "html": {
+    "attachments": [
+      "chart.png",
+      "notes \u2013 draft.txt"
+    ],
+    "body": "The figures are in the chart below.",
+    "cc": "Mary Somerville <mary@example.org>",
+    "html": "<html><body><h1>Quarterly report</h1><p>The figures are in the chart below.</p><p><img src=\"cid:chart@example\" alt=\"Chart\"></p></body></html>",
+    "sender": "Ada Lovelace <ada@example.com>",
+    "subject": "Quarterly report \u2013 Q3 \u20ac",
+    "to": "Charles Babbage <charles@example.com>"
+  },
+  "rtf": {
+    "attachments": [],
+    "body": "Hello from RTF & HTML.\n\nSecond paragraph.",
+    "cc": null,
+    "html": "<html><body><p>Hello from <b>RTF</b> &amp; HTML.</p><p>Second paragraph.</p></body></html>",
+    "sender": "Grace Hopper <grace@example.com>",
+    "subject": "Body in compressed RTF",
+    "to": "Alan Turing <alan@example.org>"
+  },
+  "text": {
+    "attachments": [],
+    "body": "Plain text body with \u00fcmlauts.\nSecond line.",
+    "cc": null,
+    "html": "<html><body>Plain text body with &#252;mlauts.<br />Second line.</body></html>",
+    "sender": "Ren\u00e9 Descartes <rene@example.fr>",
+    "subject": "Caf\u00e9 menu",
+    "to": "Blaise Pascal <blaise@example.fr>"
+  }
+}

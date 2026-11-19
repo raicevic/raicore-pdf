@@ -1,0 +1,43 @@
+From: Hedy Lamarr <hedy@example.com>
+To: Katherine Johnson <katherine@example.com>
+Date: Sat, 14 Mar 2026 09:26:53 +0000
+Subject: Forwarding the inner message
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=_eml_0"
+
+--=_eml_0
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+<html><body><p>See the attached message.</p></body></html>
+
+--=_eml_0
+Content-Type: message/rfc822; boundary="=_eml_2"
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+Content-Disposition: attachment
+
+From: Emmy Noether <emmy@example.de>
+To: Hedy Lamarr <hedy@example.com>
+Date: Sat, 14 Mar 2026 09:26:53 +0000
+Subject: Inner message
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=_eml_3"
+
+--=_eml_3
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+The inner message body.
+
+--=_eml_3
+Content-Type: text/plain
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="inner.txt"
+MIME-Version: 1.0
+
+SW5zaWRlIHRoZSBpbm5lciBtZXNzYWdlLg0K
+
+--=_eml_3--
+
+--=_eml_0--

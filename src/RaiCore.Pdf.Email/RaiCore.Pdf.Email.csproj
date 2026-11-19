@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Convert email messages (.eml) and web archives (.mht) to PDF with RaiCore.Pdf: the message with a header block, inline images in place and its attachments embedded, listed or appended.</Description>
-    <PackageTags>$(PackageTags);eml;mht;mhtml;email-to-pdf;mime</PackageTags>
+    <Description>Convert email messages (.eml), Outlook messages (.msg) and web archives (.mht) to PDF with RaiCore.Pdf: the message with a header block, inline images in place and its attachments embedded, listed or appended.</Description>
+    <PackageTags>$(PackageTags);eml;msg;outlook;mht;mhtml;email-to-pdf;msg-to-pdf;mime</PackageTags>
     <!--
       A core package, released with the core at the same version. It uses only the public API of RaiCore.Pdf.Html. It
       has no released version to validate against yet: set the baseline to the first release that includes it.

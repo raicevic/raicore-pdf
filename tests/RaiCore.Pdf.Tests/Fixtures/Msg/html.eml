@@ -1,0 +1,40 @@
+From: Ada Lovelace <ada@example.com>
+To: Charles Babbage <charles@example.com>
+Cc: Mary Somerville <mary@example.org>
+Date: Sat, 14 Mar 2026 09:26:53 +0000
+Subject: Quarterly report =?utf-8?b?4oCTIFEzIOKCrA==?=
+Content-Type: multipart/mixed; boundary="=_eml_0"
+
+--=_eml_0
+MIME-Version: 1.0
+Content-Type: multipart/related; boundary="=_eml_1"
+
+--=_eml_1
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+<html><body><h1>Quarterly report</h1><p>The figures are in the chart below.</=
+p><p><img src=3D"cid:chart@example" alt=3D"Chart"></p></body></html>
+
+--=_eml_1
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Disposition: inline; filename="chart.png"
+Content-ID: <chart@example>
+MIME-Version: 1.0
+
+iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAIAAABwJOjsAAAAJElEQVR4nGM4ISc3IIhh1OJRi0ct
+HrV41OJRi0ctHrV45FgMAFLhLK5mrmiuAAAAAElFTkSuQmCC
+
+--=_eml_1--
+
+--=_eml_0
+Content-Type: text/plain
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename*=utf-8''notes%20%E2%80%93%20draft.txt
+MIME-Version: 1.0
+
+RHJhZnQgbm90ZXMuDQo=
+
+--=_eml_0--

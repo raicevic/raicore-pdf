@@ -1,6 +1,6 @@
 # RaiCore.Pdf.Email
 
-Converts email messages (`.eml`) and web archives (`.mht`, `.mhtml`) to PDF with
+Converts email messages (`.eml`), Outlook messages (`.msg`) and web archives (`.mht`, `.mhtml`) to PDF with
 [RaiCore.Pdf](https://www.nuget.org/packages/RaiCore.Pdf)'s HTML engine: no browser, no mail client, no native
 dependencies.
 

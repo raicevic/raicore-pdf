@@ -223,29 +223,30 @@ def tree():
     }
 
 
-files = {
-    'v3-basic.cfb': (3, tree(), 0),
-    'v3-difat.cfb': (3, {'Data': data('Data', 6000), 'Note': data('Note', 70)}, 240),  # Two DIFAT sectors.
-    'v4-basic.cfb': (4, tree(), 0),
-}
-expected = {}
-for name, (version, content, fat_min) in files.items():
-    write_cfb(name, version, content, fat_min)
-    ole = olefile.OleFileIO(name)
-    streams = {}
-    for entry in ole.listdir(streams=True, storages=False):
-        payload = ole.openstream(entry).read()
-        streams['/'.join(entry)] = {'size': len(payload), 'sha256': hashlib.sha256(payload).hexdigest()}
-    meta = ole.get_metadata()
-    expected[name] = {
-        'version': version,
-        'fat_sectors': struct.unpack_from('<I', open(name, 'rb').read(), 44)[0],
-        'streams': streams,
-        'title': meta.title.decode('cp1252') if meta.title else None,
-        'author': meta.author.decode('cp1252') if meta.author else None,
-        'created': meta.create_time.isoformat() if meta.create_time else None,
+if __name__ == '__main__':
+    files = {
+        'v3-basic.cfb': (3, tree(), 0),
+        'v3-difat.cfb': (3, {'Data': data('Data', 6000), 'Note': data('Note', 70)}, 240),  # Two DIFAT sectors.
+        'v4-basic.cfb': (4, tree(), 0),
     }
-    ole.close()
-with open('expected.json', 'w') as f:
-    json.dump(expected, f, indent=2, sort_keys=True)
-print(json.dumps({k: len(v['streams']) for k, v in expected.items()}))
+    expected = {}
+    for name, (version, content, fat_min) in files.items():
+        write_cfb(name, version, content, fat_min)
+        ole = olefile.OleFileIO(name)
+        streams = {}
+        for entry in ole.listdir(streams=True, storages=False):
+            payload = ole.openstream(entry).read()
+            streams['/'.join(entry)] = {'size': len(payload), 'sha256': hashlib.sha256(payload).hexdigest()}
+        meta = ole.get_metadata()
+        expected[name] = {
+            'version': version,
+            'fat_sectors': struct.unpack_from('<I', open(name, 'rb').read(), 44)[0],
+            'streams': streams,
+            'title': meta.title.decode('cp1252') if meta.title else None,
+            'author': meta.author.decode('cp1252') if meta.author else None,
+            'created': meta.create_time.isoformat() if meta.create_time else None,
+        }
+        ole.close()
+    with open('expected.json', 'w') as f:
+        json.dump(expected, f, indent=2, sort_keys=True)
+    print(json.dumps({k: len(v['streams']) for k, v in expected.items()}))
