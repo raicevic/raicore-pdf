@@ -22,6 +22,7 @@ var samples = new (string Name, Func<Task> Run)[]
     ("image extraction", ImageExtraction.RunAsync),
     ("editing", Editing.RunAsync),
     ("email", Email.RunAsync),
+    ("CSV", Sheets.RunAsync),
 };
 
 foreach (var (name, run) in samples)

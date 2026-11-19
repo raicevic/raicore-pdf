@@ -26,5 +26,7 @@
   href: editing.md
 - name: Email and web archives
   href: email.md
+- name: CSV to PDF
+  href: sheets.md
 - name: Experimental APIs
   href: ../experimental.md

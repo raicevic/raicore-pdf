@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\src\RaiCore.Pdf.Extraction\RaiCore.Pdf.Extraction.csproj" />
     <ProjectReference Include="..\..\src\RaiCore.Pdf.Editing\RaiCore.Pdf.Editing.csproj" />
     <ProjectReference Include="..\..\src\RaiCore.Pdf.Email\RaiCore.Pdf.Email.csproj" />
+    <ProjectReference Include="..\..\src\RaiCore.Pdf.Sheets\RaiCore.Pdf.Sheets.csproj" />
   </ItemGroup>
 
   <ItemGroup>

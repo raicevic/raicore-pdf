@@ -9,6 +9,7 @@ using PackageSmoke;
 using RaiCore.Pdf;
 using RaiCore.Pdf.Editing;
 using RaiCore.Pdf.Email;
+using RaiCore.Pdf.Sheets;
 using RaiCore.Pdf.Extraction;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html;
@@ -198,6 +199,13 @@ var email = EmailToPdf.Convert(message, new EmailConverterOptions { AppendAttach
 var emailText = string.Join(" | ", new TextExtractor(PdfReader.Open(email.ToArray())).ExtractPages().Select(p => p.Text.ReplaceLineEndings(" ")));
 Check($"email: {emailText}", emailText.StartsWith("Caf\u00E9 \u2013 smoke", StringComparison.Ordinal) && emailText.EndsWith("| Attached", StringComparison.Ordinal)
     && email.Attachments.Single().FileName == "r\u00E9sum\u00E9.pdf" && new ImageExtractor(PdfReader.Open(email.ToArray())).ExtractPage(0).Images.Count == 1);
+
+// RaiCore.Pdf.Sheets: Windows-1252 CSV with semicolons and decimal commas (all detected), 300 rows: the header repeats.
+var csvRows = string.Concat(Enumerable.Range(1, 300).Select(i => $"Caf\u00E9 {i};{i},50\n"));
+var csvPdf = CsvToPdf.Convert(System.Text.Encoding.Latin1.GetBytes("Item;Price\n" + csvRows));
+var csvPages = new TextExtractor(PdfReader.Open(csvPdf.ToArray())).ExtractPages().Select(p => p.Text).ToList();
+Check($"csv: {csvPages.Count} pages, {csvPages[^1].Split('\n').Last()}", csvPages.Count > 1
+    && csvPages.All(p => p.StartsWith("Item", StringComparison.Ordinal)) && csvPages[^1].Contains("Caf\u00E9 300", StringComparison.Ordinal));
 
 Console.WriteLine(failures == 0 ? $"Package smoke test passed. PDFs in {output}" : $"Package smoke test FAILED ({failures} checks).");
 return failures == 0 ? 0 : 1;

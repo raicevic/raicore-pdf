@@ -5,6 +5,7 @@ using RaiCore.Pdf.Fonts.OpenType;
 using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Images;
 using RaiCore.Pdf.Layout.Text;
+using RaiCore.Pdf.Sheets;
 
 namespace RaiCore.Pdf.Tests.Fuzzing;
 
@@ -58,6 +59,7 @@ public static class FuzzTargets
         ["extract"] = Extract,
         ["email"] = Email,
         ["tiff"] = Tiff,
+        ["csv"] = Csv,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -197,6 +199,22 @@ public static class FuzzTargets
     {
         AppendAttachments = input.Length % 2 == 0,
         Html = new HtmlConverterOptions { Limits = Limits, ResourceLoader = _ => null, Diagnostics = _ => { } },
+    });
+
+    /// <summary>
+    /// CSV data: decoded (encoding detected), split into records (delimiter detected), its cells classified, and laid
+    /// out as tables with fitted columns; every other input (by length) on landscape pages fitted to the width, every
+    /// third one tagged.
+    /// </summary>
+    public static void Csv(byte[] input) => CsvToPdf.ConvertToBytes(input, new CsvConverterOptions
+    {
+        Sheet = new SheetOptions
+        {
+            Limits = Limits,
+            Landscape = input.Length % 2 == 0,
+            FitToWidth = input.Length % 2 == 0,
+            Tagged = input.Length % 3 == 0,
+        },
     });
 
     /// <summary>
