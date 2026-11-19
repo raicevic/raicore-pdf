@@ -186,7 +186,6 @@ public sealed class PdfImage
     public static PdfImage Load(byte[] data, int pageIndex)
     {
         ArgumentNullException.ThrowIfNull(data);
-        ArgumentOutOfRangeException.ThrowIfNegative(pageIndex);
         if (TiffDecoder.IsTiff(data))
         {
             return new PdfImage(TiffDecoder.Decode(data, pageIndex), PdfImageFormat.Tiff);

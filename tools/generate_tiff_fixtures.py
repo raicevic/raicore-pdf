@@ -283,7 +283,7 @@ unpremultiplied = np.where(a > 0, np.minimum(255, (premultiplied[..., :3].astype
 tif("rgba8-associated-deflate.tif", premultiplied, rgba(unpremultiplied.astype(np.uint8), SRC[..., 3]),
     compression="zlib", extrasamples=["assocalpha"])
 
-alpha16 = SRC[..., 3].astype(np.uint16) * 257
+alpha16 = (SRC[..., 3].astype(np.uint16) * 257) ^ np.uint16(0x5A)  # The high byte is the 8-bit alpha.
 tif("rgba16-unassociated-mm.tif", np.concatenate([RGB16, alpha16[..., None]], axis=-1),
     rgba((RGB16 >> 8).astype(np.uint8), SRC[..., 3]), byteorder=">", extrasamples=["unassalpha"])
 tif("graya8-unassociated.tif", np.stack([GRAY, SRC[..., 3]], axis=-1), rgba(GRAY, SRC[..., 3]),
@@ -385,5 +385,16 @@ tags = base_tags(48, 24, 8, 3, 6, 7, rows=8)
 tags[530] = (SHORT, [2, 2])  # YCbCrSubSampling
 strips = [imagecodecs.jpeg8_encode(np.ascontiguousarray(np.asarray(photo)[y:y + 8]), level=90, subsampling=(2, 2)) for y in range(0, 24, 8)]
 write_tiff("unsupported-ycbcr-jpeg-strips-of-8-rows.tif", [(tags, strips)])
+# 8-row strips of 4:2:2 YCbCr JPEG data (8-row, 16-column blocks) 45 pixels wide, each a complete JPEG; without
+# vertical subsampling, joining the strips changes no pixel.
+narrow = np.ascontiguousarray(np.asarray(photo)[:, :45])
+tags = base_tags(45, 40, 8, 3, 6, 7, rows=8)
+tags[530] = (SHORT, [2, 1])  # YCbCrSubSampling
+strips = [imagecodecs.jpeg8_encode(np.ascontiguousarray(narrow[y:y + 8]), level=90, subsampling=(2, 1)) for y in range(0, 40, 8)]
+write_tiff("ycbcr422-jpeg-strips.tif", [(tags, strips)])
+save_png(rgba(np.concatenate([imagecodecs.jpeg8_decode(s) for s in strips])), "ycbcr422-jpeg-strips.png")
+check_with_pillow("ycbcr422-jpeg-strips.tif", np.asarray(Image.open(out / "ycbcr422-jpeg-strips.png")))
+print(f"ycbcr422-jpeg-strips.tif: {(out / 'ycbcr422-jpeg-strips.tif').stat().st_size} bytes")
+
 for name in ("unsupported-fax-g4-strips.tif", "unsupported-float32.tif", "unsupported-ycbcr-jpeg-strips-of-8-rows.tif"):
     print(f"{name}: {(out / name).stat().st_size} bytes")

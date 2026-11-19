@@ -125,7 +125,7 @@ internal static partial class TiffDecoder
     private static Layout ReadLayout(TiffDirectory directory, int width, int height, int planes)
     {
         long segmentWidth, segmentHeight;
-        bool tiled = directory.Has(TileWidthTag) || directory.Has(TileLengthTag);
+        var tiled = directory.Has(TileWidthTag) || directory.Has(TileLengthTag);
         if (tiled)
         {
             segmentWidth = directory.Required(TileWidthTag);

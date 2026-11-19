@@ -38,7 +38,7 @@ internal static partial class TiffDecoder
         }
 
         var depth = (int)bits;
-        var planes = samples > 1 && directory.Number(PlanarConfigurationTag) == 2 ? samples : 1;
+        var planes = directory.Number(PlanarConfigurationTag) == 2 ? samples : 1;
         var layout = ReadLayout(directory, width, height, planes);
         var segmentSamples = planes == 1 ? samples : 1;
         var segmentRowBits = (long)layout.Width * segmentSamples * depth;
@@ -54,7 +54,7 @@ internal static partial class TiffDecoder
             throw new ImageFormatException("The TIFF image is too large to decode.");
         }
 
-        CheckDataSize(file, layout, compression, layout.Across * layout.Down * planes, (long)segmentRowBytes * (layout.Tiled ? layout.Height * layout.Down : height) * layout.Across * planes);
+        CheckDataSize(file, layout, compression, layout.Across * layout.Down * planes, (long)segmentRowBytes * height * layout.Across * planes);
         var image = new byte[(long)rowBytes * height];
         var buffer = new byte[(long)segmentRowBytes * layout.Height];
         var reverse = directory.Number(FillOrderTag) == 2 && compression is 1 or 32773;
@@ -63,7 +63,7 @@ internal static partial class TiffDecoder
             for (var down = 0; down < layout.Down; down++)
             {
                 var top = down * layout.Height;
-                var rows = layout.Tiled ? layout.Height : Math.Min(layout.Height, height - top);
+                var rows = Math.Min(layout.Height, height - top); // Rows of tiles below the image are not needed.
                 for (var across = 0; across < layout.Across; across++)
                 {
                     var index = (((plane * layout.Down) + down) * layout.Across) + across;
