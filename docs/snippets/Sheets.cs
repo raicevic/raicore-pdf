@@ -1,4 +1,6 @@
 #pragma warning disable CA1849, CA2007
+using System.Globalization;
+using System.IO.Compression;
 using RaiCore.Pdf;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
@@ -46,6 +48,20 @@ internal static class Sheets
         }
         #endregion
 
+        // A small workbook to convert: a sheet with a bold header row, amounts in a number format and dates.
+        WriteWorkbook("summary.xlsx");
+
+        #region xlsx
+        var workbook = XlsxToPdf.Convert("summary.xlsx", new XlsxConverterOptions
+        {
+            SheetNames = ["Summary"],    // The sheets to convert; all visible ones by default.
+            ShowSheetNames = true,       // Each sheet's name as a heading.
+            Culture = CultureInfo.GetCultureInfo("en-US"), // Separators, month names, short dates.
+            Sheet = new SheetOptions { Page = new PageSetup(PdfPageSize.Letter, Thickness.All(36)), FitToWidth = true },
+        });
+        workbook.Save("summary.pdf");
+        #endregion
+
         #region fonts
         var fonts = BundledFonts.CreateCollection().AddSystemFonts();
         var unicode = CsvToPdf.Convert("orders.csv", new CsvConverterOptions
@@ -54,5 +70,33 @@ internal static class Sheets
         });
         unicode.Save("orders-unicode.pdf");
         #endregion
+    }
+
+    /// <summary>Writes a minimal workbook with one styled sheet (a spreadsheet program would write the same parts).</summary>
+    private static void WriteWorkbook(string path)
+    {
+        const string main = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+        const string relationships = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+        const string package = "http://schemas.openxmlformats.org/package/2006/relationships";
+        var parts = new Dictionary<string, string>
+        {
+            ["_rels/.rels"] = $"<Relationships xmlns=\"{package}\"><Relationship Id=\"r1\" Type=\"{relationships}/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>",
+            ["xl/workbook.xml"] = $"<workbook xmlns=\"{main}\" xmlns:r=\"{relationships}\"><sheets><sheet name=\"Summary\" sheetId=\"1\" r:id=\"r1\"/></sheets></workbook>",
+            ["xl/_rels/workbook.xml.rels"] = $"<Relationships xmlns=\"{package}\"><Relationship Id=\"r1\" Type=\"{relationships}/worksheet\" Target=\"sheet1.xml\"/>"
+                + $"<Relationship Id=\"r2\" Type=\"{relationships}/styles\" Target=\"styles.xml\"/></Relationships>",
+            ["xl/styles.xml"] = $"<styleSheet xmlns=\"{main}\"><fonts><font><sz val=\"11\"/><name val=\"Calibri\"/></font><font><b/><sz val=\"11\"/></font></fonts>"
+                + "<cellXfs><xf/><xf fontId=\"1\"/><xf numFmtId=\"4\"/><xf numFmtId=\"15\"/></cellXfs></styleSheet>",
+            ["xl/sheet1.xml"] = $"<worksheet xmlns=\"{main}\"><sheetData>"
+                + "<row><c s=\"1\" t=\"inlineStr\"><is><t>Item</t></is></c><c s=\"1\" t=\"inlineStr\"><is><t>Amount</t></is></c><c s=\"1\" t=\"inlineStr\"><is><t>Due</t></is></c></row>"
+                + "<row><c t=\"inlineStr\"><is><t>Coffee</t></is></c><c s=\"2\"><v>1234.5</v></c><c s=\"3\"><v>46345</v></c></row>"
+                + "</sheetData></worksheet>",
+        };
+        File.Delete(path);
+        using var zip = ZipFile.Open(path, ZipArchiveMode.Create);
+        foreach (var (name, xml) in parts)
+        {
+            using var writer = new StreamWriter(zip.CreateEntry(name).Open());
+            writer.Write(xml);
+        }
     }
 }

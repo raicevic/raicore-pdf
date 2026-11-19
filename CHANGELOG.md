@@ -14,6 +14,22 @@ and versions follow [Semantic Versioning](https://semver.org/).
   drawn before the document was tagged, and actual text for Private Use Area characters. Attachments need PDF/A-3a as
   they need PDF/A-3b, and `AttachFacturXInvoice` keeps PDF/A-3a. CI validates HTML, layout and canvas documents with
   veraPDF for 2a and 3a (#194).
+- **XLSX to PDF** (`RaiCore.Pdf.Sheets`): `XlsxToPdf.Convert` converts Excel workbooks (`.xlsx`, `.xlsm`, strict
+  Office Open XML) with the same table layout as CSV: each visible sheet (or those `SheetNames`/`SheetIndexes` choose)
+  from a new page, with a bookmark per sheet and optional name headings. Values are shown in their number formats
+  (built-in and custom: digit placeholders, thousands separators and scaling, percent, scientific, fractions, literal
+  text and currencies, sections with colors and conditions, dates and times with elapsed hours and fractions of seconds,
+  the 1900 and 1904 date systems), formulas as their cached values (never calculated), shared, inline and rich text
+  strings, booleans and errors; invariant output unless `Culture` names a culture. Styles: fonts (bold, italic,
+  underline, strikethrough, size, color, the workbook's family where the font collection has it), solid and pattern
+  fills, borders (thin to thick, dashed, dotted, double, colored), horizontal and vertical alignment, wrapping, indents;
+  theme and indexed colors with tints. Merged cells, the sheet's column widths and row heights (or `AutoFit`), hidden
+  rows, columns and sheets left out, right-to-left sheets, and text that does not wrap running on over empty cells.
+  From the page setup (`UsePageSetup`): the print area, print titles as header rows repeated on every page, landscape,
+  print scale and fit to width. Encrypted workbooks, `.xls` and `.xlsb` throw `NotSupportedException`; malformed
+  packages throw the new `SpreadsheetFormatException`. Parts are read with no DTDs and nothing external, within
+  `ResourceLimits` (`MaxDecompressedBytes` for all parts, `MaxTableCells` per sheet, pages, time). Charts, images,
+  conditional formatting, comments, headers and footers are not converted. A new `xlsx` fuzz target covers it (#68).
 - **CSV to PDF** (`RaiCore.Pdf.Sheets`, new package): `CsvToPdf.Convert` lays out CSV data as a table with the
   layout engine: the header row repeated on every page, column widths fitted to the content within the page width
   (narrow columns whole, wide ones sharing the rest by how much text they hold), words wider than their column broken

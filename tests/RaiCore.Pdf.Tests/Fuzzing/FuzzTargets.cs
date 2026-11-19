@@ -63,6 +63,7 @@ public static class FuzzTargets
         ["csv"] = Csv,
         ["edit"] = Edit,
         ["cfb"] = Cfb,
+        ["xlsx"] = Xlsx,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -82,7 +83,8 @@ public static class FuzzTargets
 
     /// <summary>Whether an exception is one a target may document for malformed or hostile input.</summary>
     public static bool IsExpected(Exception exception) => exception is ImageFormatException or FontFormatException
-        or PdfFormatException or PdfPasswordException or ResourceLimitExceededException or OperationCanceledException or NotSupportedException;
+        or PdfFormatException or PdfPasswordException or ResourceLimitExceededException or OperationCanceledException or NotSupportedException
+        or SpreadsheetFormatException;
 
     /// <summary>HTML conversion, with no resources loaded (data: URIs only).</summary>
     public static void Html(byte[] input) => Html(input, ModeOf(input));
@@ -309,6 +311,24 @@ public static class FuzzTargets
             FitToWidth = input.Length % 2 == 0,
             Tagged = input.Length % 3 == 0,
         },
+    });
+
+    /// <summary>
+    /// An XLSX workbook: its package and parts read (shared strings, styles, theme, defined names), every visible
+    /// worksheet with its values formatted, and laid out with its styles, merged cells, sizes and page setup;
+    /// every other input (by length) with sheet names as headings and fitted to the width, every third one tagged, every
+    /// fifth one fitted to the content.
+    /// </summary>
+    public static void Xlsx(byte[] input) => XlsxToPdf.ConvertToBytes(input, new XlsxConverterOptions
+    {
+        Sheet = new SheetOptions
+        {
+            Limits = Limits,
+            FitToWidth = input.Length % 2 == 0,
+            Tagged = input.Length % 3 == 0,
+        },
+        ShowSheetNames = input.Length % 2 == 0,
+        AutoFit = input.Length % 5 == 0,
     });
 
     /// <summary>

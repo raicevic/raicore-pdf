@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Convert spreadsheet data to PDF with RaiCore.Pdf: CSV files as paginated tables with repeated header rows, column widths fitted to the content and the page, and numbers right-aligned.</Description>
-    <PackageTags>$(PackageTags);csv;tsv;csv-to-pdf;spreadsheet;table</PackageTags>
+    <Description>Convert spreadsheets to PDF with RaiCore.Pdf: CSV files and Excel workbooks (.xlsx) as paginated tables with repeated header rows, number formats, styles, merged cells and print areas, column widths fitted to the content and the page.</Description>
+    <PackageTags>$(PackageTags);csv;tsv;csv-to-pdf;xlsx;excel;xlsx-to-pdf;excel-to-pdf;spreadsheet;table</PackageTags>
     <!--
       A core package, released with the core at the same version. It uses only the public API of RaiCore.Pdf.Layout
       and RaiCore.Pdf.Fonts. It has no released version to validate against yet: set the baseline to the first release

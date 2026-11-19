@@ -1,7 +1,8 @@
-# CSV to PDF
+# CSV and XLSX to PDF
 
-`RaiCore.Pdf.Sheets` converts CSV files to PDF: a table laid out by the layout engine, with the header row repeated
-on every page, column widths fitted to the content within the page width, and numbers right-aligned.
+`RaiCore.Pdf.Sheets` converts CSV files and Excel workbooks to PDF: tables laid out by the layout engine, with header
+rows repeated on every page, column widths fitted to the content within the page width, and numbers right-aligned.
+Workbooks keep their number formats, styles, merged cells and page setup ([Excel workbooks](#excel-workbooks) below).
 
 ```sh
 dotnet add package RaiCore.Pdf.Sheets
@@ -98,5 +99,93 @@ the data is read, before it takes up memory), `MaxPages` the pages, and `Timeout
 laying out. Exceeding one throws `ResourceLimitExceededException` naming it. The time a conversion takes grows with
 the number of cells: about half a second per thousand rows of eight columns.
 
-Not supported yet: Excel workbooks (`.xlsx`, planned for this package), formulas, cell formats and styles (CSV has
-none), and other quote characters than the double quote.
+Not supported in CSV: formulas, cell formats and styles (CSV has none), and other quote characters than the double
+quote.
+
+## Excel workbooks
+
+`XlsxToPdf` converts `.xlsx` and `.xlsm` workbooks (also strict Office Open XML) with the same table layout. Each
+sheet starts a new page; when more than one is converted, each gets a bookmark.
+
+[!code-csharp[](../snippets/Sheets.cs#xlsx)]
+
+`XlsxToPdf.Convert` takes a path, a stream or bytes; `ConvertAsync` and `ConvertToBytes` do the same.
+
+### Values and number formats
+
+Cells show what a spreadsheet program shows:
+
+- **Numbers** in their number format, built-in or custom: `0`, `0.00`, `#,##0.00`, `0%`, `0.00E+00`, fractions
+  (`# ?/?`, `# ?/16`), thousands scaling (`#,##0,"K"`), literal text and currencies (`"$"#,##0.00`, `[$€-407]`),
+  sections for positive, negative, zero and text values (`#,##0;[Red](#,##0);"-"`), colors and conditions in brackets
+  (`[Red]`, `[>=1000]`). General shows up to eleven characters, as a spreadsheet's default column does
+  (`1.23457E+11`). Codes that cannot be read are shown as General.
+- **Dates and times** from their serial numbers in either date system (1900, with its 29 February 1900, or 1904):
+  `yyyy-mm-dd`, `dd/mm/yyyy`, `d mmmm yyyy`, `ddd`, `h:mm AM/PM`, elapsed time (`[h]:mm:ss`) and fractions of seconds
+  (`mm:ss.0`).
+- **Formulas** as their last calculated values, which the workbook stores; formulas are never calculated, so a
+  workbook saved without calculated values shows them empty.
+- **Text** from shared strings, inline strings and rich text (its runs joined, in the cell's font); booleans as
+  `TRUE` and `FALSE`, and errors (`#DIV/0!`) as they are.
+
+Output is the same on every machine: the invariant culture, with ISO 8601 short dates (`2026-11-19`) for the
+built-in date format and the dollar for the built-in currency formats. `Culture` uses a culture's separators, month
+and day names, short date and currency symbol instead.
+
+### Styles and layout
+
+- **Fonts:** bold, italic, underline (single, double), strikethrough, size and color. A cell's font family is used
+  where `SheetOptions.Fonts` has it; otherwise a serif or monospace family for fonts known to be one (Times New
+  Roman, Cambria, Courier New, Consolas) and `FontFamily` for the others. The bundled fonts include none of Excel's,
+  so add system fonts for its look.
+- **Fills** (solid; patterns as their average color), **borders** (hair to thick, dashed, dotted, double, in their
+  colors) over the gridlines, horizontal and vertical alignment (bottom by default, as in a spreadsheet), wrapping and
+  indents. Theme and indexed colors are resolved with their tints.
+- **Merged cells** span their rows and columns, with the borders of the cells at their edges. Ranges cut by a band of
+  columns or by the header rows are split there; the value shows in the first part.
+- **Text that does not wrap** runs on over the empty cells beside it, as in a spreadsheet: to the right, to the left
+  when right-aligned, to both sides when centered. Where the next cell is not empty, or the cell has a fill or
+  borders, it wraps in its column instead (text is never clipped).
+- **Column widths and row heights** are the sheet's: widths in characters of the default font's digits, so a column
+  sized for eight digits holds eight digits in the font used. A column is widened for a number that would not fit
+  (where a spreadsheet shows `####`). A sheet that sizes no column at all (as many generated workbooks) has its columns
+  fitted to their content; `AutoFit` does that for every sheet, and ignores row heights too.
+- **Hidden** rows, columns and sheets are left out; a sheet set to read from right to left is laid out that way.
+
+### Page setup
+
+With `UsePageSetup` (the default), each sheet's page setup is used:
+
+- **The print area** (`_xlnm.Print_Area`, its first range) is what is printed; without one, the range from `A1` to the
+  last cell that shows a value, a fill or a border.
+- **Print titles** (`_xlnm.Print_Titles`, rows to repeat at top) become header rows, repeated at the top of every page
+  (also when they are above the print area). Rows before them are printed once, above them. Columns to repeat at left
+  are not supported.
+- **Landscape orientation**, the **print scale** (10% to 400%) and **fit to width** ("fit all columns on one page")
+  apply to the sheet's pages. Fitting shrinks the sheet at most until its default font reaches
+  `SheetOptions.MinimumFontSize`; beyond that, the columns are printed in bands. `SheetOptions.Landscape` and
+  `FitToWidth` turn these on for every sheet.
+
+The page size and margins always come from `SheetOptions.Page`.
+
+| `XlsxConverterOptions` | What it does |
+|---|---|
+| `SheetNames`, `SheetIndexes` | The sheets to convert, by name (ignoring case) or position; hidden ones too. All visible worksheets by default. |
+| `ShowSheetNames` | Each sheet's name as a heading above its table (default `false`). |
+| `UsePageSetup` | Use the sheets' print areas, print titles, orientation, scale and fit to width (default `true`). |
+| `AutoFit` | Fit every column and row to its content instead of the sheet's sizes (default `false`). |
+| `Culture` | The culture numbers and dates are shown in (default invariant). |
+| `Sheet` | The `SheetOptions` above. `FontSize` is not used: cells keep the workbook's sizes. |
+
+### Untrusted workbooks
+
+Workbooks are ZIP packages of XML parts. They are read with no DTDs and nothing external resolved, and within
+`Sheet.Limits`: `MaxDecompressedBytes` bounds the decompressed size of all parts together (a ZIP bomb stops there),
+`MaxTableCells` the cells of each sheet (the cells it stores while it is read, and the rows times columns it prints,
+checked before they take up memory), and `MaxPages` and `Timeout` the pages of all sheets and the time. Malformed
+packages and XML throw `SpreadsheetFormatException`; password-protected (encrypted) workbooks, Excel 97-2003 `.xls`
+files and binary `.xlsb` workbooks throw `NotSupportedException`.
+
+Not supported in workbooks: charts and chart sheets, images and other drawings, conditional formatting, data bars,
+comments, headers and footers, page breaks set by hand, pivot tables, rich text formatting within a cell, rotated
+text, and shrink to fit.
