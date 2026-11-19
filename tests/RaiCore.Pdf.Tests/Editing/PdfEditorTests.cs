@@ -551,4 +551,25 @@ public class PdfEditorTests
         Assert.Single(reader.Pages);
         Assert.False(editor.GetForm().HasAcroForm);
     }
+
+    [Fact]
+    public void Pages_inserted_from_a_file_whose_repair_replaces_them_are_copied_as_read()
+    {
+        // Found by fuzzing: reading the other file's pages started its repair (object 6 is listed by no cross-reference
+        // entry), which took a later stray definition of its page (object 3) as the object, a number.
+        var damaged = TestPdf.Text(TestPdf.Build([
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R 6 0 R] /Count 2 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Contents 4 0 R >>",
+            TestPdf.Stream("0 0 1 rg 10 10 50 50 re f"),
+        ])) + "3 0 obj\n42\nendobj\n";
+        var editor = PdfEditor.Open(Document(1));
+
+        editor.Pages.Add(PdfReader.Open(System.Text.Encoding.Latin1.GetBytes(damaged)));
+
+        var reader = PdfReader.Open(editor.ToArray());
+        Assert.Equal(2, reader.Pages.Count);
+        Assert.Equal(200, reader.Pages[1].MediaBox.Width);
+        Assert.Equal("0 0 1 rg 10 10 50 50 re f", TestPdf.Text(reader.Pages[1].GetContent()));
+    }
 }
