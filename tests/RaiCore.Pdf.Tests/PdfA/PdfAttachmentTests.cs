@@ -100,6 +100,28 @@ public class PdfAttachmentTests
     }
 
     [Fact]
+    public void Names_that_need_utf16_put_every_key_in_utf16_so_bytes_and_text_sort_alike()
+    {
+        // By bytes "Original" (ASCII) sorts before a UTF-16 key; by text, "Minutes" comes first. qpdf checks the text.
+        var doc = new PdfDocument();
+        doc.AddPage();
+        doc.Attachments.Add(new PdfAttachment("Original agenda.eml", "A"u8));
+        doc.Attachments.Add(new PdfAttachment("Minutes m\u00F8de 2.txt", "B"u8));
+        doc.Attachments.Add(new PdfAttachment("zeta.txt", "C"u8));
+        var reader = PdfReader.Open(doc.ToArray());
+
+        var names = (PdfDictionary)reader.Resolve(reader.Catalog["Names"])!;
+        var keys = ((PdfArray)((PdfDictionary)reader.Resolve(names["EmbeddedFiles"])!)["Names"]!).Items.Where((_, i) => i % 2 == 0).Cast<PdfString>().ToList();
+        Assert.All(keys, k => Assert.Equal([0xFE, 0xFF], k.Bytes[..2].ToArray()));
+        Assert.Equal(["Minutes m\u00F8de 2.txt", "Original agenda.eml", "zeta.txt"], keys.Select(Text));
+
+        // Each file specification keeps its own name as it was.
+        var spec = (PdfDictionary)reader.Resolve(((PdfArray)((PdfDictionary)reader.Resolve(names["EmbeddedFiles"])!)["Names"]!).Items[3])!;
+        Assert.Equal("Original agenda.eml", Text(spec["F"]));
+        Assert.Equal([(byte)'O'], ((PdfString)spec["F"]!).Bytes[..1].ToArray());
+    }
+
+    [Fact]
     public void Without_attachments_there_is_no_name_tree_or_associated_files()
     {
         var doc = new PdfDocument();
