@@ -51,6 +51,7 @@ internal sealed class MsgMessage
     private const ushort InternetMessageId = 0x1035;
     private const ushort InternetCodepage = 0x3FDE;
     private const ushort MessageCodepage = 0x3FFD;
+    private const ushort MessageLocaleId = 0x3FF1;
     private const ushort DisplayName = 0x3001;
     private const ushort EmailAddress = 0x3003;
     private const ushort SmtpAddress = 0x39FE;
@@ -119,7 +120,12 @@ internal sealed class MsgMessage
     {
         var message = new MsgMessage();
         message.ReadProperties(file, storage, headerSize);
-        var codePage = message.Int(MessageCodepage) ?? message.Int(InternetCodepage) ?? 1252;
+        // 8-bit strings are in the message's code page, else its locale's ANSI code page; the internet code page is
+        // the HTML body's, and stands in only when neither is given.
+        var codePage = message.Int(MessageCodepage)
+            ?? (message.Int(MessageLocaleId) is { } locale ? AnsiCodePage(locale) ?? 1252 : (int?)null)
+            ?? message.Int(InternetCodepage)
+            ?? 1252;
         message.Subject = message.String(PidSubject, codePage) ?? string.Empty;
         message.FromName = message.String(SentRepresentingName, codePage) ?? message.String(SenderName, codePage) ?? string.Empty;
         message.FromAddress = Address(
@@ -262,6 +268,27 @@ internal sealed class MsgMessage
         !string.IsNullOrWhiteSpace(smtp) ? smtp.Trim()
         : address is { } a && a.Contains('@', StringComparison.Ordinal) && !a.StartsWith('/') ? a.Trim()
         : string.Empty;
+
+    /// <summary>
+    /// The ANSI code page of a Windows locale id, by its primary language (a table, since culture data is not
+    /// available under invariant globalization); <c>null</c> for languages Windows writes in 1252.
+    /// </summary>
+    internal static int? AnsiCodePage(int localeId) => (localeId & 0x3FF) switch
+    {
+        0x05 or 0x0E or 0x15 or 0x18 or 0x1A or 0x1B or 0x1C or 0x24 => 1250, // Czech, Hungarian, Polish, Romanian, Croatian, Slovak, Albanian, Slovenian
+        0x02 or 0x19 or 0x22 or 0x23 or 0x2F or 0x3F or 0x40 or 0x44 or 0x50 => 1251, // Bulgarian, Russian, Ukrainian, Belarusian, Macedonian, Kazakh, Kyrgyz, Tatar, Mongolian
+        0x08 => 1253, // Greek
+        0x1F or 0x2C or 0x43 => 1254, // Turkish, Azerbaijani, Uzbek
+        0x0D => 1255, // Hebrew
+        0x01 or 0x20 or 0x29 => 1256, // Arabic, Urdu, Persian
+        0x25 or 0x26 or 0x27 => 1257, // Estonian, Latvian, Lithuanian
+        0x2A => 1258, // Vietnamese
+        0x1E => 874, // Thai
+        0x11 => 932, // Japanese
+        0x12 => 949, // Korean
+        0x04 => (localeId & 0xFFFF) is 0x0404 or 0x0C04 or 0x1404 ? 950 : 936, // Chinese: traditional (Taiwan, Hong Kong, Macao) or simplified
+        _ => null,
+    };
 
     private static string CharsetOf(int codePage) => codePage switch
     {
