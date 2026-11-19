@@ -6,6 +6,14 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **TIFF images** wherever images are accepted (`PdfImage.Load`, `<img>`, CSS backgrounds): bilevel, grayscale,
+  palette, RGB and CMYK with 1 to 16 bits per sample, strips or tiles, separate planes, uncompressed, PackBits, LZW and
+  Deflate (with the horizontal predictor), associated and unassociated alpha, both byte orders and BigTIFF. JPEG data
+  is embedded without re-encoding (several strips joined into one JPEG with restart markers), and CCITT Group 3 and 4
+  fax data as it is (`/CCITTFaxDecode`). `PdfImage.GetPageCount` and `PdfImage.Load(data, pageIndex)` read multi-page
+  files; the Orientation tag is applied, and the resolution sets the natural size. Fax data in several strips,
+  floating-point samples and old-style JPEG are rejected with an `ImageFormatException` saying so. A new `tiff` fuzz
+  target covers the decoder (#196).
 - **Email to PDF** (`RaiCore.Pdf.Email`, new package): `EmailToPdf.Convert` converts email messages (`.eml`) and web
   archives (`.mht`, `.mhtml`) through the HTML engine: a header block (from, to, cc, date, subject; fields and labels
   configurable, styleable with CSS), the HTML body (or the plain text one, wrapped, with `format=flowed` and links)

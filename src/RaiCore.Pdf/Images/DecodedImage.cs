@@ -19,7 +19,17 @@ internal enum ImageEncoding
 
     /// <summary>A complete JPEG file, embedded as-is with /DCTDecode.</summary>
     Jpeg,
+
+    /// <summary>CCITT Group 3 or 4 fax data (one bit per pixel), embedded as-is with /CCITTFaxDecode.</summary>
+    CcittFax,
 }
+
+/// <summary>
+/// How CCITT fax data is coded (the /CCITTFaxDecode parameters): <paramref name="K"/> is negative for Group 4, 0 for
+/// one-dimensional and positive for two-dimensional Group 3; <paramref name="BlackIs1"/> says whether decoded 1 bits
+/// are black; <paramref name="EncodedByteAlign"/> whether each coded row starts on a byte boundary.
+/// </summary>
+internal sealed record CcittParameters(int K, bool BlackIs1, bool EncodedByteAlign);
 
 /// <summary>An image in the form PDF needs, independent of the file format it came from.</summary>
 internal sealed record DecodedImage(int Width, int Height, ImageColorSpace ColorSpace, int BitsPerComponent, byte[] Data, ImageEncoding Encoding)
@@ -38,6 +48,21 @@ internal sealed record DecodedImage(int Width, int Height, ImageColorSpace Color
 
     /// <summary>EXIF orientation (1-8); 1 is upright.</summary>
     public int Orientation { get; init; } = 1;
+
+    /// <summary>The coding of <see cref="ImageEncoding.CcittFax"/> data.</summary>
+    public CcittParameters? Ccitt { get; init; }
+
+    /// <summary>
+    /// The /DCTDecode ColorTransform of <see cref="ImageEncoding.Jpeg"/> data, when the default (YCbCr for three
+    /// components) is wrong: 0 for a JPEG whose three components are RGB.
+    /// </summary>
+    public int? ColorTransform { get; init; }
+
+    /// <summary>
+    /// The resolution in pixels per inch (horizontal, vertical) of the stored image, when the file gives one that sets
+    /// its natural size (TIFF).
+    /// </summary>
+    public (double X, double Y)? Resolution { get; init; }
 
     public int Components => ColorSpace switch
     {

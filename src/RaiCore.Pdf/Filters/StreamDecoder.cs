@@ -185,8 +185,11 @@ internal static class StreamDecoder
         return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
     }
 
-    /// <summary>Decodes LZW data (9 to 12-bit codes; <paramref name="earlyChange"/> 1 widens codes one entry early, as TIFF does).</summary>
-    internal static byte[] Lzw(byte[] data, long earlyChange)
+    /// <summary>
+    /// Decodes LZW data (9 to 12-bit codes; <paramref name="earlyChange"/> 1 widens codes one entry early, as TIFF does),
+    /// stopping after <paramref name="maxLength"/> bytes.
+    /// </summary>
+    internal static byte[] Lzw(byte[] data, long earlyChange, int maxLength = int.MaxValue)
     {
         const int Clear = 256;
         const int EndOfData = 257;
@@ -209,7 +212,7 @@ internal static class StreamDecoder
         var bitCount = 0;
         var position = 0;
         var entry = new byte[4096];
-        while (true)
+        while (output.Count < maxLength)
         {
             while (bitCount < width && position < data.Length)
             {
@@ -271,7 +274,7 @@ internal static class StreamDecoder
             }
         }
 
-        return [.. output];
+        return output.Count > maxLength ? [.. output[..maxLength]] : [.. output];
 
         int Write(int code, byte[] target)
         {

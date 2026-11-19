@@ -109,6 +109,18 @@ filters), through `ctypes` on the libwebp library Pillow bundles; their PNGs are
 .venv/bin/pip install pillow && .venv/bin/python tools/generate_webp_bmp_fixtures.py
 ```
 
+## `generate_tiff_fixtures.py`
+
+Regenerates the TIFF fixtures in `tests/RaiCore.Pdf.Tests/Fixtures/Images/Tiff`, each with a PNG of the pixels each
+page must display as. Pillow (libtiff) writes the CCITT fax and JPEG files, whose PNGs are libtiff's and libjpeg's own
+decoding; tifffile writes strips, tiles, separate planes, predictors, both byte orders, BigTIFF and alpha; the script
+writes 2- and 4-bit samples, FillOrder 2 and 8-bit color maps byte by byte. `unsupported-*.tif` are valid files that
+are rejected with a clear message.
+
+```sh
+.venv/bin/pip install pillow numpy tifffile imagecodecs && .venv/bin/python tools/generate_tiff_fixtures.py
+```
+
 ## `font-verification/`
 
 Cross-checks the font parser against fontTools on a large set of real fonts, which unit tests cannot cover:

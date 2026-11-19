@@ -1,6 +1,6 @@
 # Images
 
-JPEG, PNG, GIF, BMP, WebP and SVG images work in `<img>`, CSS backgrounds and generated content, and inline `<svg>`
+JPEG, PNG, GIF, BMP, WebP, TIFF and SVG images work in `<img>`, CSS backgrounds and generated content, and inline `<svg>`
 elements are drawn too. SVG is drawn as PDF vector graphics, so logos and charts stay sharp at any zoom. Each image is
 stored once per document, however often it appears.
 
@@ -8,6 +8,13 @@ stored once per document, however often it appears.
 
 - JPEGs are embedded without re-encoding (EXIF orientation is applied); PNGs of every color type and bit depth, BMP
   and WebP (lossy and lossless, with alpha) are decoded in managed code.
+- TIFF: bilevel, grayscale, palette, RGB and CMYK images with 1 to 16 bits per sample, in strips or tiles,
+  uncompressed or with PackBits, LZW or Deflate (with the predictor), with alpha, in either byte order and as BigTIFF.
+  JPEG-compressed TIFFs are embedded without re-encoding (their strips joined into one JPEG), and CCITT Group 3 and 4
+  fax images as they are. The Orientation tag is applied, and a TIFF's resolution sets its natural size, so a scan at
+  300 dpi comes out at the size of the paper and a fax keeps its proportions. An `<img>` shows the first page of a
+  multi-page TIFF. Not supported (the image is skipped with a diagnostic saying why): floating-point samples, YCbCr or
+  Lab without JPEG, old-style JPEG, fax images stored in several strips, and JPEG data in several tiles.
 - `max-width: 100%; height: auto` scales images keeping their aspect ratio, and `border-radius` rounds them.
   `object-fit` is not supported; to crop an image to a box, make it the box's background with
   `background-size: cover` (or `contain`).
@@ -34,4 +41,7 @@ default loader reads any local file a `file:` URL names.
 [!code-csharp[](../snippets/Images.cs#draw-images)]
 
 `PdfImage.Load` reads any of the formats from a file, stream or bytes; in the layout API, `ImageBlock` places an image
-as a block and `Paragraph.AddImage` in a line of text.
+as a block and `Paragraph.AddImage` in a line of text. For a multi-page TIFF, `PdfImage.GetPageCount` gives the number of
+pages and `PdfImage.Load(data, pageIndex)` loads one of them:
+
+[!code-csharp[](../snippets/Images.cs#tiff-pages)]

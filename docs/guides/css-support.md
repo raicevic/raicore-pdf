@@ -16,7 +16,7 @@ RaiCore.Pdf's own engine. Scripts do not run.
 | Layout | Block and inline flow, `inline-block`, floats and `clear`, positioning (`relative`, `absolute`, `fixed`), `z-index`, `visibility`, [flexbox](flexbox.md) | Grid (laid out as blocks), multi-column, `display: contents`, `position: sticky` (static, as there is no scrolling) |
 | Tables | Automatic and fixed layout, `colspan`/`rowspan`, collapsed and separate borders, captions, `<col>` widths, legacy attributes; [header and footer rows on every page](tables.md) | |
 | Backgrounds | Colors, images, gradients (linear and radial, repeating), several layers, `background-size`, `-position`, `-repeat`, `-origin`, `-clip` | `background-attachment`, `background-blend-mode` |
-| Images | JPEG, PNG, GIF, BMP, WebP and SVG (as vectors), inline `<svg>`, `data:` URIs; see [Images](images.md) | |
+| Images | JPEG, PNG, GIF, BMP, WebP, TIFF and SVG (as vectors), inline `<svg>`, `data:` URIs; see [Images](images.md) | |
 | Paged media | `@page` size and margins, margin boxes, page selectors, named pages, page counters, running elements, `string-set`, forced and avoided breaks, orphans and widows; see [Paged media](paged-media.md) | `@page :nth()` |
 | Links and bookmarks | Links to URLs and to ids in the document, bookmarks from headings (`bookmark-level`, `-label`, `-state`) | |
 | Forms and media | | Form controls as fillable PDF fields, `<video>`, `<audio>`, `<canvas>`, `<iframe>` |

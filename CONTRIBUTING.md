@@ -41,7 +41,7 @@ publish only the trimmed app.
 
 ### Fuzzing
 
-`tests/RaiCore.Pdf.Fuzz` fuzzes the parsers and decoders: HTML and CSS conversion, PNG, JPEG, GIF, BMP, WebP and SVG,
+`tests/RaiCore.Pdf.Fuzz` fuzzes the parsers and decoders: HTML and CSS conversion, PNG, JPEG, GIF, BMP, WebP, TIFF and SVG,
 OpenType/TrueType/TTC, WOFF and WOFF2, and the PDF reader (the targets are in
 `tests/RaiCore.Pdf.Tests/Fuzzing/FuzzTargets.cs`; the HTML and CSS targets write plain, tagged, PDF/UA or PDF/A
 output, or stream tagged output page by page, chosen by the input's length). An input may only make a target fail

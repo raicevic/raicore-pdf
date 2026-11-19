@@ -168,7 +168,7 @@ own engine. Supported today:
   Google Fonts serves them work as one family). Fonts load through the `ResourceLoader` when text first needs them;
   URLs in linked stylesheets resolve against the stylesheet.
 - List markers: bullets, decimal, alpha and roman numerals, `start`, `reversed` and `value` (the `list-item` counter).
-- Images from `data:` and `file:` URLs (JPEG, PNG, GIF, BMP, WebP and SVG), inline `<svg>` elements drawn as vectors (sized
+- Images from `data:` and `file:` URLs (JPEG, PNG, GIF, BMP, WebP, TIFF and SVG), inline `<svg>` elements drawn as vectors (sized
   like images; `currentColor` follows the CSS `color`), linked stylesheets, `@page` size and margins, and page break
   properties.
 - Tables: automatic and fixed column widths, `colspan`/`rowspan`, `thead` and `tfoot` rows repeated on every page,
@@ -657,11 +657,14 @@ license forbids embedding are rejected.
 
 ### Images
 
-JPEG, PNG, GIF, BMP, WebP and SVG images can be drawn directly or placed in the layout. JPEGs are embedded without
+JPEG, PNG, GIF, BMP, WebP, TIFF and SVG images can be drawn directly or placed in the layout. JPEGs are embedded without
 re-encoding (EXIF orientation is applied); PNGs of every color type and bit depth, including interlaced and
 transparent ones, are decoded and verified against the full [PngSuite](http://www.schaik.com/pngsuite/). BMPs of
 every common kind (palettes, RLE, 16/24/32-bit, bit fields, alpha) and WebP, lossy and lossless with alpha, are
-decoded in managed code; lossy WebP matches libwebp bit for bit, and an animated WebP shows its first frame. SVG is
+decoded in managed code; lossy WebP matches libwebp bit for bit, and an animated WebP shows its first frame. TIFF
+(bilevel, gray, palette, RGB and CMYK, 1 to 16 bits, strips or tiles, PackBits, LZW, Deflate, alpha, BigTIFF) is
+decoded too, while its JPEG and CCITT fax data are embedded as they are; `PdfImage.GetPageCount` and
+`PdfImage.Load(data, pageIndex)` read the pages of a multi-page TIFF, such as a fax. SVG is
 drawn as PDF vector graphics, not rasterized, so logos and icons stay sharp at any zoom. Each image is stored once per document however
 often it is drawn.
 

@@ -245,6 +245,12 @@ public partial class ImageTests
                     var index = Raw(x, y, 0);
                     (r, g, b) = (image.Palette![index * 3], image.Palette[(index * 3) + 1], image.Palette[(index * 3) + 2]);
                 }
+                else if (image.ColorSpace == ImageColorSpace.Cmyk)
+                {
+                    // Naive: each ink takes away its color, black takes away all.
+                    var k = 255 - Scale(Raw(x, y, 3));
+                    (r, g, b) = ((byte)((255 - Scale(Raw(x, y, 0))) * k / 255), (byte)((255 - Scale(Raw(x, y, 1))) * k / 255), (byte)((255 - Scale(Raw(x, y, 2))) * k / 255));
+                }
                 else if (components == 1)
                 {
                     r = g = b = Scale(Raw(x, y, 0));
