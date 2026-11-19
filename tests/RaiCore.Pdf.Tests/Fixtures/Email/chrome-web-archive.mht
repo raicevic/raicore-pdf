@@ -1,0 +1,37 @@
+From: <Saved by Blink>
+Snapshot-Content-Location: https://www.example.com/page.html
+Subject: Example page
+Date: Thu, 19 Nov 2026 11:30:00 +0100
+MIME-Version: 1.0
+Content-Type: multipart/related;
+	type="text/html";
+	boundary="----MultipartBoundary--abcDEF123ghiJKL456----"
+
+
+------MultipartBoundary--abcDEF123ghiJKL456----
+Content-Type: text/html
+Content-ID: <frame-0123456789ABCDEF@mhtml.blink>
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://www.example.com/page.html
+
+<!DOCTYPE html><html lang=3D"en"><head><meta charset=3D"utf-8"><title>Examp=
+le page</title><link rel=3D"stylesheet" type=3D"text/css" href=3D"css/site.=
+css"></head><body><h1 class=3D"title">Archived page</h1><p>Saved from the w=
+eb with its style sheet and image.</p><p><img src=3D"images/logo.png" alt=
+=3D"Logo"></p></body></html>
+------MultipartBoundary--abcDEF123ghiJKL456----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://www.example.com/css/site.css
+
+h1.title { color: rgb(0, 102, 51); font-family: serif; }
+body { font-size: 13pt; }
+------MultipartBoundary--abcDEF123ghiJKL456----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: https://www.example.com/images/logo.png
+
+iVBORw0KGgoAAAANSUhEUgAAAGQAAAAoCAIAAACHGsgUAAAAaElEQVR42u3awQ0AEAxAUcQcjGH/
+G2N0Eys4SDi8P0ATL+1Nnq0lnVUQwIIFCxYsWAhgwXpdvThrRPz5yNW7zXKGsGDBEixYsGDBgiVY
+sGDBggVLsGDB+rjsy5HNggULFixYCGDBet0GnL4FWU82KHoAAAAASUVORK5CYII=
+------MultipartBoundary--abcDEF123ghiJKL456------

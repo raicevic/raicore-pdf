@@ -1,4 +1,5 @@
 using System.Text;
+using RaiCore.Pdf.Email;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Fonts.OpenType;
 using RaiCore.Pdf.Html;
@@ -55,6 +56,7 @@ public static class FuzzTargets
         ["woff2"] = Font,
         ["pdf"] = Pdf,
         ["extract"] = Extract,
+        ["email"] = Email,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -154,6 +156,17 @@ public static class FuzzTargets
             _ = new RaiCore.Pdf.Extraction.TextExtractor(reader, new RaiCore.Pdf.Extraction.TextExtractionOptions { Mode = mode }).ExtractText();
         }
     }
+
+    /// <summary>
+    /// An email message or web archive: parsed, read like a mail client and converted, with no resources loaded but the
+    /// message's own; every other input (by length) with its attachments appended, so attached PDFs, HTML files and
+    /// messages are converted too.
+    /// </summary>
+    public static void Email(byte[] input) => EmailToPdf.ConvertToBytes(input, new EmailConverterOptions
+    {
+        AppendAttachments = input.Length % 2 == 0,
+        Html = new HtmlConverterOptions { Limits = Limits, ResourceLoader = _ => null, Diagnostics = _ => { } },
+    });
 
     /// <summary>
     /// The PNG with the CRC of every chunk corrected, so that mutated data gets past the CRC check to the decoder

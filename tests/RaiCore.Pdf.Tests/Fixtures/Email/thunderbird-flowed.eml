@@ -1,0 +1,55 @@
+Message-ID: <a1b2c3d4-e5f6-7081-92a3-b4c5d6e7f809@example.org>
+Date: Wed, 18 Nov 2026 14:20:00 +0100
+MIME-Version: 1.0
+User-Agent: Mozilla Thunderbird
+Content-Language: en-US
+To: Gita Example <gita@example.com>
+From: Hugo Example <hugo@example.org>
+Subject: Re: Minutes and agenda
+Content-Type: multipart/mixed; boundary="------------0aB1cD2eF3gH4iJ5kL6mN7oP"
+
+This is a multi-part message in MIME format.
+--------------0aB1cD2eF3gH4iJ5kL6mN7oP
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+
+Hi Gita, 
+this paragraph is written as format=flowed: its lines end in a space, so a reader joins them and wraps the text to its own width. The minutes are at https://example.org/minutes/2026-11-18. 
+Next line of the same paragraph.
+
+> On 17/11/2026 Gita wrote: 
+> Can you send the minutes and the 
+> agenda?
+
+Sure, both attached (see <https://example.org/agenda?id=7&lang=en>).
+
+-- 
+Hugo Example
+www.example.org
+
+--------------0aB1cD2eF3gH4iJ5kL6mN7oP
+Content-Type: text/plain; charset=UTF-8;
+ name*0*=UTF-8''%4D%69%6E%75%74%65%73%20%6D%C3%B8%64%65%20%32%30%32%36%2D;
+ name*1*=%31%31%2D%31%38%2E%74%78%74
+Content-Disposition: attachment;
+ filename*0*=UTF-8''%4D%69%6E%75%74%65%73%20%6D%C3%B8%64%65%20%32%30%32%36;
+ filename*1*=%2D%31%31%2D%31%38%2E%74%78%74
+Content-Transfer-Encoding: base64
+
+TWludXRlcyBvZiAxOCBOb3ZlbWJlciAyMDI2CgoxLiBCdWRnZXQgYXBwcm92ZWQuCjIuIE9mZnNp
+dGUgaW4gTWFyY2guCg==
+
+--------------0aB1cD2eF3gH4iJ5kL6mN7oP
+Content-Type: message/rfc822; name="Original agenda.eml"
+Content-Disposition: attachment; filename="Original agenda.eml"
+
+From: Ivan Example <ivan@example.net>
+To: Hugo Example <hugo@example.org>
+Subject: Original agenda
+Date: Mon, 16 Nov 2026 10:00:00 +0100
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+
+Agenda: 1. Budget 2. Offsite 3. Any other business.
+
+--------------0aB1cD2eF3gH4iJ5kL6mN7oP--

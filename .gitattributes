@@ -1,2 +1,5 @@
 # Shell scripts run in bash on every CI runner, Windows included: keep LF line endings there.
 *.sh text eol=lf
+
+# Email test messages are byte-exact (line endings included): never converted on checkout.
+tests/RaiCore.Pdf.Tests/Fixtures/Email/** -text
