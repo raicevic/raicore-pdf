@@ -20,8 +20,8 @@ case "$target" in
   pdf) files=("$fixtures"/Reader/*.pdf "$fixtures"/Reader/Encrypted/*.pdf) ;;
   extract) files=("$fixtures"/Reader/*.pdf "$fixtures"/Extraction/*.pdf) ;;
   edit) files=("$fixtures"/Reader/*.pdf "$fixtures"/Forms/*.pdf "$fixtures"/Annotations/*.pdf "$fixtures"/Extraction/*.pdf) ;;
-  cfb) files=("$fixtures"/Cfb/*.cfb) ;;
-  email) files=("$fixtures"/Email/* "$fixtures"/Msg/*.msg) ;;
+  cfb) files=("$fixtures"/Cfb/*.cfb "$fixtures"/Poi/*.msg "$fixtures"/Poi/*.doc "$fixtures"/Poi/*.xls "$fixtures"/Poi/*.ppt) ;;
+  email) files=("$fixtures"/Email/* "$fixtures"/Msg/*.msg "$fixtures"/Poi/*.msg) ;;
   *) files=() ;;
 esac
 files+=("$fixtures"/Fuzz/Seeds/"$target"/* "$fixtures"/Fuzz/Crashes/"$target"/*)

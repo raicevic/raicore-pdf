@@ -13,3 +13,9 @@ tests/RaiCore.Pdf.Tests/Fixtures/Msg/** -text
 # Workbooks are ZIP packages: binary, never converted.
 tests/RaiCore.Pdf.Tests/Fixtures/Sheets/*.xlsx -text
 tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Seeds/xlsx/** -text
+
+# Apache POI sample files are byte-exact.
+tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.msg -text
+tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.doc -text
+tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.xls -text
+tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.ppt -text
