@@ -26,6 +26,8 @@
   <ItemGroup>
     <InternalsVisibleTo Include="RaiCore.Pdf.Tests" />
     <InternalsVisibleTo Include="RaiCore.Pdf.Fuzz" />
+    <!-- Editing reads content streams with the content parser to find the resources pages use. -->
+    <InternalsVisibleTo Include="RaiCore.Pdf.Editing" />
   </ItemGroup>
 
 </Project>

@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RaiCore.Pdf\RaiCore.Pdf.csproj" />
+    <ProjectReference Include="..\RaiCore.Pdf.Extraction\RaiCore.Pdf.Extraction.csproj" />
   </ItemGroup>
 
   <ItemGroup>

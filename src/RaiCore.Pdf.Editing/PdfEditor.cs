@@ -111,6 +111,46 @@ public sealed class PdfEditor
     /// <summary>The pages, in order: delete, insert, move and rotate them here.</summary>
     public PdfEditorPages Pages { get; }
 
+    /// <summary>
+    /// Whether saves write objects in compressed object streams with a cross-reference stream (PDF 1.5), which makes
+    /// files with many small objects (fonts, annotations, outlines) noticeably smaller. A file of an older version is
+    /// written as PDF 1.5. Off by default; <see cref="Optimize"/> turns it on unless told not to.
+    /// </summary>
+    public bool UseObjectStreams { get; set; }
+
+    /// <summary>
+    /// Makes the document smaller without changing how it looks: removes resources (fonts, images, graphics states and
+    /// the like) that the pages' content never uses, merges identical fonts, images and other streams into one object,
+    /// and compresses streams that are not compressed (see <see cref="PdfOptimizationOptions"/>). The changes stay in the
+    /// document for later saves.
+    /// </summary>
+    /// <remarks>
+    /// Objects that nothing uses any more are not written anyway: every save writes only what is still in use. Images
+    /// are not recompressed and fonts are not subset again.
+    /// </remarks>
+    /// <param name="options">What to do; by default everything.</param>
+    /// <returns>What was done.</returns>
+    /// <exception cref="InvalidOperationException">The document has no pages.</exception>
+    public PdfOptimizationResult Optimize(PdfOptimizationOptions? options = null)
+    {
+        options ??= PdfOptimizationOptions.Default;
+        if (Pages.Count == 0)
+        {
+            throw new InvalidOperationException("The document has no pages: there is nothing to optimize.");
+        }
+
+        var optimizer = new Optimizer(_table, _catalog, _info, Prepare());
+        var removed = options.RemoveUnusedResources ? optimizer.RemoveUnusedResources() : 0;
+        var merged = options.MergeDuplicates ? optimizer.MergeDuplicates() : 0;
+        var compressed = options.CompressStreams ? optimizer.CompressStreams() : 0;
+        if (options.UseObjectStreams)
+        {
+            UseObjectStreams = true;
+        }
+
+        return new PdfOptimizationResult(removed, merged, compressed);
+    }
+
     internal ObjectTable Table => _table;
 
     /// <summary>Opens a file.</summary>
@@ -302,7 +342,13 @@ public sealed class PdfEditor
         static PdfArray Box(PdfRectangle box) => PdfArray.OfNumbers(box.X, box.Y, box.Right, box.Top);
     }
 
-    private void Write(Stream stream)
+    private void Write(Stream stream) => WriteObjects(stream, Prepare());
+
+    /// <summary>
+    /// Brings the document up to date for writing: the page tree, and the cleanup of what points at deleted pages.
+    /// Returns the objects that are no longer pages.
+    /// </summary>
+    private HashSet<int> Prepare()
     {
         var pages = Pages.References;
         if (pages.Count == 0)
@@ -329,7 +375,7 @@ public sealed class PdfEditor
             catalog["PageLabels"] = null;
         }
 
-        WriteObjects(stream, dead);
+        return dead;
     }
 
     /// <summary>
@@ -338,7 +384,7 @@ public sealed class PdfEditor
     /// </summary>
     private void WriteObjects(Stream stream, HashSet<int> dead)
     {
-        using var writer = new PdfFileWriter();
+        using var writer = new PdfFileWriter { UseObjectStreams = UseObjectStreams };
         var written = new Dictionary<int, PdfReference>();
         var pending = new Queue<(PdfObject Source, PdfReference Target)>();
 
@@ -415,6 +461,7 @@ public sealed class PdfEditor
             });
         }
 
-        writer.Write(stream, root, info, _version);
+        var version = UseObjectStreams && string.CompareOrdinal(_version, "1.5") < 0 ? "1.5" : _version;
+        writer.Write(stream, root, info, version);
     }
 }
