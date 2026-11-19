@@ -137,3 +137,18 @@ static RaiCore.Pdf.Editing.PdfOptimizationOptions.operator !=(RaiCore.Pdf.Editin
 static RaiCore.Pdf.Editing.PdfOptimizationOptions.operator ==(RaiCore.Pdf.Editing.PdfOptimizationOptions? left, RaiCore.Pdf.Editing.PdfOptimizationOptions? right) -> bool
 static RaiCore.Pdf.Editing.PdfOptimizationResult.operator !=(RaiCore.Pdf.Editing.PdfOptimizationResult? left, RaiCore.Pdf.Editing.PdfOptimizationResult? right) -> bool
 static RaiCore.Pdf.Editing.PdfOptimizationResult.operator ==(RaiCore.Pdf.Editing.PdfOptimizationResult? left, RaiCore.Pdf.Editing.PdfOptimizationResult? right) -> bool
+RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions
+RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.KeepLinks.get -> bool
+RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.KeepLinks.init -> void
+RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.Types.get -> System.Collections.Generic.IReadOnlySet<string!>?
+RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.Types.init -> void
+RaiCore.Pdf.Editing.PdfEditor.FlattenAnnotations(RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions? options = null) -> RaiCore.Pdf.Editing.PdfFlattenResult!
+static RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.Default.get -> RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions!
+override RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.Equals(object? obj) -> bool
+override RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.GetHashCode() -> int
+override RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.ToString() -> string!
+RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.<Clone>$() -> RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions!
+RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.Equals(RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions? other) -> bool
+RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.PdfAnnotationFlattenOptions() -> void
+static RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.operator !=(RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions? left, RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions? right) -> bool
+static RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.operator ==(RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions? left, RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions? right) -> bool

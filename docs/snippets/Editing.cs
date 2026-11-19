@@ -87,6 +87,17 @@ internal static class Editing
         filled.Save("contract-flattened.pdf");
         #endregion
 
+        #region flatten-annotations
+        // Burn the reviewers' highlights, ink and stamps into the pages; links keep working.
+        var reviewed = PdfEditor.Open("contract-reviewed.pdf");
+        var burnt = reviewed.FlattenAnnotations();
+        Console.WriteLine($"{burnt.Drawn} annotations drawn, {burnt.Removed} removed without being drawn (hidden, not printed or pop-ups)");
+
+        // Or only some types, links included.
+        reviewed.FlattenAnnotations(new PdfAnnotationFlattenOptions { Types = new HashSet<string> { "Stamp" }, KeepLinks = false });
+        reviewed.Save("contract-reviewed-flattened.pdf");
+        #endregion
+
         #region split
         // Parts of at most 10 MB, for a mail server or an archive with a size limit.
         var parts = PdfEditor.Open("contract-merged.pdf").SplitBySize(10 * 1024 * 1024);

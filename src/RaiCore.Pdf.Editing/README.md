@@ -18,6 +18,8 @@ editor.Save("contract-edited.pdf");
 - **Pages:** `Delete`, `Insert` and `Add` (pages of other files, any selection and order), `Move`, `Rotation`.
 - **Forms:** `GetForm()` reads the fields (full name, type, value, options, flags, widgets with page and rectangle) and
   tells AcroForm, static XFA and dynamic XFA apart; `FlattenForm()` burns the values into the pages.
+- **Annotations:** `FlattenAnnotations()` burns highlights, ink, shapes, free text, stamps and notes into the pages as
+  they print (links kept by default; filter by type).
 - **Smaller files:** `Optimize()` removes resources no content uses, merges duplicate fonts and images (as merged
   files have), compresses uncompressed streams and writes object streams, without changing how pages look.
 - **Split by size:** `SplitBySize(maxBytes)` cuts the document into consecutive parts below a size limit, each with
