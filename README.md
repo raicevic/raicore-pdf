@@ -302,8 +302,8 @@ var pdf = HtmlToPdf.ConvertToBytes(html, new HtmlConverterOptions
 });
 ```
 
-`HtmlConverterOptions.PdfAConformance` writes PDF/A-2b or PDF/A-3b for archiving (see [PDF/A](#pdfa)); the
-conversion throws if the document breaks a rule, e.g. text that no font has a glyph for:
+`HtmlConverterOptions.PdfAConformance` writes PDF/A-2b, PDF/A-3b, PDF/A-2a or PDF/A-3a for archiving (see
+[PDF/A](#pdfa)); the conversion throws if the document breaks a rule, e.g. text that no font has a glyph for:
 
 ```csharp
 var pdf = HtmlToPdf.ConvertToBytes(html, new HtmlConverterOptions { PdfAConformance = PdfAConformance.PdfA3B });
@@ -549,7 +549,18 @@ var doc = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B }.EmbedStan
 doc.AddPage().Canvas.DrawText("Archived", StandardFont.Helvetica, 12, 72, 720);
 ```
 
-Files can be attached (`PdfDocument.Attachments`; PDF/A-3b allows any file, PDF/A-2b none), and
+`PdfA2A` and `PdfA3A` (level A, "accessible") add the logical structure: the document is tagged (see
+[Accessible PDF](#accessible-pdf-tagged-pdf-and-pdfua); HTML and layout documents are tagged from their semantics),
+every glyph maps to Unicode, and saving also requires a language (a BCP 47 tag, like every element's), the standard
+structure types only, and alternate text on figures (`alt` in HTML; `alt=""` makes an image decorative). As at level
+B, a rule the content breaks throws `InvalidOperationException` naming it; the check runs when saving, so set the
+level before drawing, which is what tags the content:
+
+```csharp
+var pdf = HtmlToPdf.ConvertToBytes(html, new HtmlConverterOptions { PdfAConformance = PdfAConformance.PdfA2A }); // <html lang> and alt text
+```
+
+Files can be attached (`PdfDocument.Attachments`; PDF/A-3 allows any file, PDF/A-2 none), and
 `AttachFacturXInvoice` makes a Factur-X / ZUGFeRD e-invoice: a PDF/A-3b carrying the invoice as CII XML. The XML is
 checked to be well-formed, not validated against the profile's rules:
 

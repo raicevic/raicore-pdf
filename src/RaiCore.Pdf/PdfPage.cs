@@ -59,6 +59,15 @@ public sealed class PdfPage
     /// <summary>The page of another file this page was imported from, or <c>null</c> for a generated page.</summary>
     internal PdfReaderPage? Source { get; }
 
+    /// <summary>Whether something was painted on the page while its document was not tagged (PDF/A level A forbids it).</summary>
+    internal bool DrawnUntagged { get; set; }
+
+    /// <summary>
+    /// The first text with Private Use Area characters drawn on the page without actual text, or <c>null</c>: PDF/A
+    /// level A requires actual text for them (ISO 19005-2, 6.2.11.7.3).
+    /// </summary>
+    internal string? PrivateUseText { get; set; }
+
     /// <summary>Whether pages of other files are drawn on this page (<see cref="PdfCanvas.DrawPage(PdfReaderPage, double, double)"/>).</summary>
     internal bool DrawsOtherFiles => _pageForms.Count > 0;
 

@@ -347,10 +347,12 @@ public class EmailToPdfTests
     [Theory]
     [InlineData(PdfAConformance.PdfA2B, 0)]
     [InlineData(PdfAConformance.PdfA3B, 1)]
+    [InlineData(PdfAConformance.PdfA2A, 0)]
+    [InlineData(PdfAConformance.PdfA3A, 1)]
     public void Pdf_a_2_gets_no_attached_files_and_says_so(PdfAConformance conformance, int attachments)
     {
         var diagnostics = new List<HtmlDiagnostic>();
-        var options = new EmailConverterOptions { Html = new HtmlConverterOptions { PdfAConformance = conformance, Diagnostics = diagnostics.Add } };
+        var options = new EmailConverterOptions { Html = new HtmlConverterOptions { PdfAConformance = conformance, Language = "en", Diagnostics = diagnostics.Add } };
 
         var document = EmailToPdf.Convert(Message("gmail-related.eml"), options);
         var pdf = document.ToArray();

@@ -63,6 +63,55 @@ public class PdfAVeraPdfTests
         ExternalTools.AssertVeraPdfCompliant(pdf, "ua1");
     }
 
+    [Theory]
+    [InlineData(PdfAConformance.PdfA2A, "2a")]
+    [InlineData(PdfAConformance.PdfA3A, "3a")]
+    public void A_converted_html_document_is_compliant_at_level_A(PdfAConformance level, string flavour)
+    {
+        ExternalTools.AssertVeraPdfCompliant(PdfASamples.HtmlLevelA(level).ToArray(), flavour);
+        ExternalTools.AssertVeraPdfCompliant(PdfASamples.Html(level).ToArray(), flavour);
+    }
+
+    [Theory]
+    [InlineData(PdfAConformance.PdfA2A, "2a")]
+    [InlineData(PdfAConformance.PdfA3A, "3a")]
+    public void A_layout_document_is_compliant_at_level_A(PdfAConformance level, string flavour)
+    {
+        ExternalTools.AssertVeraPdfCompliant(PdfASamples.Layout(level).ToArray(), flavour);
+    }
+
+    [Theory]
+    [InlineData(PdfAConformance.PdfA2A, "2a")]
+    [InlineData(PdfAConformance.PdfA3A, "3a")]
+    public void A_tagged_document_is_both_level_A_and_PdfUA1(PdfAConformance level, string flavour)
+    {
+        var canvas = PdfATests.TaggedPdfUA(level).ToArray();
+        ExternalTools.AssertVeraPdfCompliant(canvas, flavour);
+        ExternalTools.AssertVeraPdfCompliant(canvas, "ua1");
+
+        var html = PdfASamples.Html(level, pdfUA: true).ToArray();
+        ExternalTools.AssertVeraPdfCompliant(html, flavour);
+        ExternalTools.AssertVeraPdfCompliant(html, "ua1");
+    }
+
+    [Fact]
+    public void Level_A_is_really_checked()
+    {
+        // An untagged PDF/A-2b file validated as PDF/A-2a has no structure tree (ISO 19005-2, 6.7.3.3) and says B (6.6.4).
+        var report = ExternalTools.ValidateWithVeraPdf(PdfASamples.Canvas(PdfAConformance.PdfA2B).ToArray(), "2a");
+
+        Assert.False(report.IsCompliant);
+        Assert.Contains(report.FailedRules, rule => rule.Contains("6.7.3.3-1", StringComparison.Ordinal));
+        Assert.Contains(report.FailedRules, rule => rule.Contains("6.6.4-3", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_PdfA3a_invoice_is_compliant()
+    {
+        var doc = PdfASamples.HtmlLevelA(PdfAConformance.PdfA3A).AttachFacturXInvoice(PdfAttachmentTests.InvoiceXml, FacturXProfile.EN16931);
+        ExternalTools.AssertVeraPdfCompliant(doc.ToArray(), "3a");
+    }
+
     [Fact]
     public void A_FacturX_invoice_is_PdfA3b_compliant()
     {

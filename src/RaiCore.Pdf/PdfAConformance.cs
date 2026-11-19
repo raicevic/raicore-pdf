@@ -21,4 +21,28 @@ public enum PdfAConformance
     /// invoice XML of a ZUGFeRD or Factur-X e-invoice.
     /// </summary>
     PdfA3B,
+
+    /// <summary>
+    /// PDF/A-2a (ISO 19005-2, level A, "accessible"): PDF/A-2b plus the document's logical structure. The document is
+    /// <see cref="PdfDocument.Tagged"/>, and all of its text maps to Unicode.
+    /// </summary>
+    PdfA2A,
+
+    /// <summary>PDF/A-3a (ISO 19005-3, level A): PDF/A-3b plus the logical structure and Unicode text of PDF/A-2a.</summary>
+    PdfA3A,
+}
+
+/// <summary>What a <see cref="PdfAConformance"/> level stands for.</summary>
+internal static class PdfAConformanceLevels
+{
+    /// <summary>The part of ISO 19005 (2 or 3), or 0 for <see cref="PdfAConformance.None"/>.</summary>
+    public static int Part(this PdfAConformance level) => level switch
+    {
+        PdfAConformance.PdfA2B or PdfAConformance.PdfA2A => 2,
+        PdfAConformance.PdfA3B or PdfAConformance.PdfA3A => 3,
+        _ => 0,
+    };
+
+    /// <summary>Whether the level is A (accessible: tagged, with Unicode text), not B.</summary>
+    public static bool IsLevelA(this PdfAConformance level) => level is PdfAConformance.PdfA2A or PdfAConformance.PdfA3A;
 }

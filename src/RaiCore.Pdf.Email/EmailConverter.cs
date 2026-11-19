@@ -100,7 +100,7 @@ internal sealed class EmailConverter
 
         if (_options.EmbedAttachments && attachments.Count > 0)
         {
-            if (document.PdfAConformance == PdfAConformance.PdfA2B)
+            if (document.PdfAConformance is PdfAConformance.PdfA2B or PdfAConformance.PdfA2A)
             {
                 Report(HtmlDiagnosticKind.ResourceNotLoaded, HtmlDiagnosticSeverity.Warning, attachments[0].FileName,
                     "The attachments are not embedded: PDF/A-2 does not allow attached files (PDF/A-3 does).");

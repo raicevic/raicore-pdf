@@ -214,6 +214,11 @@ public sealed partial class PdfCanvas
         ArgumentNullException.ThrowIfNull(font);
         var (resourceName, usage) = _page.UseFont(font);
         UseResource(resourceName);
+        if (font is Fonts.OpenTypePdfFont)
+        {
+            NotePrivateUse(text);
+        }
+
         var operand = font.EncodeText(text, usage).ToString();
         Painting("text", TracksBounds ? TextBounds(font, size, x, y, 0, TextWidth(text, font, size)) : null);
         return Op($"BT /{resourceName} {N(size)} Tf {N(x)} {N(y)} Td {operand} Tj ET");
@@ -293,6 +298,10 @@ public sealed partial class PdfCanvas
 
             op.Append('<').Append(((ushort)glyph.GlyphId).ToString("X4", System.Globalization.CultureInfo.InvariantCulture)).Append('>');
             usage.Add(glyph.GlyphId, glyph.Text);
+            if (actualText is null)
+            {
+                NotePrivateUse(glyph.Text);
+            }
 
             restart = hasOffset;
             var adjustment = glyph.Advance - openType.GetGlyphAdvance(glyph.GlyphId);
@@ -318,6 +327,18 @@ public sealed partial class PdfCanvas
 
         return Op(op.ToString());
     }
+
+    /// <summary>Remembers the first text with Private Use Area characters drawn on the page without actual text (see <see cref="PdfPage.PrivateUseText"/>).</summary>
+    private void NotePrivateUse(string? text)
+    {
+        if (_page.PrivateUseText is null && text is not null && text.EnumerateRunes().Any(rune => IsPrivateUse(rune.Value)))
+        {
+            _page.PrivateUseText = text;
+        }
+    }
+
+    /// <summary>Whether a code point is in one of Unicode's Private Use Areas (U+E000 to U+F8FF, planes 15 and 16).</summary>
+    internal static bool IsPrivateUse(int codePoint) => codePoint is (>= 0xE000 and <= 0xF8FF) or >= 0xF0000;
 
     /// <summary>Paints the current path: checks strict tagging and records the painted area first.</summary>
     private PdfCanvas PaintPath(string op, bool stroke)

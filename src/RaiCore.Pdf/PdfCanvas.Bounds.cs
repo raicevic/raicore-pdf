@@ -212,6 +212,7 @@ public sealed partial class PdfCanvas
     {
         if (!Tagging)
         {
+            _page.DrawnUntagged = true;
             return;
         }
 

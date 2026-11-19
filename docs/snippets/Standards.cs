@@ -24,6 +24,12 @@ internal static class Standards
         archived.Save("archived.pdf");
         #endregion
 
+        #region pdfa-level-a
+        // PDF/A-3a: PDF/A-3b plus the logical structure (tagged) and Unicode text. Needs a language and alt text on images.
+        var archivedAccessible = HtmlToPdf.Convert(html, new HtmlConverterOptions { PdfAConformance = PdfAConformance.PdfA3A });
+        archivedAccessible.Save("archived-accessible.pdf");
+        #endregion
+
         var crossIndustryInvoice = """<?xml version="1.0" encoding="UTF-8"?><rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"/>"""u8.ToArray();
 
         #region facturx

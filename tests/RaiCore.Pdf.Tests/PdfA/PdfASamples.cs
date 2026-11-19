@@ -1,5 +1,6 @@
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html;
+using RaiCore.Pdf.Layout;
 
 namespace RaiCore.Pdf.Tests.PdfA;
 
@@ -130,6 +131,75 @@ internal static class PdfASamples
 
         var doc = HtmlToPdf.Convert(html, new HtmlConverterOptions { PdfAConformance = level, Tagged = pdfUA, PdfUA = pdfUA });
         doc.Info.CreationDate = Created;
+        return doc;
+    }
+
+    /// <summary>
+    /// HTML for PDF/A level A: headings, a paragraph with a link, a list, an image with alt text, a decorative image, a
+    /// table with header cells, an SVG figure with a title, and a paragraph in another language.
+    /// </summary>
+    public static readonly string LevelAHtml = $$"""
+        <!DOCTYPE html>
+        <html lang="en-GB">
+        <head>
+          <title>Accessible archive</title>
+          <style>
+            body { font-family: sans-serif; font-size: 11pt; }
+            h1 { color: #234; border-bottom: 2px solid #234; }
+            th, td { border: 1px solid #666; padding: 3px 8px; }
+            th { background: #dde; }
+            ul { color: #333; }
+          </style>
+        </head>
+        <body>
+          <h1>Sales report 2026</h1>
+          <p>Sales grew in every region. The <a href="https://example.com/sales">full figures</a> are online.</p>
+          <h2>Highlights</h2>
+          <ul>
+            <li>North grew by 12%</li>
+            <li>South grew by 8%</li>
+          </ul>
+          <p><img src="data:image/jpeg;base64,{{Convert.ToBase64String(Fixtures.Read("Images/rgb.jpg"))}}" width="64" height="64" alt="Four colored squares">
+             <img src="data:image/png;base64,{{Convert.ToBase64String(Fixtures.Read("PngSuite/basn6a08.png"))}}" width="16" height="16" alt=""></p>
+          <table>
+            <thead><tr><th>Region</th><th>Sales</th></tr></thead>
+            <tbody><tr><td>North</td><td>1,120</td></tr><tr><td>South</td><td>1,080</td></tr></tbody>
+          </table>
+          <svg width="160" height="60" viewBox="0 0 160 60"><title>A bar chart of sales by region</title>
+            <rect x="10" y="10" width="112" height="18" fill="#36c"/><rect x="10" y="34" width="108" height="18" fill="#c63"/>
+          </svg>
+          <p lang="da">Tak for i dag.</p>
+        </body>
+        </html>
+        """;
+
+    /// <summary><see cref="LevelAHtml"/> converted with a level A <paramref name="level"/>.</summary>
+    public static PdfDocument HtmlLevelA(PdfAConformance level)
+    {
+        var doc = HtmlToPdf.Convert(LevelAHtml, new HtmlConverterOptions { PdfAConformance = level });
+        doc.Info.CreationDate = Created;
+        return doc;
+    }
+
+    /// <summary>A layout API document (heading, paragraph, figure, table with a header row) rendered with <paramref name="level"/>.</summary>
+    public static PdfDocument Layout(PdfAConformance level)
+    {
+        var style = new TextStyle(PdfFont.Load(Fixtures.Path("LiberationSans-Regular.ttf")), 11);
+        var flow = new FlowDocument(PageSetup.A4);
+        flow.Add(new ParagraphBlock(new Paragraph(style with { FontSize = 20 }).Add("Archived report")) { Tag = StructureTag.Heading(1) });
+        flow.Add(new ParagraphBlock(new Paragraph(style).Add("Laid out with the layout API: caf\u00E9, \u20AC 12, \u00E6\u00F8\u00E5.")));
+        flow.Add(new ImageBlock(PdfImage.Load(Fixtures.Path("Images/rgb.jpg")), 64, 64)
+        {
+            Tag = new StructureTag(PdfStructureTypes.Figure) { AlternateText = "Four colored squares" },
+        });
+        var table = new TableBlock().Add(new TableRow(new TableCell(new Paragraph(style).Add("Region")), new TableCell(new Paragraph(style).Add("Sales"))) { IsHeader = true });
+        table.Add(new TableRow(new TableCell(new Paragraph(style).Add("North")), new TableCell(new Paragraph(style).Add("1,120"))));
+        table.Add(new TableRow(new TableCell(new Paragraph(style).Add("South")), new TableCell(new Paragraph(style).Add("1,080"))));
+        flow.Add(table);
+        flow.PageDecorator = (canvas, info) => canvas.DrawText($"Page {info.Number} of {info.Count}", style.Fonts[0], 8, 500, 20);
+
+        var doc = new PdfDocument { PdfAConformance = level, Language = "en-GB", Info = { Title = "Archived report", CreationDate = Created } };
+        flow.RenderTo(doc);
         return doc;
     }
 }

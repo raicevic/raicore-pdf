@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.IO;
 using RaiCore.Pdf.Objects;
@@ -5,9 +7,9 @@ using RaiCore.Pdf.Xmp;
 
 namespace RaiCore.Pdf;
 
-// PDF/A (ISO 19005-2 and -3, level B): the checks made before writing, the sRGB output intent and the XMP
+// PDF/A (ISO 19005-2 and -3, levels B and A): the checks made before writing, the sRGB output intent and the XMP
 // identification. Rules that concern single objects are checked where those are written (see PdfFileWriter.PdfA):
-// fonts must be embedded and must not draw .notdef, images must not be CMYK.
+// fonts must be embedded and must not draw .notdef, images must not be CMYK, and at level A every glyph maps to Unicode.
 public sealed partial class PdfDocument
 {
     /// <summary>The ICC profile of the output intent: sRGB IEC 61966-2.1, ICC v2 (CC0, Compact-ICC-Profiles).</summary>
@@ -24,8 +26,9 @@ public sealed partial class PdfDocument
     private PdfAConformance _pdfAConformance;
 
     /// <summary>
-    /// Writes the document as PDF/A for long-term archiving: <see cref="PdfAConformance.PdfA2B"/> or
-    /// <see cref="PdfAConformance.PdfA3B"/>. The document then gets an sRGB output intent, XMP metadata that identifies
+    /// Writes the document as PDF/A for long-term archiving: <see cref="PdfAConformance.PdfA2B"/>,
+    /// <see cref="PdfAConformance.PdfA3B"/>, or level A, <see cref="PdfAConformance.PdfA2A"/> and
+    /// <see cref="PdfAConformance.PdfA3A"/>. The document then gets an sRGB output intent, XMP metadata that identifies
     /// it as PDF/A (and describes custom properties in an extension schema), and every rule the library can break is
     /// checked when it is saved, which throws <see cref="InvalidOperationException"/> naming the problem:
     /// <list type="bullet">
@@ -34,6 +37,16 @@ public sealed partial class PdfDocument
     /// <item>text must not draw the .notdef glyph (characters the font lacks);</item>
     /// <item>no <see cref="Encryption"/>, CMYK images, pages imported from other PDF files, or disabled
     /// <see cref="IncludeXmpMetadata"/>.</item>
+    /// </list>
+    /// Level A makes the document <see cref="Tagged"/> (set it before drawing, so that the content is tagged), writes
+    /// every glyph to the fonts' Unicode maps (a glyph without text of its own, such as the second glyph of a cluster
+    /// drawn with actual text, maps to U+FFFD), and adds these checks:
+    /// <list type="bullet">
+    /// <item>a <see cref="Language"/>, and every language (the document's and the structure elements') a BCP 47 tag;</item>
+    /// <item>structure elements of the standard types only (<see cref="PdfStructureTypes"/>; no role map is written);</item>
+    /// <item>alternate text (or actual text) on every figure and formula;</item>
+    /// <item>no page drawn on before the document was tagged, and no Private Use Area characters (icon fonts) drawn
+    /// without actual text (<see cref="PdfCanvas.DrawGlyphs"/> takes it).</item>
     /// </list>
     /// Transparency, links, outlines and gradients are written as PDF/A allows. Defaults to
     /// <see cref="PdfAConformance.None"/>.
@@ -89,7 +102,105 @@ public sealed partial class PdfDocument
             throw new InvalidOperationException(
                 "Pages imported from (or drawn from) other PDF files cannot be written as PDF/A: their content cannot be checked against its rules.");
         }
+
+        if (PdfAConformance.IsLevelA())
+        {
+            CheckPdfALevelA(pages);
+        }
     }
+
+    /// <summary>The level A rules that can be checked before the pages are written: the language, and how they were drawn.</summary>
+    private void CheckPdfALevelA(IEnumerable<PdfPage> pages)
+    {
+        if (string.IsNullOrWhiteSpace(Language))
+        {
+            throw new InvalidOperationException("PDF/A level A requires the document's language (PdfDocument.Language).");
+        }
+
+        CheckLanguageTag(Language, "The document's language (PdfDocument.Language)");
+        foreach (var page in pages)
+        {
+            if (page.DrawnUntagged)
+            {
+                throw new InvalidOperationException(string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"PDF/A level A requires tagged content, but page {PageNumber(page)} was drawn on before the document was tagged: set PdfAConformance (or Tagged) before drawing."));
+            }
+
+            if (page.PrivateUseText is { } text)
+            {
+                throw new InvalidOperationException(string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"PDF/A level A requires actual text for Private Use Area characters (such as icon font symbols), but page {PageNumber(page)} draws \"{text}\" without it. Draw them with PdfCanvas.DrawGlyphs and its actualText."));
+            }
+        }
+    }
+
+    /// <summary>
+    /// The level A rules of the logical structure, checked when it is complete (before the fonts and pages are
+    /// finished): the elements written have standard types, figures and formulas a description, and languages are tags.
+    /// </summary>
+    private void CheckPdfAStructure()
+    {
+        if (!PdfAConformance.IsLevelA())
+        {
+            return;
+        }
+
+        var pending = new Stack<PdfStructureElement>([StructureRoot]);
+        while (pending.TryPop(out var element))
+        {
+            if (!StandardStructureTypes.Contains(element.Type))
+            {
+                throw new InvalidOperationException(
+                    $"PDF/A level A requires the standard structure types (PdfStructureTypes), but an element has the type \"{element.Type}\", and no role map is written.");
+            }
+
+            if (element.Type is PdfStructureTypes.Figure or PdfStructureTypes.Formula
+                && string.IsNullOrWhiteSpace(element.AlternateText) && string.IsNullOrWhiteSpace(element.ActualText))
+            {
+                throw new InvalidOperationException(
+                    $"PDF/A level A requires alternate text on figures and formulas, but a {element.Type} element has none: set PdfStructureElement.AlternateText "
+                    + "(in HTML, the image's alt attribute; alt=\"\" marks a decorative image, which is not a figure).");
+            }
+
+            if (!string.IsNullOrWhiteSpace(element.Language))
+            {
+                CheckLanguageTag(element.Language, $"The language of a {element.Type} element");
+            }
+
+            foreach (var child in element.Children.Where(child => child.HasContent))
+            {
+                pending.Push(child);
+            }
+        }
+    }
+
+    /// <summary>The page's number in the document, counting from 1.</summary>
+    private int PageNumber(PdfPage page) => _pages.IndexOf(page) + 1;
+
+    /// <summary>Throws unless <paramref name="language"/> is a language tag as PDF/A level A requires (ISO 32000-1, 14.9.2).</summary>
+    private static void CheckLanguageTag(string language, string what)
+    {
+        if (!LanguageTag().IsMatch(language.Trim()))
+        {
+            throw new InvalidOperationException($"{what} is \"{language}\", which is not a BCP 47 language tag such as \"en\" or \"de-CH\", as PDF/A level A requires.");
+        }
+    }
+
+    /// <summary>A language tag as veraPDF checks it: subtags of letters and digits joined by hyphens.</summary>
+    [GeneratedRegex("^[a-zA-Z]{1,8}(-[a-zA-Z0-9]{1,8})*$")]
+    private static partial Regex LanguageTag();
+
+    /// <summary>The standard structure types of ISO 32000-1, section 14.8.4.</summary>
+    private static readonly HashSet<string> StandardStructureTypes = new(StringComparer.Ordinal)
+    {
+        "Document", "Part", "Art", "Sect", "Div", "BlockQuote", "Caption", "TOC", "TOCI", "Index", "NonStruct", "Private",
+        "P", "H", "H1", "H2", "H3", "H4", "H5", "H6", "L", "LI", "Lbl", "LBody",
+        "Table", "TR", "TH", "TD", "THead", "TBody", "TFoot",
+        "Span", "Quote", "Note", "Reference", "BibEntry", "Code", "Link", "Annot", "Ruby", "RB", "RT", "RP", "Warichu", "WT", "WP",
+        "Figure", "Formula", "Form",
+    };
 
     /// <summary>The PDF/A output intent: every device color is sRGB.</summary>
     private void WriteOutputIntent(PdfFileWriter writer, PdfDictionary catalog)
@@ -158,7 +269,7 @@ public sealed partial class PdfDocument
         }
 
         xmp.Schema(XmpNamespace.PdfAId)
-            .Set("part", PdfAConformance == PdfAConformance.PdfA2B ? "2" : "3")
-            .Set("conformance", "B");
+            .Set("part", PdfAConformance.Part().ToString(CultureInfo.InvariantCulture))
+            .Set("conformance", PdfAConformance.IsLevelA() ? "A" : "B");
     }
 }

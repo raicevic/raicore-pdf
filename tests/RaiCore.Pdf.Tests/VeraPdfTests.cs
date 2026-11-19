@@ -11,6 +11,8 @@ public class VeraPdfTests
     [Theory]
     [InlineData("2b")]
     [InlineData("3b")]
+    [InlineData("2a")]
+    [InlineData("3a")]
     [InlineData("ua1")]
     public void VeraPdf_reports_a_plain_document_as_non_compliant(string flavour)
     {

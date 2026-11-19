@@ -80,7 +80,7 @@ internal static class CidFontWriter
             ["BaseFont"] = new PdfName(baseFont),
             ["Encoding"] = new PdfName("Identity-H"),
             ["DescendantFonts"] = new PdfArray(writer.Add(cidFont)),
-            ["ToUnicode"] = writer.Add(PdfStreamObject.CreateCompressed(ToUnicodeCMap(usage))),
+            ["ToUnicode"] = writer.Add(PdfStreamObject.CreateCompressed(ToUnicodeCMap(usage, mapEveryGlyph: writer.PdfA.IsLevelA()))),
         }, reference);
     }
 
@@ -177,7 +177,12 @@ internal static class CidFontWriter
         });
     }
 
-    private static byte[] ToUnicodeCMap(FontUsage usage)
+    /// <summary>
+    /// The ToUnicode CMap: each glyph to its text. Glyphs without text of their own (the extra glyphs of a cluster,
+    /// whose text is the run's actual text) are left out, unless <paramref name="mapEveryGlyph"/> (PDF/A level A, ISO
+    /// 19005-2, 6.2.11.7.2) maps them to U+FFFD, which also replaces the values that PDF/A forbids.
+    /// </summary>
+    private static byte[] ToUnicodeCMap(FontUsage usage, bool mapEveryGlyph)
     {
         var cmap = new StringBuilder();
         cmap.Append("/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n");
@@ -185,7 +190,11 @@ internal static class CidFontWriter
         cmap.Append("/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n");
         cmap.Append("1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n");
 
-        var entries = usage.Glyphs.Where(g => g.Key != 0 && !string.IsNullOrEmpty(g.Value)).Select(g => (g.Key, Text: g.Value!)).ToList();
+        var entries = usage.Glyphs
+            .Select(g => (g.Key, Text: mapEveryGlyph ? MappableText(g.Value) : g.Value))
+            .Where(g => g.Key != 0 && !string.IsNullOrEmpty(g.Text))
+            .Select(g => (g.Key, Text: g.Text!))
+            .ToList();
         for (var start = 0; start < entries.Count; start += 100)
         {
             var chunk = entries.Skip(start).Take(100).ToList();
@@ -201,6 +210,18 @@ internal static class CidFontWriter
 
         cmap.Append("endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n");
         return Encoding.ASCII.GetBytes(cmap.ToString());
+    }
+
+    /// <summary>
+    /// A glyph's text as PDF/A level A allows it in a ToUnicode map: without U+0000, U+FEFF and U+FFFE, and U+FFFD
+    /// (the replacement character) when nothing is left.
+    /// </summary>
+    internal static string MappableText(string? text)
+    {
+        var allowed = text?.Replace("\0", string.Empty, StringComparison.Ordinal)
+            .Replace("\uFEFF", string.Empty, StringComparison.Ordinal)
+            .Replace("\uFFFE", string.Empty, StringComparison.Ordinal);
+        return string.IsNullOrEmpty(allowed) ? "\uFFFD" : allowed;
     }
 
     /// <summary>The subset CFF font program, or null when the CFF cannot be subset (it is then embedded whole).</summary>

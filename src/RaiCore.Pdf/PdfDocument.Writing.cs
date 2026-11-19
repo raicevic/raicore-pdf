@@ -150,6 +150,7 @@ public sealed partial class PdfDocument
         public void Finish()
         {
             _document.CheckAttachments(); // Page by page, attachments may have been added since BeginSave.
+            _document.CheckPdfAStructure(); // The structure is complete once every page is drawn.
             foreach (var font in _fontOrder)
             {
                 var (reference, usage) = _fonts[font];

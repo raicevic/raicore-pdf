@@ -6,6 +6,14 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **PDF/A level A** (`PdfAConformance.PdfA2A` and `PdfA3A`): PDF/A-2a and PDF/A-3a, PDF/A-2b and -3b plus the logical
+  structure. Choosing them tags the document (HTML and layout documents from their semantics), maps every glyph to
+  Unicode in the fonts' ToUnicode maps, identifies the file as conformance A in XMP, and adds save-time checks that
+  throw `InvalidOperationException` like the other PDF/A rules: a document language, BCP 47 language tags, standard
+  structure types only (no role map is written), alternate text on figures and formulas (`alt` in HTML), no content
+  drawn before the document was tagged, and actual text for Private Use Area characters. Attachments need PDF/A-3a as
+  they need PDF/A-3b, and `AttachFacturXInvoice` keeps PDF/A-3a. CI validates HTML, layout and canvas documents with
+  veraPDF for 2a and 3a (#194).
 - **TIFF images** wherever images are accepted (`PdfImage.Load`, `<img>`, CSS backgrounds): bilevel, grayscale,
   palette, RGB and CMYK with 1 to 16 bits per sample, strips or tiles, separate planes, uncompressed, PackBits, LZW and
   Deflate (with the horizontal predictor), associated and unassociated alpha, both byte orders and BigTIFF. JPEG data
