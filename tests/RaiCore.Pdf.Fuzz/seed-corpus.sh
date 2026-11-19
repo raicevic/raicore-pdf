@@ -19,6 +19,7 @@ case "$target" in
   font) files=("$fixtures"/*.ttf "$fixtures"/*.otf "$fixtures"/*.ttc) ;;
   pdf) files=("$fixtures"/Reader/*.pdf "$fixtures"/Reader/Encrypted/*.pdf) ;;
   extract) files=("$fixtures"/Reader/*.pdf "$fixtures"/Extraction/*.pdf) ;;
+  edit) files=("$fixtures"/Reader/*.pdf "$fixtures"/Forms/*.pdf "$fixtures"/Annotations/*.pdf "$fixtures"/Extraction/*.pdf) ;;
   email) files=("$fixtures"/Email/*) ;;
   *) files=() ;;
 esac

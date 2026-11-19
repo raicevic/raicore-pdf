@@ -1,4 +1,5 @@
 using System.Text;
+using RaiCore.Pdf.Editing;
 using RaiCore.Pdf.Email;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Fonts.OpenType;
@@ -60,6 +61,7 @@ public static class FuzzTargets
         ["email"] = Email,
         ["tiff"] = Tiff,
         ["csv"] = Csv,
+        ["edit"] = Edit,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -152,6 +154,68 @@ public static class FuzzTargets
         var document = new PdfDocument();
         document.ImportPages(reader);
         document.ToArray();
+    }
+
+    /// <summary>
+    /// Editing: the file opened in the editor (its whole object graph copied), its form read, pages rotated, moved,
+    /// duplicated from the same file and deleted, form fields and annotations flattened, the result optimized, split by
+    /// size and saved, with and without object streams. Every saved file must read back: a file the editor writes that
+    /// the reader rejects is a bug, not malformed input.
+    /// </summary>
+    public static void Edit(byte[] input)
+    {
+        var editor = PdfEditor.Open(input);
+        _ = editor.GetForm().Fields.Count;
+        var pages = editor.Pages;
+        if (pages.Count > 0)
+        {
+            pages[0].Rotation += 90;
+            _ = (pages[0].MediaBox, pages[0].CropBox, pages[0].Width, pages[0].Height);
+            pages.Move(pages.Count - 1, 0);
+            pages.Insert(pages.Count, PdfReader.Open(input), [0, 0]);
+            pages.Delete(0);
+        }
+
+        ReadBack(editor.ToArray());
+        editor.FlattenForm();
+        editor.FlattenAnnotations(new PdfAnnotationFlattenOptions { KeepLinks = (input.Length & 1) == 0 });
+        if (pages.Count > 0)
+        {
+            editor.Optimize();
+            foreach (var part in editor.SplitBySize(Math.Max(1024, input.Length / 2)).Take(8))
+            {
+                ReadBack(part.Data.ToArray());
+            }
+        }
+
+        editor.UseObjectStreams = !editor.UseObjectStreams;
+        ReadBack(editor.ToArray());
+    }
+
+    /// <summary>
+    /// Reads a file the editor saved: its structure (cross-reference table, catalog, page tree, page dictionaries) must
+    /// not be malformed. Page content is copied as it is, so a stream the source could not decode stays undecodable.
+    /// </summary>
+    private static void ReadBack(byte[] saved)
+    {
+        PdfReader reader;
+        try
+        {
+            reader = PdfReader.Open(saved);
+            foreach (var page in reader.Pages)
+            {
+                _ = (page.Dictionary.Count, page.CropBox, page.Rotate, page.Resources.Count);
+            }
+        }
+        catch (PdfFormatException ex)
+        {
+            throw new InvalidOperationException("The editor saved a file the reader rejects: " + ex.Message, ex);
+        }
+
+        foreach (var page in reader.Pages)
+        {
+            page.GetContent();
+        }
     }
 
     /// <summary>
