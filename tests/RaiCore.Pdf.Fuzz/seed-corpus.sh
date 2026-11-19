@@ -22,7 +22,6 @@ case "$target" in
   edit) files=("$fixtures"/Reader/*.pdf "$fixtures"/Forms/*.pdf "$fixtures"/Annotations/*.pdf "$fixtures"/Extraction/*.pdf) ;;
   cfb) files=("$fixtures"/Cfb/*.cfb) ;;
   email) files=("$fixtures"/Email/* "$fixtures"/Msg/*.msg) ;;
-  xlsx) files=("$fixtures"/Sheets/*.xlsx) ;;
   *) files=() ;;
 esac
 files+=("$fixtures"/Fuzz/Seeds/"$target"/* "$fixtures"/Fuzz/Crashes/"$target"/*)
