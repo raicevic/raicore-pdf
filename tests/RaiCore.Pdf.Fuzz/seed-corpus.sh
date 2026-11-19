@@ -22,6 +22,7 @@ case "$target" in
   edit) files=("$fixtures"/Reader/*.pdf "$fixtures"/Forms/*.pdf "$fixtures"/Annotations/*.pdf "$fixtures"/Extraction/*.pdf) ;;
   cfb) files=("$fixtures"/Cfb/*.cfb "$fixtures"/Poi/*.msg "$fixtures"/Poi/*.doc "$fixtures"/Poi/*.xls "$fixtures"/Poi/*.ppt) ;;
   email) files=("$fixtures"/Email/* "$fixtures"/Msg/*.msg "$fixtures"/Poi/*.msg) ;;
+  rtf) while IFS= read -r file; do files+=("$file"); done < <(find "$fixtures"/Documents/Rtf "$fixtures"/Tika -name '*.rtf' -size -40k | sort) ;;
   *) files=() ;;
 esac
 files+=("$fixtures"/Fuzz/Seeds/"$target"/* "$fixtures"/Fuzz/Crashes/"$target"/*)

@@ -29,6 +29,27 @@ and versions follow [Semantic Versioning](https://semver.org/).
   throw `NotSupportedException`, malformed ones `PdfFormatException`; repeated table rows and cells count against
   `MaxElements` and `MaxTableCells`. A new `odt` fuzz target with uncompressed seeds; fixtures from a committed script,
   checked against odfpy, and Apache Tika samples (#203).
+- **RTF to PDF** (`RaiCore.Pdf.Documents`): `RtfToPdf.Convert` (also `ConvertToBytes` and `ConvertAsync`, over bytes,
+  streams and paths, with `RtfConverterOptions`) converts Rich Text Format documents (RTF 1.9.1, as Word, WordPad,
+  LibreOffice and Outlook write them) with the shared word-processing model and renderer of the DOCX converter. Text in
+  the document's and its fonts' code pages (`\ansicpg`, `\fcharset`, `\cpg`, double-byte code pages too) and Unicode
+  escapes (`\u` with `\uc`, `\upr`/`\ud`), Symbol and Wingdings text as Unicode; the font, color and style tables
+  (paragraph and character styles with `\sbasedon`, headings by name, `\defchp`/`\defpap` defaults); character
+  formatting (fonts, sizes, bold, italic, underline styles, strikethrough, colors, highlighting and shading,
+  superscript, subscript, raised text, letter spacing, capitals, small capitals, hidden and deleted text left out) and
+  paragraph formatting (alignment, indents, spacing, line spacing, keep, keep with next, page break before, widow
+  control, borders, shading, tab stops with leaders); lists (`\listtable`/`\listoverridetable` counted as Word counts
+  them, old-style `\pn` numbering, `\listtext` as the fallback); tables (the grid from all rows' cell edges, merged
+  cells both ways, borders, shading, padding, header rows, nested tables with `\itap`/`\nestcell`/`\nestrow`);
+  sections with page setup and starts, headers and footers for first, left and right pages, page numbers (`\chpgn`,
+  `PAGE`, `NUMPAGES`, `SECTIONPAGES`) and `PAGEREF`; `HYPERLINK` fields as links, other fields as their result; PNG,
+  JPEG and device-independent bitmap pictures at their goal size (the `\shppict` picture, shapes' pictures and text,
+  objects' results); bookmarks, footnotes and endnotes; revisions accepted; title and author from `\info`. EMF/WMF/PICT pictures, drawing objects,
+  comments and several columns are reported to `Diagnostics`. Untrusted input is read in one pass without recursion,
+  within `ResourceLimits` (`MaxElements` for the tokens, `MaxNestingDepth` for groups and tables, `MaxTableCells`,
+  `MaxResourceBytes` per picture, `MaxPages`, `Timeout`); data that is not RTF throws `PdfFormatException`. A new
+  `rtf` fuzz target; hand-made fixtures from a committed script and Apache Tika samples, checked against striprtf
+  (#202).
 - **PPTX to PDF** (`RaiCore.Pdf.Slides`, new package): `PptxToPdf.Convert` converts PowerPoint presentations (`.pptx`,
   `.pptm`, `.ppsx`, `.potx`, strict Office Open XML) with one page per slide at the slide's size. Each slide is drawn
   with its master's and layout's shapes (unless hidden) and background (own, layout, master or theme background

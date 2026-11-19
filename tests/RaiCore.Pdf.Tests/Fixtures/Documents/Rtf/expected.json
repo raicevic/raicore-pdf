@@ -1,0 +1,730 @@
+{
+ "Documents/Rtf/fields.rtf": {
+  "text": [
+   "Contents",
+   "Introduction\t9",
+   "Details\t9",
+   "Introduction",
+   "Visit the example site or the details.",
+   "A sentence with a footnote and an endnote.",
+   "A date field shows its result: 2026-01-02.",
+   "A PNG picture: .",
+   "A scaled JPEG: .",
+   "Binary data: .",
+   "Shape picture: .",
+   "A metafile is reported: .",
+   "An object shows its result: .",
+   "A commentis left out.",
+   "A drawing object is left out.",
+   "Shape text: after.",
+   "Details",
+   "The details paragraph."
+  ],
+  "anywhere": [
+   "The footnote text.",
+   "The endnote text."
+  ]
+ },
+ "Documents/Rtf/formatting.rtf": {
+  "text": [
+   "Formatting",
+   "Plain text, bold, italic, underlined, double, dotted, dashed, wavy, struck, red, highlighted, shaded, E=mc2 and H2O, large, Courier New, small caps, all caps and a character style.",
+   "Hidden text follows: done.",
+   "Paragraphs",
+   "Centered paragraph.",
+   "Right-aligned paragraph.",
+   "Justified paragraph: words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines words that wrap across several lines",
+   "Indented paragraph with a hanging indent: more text more text more text more text more text more text more text more text more text more text more text more text more text more text",
+   "Double spaced paragraph: line spacing line spacing line spacing line spacing line spacing line spacing line spacing line spacing line spacing line spacing line spacing line spacing",
+   "Exactly 18 points: exact lines exact lines exact lines exact lines exact lines exact lines exact lines exact lines exact lines exact lines exact lines exact lines",
+   "A paragraph with a border and shading.",
+   "Quote style paragraph.",
+   "Name:\tValue\tRight",
+   "Mid\tCentered",
+   "Price\t12.50",
+   "Specials: —–‘q’“dq”•a b c‑d {braces} back\\slash.",
+   "Unicode: café naïve € euro and  private.",
+   "Code pages: café Привет Žeš こんにちは ·.",
+   "Breaks: line",
+   "next line.",
+   "Kept together and spaced and raised and lowered.",
+   "New page before this paragraph.",
+   "Revisions: kept and inserted words.",
+   "Last paragraph without a mark."
+  ],
+  "anywhere": []
+ },
+ "Documents/Rtf/lists.rtf": {
+  "text": [
+   "Lists",
+   "First item",
+   "Second item",
+   "Nested item",
+   "Another nested item",
+   "Lettered item",
+   "Legal item",
+   "Back to the top level",
+   "Nested again restarts",
+   "A paragraph between lists.",
+   "Bullet one",
+   "Bullet two",
+   "Letter from five",
+   "Letter six",
+   "Same list continues",
+   "Old-style numbering:",
+   "Old first",
+   "Old second",
+   "Computed roman three",
+   "Computed roman four",
+   "Old bullet",
+   "Label from the list text"
+  ],
+  "anywhere": []
+ },
+ "Documents/Rtf/minimal.rtf": {
+  "text": [
+   "Hello, minimal RTF document."
+  ],
+  "anywhere": []
+ },
+ "Documents/Rtf/sections.rtf": {
+  "text": [
+   "Section one, page one.",
+   "Page two.",
+   "Page three.",
+   "Page four.",
+   "A landscape section.",
+   "A portrait section numbered in roman numerals.",
+   "A continuous section on the same page.",
+   "Two columns, laid out as one."
+  ],
+  "anywhere": [
+   "First page header",
+   "Even page header",
+   "Odd page header",
+   "Even page 2",
+   "Page 1 of 6",
+   "Landscape header",
+   "Landscape page",
+   "Roman header",
+   "Section page i of 1"
+  ]
+ },
+ "Documents/Rtf/tables.rtf": {
+  "text": [
+   "Tables",
+   [
+    "Description",
+    "Quantity",
+    "Price"
+   ],
+   [
+    "Item number 1",
+    "1",
+    "1.50"
+   ],
+   [
+    "Item number 2",
+    "2",
+    "3.00"
+   ],
+   [
+    "Item number 3",
+    "3",
+    "4.50"
+   ],
+   [
+    "Item number 4",
+    "4",
+    "6.00"
+   ],
+   [
+    "Item number 5",
+    "5",
+    "7.50"
+   ],
+   [
+    "Item number 6",
+    "6",
+    "9.00"
+   ],
+   [
+    "Item number 7",
+    "7",
+    "10.50"
+   ],
+   [
+    "Item number 8",
+    "8",
+    "12.00"
+   ],
+   [
+    "Item number 9",
+    "9",
+    "13.50"
+   ],
+   [
+    "Item number 10",
+    "10",
+    "15.00"
+   ],
+   [
+    "Item number 11",
+    "11",
+    "16.50"
+   ],
+   [
+    "Item number 12",
+    "12",
+    "18.00"
+   ],
+   [
+    "Item number 13",
+    "13",
+    "19.50"
+   ],
+   [
+    "Item number 14",
+    "14",
+    "21.00"
+   ],
+   [
+    "Item number 15",
+    "15",
+    "22.50"
+   ],
+   [
+    "Item number 16",
+    "16",
+    "24.00"
+   ],
+   [
+    "Item number 17",
+    "17",
+    "25.50"
+   ],
+   [
+    "Item number 18",
+    "18",
+    "27.00"
+   ],
+   [
+    "Item number 19",
+    "19",
+    "28.50"
+   ],
+   [
+    "Item number 20",
+    "20",
+    "30.00"
+   ],
+   [
+    "Item number 21",
+    "21",
+    "31.50"
+   ],
+   [
+    "Item number 22",
+    "22",
+    "33.00"
+   ],
+   [
+    "Item number 23",
+    "23",
+    "34.50"
+   ],
+   [
+    "Item number 24",
+    "24",
+    "36.00"
+   ],
+   [
+    "Item number 25",
+    "25",
+    "37.50"
+   ],
+   [
+    "Item number 26",
+    "26",
+    "39.00"
+   ],
+   [
+    "Item number 27",
+    "27",
+    "40.50"
+   ],
+   [
+    "Item number 28",
+    "28",
+    "42.00"
+   ],
+   [
+    "Item number 29",
+    "29",
+    "43.50"
+   ],
+   [
+    "Item number 30",
+    "30",
+    "45.00"
+   ],
+   [
+    "Item number 31",
+    "31",
+    "46.50"
+   ],
+   [
+    "Item number 32",
+    "32",
+    "48.00"
+   ],
+   [
+    "Item number 33",
+    "33",
+    "49.50"
+   ],
+   [
+    "Item number 34",
+    "34",
+    "51.00"
+   ],
+   [
+    "Item number 35",
+    "35",
+    "52.50"
+   ],
+   [
+    "Item number 36",
+    "36",
+    "54.00"
+   ],
+   [
+    "Item number 37",
+    "37",
+    "55.50"
+   ],
+   [
+    "Item number 38",
+    "38",
+    "57.00"
+   ],
+   [
+    "Item number 39",
+    "39",
+    "58.50"
+   ],
+   [
+    "Item number 40",
+    "40",
+    "60.00"
+   ],
+   [
+    "Item number 41",
+    "41",
+    "61.50"
+   ],
+   [
+    "Item number 42",
+    "42",
+    "63.00"
+   ],
+   [
+    "Item number 43",
+    "43",
+    "64.50"
+   ],
+   [
+    "Item number 44",
+    "44",
+    "66.00"
+   ],
+   [
+    "Item number 45",
+    "45",
+    "67.50"
+   ],
+   [
+    "Item number 46",
+    "46",
+    "69.00"
+   ],
+   [
+    "Item number 47",
+    "47",
+    "70.50"
+   ],
+   [
+    "Item number 48",
+    "48",
+    "72.00"
+   ],
+   [
+    "Item number 49",
+    "49",
+    "73.50"
+   ],
+   [
+    "Item number 50",
+    "50",
+    "75.00"
+   ],
+   [
+    "Item number 51",
+    "51",
+    "76.50"
+   ],
+   [
+    "Item number 52",
+    "52",
+    "78.00"
+   ],
+   [
+    "Item number 53",
+    "53",
+    "79.50"
+   ],
+   [
+    "Item number 54",
+    "54",
+    "81.00"
+   ],
+   [
+    "Item number 55",
+    "55",
+    "82.50"
+   ],
+   [
+    "Item number 56",
+    "56",
+    "84.00"
+   ],
+   [
+    "Item number 57",
+    "57",
+    "85.50"
+   ],
+   [
+    "Item number 58",
+    "58",
+    "87.00"
+   ],
+   [
+    "Item number 59",
+    "59",
+    "88.50"
+   ],
+   [
+    "Item number 60",
+    "60",
+    "90.00"
+   ],
+   [
+    "Item number 61",
+    "61",
+    "91.50"
+   ],
+   [
+    "Item number 62",
+    "62",
+    "93.00"
+   ],
+   [
+    "Item number 63",
+    "63",
+    "94.50"
+   ],
+   [
+    "Item number 64",
+    "64",
+    "96.00"
+   ],
+   [
+    "Item number 65",
+    "65",
+    "97.50"
+   ],
+   [
+    "Item number 66",
+    "66",
+    "99.00"
+   ],
+   [
+    "Item number 67",
+    "67",
+    "100.50"
+   ],
+   [
+    "Item number 68",
+    "68",
+    "102.00"
+   ],
+   [
+    "Item number 69",
+    "69",
+    "103.50"
+   ],
+   "Merged cells:",
+   [
+    "Merged across",
+    "C",
+    "D"
+   ],
+   [
+    "Merged down",
+    "B2",
+    "Right",
+    "D2"
+   ],
+   [
+    "Bottom",
+    "C3",
+    "D3"
+   ],
+   "A nested table:",
+   "Outer A",
+   [
+    "Inner 1",
+    "Inner 2",
+    "After inner",
+    "Outer B"
+   ],
+   "After the tables."
+  ],
+  "anywhere": []
+ },
+ "Documents/Rtf/unicode.rtf": {
+  "text": [
+   "Russian: Привет, мир!",
+   "Unicode escapes: Привет"
+  ],
+  "anywhere": []
+ },
+ "Tika/testBinControlWord.rtf": {
+  "text": [],
+  "anywhere": []
+ },
+ "Tika/testComment.rtf": {
+  "text": [
+   "Here is some text."
+  ],
+  "anywhere": []
+ },
+ "Tika/testRTF-ms932.rtf": {
+  "text": [
+   "Hello",
+   "こんにちは",
+   "Test",
+   "テスト"
+  ],
+  "anywhere": []
+ },
+ "Tika/testRTF.rtf": {
+  "text": [
+   "Test d’indexation Word"
+  ],
+  "anywhere": []
+ },
+ "Tika/testRTFCorruptListOverride.rtf": {
+  "text": [
+   "Stuff",
+   "what is an Apple?",
+   "﻿",
+   "Apples are fun!",
+   "There are 90 naturally occurring kinds of apples. See?  I told you they were fun!.",
+   "Interesting fact 1",
+   "﻿Apples can be green or red.",
+   "Interesting fact 2",
+   "Apples can be eaten hot or cold, in pies or sauces, jams,coated in toffee or raw.",
+   "Apple Pie",
+   "﻿",
+   "Ingredient 1",
+   "Ingredient 2",
+   "Ingredient 3",
+   "Ingredient 4",
+   "Ingredient 5",
+   "Ingredient 6",
+   "–",
+   "Peel",
+   "Apply blowtorch",
+   "Throw away",
+   "–",
+   "Pick up phone",
+   "Order apple pie",
+   "by George Formby"
+  ],
+  "anywhere": []
+ },
+ "Tika/testRTFEmbeddedLink.rtf": {
+  "text": [],
+  "anywhere": []
+ },
+ "Tika/testRTFHyperlink.rtf": {
+  "text": [
+   "Thank you for using Microsoft® Office Outlook® 2003! This version of Outlook includes new capabilities designed to help you access, prioritize, and act on communications and information so that you may use your time more efficiently and more easily manage the ever-increasing flow of incoming e-mail.",
+   "To help you get started with Outlook 2003, you can read answers to our most frequently asked questions. To get answers to additional questions you might have, type your questions into the Type a question for help search box or click Contact Us on the Help menu.",
+   "To give you some idea of what is possible with Outlook 2003, we have put together a list of our favorite new features.",
+   "Streamlined Mail Experience - Outlook helps you read, organize, follow-up, and find e-mail messages more efficiently than before. The new window layout displays more information on the screen at one time, even on smaller monitors. The list of messages has been redesigned to use space more intelligently; as a result, you will spend less time scrolling and more time getting your work done. Automatic grouping of your messages helps you find and go to e-mail messages anywhere in the list more quickly than before; you can even move or delete all messages in a group at once!",
+   "Junk E-mail Filter - The new Junk E-mail Filter helps prevent much of the unwanted e-mail that you receive every day. It uses state-of-the-art technology developed by Microsoft Research to evaluate whether a message should be treated as junk e-mail based on several factors, such as the time it was sent and the content of the message. The filter does not single out any particular sender or type of e-mail; it is based on the content of the message in general and uses advanced analysis of the structure of the message to determine the probability that it is junk e-mail. Any message that is caught by the filter is moved to your Junk E-mail folder, where it can be retrieved or reviewed at a later time. You can add e-mail addresses to your Safe Senders List to ensure that messages from these senders will never be treated as junk e-mail and block messages from certain e-mail addresses or domain names by adding the sender to your Blocked Senders List.",
+   "Navigation Pane - The Navigation Pane is more than a simple list of folders: It combines the main navigation and sharing features of Outlook into one, easy-to-use place. In Mail, you will see more mail folders than before, and you can add your favorite folders to the top of the list. In Calendar, you can view other people’s shared calendars side-by-side with your own Calendar. In Contacts, you will see the list of all contacts folders you can open - whether stored on your computer or on a network location, as well as improved ways to view your contacts. All eight of the Outlook modules have a user interface designed to help you quickly see what you are looking for, in the way that you like to see it.",
+   "Reading Pane - The Reading Pane is a great place to read e-mail messages without needing to open a separate window for each message. Like a piece of paper, the Reading Pane is laid out vertically. This layout is easier on your eyes and, together with the new multi-line message list, means that you can see nearly twice as much of an e-mail message on the same size monitor as compared to the Preview Pane in earlier versions of Outlook.",
+   "Quick Flags - If you need to respond to an e-mail message but you don’t have the time now, you can click on the flag icon next to it to mark it with a Quick Flag. Multiple colored flags make it easy to categorize your messages. The folder named \"For Follow Up\" always contains an up-to-date list of all Quick Flagged messages in every folder in your mailbox.",
+   "Arrange By Conversation - If you receive many e-mail messages daily, you could benefit from a grouping option called Arrange By Conversation. Arrange By Conversation view shows your message list in a conversation-oriented or \"threaded\" view. To help you read your e-mail messages as quickly as possible, the Arrange By Conversation view displays only unread and Quick Flagged messages at first. Each conversation can be expanded further to show all messages in the conversation, including messages you have already read. To arrange your messages this way, click Arrange By Conversation on the View menu.",
+   "Search Folders - Search Folders contain constantly-updated search results of all e-mail items matching specific search criteria. You can see all the unread e-mail messages from every folder in your mailbox in a Search Folder named \"Unread Mail.\" To help you reduce the size of your mailbox, the \"Large Mail\" Search Folder shows you the largest mail in your mailbox, regardless of what folder the messages are stored in. You can also create your own Search Folders: Choose from a list of pre-defined templates or create a search with custom criteria and save it as a Search Folder for future use.",
+   "Side-by-Side Calendars - You can now view multiple calendars side-by-side inside of the Outlook Calendar window. All calendars can be seen side-by-side: local calendars, public folder calendars, other users’ calendars, or Microsoft Windows® SharePoint™ Services team event lists. The calendars are color-coded to help you tell them apart.",
+   "Rules and Alerts - Outlook will alert you when new e-mail messages arrive in your Inbox by displaying a subtle notification on your desktop, even when you’re using another program. You can quickly create rules to file e-mail based on the message by selecting the message and clicking Create Rule.",
+   "Cached Exchange Mode - If you use Microsoft Exchange Server you no longer have to worry about problems caused by slow or far-away networks. Outlook can download your mailbox to your computer, reducing the need to communicate with the e-mail server. If the network becomes unavailable, Outlook will keep using the information it has already downloaded — and you might not even realize the network is gone! Outlook adapts to the type of network available, downloading more e-mail items over faster networks and giving you more control over what is downloaded over slower networks. If you use Outlook 2003 with Microsoft Exchange Server 2003, you will benefit from a significant reduction in network traffic, helping you get to your information faster.",
+   "And Much More - There are many more additional improvements and new features in Outlook 2003 that we didn’t have space to describe here, including improvements to AutoSuggest addressing, Meetings Workspaces, Live Attachments, the resizable Address Book, Contact Pictures, Distribution List expansion, Alerts, the Current Time Indicator, privacy and performance enhancements, data files larger than 2 gigabytes (GB), full Unicode support, usability improvements throughout the product, online training for Outlook available on the Microsoft Office Online Web site, and more.",
+   "If you want to let us know what you think about Outlook 2003, reply to this message. We're always looking for feedback from the people who use Outlook every day! If you would like to keep up with the latest information about Outlook, sign up for a free subscription to the Inside Office Newsletter. The newsletter will be sent to you by e-mail on a regular basis.",
+   "Thank you for using Outlook!",
+   "- The Microsoft Outlook Team"
+  ],
+  "anywhere": []
+ },
+ "Tika/testRTFJapanese.rtf": {
+  "text": [
+   "ゾルゲと尾崎、淡々と最期",
+   "古書店で処刑記録見つかる",
+   "ゾルゲの処刑記録、",
+   "「何等取乱シタル態度無ク」と記されていた＝渡部富哉さん提供",
+   ">尾崎秀実の記録、",
+   "「南無阿弥陀仏ヲ二唱シ」の文字が見える＝渡部富哉さん提供",
+   "太平洋戦争を前に、日本やドイツ政府の政治、軍事の機密情報をソ連に伝えたゾルゲ事件で、死刑となったドイツ人新聞記者リヒアルト・ゾルゲと、ジャーナリスト尾崎秀実（ほつみ）の処刑記録が見つかった。",
+   "取り乱すことなく死に臨む２人の姿が記されていた。国内最大のスパイ事件として知られ、様々に語られ描かれてきた２人の最期の様子が、初めて公文書で明らかになった。",
+   "社会運動史を研究する渡部富哉さん（東京都三鷹市）が今年８月、東京・神田の古書店で、連合国軍総司令部（ＧＨＱ）が作成したゾルゲ事件の調査報告書を発見。その中に、「市谷刑務所」と印刷された用紙に記された処刑記録を写した写真が含まれていた。",
+   "国防保安法違反、治安維持法違反などの罪名が列記された後に、処刑の宣告と執行の様子が記録されていた。ゾルゲについては「静カニ教誨師（きょうかいし）始メ職員ニ対シ『皆様御親切有難フ』ヲ繰返シツツ何等取乱シタル態度無ク刑場ニ進ミ」など、尾崎は「香ヲ焼キ閉目シツツ心ヨリ敬礼ヲナシ終リニ職員ニ謝礼シ取乱シタル態度ナク刑場ニ入リ南無阿弥陀仏ヲ二唱シ」などと記されていた。",
+   "２人は４１年１０月に逮捕され、４４年１１月７日に処刑された。だが米軍内には、日本がソ連に中立を守らせる取引材料として、「ゾルゲをひそかに生かしている」との見方があったとされる。",
+   [
+    "今回発見されたのは、",
+    "ＧＨＱ内の情報部門が行ったゾルゲ事件の調査報告書で、"
+   ],
+   [
+    "４７年８月５日の日付がある。"
+   ],
+   "処刑記録の写真は２人の処刑を確認する証拠として添えられたもので、「３３～４５年の市谷刑務所と東京拘置所における死刑執行の記録からの抜粋」と英語で説明がついていた。",
+   "記録を見つけた渡部さんは「処刑から６０年、様々に描かれてきた２人の最期が、冷静で落ち着いたものだったことがよく分かった。この記録と照合すると、５１年のドイツ雑誌の特集記事が最も正確で、日本政府がドイツに伝えていたことが考えられる」と話している。",
+   "ＧＨＱ報告書は９３ページあり翻訳中。内容は１１月６日午後１時から杉野学園第４校舎（東京都品川区上大崎４の６の１９）で開かれる講演会「現代の情報戦とゾルゲ事件」で明らかにされる。",
+   "(10/17 15:53)"
+  ],
+  "anywhere": [
+   "ゾルゲの処刑記録、",
+   "ゾルゲの処刑記録、"
+  ]
+ },
+ "Tika/testRTFListLibreOffice.rtf": {
+  "text": [
+   "A short ordered list:",
+   "one",
+   "two",
+   "three",
+   "A short unordered list:",
+   "first",
+   "second",
+   "third"
+  ],
+  "anywhere": []
+ },
+ "Tika/testRTFListMicrosoftWord.rtf": {
+  "text": [
+   "A short ordered list:",
+   "one",
+   "two",
+   "three",
+   "A short unordered list:",
+   "first",
+   "second",
+   "third",
+   "A nested list:",
+   "a",
+   "aa",
+   "ab",
+   "b",
+   "c"
+  ],
+  "anywhere": []
+ },
+ "Tika/testRTFRegularImages.rtf": {
+  "text": [
+   "Duck: cat:"
+  ],
+  "anywhere": []
+ },
+ "Tika/testRTFTableCellSeparation.rtf": {
+  "text": [
+   [
+    "a",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ],
+   [
+    "ä",
+    "ë"
+   ],
+   [
+    "ö",
+    "ü"
+   ]
+  ],
+  "anywhere": []
+ },
+ "Tika/testRTFVarious.rtf": {
+  "text": [
+   "Footnote appears here",
+   "Bold italic underline superscript subscript",
+   "Here is a list:",
+   "Bullet 1",
+   "Bullet 2",
+   "Bullet 3",
+   "Here is a numbered list:",
+   "Number bullet 1",
+   "Number bullet 2",
+   "Number bullet 3",
+   "Keyword1 Keyword2",
+   "This is a hyperlink",
+   "Subject is here",
+   [
+    "Row 1 Col 1",
+    "Row 1 Col 2",
+    "Row 1 Col 3"
+   ],
+   [
+    "Row 2 Col 1",
+    "Row 2 Col 2",
+    "Row 2 Col 3"
+   ],
+   "Suddenly some Japanese text:",
+   "ゾルゲと尾崎、淡々と最期",
+   "（ＧＨＱ）",
+   "And then some Gothic text:",
+   "𐌲𐌿𐍄𐌹𐍃𐌺",
+   "Here is a citation:",
+   "(Kramer)",
+   "Figure 1 This is a caption for Figure 1",
+   "Row 1 column 1",
+   "Row 2 column 1",
+   "Row 1 column 2",
+   "Row 2 column 2"
+  ],
+  "anywhere": [
+   "This is the header text.",
+   "This is the footer text.",
+   "This is a footnote."
+  ]
+ },
+ "Tika/testRTFWithCurlyBraces.rtf": {
+  "text": [
+   "{ some text inside curly brackets }"
+  ],
+  "anywhere": []
+ },
+ "Tika/testRTFWord2010CzechCharacters.rtf": {
+  "text": [
+   "Článek týdne",
+   "Část svitku s textem Knihy Izajáš",
+   "Svitky od Mrtvého moře jsou starověké židovské náboženské texty, nalezené poblíž Mrtvého moře, zejména v Kumránu. Předpokládá se, že původními vlastníky knihovny a autory části textů byli esejci, členové asketického, apokalyptického a mesianistického hnutí v rámci judaismu, které pravděpodobně vzniklo v polovině 2. stol. př. n. l. a zaniklo následkem první židovské války koncem 60. let prvního století našeho letopočtu."
+  ],
+  "anywhere": []
+ }
+}

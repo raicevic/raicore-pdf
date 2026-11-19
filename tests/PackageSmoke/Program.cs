@@ -347,6 +347,13 @@ Check($"odt: {odtPages.Count} pages, {odtPages[^1].Split('\n').Last()}", odtPage
     && odtPages[0].StartsWith("Caf\u00E9 heading", StringComparison.Ordinal) && odtPages[0].Contains("\u2022", StringComparison.Ordinal)
     && odtPages.Skip(1).All(p => p.Contains("Head", StringComparison.Ordinal)) && odtPages[^1].Contains($"Page {odtPages.Count} of {odtPages.Count}", StringComparison.Ordinal));
 
+// RTF: a document with a Cyrillic code page, a Unicode escape, a two-row table and a footer with page numbers.
+var rtf = System.Text.Encoding.Latin1.GetBytes(@"{\rtf1\ansi\ansicpg1251\deff0{\fonttbl{\f0 Arial;}}{\footer\pard Page {\field{\*\fldinst PAGE}{\fldrslt 1}}\par}"
+    + @"\pard \'cf\'f0\'e8\'e2\'e5\'f2 caf\u233?\par\trowd\cellx3000\cellx6000\pard\intbl A\cell B\cell\row\trowd\cellx3000\cellx6000\pard\intbl C\cell D\cell\row\pard end\par}");
+var rtfText = new TextExtractor(PdfReader.Open(RtfToPdf.ConvertToBytes(rtf))).ExtractText();
+Check($"rtf: {rtfText.Split('\n')[0].Trim()}", rtfText.Contains("\u041F\u0440\u0438\u0432\u0435\u0442 caf\u00E9", StringComparison.Ordinal)
+    && rtfText.Contains("Page 1", StringComparison.Ordinal) && rtfText.Contains('D', StringComparison.Ordinal));
+
 Console.WriteLine(failures == 0 ? $"Package smoke test passed. PDFs in {output}" : $"Package smoke test FAILED ({failures} checks).");
 return failures == 0 ? 0 : 1;
 

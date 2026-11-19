@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Convert word-processing documents to PDF with RaiCore.Pdf: Word documents (.docx) and OpenDocument text (.odt, .fodt) with their styles, numbered and bulleted lists, tables with merged cells and repeated header rows, sections with page setup, headers and footers with page numbers, images, hyperlinks and footnotes.</Description>
-    <PackageTags>$(PackageTags);docx;word;docx-to-pdf;word-to-pdf;wordprocessingml;office;odt;opendocument;odt-to-pdf;libreoffice</PackageTags>
+    <Description>Convert word-processing documents to PDF with RaiCore.Pdf: Word documents (.docx), OpenDocument text (.odt, .fodt) and Rich Text Format (.rtf) with their styles, numbered and bulleted lists, tables with merged cells and repeated header rows, sections with page setup, headers and footers with page numbers, images, hyperlinks and footnotes.</Description>
+    <PackageTags>$(PackageTags);docx;word;docx-to-pdf;word-to-pdf;wordprocessingml;office;odt;opendocument;odt-to-pdf;libreoffice;rtf;rtf-to-pdf</PackageTags>
     <!--
       A core package, released with the core at the same version. It uses only the public API of RaiCore.Pdf.Layout
       and RaiCore.Pdf.Fonts. It has no released version to validate against yet: set the baseline to the first release

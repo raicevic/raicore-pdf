@@ -1,10 +1,10 @@
 # Word documents to PDF
 
-`RaiCore.Pdf.Documents` converts Word documents (`.docx`) and OpenDocument text documents (`.odt`, see
-[below](#opendocument-text)) to PDF with the layout engine: styles, numbered and bulleted lists, tables, sections with
-their page setup, headers and footers with page numbers, images, hyperlinks and notes. No word processor, no browser,
-no native dependencies. The package is the home of the word-processing formats: the converters share its document
-model and options, and RTF and Word 97-2003 converters will too.
+`RaiCore.Pdf.Documents` converts Word documents (`.docx`), OpenDocument text documents (`.odt`, see
+[below](#opendocument-text)) and RTF documents (`.rtf`, see [below](#rtf-documents)) to PDF with the layout engine:
+styles, numbered and bulleted lists, tables, sections with their page setup, headers and footers with page numbers,
+images, hyperlinks and notes. No word processor, no browser, no native dependencies. The package is the home of the
+word-processing formats: the converters share its document model and options, and a Word 97-2003 converter will too.
 
 ```sh
 dotnet add package RaiCore.Pdf.Documents
@@ -160,6 +160,57 @@ is not well-formed `PdfFormatException`. Linked images (outside the package) are
 Word documents, the XML of flat documents included; table rows and cells that repeat others
 (`table:number-rows-repeated`, `table:number-columns-repeated`) count against `MaxElements`, and their cells against
 `MaxTableCells`.
+
+## RTF documents
+
+`RtfToPdf` converts Rich Text Format documents (`.rtf`, as Word, WordPad, LibreOffice and Outlook save them) with the
+same renderer, so they are laid out like Word documents. `RtfConverterOptions` has the options above; `Convert`,
+`ConvertToBytes` and `ConvertAsync` take a path, a stream or bytes.
+
+[!code-csharp[](../snippets/WordDocuments.cs#rtf)]
+
+What is converted (RTF 1.9.1):
+
+- **Text and code pages:** text in the document's code page (`\ansicpg`, `\mac`, `\pc`) and its fonts' (`\fcharset`,
+  `\cpg`), double-byte code pages such as Shift-JIS and GBK included; Unicode escapes (`\u` with the `\uc` fallback
+  skipped, surrogate pairs) and `\upr`/`\ud`; text in Symbol, Wingdings and Webdings as the Unicode characters it shows.
+- **Tables of fonts, colors and styles:** paragraph and character styles with their `\sbasedon` chains (headings by
+  their names, `heading 1` to `heading 9`, or `\outlinelevel`), the document defaults (`\defchp`, `\defpap`) that
+  `\plain` and `\pard` reset to.
+- **Formatting:** what the [Word documents](#what-is-converted) list says for text and paragraphs, from RTF's control
+  words: fonts, sizes, bold, italic, underline styles, strikethrough, colors, highlighting and shading, superscript and
+  subscript, raised and lowered text, letter spacing, capitals, small capitals, hidden and deleted text left out;
+  alignment, indents, spacing, line spacing (`\sl` with `\slmult`), keep together, keep with next, page break before,
+  widow control, borders and shading; tab stops with their alignment and leaders.
+- **Lists:** the list table and its overrides (`\ls`, `\ilvl`) with labels counted as Word counts them (start values,
+  restarts, legal numbering, bullets), old-style paragraph numbering (`\pn`), and the writer's own label (`\listtext`,
+  `\pntext`) where no list is defined.
+- **Tables:** the grid from the cell edges of all rows (`\trleft`, `\cellx`), merged cells (`\clmgf`/`\clmrg`,
+  `\clvmgf`/`\clvmrg`), row and cell borders, shading, padding, vertical alignment, row heights, header rows repeated
+  on every page (`\trhdr`), rows that may not break (`\trkeep`) and nested tables (`\itap`, `\nestcell`,
+  `\nestrow`).
+- **Sections, headers and footers:** page size, orientation and margins of the document and of each section, how a
+  section starts (`\sbknone`, `\sbkpage`, `\sbkeven`, `\sbkodd`), headers and footers for the first page
+  (`\titlepg`), left and right pages (`\facingp`), inherited from the section before; page numbers (`\chpgn` and
+  `PAGE` fields) restarted and formatted per section.
+- **Fields:** `HYPERLINK` fields are links (to web addresses and bookmarks), `PAGE`, `NUMPAGES`, `SECTIONPAGES` and
+  `PAGEREF` are computed, other fields show their last result.
+- **Pictures:** PNG and JPEG (`\pngblip`, `\jpegblip`) and device-independent bitmaps, in hexadecimal or `\bin`
+  data, at their goal size and scale; the shape picture (`\shppict`) rather than its fallback; a shape's picture and
+  text, laid out in the text; an embedded object's result.
+- **Bookmarks and notes:** bookmarks (`\bkmkstart`) as named destinations, footnotes (`\footnote`, numbered from
+  `\chftn`) and endnotes (`\ftnalt`); the title and author of the document's information (`\info`) as the PDF's.
+
+Not supported, and reported to `Diagnostics`: EMF, WMF and PICT pictures (`ImageNotLoaded` for pictures that cannot be
+decoded or are larger than `MaxResourceBytes`), drawing objects (`\do`), shapes as drawings, embedded objects (their
+result is shown), comments (annotations), several text columns. Also not supported: frames and positioned paragraphs
+(laid out in the text), footnotes at the bottom of the page, page borders, right-to-left and vertical text beyond what
+the layout engine does by itself. Revisions are shown as if accepted.
+
+RTF is read in one pass without recursion, within `Limits`: `MaxElements` bounds the tokens (control words, groups and
+runs of text), `MaxNestingDepth` the nesting of groups and of tables, `MaxTableCells` the cells of a table,
+`MaxResourceBytes` each picture's data (a larger picture is left out) and `MaxImagePixels` its pixels, and `MaxPages`
+and `Timeout` the pages and the time. Data that does not start with `{\rtf` throws `PdfFormatException`.
 
 ## Not supported
 
