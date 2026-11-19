@@ -184,6 +184,7 @@ public class EmailToPdfTests
         Assert.Contains("Attachments: Minutes m\u00F8de 2026-11-18.txt (70 bytes), Original agenda.eml (259 bytes)", body, StringComparison.Ordinal);
         Assert.Contains(document.Pages[0].Links, l => l.Uri?.ToString() == "https://example.org/minutes/2026-11-18");
         Assert.Contains(document.Pages[0].Links, l => l.Uri?.ToString() == "http://www.example.org/");
+        Assert.Single(document.Pages[0].Links, l => l.Uri is null); // The appended text file's name links to it.
 
         Assert.Contains("Minutes of 18 November 2026", text[1], StringComparison.Ordinal);
         Assert.Contains("Original agenda", text[2], StringComparison.Ordinal);
@@ -271,6 +272,14 @@ public class EmailToPdfTests
     }
 
     [Fact]
+    public void A_header_block_without_a_subject_has_its_fields()
+    {
+        var text = Pages(EmailToPdf.ConvertToBytes(Message("outlook-related.eml"), new EmailConverterOptions { HeaderFields = ["Cc"], ListAttachments = false }))[0];
+
+        Assert.StartsWith("Cc: carol@example.org", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Without_fields_and_list_there_is_no_header_block_and_without_embedding_no_attachments()
     {
         var options = new EmailConverterOptions { HeaderFields = [], ListAttachments = false, EmbedAttachments = false };
@@ -320,6 +329,8 @@ public class EmailToPdfTests
         Assert.Equal("en-GB", EmailToPdf.Convert(Message("outlook-related.eml"), Options()).Language); // Content-Language (the body's lang is on <body>).
         Assert.Equal("en", EmailToPdf.Convert(Message("chrome-web-archive.mht"), Options()).Language); // <html lang>.
         Assert.Null(EmailToPdf.Convert(Message("gmail-related.eml"), Options()).Language);
+        Assert.Equal("da", EmailToPdf.Convert("Content-Language: da, en-GB\r\n\r\nhej"u8.ToArray(), Options()).Language);
+        Assert.Null(EmailToPdf.Convert("Content-Language: <bad>\r\n\r\nhej"u8.ToArray(), Options()).Language);
     }
 
     [Fact]
@@ -443,6 +454,98 @@ public class EmailToPdfTests
     }
 
     [Fact]
+    public void Attachments_list_their_sizes_and_keep_only_media_types_a_pdf_accepts()
+    {
+        string Part(string name, string type, int size) =>
+            $"--b\r\nContent-Type: {type}\r\nContent-Disposition: attachment; filename=\"{name}\"\r\nContent-Transfer-Encoding: base64\r\n\r\n{Convert.ToBase64String(new byte[size])}\r\n";
+        var message = Encoding.ASCII.GetBytes("Subject: sizes\r\nContent-Type: multipart/mixed; boundary=b\r\n\r\n"
+            + Part("a.bin", "application/octet-stream", 1023) + Part("b.bin", "application/x weird", 1024) + Part("c.bin", "Application/X-Ok+Type", 1025)
+            + Part("d.bin", "application/octet-stream", 1024 * 1024) + "--b--\r\n");
+
+        var document = EmailToPdf.Convert(message, Options());
+
+        Assert.Contains("Attachments: a.bin (1023 bytes), b.bin (1 KB), c.bin (2 KB), d.bin (1.0 MB)", Pages(document.ToArray())[0], StringComparison.Ordinal);
+        Assert.Equal(["application/octet-stream", "application/octet-stream", "application/x-ok+type", "application/octet-stream"], document.Attachments.Select(a => a.MediaType));
+    }
+
+    [Fact]
+    public void Text_files_are_recognized_by_their_name_and_images_without_inline_disposition_are_attachments()
+    {
+        var text = WithAttachment("notes.txt", "application/octet-stream", "plain notes"u8.ToArray());
+        var image = Encoding.ASCII.GetBytes($"Content-Type: multipart/mixed; boundary=b\r\n\r\n--b\r\n\r\nbody\r\n--b\r\nContent-Type: image/png; name=\"pic.png\"\r\nContent-Transfer-Encoding: base64\r\n\r\n{Convert.ToBase64String(Fixtures.Read("PngSuite/basn2c08.png"))}\r\n--b--\r\n");
+
+        Assert.Contains("plain notes", Pages(EmailToPdf.ConvertToBytes(text, Options(append: true)))[1], StringComparison.Ordinal);
+        var document = EmailToPdf.Convert(image, Options());
+        Assert.Empty(Images(document.ToArray(), 0));
+        Assert.Equal("pic.png", Assert.Single(document.Attachments).FileName);
+    }
+
+    [Fact]
+    public void Without_bookmarks_appended_attachments_get_none()
+    {
+        var options = new EmailConverterOptions { AppendAttachments = true, Html = new HtmlConverterOptions { CreateBookmarks = false } };
+
+        var document = EmailToPdf.Convert(Message("outlook-related.eml"), options);
+
+        Assert.Equal(3, document.Pages.Count);
+        Assert.Empty(document.Outline);
+    }
+
+    [Fact]
+    public void Attached_messages_have_their_own_attachments_appended()
+    {
+        var inner = "Subject: inner\r\nContent-Type: multipart/mixed; boundary=i\r\n\r\n--i\r\n\r\ninner body\r\n--i\r\nContent-Disposition: attachment; filename=deep.txt\r\n\r\ndeep text\r\n--i--\r\n";
+        var message = Encoding.ASCII.GetBytes($"Subject: outer\r\nContent-Type: multipart/mixed; boundary=o\r\n\r\n--o\r\n\r\nouter body\r\n--o\r\nContent-Type: message/rfc822\r\n\r\n{inner}--o--\r\n");
+
+        var text = Pages(EmailToPdf.ConvertToBytes(message, Options(append: true)));
+
+        Assert.Equal(3, text.Length);
+        Assert.Contains("inner body", text[1], StringComparison.Ordinal);
+        Assert.Contains("deep text", text[2], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Nothing_is_appended_to_a_document_that_has_all_its_pages()
+    {
+        var diagnostics = new List<HtmlDiagnostic>();
+        var options = new EmailConverterOptions
+        {
+            AppendAttachments = true,
+            Html = new HtmlConverterOptions { Limits = ResourceLimits.Default with { MaxPages = 1 }, Diagnostics = diagnostics.Add },
+        };
+
+        var document = EmailToPdf.Convert(WithAttachment("one.pdf", "application/pdf", HtmlToPdf.Convert("<p>x</p>").ToArray()), options);
+
+        Assert.Single(document.Pages);
+        Assert.Contains(diagnostics, d => d.Message.Contains("as many pages as ResourceLimits.MaxPages allows", StringComparison.Ordinal));
+    }
+
+    [Fact(Timeout = 60_000)]
+    public async Task Running_out_of_time_while_appending_fails_with_the_timeout()
+    {
+        // The attached HTML file's image loads until the conversion's deadline cancels it: that ends the whole
+        // conversion, not just the attachment.
+        var options = new EmailConverterOptions
+        {
+            AppendAttachments = true,
+            Html = new HtmlConverterOptions
+            {
+                Limits = ResourceLimits.Default with { Timeout = TimeSpan.FromSeconds(5) },
+                ResourceLoader = request =>
+                {
+                    request.CancellationToken.WaitHandle.WaitOne(TimeSpan.FromSeconds(30));
+                    request.CancellationToken.ThrowIfCancellationRequested();
+                    return null;
+                },
+            },
+        };
+        var message = WithAttachment("page.html", "text/html", "<p>attached</p><img src=\"https://example.com/slow.png\">"u8.ToArray());
+
+        var error = await Assert.ThrowsAsync<ResourceLimitExceededException>(() => EmailToPdf.ConvertAsync(message, options, TestContext.Current.CancellationToken));
+        Assert.Equal(nameof(ResourceLimits.Timeout), error.LimitName);
+    }
+
+    [Fact]
     public void Same_named_attachments_get_unique_names()
     {
         var part = "--b\r\nContent-Disposition: attachment; filename=\"a.txt\"\r\n\r\nx\r\n";
@@ -558,7 +661,7 @@ public class EmailToPdfTests
             Content-Type: text/html
             Content-ID: <root@x>
 
-            <img src="cid:used@x"><p>root</p>
+            <img src="cid:used@x"><img src="img/logo.png"><p>root</p>
             --r
             Content-Type: application/pdf
             Content-Disposition: attachment; filename="marked.pdf"
@@ -568,6 +671,11 @@ public class EmailToPdfTests
             Content-Type: image/png; name="unreferenced.png"
 
             png
+            --r
+            Content-Type: image/png; name="logo.png"
+            Content-Location: https://example.com/img/logo.png
+
+            referenced by its location's file name
             --r
             Content-Type: text/css
             Content-Location: style.css

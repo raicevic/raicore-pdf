@@ -266,6 +266,7 @@ public class MimeTests
     [InlineData("soft=\r\nbreak", "softbreak")]
     [InlineData("soft=\nbreak", "softbreak")]
     [InlineData("soft=  \r\nbreak", "softbreak")]
+    [InlineData("soft=\t\r\nbreak", "softbreak")]
     [InlineData("end=", "end")]
     [InlineData("broken =ZZ and =4", "broken =ZZ and =4")]
     [InlineData("a= b", "a= b")]
@@ -312,6 +313,8 @@ public class MimeTests
     [InlineData(new byte[] { 0x81, 0x30, 0x81, 0x30 }, "gbk", "\u0080")] // GB18030 four-byte sequences, for mislabeled text.
     [InlineData(new byte[] { 0xA7, 0x41 }, "big5", "\u4F60")]
     [InlineData(new byte[] { 0xB0, 0xA1 }, "euc-kr", "\uAC00")]
+    [InlineData(new byte[] { 0x81, 0x41 }, "euc-kr", "\uAC02")] // Windows-949 (Unified Hangul Code), which mailers label EUC-KR.
+    [InlineData(new byte[] { 0xFF, 0xFE, 0x61, 0x00 }, "utf-16", "a")] // The byte order mark of UTF-16 goes too.
     [InlineData(new byte[] { 0xC1 }, "koi8-r", "\u0430")]
     [InlineData(new byte[] { 0x2B, 0x41, 0x4F, 0x6B, 0x2D }, "utf-7", "\u00E9")]
     public void Text_is_decoded_with_its_charset(byte[] data, string? charset, string expected)
@@ -324,6 +327,9 @@ public class MimeTests
     [InlineData("<meta http-equiv=Content-Type content=\"text/html; charset=iso-8859-1\">\u00E9", "<meta http-equiv=Content-Type content=\"text/html; charset=iso-8859-1\">\u00E9")]
     public void Html_without_a_charset_uses_its_meta_charset(string latin1, string expected)
     {
+        // Valid UTF-8 that the document says is Windows-1252: the meta charset wins over guessing UTF-8.
+        Assert.Equal("<meta charset=windows-1252>\u00C3\u00A9", Charsets.Decode("<meta charset=windows-1252>\u00E9"u8, null, html: true));
+
         Assert.Equal(expected, Charsets.Decode(Encoding.Latin1.GetBytes(latin1), null, html: true));
         Assert.NotEqual(expected, Charsets.Decode(Encoding.Latin1.GetBytes(latin1), "utf-8", html: true)); // A MIME charset wins.
     }
@@ -369,6 +375,7 @@ public class MimeTests
     [InlineData("a@example.com,, ,b@example.com", "a@example.com, b@example.com")]
     [InlineData("Broken <unterminated@example.com", "Broken <unterminated@example.com>")]
     [InlineData("Name (comment (nested)) <n@example.com>", "Name (comment (nested)) <n@example.com>")]
+    [InlineData("odd@example.com:port", "odd@example.com:port")] // A colon after an address is no group.
     public void Address_lists_are_formatted_for_display(string raw, string expected)
     {
         Assert.Equal(expected, MimeHeaders.FormatAddresses(raw));
