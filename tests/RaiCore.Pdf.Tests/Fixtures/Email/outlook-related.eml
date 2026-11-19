@@ -1,0 +1,131 @@
+Received: from mail.example.com (192.0.2.10) by mx.example.org; Tue, 17 Nov 2026 09:14:02 +0100
+From: "Example, Alice" <alice@example.com>
+To: Bob Example <bob@example.org>, "=?iso-8859-1?Q?J=F8rgen_S=F8rensen?=" <jorgen@example.org>
+CC: carol@example.org
+Subject: =?windows-1252?Q?Quarterly_figures_=96_caf=E9_report?=
+Thread-Topic: Quarterly figures
+Thread-Index: AdtA1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8
+Date: Tue, 17 Nov 2026 08:14:00 +0000
+Message-ID: <AM0PR01MB1234567890ABCDEF@AM0PR01MB1234.example.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-GB
+X-MS-Has-Attach: yes
+Content-Type: multipart/mixed;
+	boundary="_005_AM0PR01MB1234567890ABCDEF_"
+MIME-Version: 1.0
+
+--_005_AM0PR01MB1234567890ABCDEF_
+Content-Type: multipart/related;
+	boundary="_004_AM0PR01MB1234567890ABCDEF_";
+	type="multipart/alternative"
+
+--_004_AM0PR01MB1234567890ABCDEF_
+Content-Type: multipart/alternative;
+	boundary="_000_AM0PR01MB1234567890ABCDEF_"
+
+--_000_AM0PR01MB1234567890ABCDEF_
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: quoted-printable
+
+Hi Bob,
+
+The quarterly figures are attached. Na=EFve caf=E9 prices rose 5 =80 =96 se=
+e the chart:
+
+[cid:image001.png@01DB3A4B.5C6D7E80]
+
+Kind regards,
+Alice
+
+--_000_AM0PR01MB1234567890ABCDEF_
+Content-Type: text/html; charset="windows-1252"
+Content-Transfer-Encoding: quoted-printable
+
+<html xmlns:v=3D"urn:schemas-microsoft-com:vml" xmlns:o=3D"urn:schemas-micr=
+osoft-com:office:office" xmlns:w=3D"urn:schemas-microsoft-com:office:word" =
+xmlns:m=3D"http://schemas.microsoft.com/office/2004/12/omml" xmlns=3D"http:=
+//www.w3.org/TR/REC-html40"><head><meta http-equiv=3D"Content-Type" content=
+=3D"text/html; charset=3Dwindows-1252"><meta name=3D"Generator" content=3D"=
+Microsoft Word 15 (filtered medium)"><!--[if !mso]><style>v\:* {behavior:ur=
+l(#default#VML);}
+</style><![endif]--><style><!--
+/* Font Definitions */
+@font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+/* Style Definitions */
+p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin:0cm;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+a:link, span.MsoHyperlink
+	{color:#0563C1;
+	text-decoration:underline;}
+.MsoChpDefault
+	{font-size:10.0pt;}
+@page WordSection1
+	{size:612.0pt 792.0pt;
+	margin:72.0pt 72.0pt 72.0pt 72.0pt;}
+div.WordSection1
+	{page:WordSection1;}
+--></style><!--[if gte mso 9]><xml>
+<o:shapedefaults v:ext=3D"edit" spidmax=3D"1026" />
+</xml><![endif]--></head><body lang=3D"EN-GB" link=3D"#0563C1" vlink=3D"#95=
+4F72" style=3D"word-wrap:break-word"><div class=3D"WordSection1"><p class=
+=3D"MsoNormal">Hi Bob,<o:p></o:p></p><p class=3D"MsoNormal"><o:p>&nbsp;</o:=
+p></p><p class=3D"MsoNormal">The quarterly figures are attached. Na=EFve ca=
+f=E9 prices rose 5 =80 =96 see the chart:<o:p></o:p></p><p class=3D"MsoNorm=
+al"><img width=3D"160" height=3D"60" style=3D"width:1.6666in;height:.625in"=
+ id=3D"Picture_x0020_1" src=3D"cid:image001.png@01DB3A4B.5C6D7E80" alt=3D"Q=
+uarterly chart"><o:p></o:p></p><p class=3D"MsoNormal">Kind regards,<o:p></o=
+:p></p><p class=3D"MsoNormal">Alice<o:p></o:p></p></div></body></html>
+--_000_AM0PR01MB1234567890ABCDEF_--
+
+--_004_AM0PR01MB1234567890ABCDEF_
+Content-Type: image/png; name="image001.png"
+Content-Description: image001.png
+Content-Disposition: inline; filename="image001.png"; size=203;
+	creation-date="Tue, 17 Nov 2026 08:14:00 GMT";
+	modification-date="Tue, 17 Nov 2026 08:14:00 GMT"
+Content-ID: <image001.png@01DB3A4B.5C6D7E80>
+Content-Transfer-Encoding: base64
+
+iVBORw0KGgoAAAANSUhEUgAAAKAAAAA8CAIAAABuCSZCAAAAkklEQVR42u3cUQ3AIAxAQUrmY5My
+J0waTpgUpKCAT7KE3Rlo0pf+Ns7SEvvKViAwAiMwAiMwAiOwwAiMwAiMwAjM1PHV4F7vv+36el4X
+jMAIjMACIzACIzACIzACC4zACIzACIzACIzAAiMwAiMwAiMwAguMwAiMwKwWvs26YARGYARGYARG
+YIERGIERGIERmKkBtGQF8yPIKsEAAAAASUVORK5CYII=
+
+--_004_AM0PR01MB1234567890ABCDEF_--
+
+--_005_AM0PR01MB1234567890ABCDEF_
+Content-Type: application/pdf;
+	name="=?iso-8859-1?Q?Kvartalsrapport_=E6=F8=E5.pdf?="
+Content-Description: =?iso-8859-1?Q?Kvartalsrapport_=E6=F8=E5.pdf?=
+Content-Disposition: attachment;
+	filename="=?iso-8859-1?Q?Kvartalsrapport_=E6=F8=E5.pdf?="; size=1099;
+	creation-date="Tue, 17 Nov 2026 08:13:00 GMT";
+	modification-date="Tue, 17 Nov 2026 08:13:00 GMT"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjcKJcK1wrYKCjEgMCBvYmoKPDwvVHlwZS9DYXRhbG9nL1BhZ2VzIDIgMCBSPj4KZW5k
+b2JqCgoyIDAgb2JqCjw8L1R5cGUvUGFnZXMvQ291bnQgMi9LaWRzWzQgMCBSIDcgMCBSXT4+CmVu
+ZG9iagoKMyAwIG9iago8PC9Gb250PDwvaGVsdiA1IDAgUj4+Pj4KZW5kb2JqCgo0IDAgb2JqCjw8
+L1R5cGUvUGFnZS9NZWRpYUJveFswIDAgNDIwIDU5NV0vUm90YXRlIDAvUmVzb3VyY2VzIDMgMCBS
+L1BhcmVudCAyIDAgUi9Db250ZW50c1s2IDAgUl0+PgplbmRvYmoKCjUgMCBvYmoKPDwvVHlwZS9G
+b250L1N1YnR5cGUvVHlwZTEvQmFzZUZvbnQvSGVsdmV0aWNhL0VuY29kaW5nL1dpbkFuc2lFbmNv
+ZGluZz4+CmVuZG9iagoKNiAwIG9iago8PC9MZW5ndGggOTEvRmlsdGVyL0ZsYXRlRGVjb2RlPj4K
+c3RyZWFtCnjaDcgxCoAwDAXQPafIDUxq8qsgDoKLm5BNnKTFQQcXz6+87dFDU5Cy/JQhbL1z3NSc
+5XpZwVF5G0yzZYOiRQeHJXExM6QjSZb/MzwJKgp83GOhOWilD5hFFDoKZW5kc3RyZWFtCmVuZG9i
+agoKNyAwIG9iago8PC9UeXBlL1BhZ2UvTWVkaWFCb3hbMCAwIDQyMCA1OTVdL1JvdGF0ZSAwL1Jl
+c291cmNlcyAzIDAgUi9QYXJlbnQgMiAwIFIvQ29udGVudHNbOCAwIFJdPj4KZW5kb2JqCgo4IDAg
+b2JqCjw8L0xlbmd0aCA5NC9GaWx0ZXIvRmxhdGVEZWNvZGU+PgpzdHJlYW0KeJwNyDEKg1AQRdF+
+VjE7cOb7/psIkiKQxk6YTqxESaGFjevP5zaHK7d8Ulyt5UpTDFXzku63n486NQ9dRnggQGfPFytR
+rBoAlq1YWPvB2oQIHu81J/mmzPIHlToUDQplbmRzdHJlYW0KZW5kb2JqCgp4cmVmCjAgOQowMDAw
+MDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTYgMDAwMDAgbiAKMDAwMDAwMDA2MiAwMDAwMCBuIAow
+MDAwMDAwMTIwIDAwMDAwIG4gCjAwMDAwMDAxNjEgMDAwMDAgbiAKMDAwMDAwMDI2OCAwMDAwMCBu
+IAowMDAwMDAwMzU3IDAwMDAwIG4gCjAwMDAwMDA1MTYgMDAwMDAgbiAKMDAwMDAwMDYyMyAwMDAw
+MCBuIAoKdHJhaWxlcgo8PC9TaXplIDkvUm9vdCAxIDAgUi9JRFs8QzNCM0MyOThDMzhDQzNCNDJF
+QzM4MkMzODNDMzhBNzA+PDY5MzhFQTU4MEY2OUUzNzk1MEE1MkMwODUwNDlGNDBBPl0+PgpzdGFy
+dHhyZWYKNzg1CiUlRU9GCg==
+
+--_005_AM0PR01MB1234567890ABCDEF_--

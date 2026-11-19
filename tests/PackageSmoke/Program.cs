@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PackageSmoke;
 using RaiCore.Pdf;
 using RaiCore.Pdf.Editing;
+using RaiCore.Pdf.Email;
 using RaiCore.Pdf.Extraction;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html;
@@ -152,6 +153,40 @@ editor.Pages.Add(PdfReader.Open(HtmlToPdf.ConvertToBytes("<p>Three</p>")));
 editor.Pages.Move(1, 0);
 var edited = string.Join(' ', new TextExtractor(PdfReader.Open(editor.ToArray())).ExtractPages().Select(p => p.Text));
 Check($"editing: {edited}", edited == "Three Two" && editor.ToArray().AsSpan().SequenceEqual(editor.ToArray()));
+
+// RaiCore.Pdf.Email: a message with a code page subject, a cid: image in its HTML and a PDF attachment, appended.
+var png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="; // The PNG above.
+var message = System.Text.Encoding.ASCII.GetBytes($"""
+    From: Smoke <smoke@example.com>
+    Subject: =?windows-1252?Q?Caf=E9_=96_smoke?=
+    Content-Type: multipart/mixed; boundary=m
+
+    --m
+    Content-Type: multipart/related; boundary=r
+
+    --r
+    Content-Type: text/html; charset=utf-8
+
+    <p>Body text</p><img src="cid:dot@example.com" width="10" height="10">
+    --r
+    Content-Type: image/png
+    Content-ID: <dot@example.com>
+    Content-Transfer-Encoding: base64
+
+    {png}
+    --r--
+    --m
+    Content-Type: application/pdf
+    Content-Disposition: attachment; filename*=utf-8''r%C3%A9sum%C3%A9.pdf
+    Content-Transfer-Encoding: base64
+
+    {Convert.ToBase64String(HtmlToPdf.ConvertToBytes("<p>Attached</p>"))}
+    --m--
+    """.ReplaceLineEndings("\r\n"));
+var email = EmailToPdf.Convert(message, new EmailConverterOptions { AppendAttachments = true });
+var emailText = string.Join(" | ", new TextExtractor(PdfReader.Open(email.ToArray())).ExtractPages().Select(p => p.Text.ReplaceLineEndings(" ")));
+Check($"email: {emailText}", emailText.StartsWith("Caf\u00E9 \u2013 smoke", StringComparison.Ordinal) && emailText.EndsWith("| Attached", StringComparison.Ordinal)
+    && email.Attachments.Single().FileName == "r\u00E9sum\u00E9.pdf" && new ImageExtractor(PdfReader.Open(email.ToArray())).ExtractPage(0).Images.Count == 1);
 
 Console.WriteLine(failures == 0 ? $"Package smoke test passed. PDFs in {output}" : $"Package smoke test FAILED ({failures} checks).");
 return failures == 0 ? 0 : 1;

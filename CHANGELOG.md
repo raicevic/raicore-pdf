@@ -6,6 +6,15 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Email to PDF** (`RaiCore.Pdf.Email`, new package): `EmailToPdf.Convert` converts email messages (`.eml`) and web
+  archives (`.mht`, `.mhtml`) through the HTML engine: a header block (from, to, cc, date, subject; fields and labels
+  configurable, styleable with CSS), the HTML body (or the plain text one, wrapped, with `format=flowed` and links)
+  with its `cid:` and `Content-Location` images in place, and the attachments embedded as PDF file attachments, listed
+  and optionally appended (images and text files as pages, PDFs imported, HTML files and attached messages converted).
+  MIME parsing of its own: multipart/alternative, related and mixed, quoted-printable and base64, charsets including
+  ISO-2022-JP, Shift_JIS, GB18030, Big5 and EUC-KR, RFC 2047 encoded words and RFC 2231 parameters, malformed messages
+  read leniently within `ResourceLimits`, and no local files loaded. See the
+  [email guide](https://raicevic.github.io/raicore-pdf/guides/email.html) (#198).
 - **Form reading** (`RaiCore.Pdf.Editing`): `PdfEditor.GetForm()` tells whether a document has an AcroForm and an XFA
   form (static or dynamic, by `/NeedsRendering`) and lists its fields: fully qualified name, type (text, check box,
   radio buttons, push button, list, combo, signature), values, choice options, read-only and required flags, and widgets

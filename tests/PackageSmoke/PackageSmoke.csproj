@@ -17,6 +17,7 @@
     <PackageReference Include="RaiCore.Pdf.Razor" Version="$(RaiCoreVersion)" />
     <PackageReference Include="RaiCore.Pdf.Extraction" Version="$(RaiCoreVersion)" />
     <PackageReference Include="RaiCore.Pdf.Editing" Version="$(RaiCoreVersion)" />
+    <PackageReference Include="RaiCore.Pdf.Email" Version="$(RaiCoreVersion)" />
   </ItemGroup>
 
   <ItemGroup>
