@@ -14,7 +14,7 @@ public sealed partial class PdfDocument
     /// (Flate-compressed, with its MIME type, size, dates and MD5 checksum) in the catalog's <c>/EmbeddedFiles</c> name
     /// tree and as an associated file of the document (<c>/AF</c>) with its <see cref="PdfAttachment.Relationship"/>.
     /// File names must be unique. PDF/A-2 does not allow attachments (except PDF/A files, which are not checked here):
-    /// use <see cref="PdfAConformance.PdfA3B"/>, which allows any file.
+    /// use PDF/A-3 (<see cref="PdfAConformance.PdfA3B"/> or <see cref="PdfAConformance.PdfA3A"/>), which allows any file.
     /// </summary>
     public IList<PdfAttachment> Attachments { get; } = new List<PdfAttachment>();
 
@@ -31,10 +31,10 @@ public sealed partial class PdfDocument
             }
         }
 
-        if (Attachments.Count > 0 && PdfAConformance == PdfAConformance.PdfA2B)
+        if (Attachments.Count > 0 && PdfAConformance.Part() == 2)
         {
             throw new InvalidOperationException(
-                "PDF/A-2 only allows attaching files that are PDF/A themselves, which cannot be checked here: use PDF/A-3 (PdfAConformance.PdfA3B), which allows any file.");
+                "PDF/A-2 only allows attaching files that are PDF/A themselves, which cannot be checked here: use PDF/A-3 (PdfAConformance.PdfA3B or PdfA3A), which allows any file.");
         }
     }
 

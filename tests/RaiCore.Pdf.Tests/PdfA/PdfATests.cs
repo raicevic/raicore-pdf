@@ -384,7 +384,7 @@ public class PdfATests
     [Fact]
     public void An_unknown_level_is_rejected()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfDocument { PdfAConformance = (PdfAConformance)3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfDocument { PdfAConformance = (PdfAConformance)5 });
     }
 
     [Fact]

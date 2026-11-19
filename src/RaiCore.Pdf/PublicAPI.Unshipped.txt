@@ -4,3 +4,5 @@ static RaiCore.Pdf.PdfImage.GetPageCount(byte[]! data) -> int
 static RaiCore.Pdf.PdfImage.GetPageCount(string! path) -> int
 static RaiCore.Pdf.PdfImage.Load(byte[]! data, int pageIndex) -> RaiCore.Pdf.PdfImage!
 static RaiCore.Pdf.PdfImage.Load(string! path, int pageIndex) -> RaiCore.Pdf.PdfImage!
+RaiCore.Pdf.PdfAConformance.PdfA2A = 3 -> RaiCore.Pdf.PdfAConformance
+RaiCore.Pdf.PdfAConformance.PdfA3A = 4 -> RaiCore.Pdf.PdfAConformance

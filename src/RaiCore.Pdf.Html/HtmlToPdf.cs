@@ -122,10 +122,16 @@ public static partial class HtmlToPdf
                     var (flow, metadata, diagnostics) = Layout(html, options, cancellationToken);
 
                     // Everything ConvertAsync sets, but before writing begins: page by page, it is read by BeginSave.
-                    var document = new PdfDocument { Tagged = options.Tagged, PdfUA = options.PdfUA, StrictTagging = options.StrictTagging, TimeProvider = options.TimeProvider };
+                    var document = new PdfDocument
+                    {
+                        Tagged = options.Tagged,
+                        PdfUA = options.PdfUA,
+                        PdfAConformance = options.PdfAConformance,
+                        StrictTagging = options.StrictTagging,
+                        TimeProvider = options.TimeProvider,
+                    };
                     metadata.ApplyTo(document, options, defaultCreator);
                     document.Encryption = options.Encryption;
-                    document.PdfAConformance = options.PdfAConformance;
                     if (options.PdfAConformance != PdfAConformance.None)
                     {
                         document.EmbedStandardFonts();
@@ -174,12 +180,18 @@ public static partial class HtmlToPdf
             () =>
             {
                 var (flow, metadata, diagnostics) = Layout(html, options, cancellationToken);
-                var document = new PdfDocument { Tagged = options.Tagged, PdfUA = options.PdfUA, StrictTagging = options.StrictTagging, TimeProvider = options.TimeProvider };
+                var document = new PdfDocument
+                {
+                    Tagged = options.Tagged,
+                    PdfUA = options.PdfUA,
+                    PdfAConformance = options.PdfAConformance, // Set before rendering: level A tags the content.
+                    StrictTagging = options.StrictTagging,
+                    TimeProvider = options.TimeProvider,
+                };
                 flow.RenderTo(document);
                 diagnostics.Deliver();
                 metadata.ApplyTo(document, options, defaultCreator);
                 document.Encryption = options.Encryption;
-                document.PdfAConformance = options.PdfAConformance;
                 if (options.PdfAConformance != PdfAConformance.None)
                 {
                     document.EmbedStandardFonts();

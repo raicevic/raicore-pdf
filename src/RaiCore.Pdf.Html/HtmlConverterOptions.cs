@@ -113,10 +113,13 @@ public sealed class HtmlConverterOptions
     internal bool StrictTagging { get; init; }
 
     /// <summary>
-    /// Writes the PDF as PDF/A-2b or PDF/A-3b for archiving (see <see cref="PdfDocument.PdfAConformance"/>). The bundled
-    /// Liberation fonts are then embedded in place of the standard fonts (used for SVG text), and converting throws
-    /// <see cref="InvalidOperationException"/> when the document breaks a rule, such as text in characters no font has,
-    /// a CMYK image, or <see cref="Encryption"/>. Defaults to <see cref="PdfAConformance.None"/>.
+    /// Writes the PDF as PDF/A-2b, PDF/A-3b, PDF/A-2a or PDF/A-3a for archiving (see
+    /// <see cref="PdfDocument.PdfAConformance"/>). The bundled Liberation fonts are then embedded in place of the
+    /// standard fonts (used for SVG text), and converting throws <see cref="InvalidOperationException"/> when the
+    /// document breaks a rule, such as text in characters no font has, a CMYK image, or <see cref="Encryption"/>. Level A
+    /// (<see cref="PdfAConformance.PdfA2A"/>, <see cref="PdfAConformance.PdfA3A"/>) also tags the document, as
+    /// <see cref="Tagged"/> does, and needs a language (<c>&lt;html lang&gt;</c> or <see cref="Language"/>) and
+    /// <c>alt</c> text on images (<c>alt=""</c> for decorative ones). Defaults to <see cref="PdfAConformance.None"/>.
     /// </summary>
     public PdfAConformance PdfAConformance { get; init; }
 

@@ -51,8 +51,8 @@ public sealed class EmailConverterOptions
     /// <summary>
     /// Whether the attachments are embedded in the PDF as attached files (<see cref="PdfDocument.Attachments"/>),
     /// with their names and media types, so the reader can open them. Defaults to <c>true</c>. PDF/A-2 does not allow
-    /// that: with <see cref="PdfAConformance.PdfA2B"/>, attachments are not embedded (use
-    /// <see cref="PdfAConformance.PdfA3B"/>).
+    /// that: with <see cref="PdfAConformance.PdfA2B"/> or <see cref="PdfAConformance.PdfA2A"/>, attachments are not
+    /// embedded (use <see cref="PdfAConformance.PdfA3B"/> or <see cref="PdfAConformance.PdfA3A"/>).
     /// </summary>
     public bool EmbedAttachments { get; init; } = true;
 

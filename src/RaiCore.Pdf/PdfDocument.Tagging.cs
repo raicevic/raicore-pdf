@@ -16,11 +16,12 @@ public sealed partial class PdfDocument
     /// Whether the document is tagged (ISO 32000-1, section 14.8): content drawn between
     /// <see cref="PdfCanvas.BeginTag(PdfStructureElement)"/> and <see cref="PdfCanvas.EndTag"/> belongs to the structure
     /// elements under <see cref="StructureRoot"/>, everything else is written as artifacts, and links are tagged. Set it
-    /// before drawing. <see cref="PdfUA"/> implies it.
+    /// before drawing. <see cref="PdfUA"/> and the PDF/A level A conformances (<see cref="PdfAConformance.PdfA2A"/>,
+    /// <see cref="PdfAConformance.PdfA3A"/>) imply it.
     /// </summary>
     public bool Tagged
     {
-        get => _tagged || PdfUA;
+        get => _tagged || PdfUA || PdfAConformance.IsLevelA();
         set => _tagged = value;
     }
 

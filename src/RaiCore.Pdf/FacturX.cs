@@ -42,7 +42,7 @@ public static class FacturX
     /// Makes <paramref name="document"/> a Factur-X / ZUGFeRD e-invoice: attaches <paramref name="invoiceXml"/> as
     /// <c>factur-x.xml</c> (<c>xrechnung.xml</c> for <see cref="FacturXProfile.XRechnung"/>, MIME type <c>text/xml</c>,
     /// relationship <c>Data</c> for MINIMUM and BASIC WL, <c>Alternative</c> otherwise), sets
-    /// <see cref="PdfDocument.PdfAConformance"/> to PDF/A-3b, and adds the <c>fx:</c> XMP properties (document type
+    /// <see cref="PdfDocument.PdfAConformance"/> to PDF/A-3b (unless it is PDF/A-3a), and adds the <c>fx:</c> XMP properties (document type
     /// INVOICE, file name, version 1.0, conformance level) with their PDF/A extension schema. Returns the document.
     /// </summary>
     /// <remarks>
@@ -52,7 +52,7 @@ public static class FacturX
     /// <c>EmbedStandardFonts()</c> from RaiCore.Pdf.Fonts.
     /// </remarks>
     /// <exception cref="ArgumentException">The XML is not well-formed, or its root is not a CII invoice.</exception>
-    /// <exception cref="InvalidOperationException">The document is PDF/A-2b, or already has an e-invoice.</exception>
+    /// <exception cref="InvalidOperationException">The document is PDF/A-2b or PDF/A-2a, or already has an e-invoice.</exception>
     public static PdfDocument AttachFacturXInvoice(this PdfDocument document, byte[] invoiceXml, FacturXProfile profile)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -63,9 +63,9 @@ public static class FacturX
         }
 
         CheckInvoiceXml(invoiceXml);
-        if (document.PdfAConformance == PdfAConformance.PdfA2B)
+        if (document.PdfAConformance.Part() == 2)
         {
-            throw new InvalidOperationException("A Factur-X / ZUGFeRD invoice is a PDF/A-3 document, but this one is set to PDF/A-2b.");
+            throw new InvalidOperationException("A Factur-X / ZUGFeRD invoice is a PDF/A-3 document, but this one is set to PDF/A-2.");
         }
 
         if (document.XmpExtensions.Exists(extension => extension.Namespace.Uri == Namespace.Uri))
@@ -81,7 +81,10 @@ public static class FacturX
                 ? PdfAttachmentRelationship.Data
                 : PdfAttachmentRelationship.Alternative,
         });
-        document.PdfAConformance = PdfAConformance.PdfA3B;
+        if (document.PdfAConformance != PdfAConformance.PdfA3A)
+        {
+            document.PdfAConformance = PdfAConformance.PdfA3B;
+        }
         document.XmpExtensions.Add(new XmpExtension(
             Namespace,
             "Factur-X PDFA Extension Schema",
