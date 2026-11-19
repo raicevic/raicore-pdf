@@ -16,6 +16,7 @@ internal static class Editing
             <h1 style="break-before: page">Signatures</h1>
             """).Save("contract.pdf");
         HtmlToPdf.Convert("<h1>Appendix</h1>").Save("appendix.pdf");
+        File.Copy("contract.pdf", "contract-reviewed.pdf", overwrite: true); // Stands for a copy with reviewers' comments.
 
         #region pages
         var editor = PdfEditor.Open("contract.pdf");
