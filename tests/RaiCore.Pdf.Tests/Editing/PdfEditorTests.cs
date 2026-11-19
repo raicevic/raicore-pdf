@@ -478,4 +478,24 @@ public class PdfEditorTests
         Assert.Equal(2, editor.Pages.Count);
         Assert.Equal(2, editor.Pages.ToList().Count);
     }
+
+    [Fact]
+    public void A_catalog_that_is_also_its_page_tree_is_kept()
+    {
+        // Found by fuzzing: the catalog was taken for an old page tree node and left out, so the saved file had no /Root.
+        var pdf = TestPdf.Build([
+            "<< /Type /Catalog /Pages 1 0 R /Kids [2 0 R] /Count 1 /PageLayout /OneColumn >>",
+            "<< /Type /Page /Parent 1 0 R /MediaBox [0 0 300 200] /Contents 3 0 R >>",
+            TestPdf.Stream("0 0 1 rg 10 10 50 50 re f"),
+        ]);
+        var editor = PdfEditor.Open(pdf);
+        editor.Pages[0].Rotation = 90;
+
+        var reader = PdfReader.Open(editor.ToArray());
+
+        Assert.Equal((1, 90), (reader.Pages.Count, reader.Pages[0].Rotate));
+        Assert.Equal("OneColumn", ((PdfName)reader.Catalog["PageLayout"]!).Value);
+        Assert.Null(reader.Catalog["Kids"]);
+        AssertValid(editor.ToArray());
+    }
 }

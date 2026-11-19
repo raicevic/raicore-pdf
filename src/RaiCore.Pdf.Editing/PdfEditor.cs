@@ -88,6 +88,18 @@ public sealed class PdfEditor
             }
         }
 
+        // A malformed file can make the catalog (or the information dictionary) a node of its own page tree: it stays,
+        // without the page tree's entries, since the editor writes a page tree of its own.
+        foreach (var kept in new[] { _catalog, _info }.OfType<PdfReference>())
+        {
+            if (_pageObjects.Remove(kept.ObjectNumber) && _table.Dictionary(kept) is { } dictionary)
+            {
+                dictionary["Kids"] = null;
+                dictionary["Count"] = null;
+                dictionary["Parent"] = null;
+            }
+        }
+
         _pageTree = _table.Add(new PdfDictionary { ["Type"] = new PdfName("Pages") });
         _openedPages = [.. pages];
         _version = reader.Version;
