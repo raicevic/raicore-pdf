@@ -191,10 +191,11 @@ workbooks throw `NotSupportedException`. Excel 97-2003 `.xls` files are converte
 External workbook links, data connections, query tables, web queries and DDE or OLE links are never followed or
 refreshed: formulas show the values stored with them (see [Untrusted input](untrusted-input.md)).
 
-Not supported in workbooks, and reported through `Diagnostics` ([below](#diagnostics)): charts and chart sheets,
-pictures, shapes and other drawings, embedded objects, comments, conditional formatting (also data bars, color scales
-and icon sets), sparklines, pivot tables (their cells are shown), headers and footers, page breaks set by hand, rich
-text formatting within a cell, rotated text, and shrink to fit.
+Not supported in workbooks, and reported through `Diagnostics` ([below](#diagnostics)): charts and chart sheets (the
+chart engine that draws the charts of presentations and documents is ready for them; they come with support for a
+sheet's drawings), pictures, shapes and other drawings, embedded objects, comments, conditional formatting (also data
+bars, color scales and icon sets), sparklines, pivot tables (their cells are shown), headers and footers, page breaks
+set by hand, rich text formatting within a cell, rotated text, and shrink to fit.
 
 ### Excel 97-2003 workbooks
 

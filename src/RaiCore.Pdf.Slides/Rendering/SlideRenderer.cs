@@ -15,6 +15,7 @@ internal sealed partial class SlideRenderer
 
     private readonly PdfDocument _document;
     private readonly TextRenderer _text;
+    private readonly SlideFonts _fonts;
     private readonly Action<int, string, string>? _report;
     private readonly Action? _checkpoint;
     private readonly Dictionary<byte[], (PdfImage? Image, string? Problem)> _images = new(ReferenceEqualityComparer.Instance);
@@ -24,6 +25,7 @@ internal sealed partial class SlideRenderer
     {
         _document = document;
         _text = new TextRenderer(fonts);
+        _fonts = fonts;
         _report = report;
         _checkpoint = checkpoint;
     }
@@ -120,6 +122,9 @@ internal sealed partial class SlideRenderer
                 break;
             case TableShape table:
                 DrawTable(canvas, table, toPage, tags);
+                break;
+            case ChartFrame chart:
+                DrawChart(canvas, chart, toPage, tags);
                 break;
         }
 

@@ -70,6 +70,10 @@ internal static class LocalFuzzer
             "{\\*\\", "\\par ", "\\pard", "\\cell ", "\\nestcell ", "\\row ", "\\nestrow ", "\\trowd", "\\cellx99999", "\\clvmrg", "\\intbl\\itap3 ",
             "\\'e9", "\\'82\\'b1", "\\u-3913?", "\\uc9", "\\bin9 ", "\\sect ", "\\ls1\\ilvl8 ", "{\\field{\\*\\fldinst PAGEREF x}{\\fldrslt ",
             "{\\pict\\pngblip ", "{\\footnote ", "{\\header ", "\\f99999 ", "\\fs-1 ",
+            "<c:ptCount val=\"999999\"/>", "<c:pt idx=\"1048575\"><c:v>1e308</c:v></c:pt>", "<c:logBase val=\"2\"/>",
+            "<c:orientation val=\"maxMin\"/>", "<c:majorUnit val=\"1e-300\"/>", "<c:crossesAt val=\"-1e300\"/>", "<c:explosion val=\"400\"/>",
+            "<c:dLbls><c:showVal val=\"1\"/><c:showPercent val=\"1\"/><c:showCatName val=\"1\"/></c:dLbls>", "<c:grouping val=\"percentStacked\"/>",
+            "<c:manualLayout><c:layoutTarget val=\"inner\"/><c:x val=\"-5\"/><c:w val=\"9\"/></c:manualLayout>", "<a:bodyPr rot=\"-5400000\"/>",
         }.Select(System.Text.Encoding.UTF8.GetBytes),
     ];
 
