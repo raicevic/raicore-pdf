@@ -211,8 +211,14 @@ internal sealed class StructureTreeWriter
         return reference;
     }
 
-    /// <summary>Whether an element is written: the root, and every element with content (empty elements are left out).</summary>
-    private bool IsWritten(PdfStructureElement element) => element == _root || HasContent(element);
+    /// <summary>
+    /// Whether an element is written: the root, every element with content (empty elements are left out), and the empty
+    /// cells of a row that is written, so that every row of a table keeps its columns (PDF/UA, ISO 14289-1, 7.2).
+    /// </summary>
+    private bool IsWritten(PdfStructureElement element) =>
+        element == _root
+        || HasContent(element)
+        || (element.Type is PdfStructureTypes.TableHeaderCell or PdfStructureTypes.TableDataCell && element.Parent is { } row && HasContent(row));
 
     private bool HasContent(PdfStructureElement element)
     {

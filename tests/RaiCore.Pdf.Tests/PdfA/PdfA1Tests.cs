@@ -120,10 +120,13 @@ public class PdfA1Tests
 
     [Theory]
     [MemberData(nameof(Samples))]
-    public void Every_CID_font_subset_has_a_CIDSet_of_its_glyphs(string kind, PdfAConformance level)
+    public void Every_CID_font_subset_has_a_CIDSet_of_every_CID_its_program_has(string kind, PdfAConformance level)
     {
+        // PDF/UA (7.21.4.2) wants every CID of the program, used or not: a TrueType subset keeps every glyph ID up to
+        // the last glyph kept (and composite glyphs' components), a CFF subset the CIDs of its charset.
         var reader = PdfReader.Open(Sample(kind, level).ToArray());
         var checkedFonts = 0;
+        var unusedSlots = 0;
         foreach (var number in reader.Store.ObjectNumbers)
         {
             if (reader.Resolve(new PdfReference(number)) is not PdfDictionary { } font || (font["Subtype"] as PdfName)?.Value is not ("CIDFontType0" or "CIDFontType2"))
@@ -134,11 +137,25 @@ public class PdfA1Tests
             var descriptor = (PdfDictionary)reader.Resolve(font["FontDescriptor"])!;
             var bits = reader.Store.Decode((PdfStreamObject)reader.Resolve(descriptor["CIDSet"])!);
             var set = Enumerable.Range(0, bits.Length * 8).Where(cid => (bits[cid / 8] & (0x80 >> (cid % 8))) != 0).ToHashSet();
-            Assert.Equal([0, .. GlyphsOf((PdfArray)reader.Resolve(font["W"])!)], set.Order());
+            var used = GlyphsOf((PdfArray)reader.Resolve(font["W"])!).ToHashSet();
+            Assert.Superset(used, set);
+            if (descriptor["FontFile2"] is { } fontFile2)
+            {
+                var program = reader.Store.Decode((PdfStreamObject)reader.Resolve(fontFile2)!);
+                Assert.Equal(Enumerable.Range(0, MaxpNumGlyphs(program)), set.Order());
+                unusedSlots += set.Count - used.Count - 1;
+            }
+            else
+            {
+                var program = reader.Store.Decode((PdfStreamObject)reader.Resolve(descriptor["FontFile3"])!);
+                Assert.Equal(RaiCore.Pdf.Fonts.OpenType.Cff.CffFont.Parse(program).Cids!.Order(), set.Order());
+            }
+
             checkedFonts++;
         }
 
         Assert.True(checkedFonts >= (kind == "canvas" ? 3 : 1));
+        Assert.True(unusedSlots > 0); // TrueType subsets have glyph IDs the text does not use, which the CIDSet lists too.
     }
 
     [Fact]
@@ -453,6 +470,58 @@ public class PdfA1Tests
         Assert.Equal(["a", "b", "a", "b", "a", "b"], cells);
     }
 
+    [Theory]
+    [InlineData(PdfAConformance.PdfA1A, false)]
+    [InlineData(PdfAConformance.PdfA1A, true)]
+    [InlineData(PdfAConformance.PdfA2A, true)]
+    [InlineData(PdfAConformance.None, true)]
+    public void Empty_cells_are_written_so_that_every_row_has_the_same_columns(PdfAConformance level, bool pdfUA)
+    {
+        // PDF/UA (7.2): the rows of a table have the same number of columns; an empty cell has no content of its own.
+        var html = """
+            <html lang="en"><head><title>Totals</title></head><body><table>
+              <thead><tr><th>Item</th><th>Qty</th><th>Price</th></tr></thead>
+              <tbody><tr><td>Boxes</td><td>4</td><td>60.00</td></tr><tr><td></td><td>2</td><td></td></tr></tbody>
+              <tfoot><tr><td>Net</td><td></td><td>100.00</td></tr></tfoot>
+            </table></body></html>
+            """;
+        var doc = HtmlToPdf.Convert(html, new HtmlConverterOptions { PdfAConformance = level, Tagged = true, PdfUA = pdfUA });
+        var root = TaggedPdfInspector.Inspect(doc.ToArray());
+
+        var rows = new List<InspectedElement>();
+        void Collect(InspectedElement element)
+        {
+            if (element.Type == "TR")
+            {
+                rows.Add(element);
+            }
+
+            element.Children.ForEach(Collect);
+        }
+
+        Collect(root);
+        Assert.Equal(4, rows.Count);
+        Assert.All(rows, row => Assert.Equal(3, row.Children.Count(cell => cell.Type is "TH" or "TD")));
+        Assert.Equal(["Net", "", "100.00"], rows[3].Children.Select(cell => cell.Text));
+        Assert.Equal(3, rows.Sum(row => row.Children.Count(cell => cell.Text.Length == 0 && cell.Children.Count == 0)));
+    }
+
+    [Fact]
+    public void Empty_cells_are_written_only_in_rows_that_are()
+    {
+        var doc = new PdfDocument { Tagged = true };
+        var table = doc.StructureRoot.AddChild(PdfStructureTypes.Table);
+        var row = table.AddChild(PdfStructureTypes.TableRow);
+        var empty = table.AddChild(PdfStructureTypes.TableRow);
+        empty.AddChild(PdfStructureTypes.TableDataCell);
+        doc.StructureRoot.AddChild(PdfStructureTypes.Paragraph).AddChild(PdfStructureTypes.TableDataCell); // Not in a row.
+        var canvas = doc.AddPage().Canvas;
+        canvas.BeginTag(row.AddChild(PdfStructureTypes.TableDataCell)).DrawText("a", Sans, 12, 72, 700).EndTag();
+        row.AddChild(PdfStructureTypes.TableDataCell);
+
+        Assert.Equal("Document(Table(TR(TD TD)))", TaggedPdfInspector.Inspect(doc.ToArray()).ToString());
+    }
+
     [Fact]
     public void A_row_group_with_content_of_its_own_and_other_PDF_1_5_types_are_rejected_at_level_A()
     {
@@ -533,6 +602,15 @@ public class PdfA1Tests
 
         Assert.Contains("semi-transparent pixels", Message(HtmlToPdf.Convert(Html("PngSuite/basn6a08.png", "image/png"), options)), StringComparison.Ordinal);
         HtmlToPdf.Convert(Html("Images/transparent.gif", "image/gif"), options).ToArray();
+    }
+
+    /// <summary>The <c>numGlyphs</c> of an SFNT font program's <c>maxp</c> table, read from its table directory.</summary>
+    private static int MaxpNumGlyphs(byte[] program)
+    {
+        var tables = (program[4] << 8) | program[5];
+        var record = Enumerable.Range(0, tables).Select(i => 12 + (i * 16)).Single(at => Encoding.ASCII.GetString(program, at, 4) == "maxp");
+        var offset = (program[record + 8] << 24) | (program[record + 9] << 16) | (program[record + 10] << 8) | program[record + 11];
+        return (program[offset + 4] << 8) | program[offset + 5];
     }
 
     /// <summary>The glyph IDs a CIDFont's <c>/W</c> array gives widths for (the form <c>[first [w1 w2 ...] ...]</c>).</summary>
