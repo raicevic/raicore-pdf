@@ -48,10 +48,13 @@ DocToPdf.Convert("minutes.doc").Save("minutes.pdf");
   `DocumentFormatException`; encrypted documents `NotSupportedException`. `DocxToPdf` and `DocToPdf` each convert the
   other's format too.
 
-Not supported: text boxes and shapes as floating frames (their text follows their paragraph), charts (an OpenDocument
-chart's replacement image is shown), SmartArt, embedded objects (their preview image is shown), comments, forms,
-several text columns, footnotes at the bottom of the page; in RTF and `.doc` also PICT pictures and drawing objects.
-WMF and EMF pictures (also EMF+) are drawn as vector graphics. What is left
+Charts in Word documents are drawn as vector graphics by the same chart engine as presentations' (columns, bars,
+lines, pies, areas, scatter, bubble, radar and stock charts); the newer chart types show the picture stored with them.
+
+Not supported: text boxes and shapes as floating frames (their text follows their paragraph), surface charts, charts
+in `.doc`, RTF and OpenDocument files beyond their stored pictures, SmartArt, embedded objects (their preview image is
+shown), comments, forms, several text columns, footnotes at the bottom of the page; in RTF and `.doc` also PICT
+pictures and drawing objects. WMF and EMF pictures (also EMF+) are drawn as vector graphics. What is left
 out is reported to the options' `Diagnostics`.
 
 More: the [Word documents guide](https://raicevic.github.io/raicore-pdf/guides/documents.html) and its

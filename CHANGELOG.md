@@ -6,6 +6,13 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Charts** in presentations and Word documents: one chart engine for DrawingML charts, drawn as vector graphics
+  from the data cached in the file, with text that can be extracted. Columns and bars (clustered, stacked, 100%,
+  horizontal), lines (markers, smoothed), pies (exploded) and doughnuts, areas, scatter, bubble, radar and stock
+  charts, combinations with secondary axes; Excel's automatic axis scaling, number formats, logarithmic and reversed
+  axes, gridlines, titles, legends, data labels, markers, manual layouts, theme colors and the chart style's automatic
+  colors. 3-D charts are drawn flat. Newer chart types (waterfall, treemap, sunburst...) in Word documents show their
+  stored picture, as they already did in presentations; what can't be drawn is reported to `Diagnostics`.
 - **`ResourceLoaders.None`** (`RaiCore.Pdf.Html`): a resource loader that loads nothing, so untrusted HTML can embed
   images as `data:` URIs (which never reach a loader) but can't reach local files or the network. Use it with
   `HtmlConverterOptions`, `HtmlFragmentOptions` and `EmailConverterOptions.Html`.
@@ -39,6 +46,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
   `emf`.
 
 ### Fixed
+- **A CFF2 font with a huge blend count** in a DICT threw `ArgumentOutOfRangeException` when it was subset (the count times the
+  number of regions overflowed); it now throws `FontFormatException`, and the font is embedded whole. Found by fuzzing.
 - **Deeply nested layout content no longer overflows the stack** when `MaxNestingDepth` is raised: finding the forced
   break and the page name a block starts with walked its chain of first children recursively, without the stack check
   every other recursion has. A test that depended on how far the JIT had optimized the layout code is now stable.

@@ -123,6 +123,9 @@ internal sealed partial class SlideRenderer
             case TableShape table:
                 DrawTable(canvas, table, toPage, tags);
                 break;
+            case ChartFrame chart:
+                DrawChart(canvas, chart, toPage, tags);
+                break;
         }
 
         if (shape.Link is { } link)

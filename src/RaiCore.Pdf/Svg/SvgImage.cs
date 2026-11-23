@@ -38,6 +38,17 @@ internal sealed class SvgImage
 
     public static SvgImage Load(Stream stream) => Draw(SvgDocument.Parse(stream));
 
+    /// <summary>
+    /// A drawing made on a canvas of a size in points (y upwards from the bottom-left corner), such as a chart, kept as
+    /// a form XObject like an SVG drawing; it is stretched to the rectangle it is drawn in.
+    /// </summary>
+    public static SvgImage FromDrawing(double width, double height, Action<PdfCanvas> draw)
+    {
+        var sheet = new PdfPage(new PdfPageSize(width, height));
+        draw(sheet.Canvas);
+        return new SvgImage(sheet, width, height, null);
+    }
+
     /// <summary>Draws the document: the root's view box is mapped into its viewport, which is flipped to PDF's y-up space.</summary>
     private static SvgImage Draw(SvgDocument document)
     {

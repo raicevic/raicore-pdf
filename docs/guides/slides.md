@@ -60,6 +60,7 @@ encryption, attachments.
 - **Tables:** column widths, rows that grow to fit their text, merged cells, cell margins and anchoring, cell fills and
   borders, and the table style (the presentation's own, or PowerPoint's default Medium Style 2) with its header row,
   total row, first and last column and banded rows.
+- **Charts** as vector graphics (see [Charts](#charts) below).
 - **SmartArt** from the drawing PowerPoint stores with it, and embedded objects from their picture.
 
 Text is laid out with the fonts at hand: add the presentation's fonts (Calibri, Aptos, ...) to `Fonts` for the same
@@ -68,6 +69,34 @@ Calibri, Caladea for Cambria, Liberation for Arial, Times New Roman and Courier 
 belongs to.
 
 [!code-csharp[](../snippets/Slides.cs#fonts)]
+
+## Charts
+
+Charts (DrawingML chart parts, as PowerPoint, Word and Excel store them) are drawn as vector graphics from the data the
+file caches with them, so the PDF shows the chart as it was saved; its text (title, axis labels, legend, data labels)
+is real text that can be searched and extracted. The same chart engine draws the charts of Word documents.
+
+- **Chart types:** columns and bars (clustered, stacked, 100% stacked, horizontal), lines (with markers, smoothed),
+  pies (exploded slices) and doughnuts, areas (standard, stacked, 100% stacked), scatter charts (markers, lines,
+  smoothed lines), bubbles, radar charts (lines, markers, filled) and stock charts (high-low lines, up-down bars), and
+  combinations of them, with secondary axes. 3-D charts are drawn flat, and a pie of pie or bar of pie as one pie
+  (reported).
+- **Axes:** category, value and date axes, Excel's automatic scaling (the minimum, maximum and major unit Excel picks
+  for the data, so tick labels match), fixed minimums, maximums and units, logarithmic and reversed scales, where an
+  axis crosses the other, tick marks, major and minor gridlines, tick label positions, number formats (General,
+  digits, thousands separators and scaling, percentages, scientific notation, currencies, dates and times), axis
+  titles, and category labels wrapped, turned or thinned out when they do not fit.
+- **Elements:** the chart and plot area's fills and borders, titles (rich text, or the series name of a single-series
+  chart), the legend at any side or where the file puts it, data labels (values, categories, series names, percentages,
+  bubble sizes) at their positions, markers, manual layouts of the plot area, the title and the legend.
+- **Formats:** fills, lines (width, dashes) and text from the file, theme colors through the slide's color map with
+  their transforms, and the chart style's automatic colors (the theme's accent colors, darker and lighter after six
+  series) for what the file leaves to it. Text without a size is 18 points, as in PowerPoint.
+
+Not drawn: surface charts, the chart types of Office 2016 and later (waterfall, treemap, sunburst, histogram, box and
+whisker, funnel, map; PowerPoint stores a picture with them, which is drawn instead), gradients and pictures in chart
+fills (a solid color is used), trendlines, error bars, data tables, and shadows and other effects. Chart data comes
+from the file's cache: charts are not recalculated from their embedded workbook.
 
 ## WMF and EMF pictures
 
@@ -80,7 +109,7 @@ damage (a damaged picture is drawn up to the damage) are reported to `Diagnostic
 
 ## Not supported
 
-Charts, SmartArt without a stored drawing, PICT pictures, embedded objects without a picture, animations and
+Surface charts, SmartArt without a stored drawing, PICT pictures, embedded objects without a picture, animations and
 transitions, 3D effects, shadows, glow, reflections and soft edges, WordArt transforms, multiple text columns, tab
 stops (a tab is a few spaces), notes pages and comments. Password-protected (encrypted) presentations throw
 `NotSupportedException`, and so do PowerPoint 97-2003 (`.ppt`) files given to `PptxToPdf`: convert those with

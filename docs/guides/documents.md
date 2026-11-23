@@ -54,6 +54,11 @@ The [format support](format-support.md) page compares all formats side by side.
 - **Images:** PNG, JPEG, GIF, BMP, TIFF and WebP, inline in the text or anchored. Anchored images with text wrapping
   (square, tight, through) float at the left or right margin with the text around them; other anchored images stand
   on a line of their own before their paragraph. Images are scaled down to the column and the page.
+- **Charts:** drawn as vector graphics of their size in the document, placed like pictures (inline, floating or on a
+  line of their own), with the theme's colors and fonts. The chart engine is the one that draws presentations' charts:
+  the [PowerPoint guide](slides.md#charts) lists the chart types and elements it draws. The chart types of Office 2016
+  and later (waterfall, treemap, sunburst, box and whisker...) are shown as the picture Word stores with them. Text
+  without a size is 10 points.
 - **Links and bookmarks:** hyperlinks to web addresses (http, https, mailto, ftp, tel; other schemes are shown as text
   without a link) and to bookmarks, which become the PDF's named destinations.
 - **Notes:** footnotes after the section that refers to them, endnotes at the end of the document, each after a short
@@ -96,7 +101,8 @@ system's fonts, or Carlito, for Word's line breaks.
 
 `Diagnostics` receives a `DocumentDiagnostic` (a kind and a message) for each distinct issue, once per conversion:
 
-- `UnsupportedContent`: charts, SmartArt, embedded objects (shown as their preview image when it can be drawn),
+- `UnsupportedContent`: charts that cannot be drawn (surface charts; newer chart types, shown as their stored
+  picture; 3-D charts, drawn flat), SmartArt, embedded objects (shown as their preview image when it can be drawn),
   shapes and text boxes (their text is laid out after their paragraph), several text columns (laid out as one),
   embedded document parts (`altChunk`), equations (shown as text), and what a WMF or EMF picture uses that is
   approximated or left out (see below).
@@ -301,8 +307,8 @@ points into, and reading is bounded by `Limits`: `MaxElements` the compound file
 
 ## Not supported
 
-Floating text boxes and shapes as frames (their text is laid out after their paragraph), charts, SmartArt, embedded
-objects, PICT images, comments, several text columns, footnotes at the bottom of their page (they follow their
+Floating text boxes and shapes as frames (their text is laid out after their paragraph), surface charts and charts in
+`.doc`, RTF and ODT files (beyond the pictures stored with them), SmartArt, embedded objects, PICT images, comments, several text columns, footnotes at the bottom of their page (they follow their
 section), line numbers, page borders and backgrounds, watermarks, drop caps, vertical and right-to-left text beyond what
 the layout engine does by itself, hyphenation settings, and fields that would need calculating (their saved result is
 shown).

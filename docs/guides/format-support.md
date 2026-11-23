@@ -48,7 +48,8 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Pictures: PICT | R | R | R | R |
 | Floating pictures with text wrapping | ✓ | ✓ | ◐ in the text | ✓ |
 | Text boxes and shapes | ◐ text after the paragraph, R | ◐ text after the paragraph, R | ◐ in the text, R | ◐ text after the paragraph, R |
-| Charts and SmartArt | R | ◐ preview picture | ◐ object's result | ◐ replacement picture |
+| Charts | ✓ newer types as their stored picture, R | ◐ preview picture | ◐ object's result | ◐ replacement picture |
+| SmartArt | R | ◐ preview picture | ◐ object's result | ◐ replacement picture |
 | Embedded objects | ◐ preview picture, R | ◐ preview picture | ◐ object's result, R | ◐ replacement picture |
 | Equations | ◐ as plain text, R | ◐ preview picture | ◐ saved result | ◐ replacement picture |
 | Several text columns | R | R | R | R |
@@ -102,7 +103,7 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Pictures: PICT | R | R |
 | Tables with table styles | ✓ | ◐ drawn as their shapes |
 | SmartArt | ◐ stored drawing, else R | - |
-| Charts | R | ◐ stored picture |
+| Charts | ✓ surface charts R, newer types as their stored picture | ◐ stored picture |
 | Embedded objects | ◐ stored picture | ◐ stored picture |
 | Video and audio | ◐ poster picture | ✗ |
 | Slide numbers, footers, dates | ✓ | ✓ (automatic dates R) |

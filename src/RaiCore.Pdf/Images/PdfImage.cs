@@ -295,6 +295,12 @@ public sealed class PdfImage
     }
 
     /// <summary>
+    /// A vector drawing made on a canvas of a size in points (such as a chart), as an image that converters can place
+    /// like a picture. It is stored as a form XObject, as SVG images are.
+    /// </summary>
+    internal static PdfImage FromDrawing(double width, double height, Action<PdfCanvas> draw) => new(SvgImage.FromDrawing(width, height, draw));
+
+    /// <summary>
     /// The matrix that draws the stored image into the rectangle, applying the EXIF orientation. PDF draws an image
     /// into the unit square; (u, v) is a position in the stored image with v = 1 at its first row.
     /// </summary>
