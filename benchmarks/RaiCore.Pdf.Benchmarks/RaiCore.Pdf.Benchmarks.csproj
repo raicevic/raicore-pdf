@@ -17,6 +17,8 @@
     <ProjectReference Include="..\..\src\RaiCore.Pdf.Fonts\RaiCore.Pdf.Fonts.csproj" />
     <ProjectReference Include="..\..\src\RaiCore.Pdf.Layout\RaiCore.Pdf.Layout.csproj" />
     <ProjectReference Include="..\..\src\RaiCore.Pdf.Html\RaiCore.Pdf.Html.csproj" />
+    <ProjectReference Include="..\..\src\RaiCore.Pdf.Documents\RaiCore.Pdf.Documents.csproj" />
+    <ProjectReference Include="..\..\src\RaiCore.Pdf.Extraction\RaiCore.Pdf.Extraction.csproj" />
   </ItemGroup>
 
 </Project>

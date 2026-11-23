@@ -75,6 +75,9 @@ internal sealed partial class DocReader
 
         public RunFormat? ResultFormat { get; set; }
 
+        /// <summary>The field's start in the model, when field codes are kept (<see cref="ReadExtras.FieldCodes"/>).</summary>
+        public FieldStart? Marker { get; set; }
+
         public StringBuilder Result { get; } = new();
 
         /// <summary>The hyperlink the result goes into, in the current paragraph.</summary>
@@ -259,6 +262,7 @@ internal sealed partial class DocReader
         Caps = chp.Caps,
         SmallCaps = chp.SmallCaps,
         Hidden = chp.Vanish,
+        Deleted = chp.Deleted,
         LetterSpacing = chp.Spacing / 20.0,
         RightToLeft = chp.RightToLeft,
     };
@@ -462,7 +466,7 @@ internal sealed partial class DocReader
                     }
                 }
 
-                if (!chp.Deleted)
+                if (!chp.Deleted || _context.Has(ReadExtras.DeletedText))
                 {
                     Character(story, cp, text[cp], chp, format);
                 }
@@ -571,6 +575,13 @@ internal sealed partial class DocReader
             case '\u0008' when chp.Special:
                 Drawing(story, cp);
                 return;
+            case '\u0005' when chp.Special:
+                if (story.Kind == DocStory.Main && _commentReferences.TryGetValue(cp, out var comment))
+                {
+                    AddInline(story, new CommentReference("c" + comment.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+                }
+
+                return;
             case '\u001E':
                 AddText(story, "\u2011", format);
                 return;
@@ -615,7 +626,14 @@ internal sealed partial class DocReader
         Flush(story);
         if (story.Fields.Count < MaxFieldDepth)
         {
-            story.Fields.Add(new FieldState());
+            var field = new FieldState();
+            if (_context.Has(ReadExtras.FieldCodes) && story.Targets.Count > 0 && !InInstruction(story))
+            {
+                field.Marker = new FieldStart();
+                AddInline(story, field.Marker);
+            }
+
+            story.Fields.Add(field);
         }
     }
 
@@ -676,11 +694,21 @@ internal sealed partial class DocReader
                 NumberFormat = field.NumberFormat,
             });
         }
+
+        if (field.Marker is not null && story.Targets.Count > 0)
+        {
+            AddInline(story, new FieldEnd());
+        }
     }
 
     /// <summary>Decides what a field does from its instruction (<c>PAGE</c>, <c>HYPERLINK "..."</c>).</summary>
     private static void Classify(FieldState field)
     {
+        if (field.Marker is { } marker)
+        {
+            marker.Code = field.Instruction.ToString();
+        }
+
         var tokens = DocxReader.Tokenize(field.Instruction.ToString());
         if (tokens.Count == 0)
         {

@@ -24,6 +24,9 @@ internal sealed partial class RtfReader
         Footer,
         Footnote,
         Shape,
+
+        /// <summary>A comment (<c>\annotation</c>), read only for text extraction.</summary>
+        Comment,
     }
 
     /// <summary>
@@ -65,11 +68,14 @@ internal sealed partial class RtfReader
 
     private Story CurrentStory => _stories[^1];
 
-    /// <summary>Text of the document: a run in the current format (hidden and deleted text left out).</summary>
+    /// <summary>
+    /// Text of the document: a run in the current format (hidden and deleted text left out, unless text extraction
+    /// keeps them).
+    /// </summary>
     private void BodyText(ReadOnlySpan<char> text)
     {
         var chars = Top.Chars;
-        if (chars.Hidden || chars.Deleted || text.IsEmpty)
+        if (LeftOut(chars) || text.IsEmpty)
         {
             return;
         }
@@ -90,6 +96,10 @@ internal sealed partial class RtfReader
             _run.Append(text);
         }
     }
+
+    /// <summary>Whether text in a format is left out: hidden or deleted text, unless text extraction keeps it.</summary>
+    private bool LeftOut(RtfCharState chars) =>
+        (chars.Hidden && !_context.Has(ReadExtras.HiddenText)) || (chars.Deleted && !_context.Has(ReadExtras.DeletedText));
 
     /// <summary>Adds the pending run of text to the paragraph.</summary>
     private void EmitRun()
@@ -170,7 +180,7 @@ internal sealed partial class RtfReader
                 AddInline(new BreakInline(BreakKind.Column, Format(group.Chars)));
                 return;
             case "tab" when !inResult:
-                if (!group.Chars.Hidden && !group.Chars.Deleted)
+                if (!LeftOut(group.Chars))
                 {
                     AddInline(new TabInline(Format(group.Chars)));
                 }
@@ -389,6 +399,13 @@ internal sealed partial class RtfReader
                     {
                         parts[HeaderFooterKind.Even] = story.Blocks;
                     }
+                }
+
+                break;
+            case StoryKind.Comment:
+                if (group.Data is string comment)
+                {
+                    _document.Comments[comment] = story.Blocks;
                 }
 
                 break;

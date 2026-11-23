@@ -48,6 +48,11 @@ DocToPdf.Convert("minutes.doc").Save("minutes.pdf");
   `DocumentFormatException`; encrypted documents `NotSupportedException`. `DocxToPdf` and `DocToPdf` each convert the
   other's format too.
 
+- **Text:** `DocumentText.Extract("report.docx")` gets the plain text of a DOCX, DOC, RTF or ODT document directly,
+  without converting it (much faster than converting and extracting the PDF's text): paragraphs on lines, list labels,
+  table cells separated by tabs, and optionally headers and footers, notes, comments, hidden text, deleted text of
+  tracked changes and field codes.
+
 Not supported: text boxes and shapes as floating frames (their text follows their paragraph), charts (an OpenDocument
 chart's replacement image is shown), SmartArt, embedded objects, EMF and WMF images, comments, forms, several text
 columns, footnotes at the bottom of the page; in RTF and `.doc` also PICT pictures and drawing objects. What is left

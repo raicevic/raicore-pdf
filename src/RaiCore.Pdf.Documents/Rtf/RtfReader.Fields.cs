@@ -51,6 +51,9 @@ internal sealed partial class RtfReader
 
         public RunFormat Format { get; } = format;
 
+        /// <summary>The field's start in the model, when field codes are kept (<see cref="ReadExtras.FieldCodes"/>).</summary>
+        public FieldStart? Marker { get; set; }
+
         public RunFormat? ResultFormat { get; set; }
 
         public StringBuilder Result { get; } = new();
@@ -73,6 +76,12 @@ internal sealed partial class RtfReader
         }
 
         var field = new FieldState(Format(group.Chars));
+        if (_context.Has(ReadExtras.FieldCodes))
+        {
+            field.Marker = new FieldStart();
+            AddInline(field.Marker);
+        }
+
         group.Field = field;
         CurrentStory.Fields.Add(field);
     }
@@ -112,6 +121,11 @@ internal sealed partial class RtfReader
                 NumberFormat = field.NumberFormat,
             });
         }
+
+        if (field.Marker is not null)
+        {
+            AddInline(new FieldEnd());
+        }
     }
 
     /// <summary>Decides what a field does from its instruction (<c>PAGE</c>, <c>HYPERLINK "..."</c>), once.</summary>
@@ -123,6 +137,11 @@ internal sealed partial class RtfReader
         }
 
         field.Classified = true;
+        if (field.Marker is { } marker)
+        {
+            marker.Code = field.Instruction.ToString();
+        }
+
         var tokens = DocxReader.Tokenize(field.Instruction.ToString());
         if (tokens.Count == 0)
         {

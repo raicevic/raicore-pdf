@@ -34,6 +34,8 @@ internal sealed partial class DocumentRenderer
                 case AnchoredBlocks blocks:
                     anchored.Add(blocks);
                     break;
+                case TextRun { Format.Hidden: true } or TextRun { Format.Deleted: true }:
+                    break; // Hidden text and deleted text (of a tracked change) are not shown.
                 case ImageInline { Placement: not ImagePlacement.Inline } image:
                     images.Add(image);
                     break;

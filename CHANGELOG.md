@@ -13,6 +13,12 @@ and versions follow [Semantic Versioning](https://semver.org/).
   presentation and email converters), and the limits that bound its work. Tests prove that no kind of external
   reference (linked images, `INCLUDEPICTURE` fields, external workbook links, data connections, linked pictures) is
   followed, and that the Office and email packages contain no file, network or process access of their own.
+- **Text of word-processing documents** (#261): `DocumentText.Extract` (and `ExtractAsync`) in
+  `RaiCore.Pdf.Documents` gets the plain text of a DOCX, DOC, RTF or ODT document directly, the format detected from
+  the data, without converting it to PDF: about 80 times faster than converting and extracting the PDF's text.
+  `DocumentTextOptions` set the paragraph separator, list labels, table cell and row separators, and whether headers
+  and footers, footnotes and endnotes, comments, text boxes, hidden text and deleted text of tracked changes are
+  included, and fields as their codes or results. The same `Limits` and exceptions as the converters.
 
 ### Fixed
 - **Deeply nested layout content no longer overflows the stack** when `MaxNestingDepth` is raised: finding the forced
@@ -24,6 +30,7 @@ and versions follow [Semantic Versioning](https://semver.org/).
   screen readers give each text. Before, every use extracted as the first text drawn: after an empty paragraph in a
   Word document, which is drawn as U+200B, every space extracted as U+200B. TrueType fonts; CFF fonts keep one text
   per glyph.
+- **Hidden text in Word 97-2003 documents** is no longer drawn by `DocToPdf` (#261).
 
 ### Documentation
 - **Format support**: one page comparing what each converter draws, format by format (DOCX, DOC, RTF, ODT; XLSX, XLS,

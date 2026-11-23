@@ -75,6 +75,10 @@ internal sealed partial class DocxReader
 
         ReadNotes(RelatedPath("footnotes"), "footnote", _document.Footnotes);
         ReadNotes(RelatedPath("endnotes"), "endnote", _document.Endnotes);
+        if (_context.Has(ReadExtras.Comments))
+        {
+            ReadNotes(RelatedPath("comments"), "comment", _document.Comments);
+        }
 
         var body = Ooxml.Child(root, "body");
         var blocks = new List<WordBlock>();

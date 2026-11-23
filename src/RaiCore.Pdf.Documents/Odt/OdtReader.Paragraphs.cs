@@ -9,6 +9,9 @@ internal sealed partial class OdtReader
 {
     private readonly ListCounter _outline = new();
     private int _notes;
+    private int _comments;
+    private Dictionary<string, XElement>? _deletions;
+    private readonly HashSet<string> _readingDeletions = new(StringComparer.Ordinal);
     private int _noteDepth;
 
     /// <summary>Whether the text read last ended with white space (or a paragraph started), for collapsing white space.</summary>
@@ -93,6 +96,12 @@ internal sealed partial class OdtReader
             return;
         }
 
+        if (ns == Odf.Office && name == "annotation" && _context.Has(ReadExtras.Comments))
+        {
+            ReadComment(element, target);
+            return;
+        }
+
         if (ns == Odf.Office || ns == Odf.Style || ns == Odf.Table || ns == Odf.Svg || ns == Odf.Dc || ns == Odf.Meta || ns == Odf.Fo
             || ns.NamespaceName.StartsWith("urn:oasis:names:tc:opendocument:xmlns:", StringComparison.Ordinal))
         {
@@ -113,7 +122,7 @@ internal sealed partial class OdtReader
                 AddText(new string(' ', Math.Clamp(Odf.Int(element, Odf.Text, "c") ?? 1, 1, 1024)), format, target, collapse: false);
                 break;
             case "tab":
-                if (!format.Run.Hidden)
+                if (Shown(format))
                 {
                     target.Add(new TabInline(format.Run));
                 }
@@ -121,7 +130,7 @@ internal sealed partial class OdtReader
                 _afterSpace = false;
                 break;
             case "line-break":
-                if (!format.Run.Hidden)
+                if (Shown(format))
                 {
                     target.Add(new BreakInline(BreakKind.Line, format.Run));
                 }
@@ -159,11 +168,21 @@ internal sealed partial class OdtReader
 
                 break;
             case "hidden-text":
-                if (Odf.Attr(element, Odf.Text, "is-hidden") == "false" && Odf.Attr(element, Odf.Text, "string-value") is { } shown)
+                if (Odf.Attr(element, Odf.Text, "string-value") is { } hiddenText)
                 {
-                    AddText(shown, format, target, collapse: true);
+                    if (Odf.Attr(element, Odf.Text, "is-hidden") == "false")
+                    {
+                        AddText(hiddenText, format, target, collapse: true);
+                    }
+                    else if (_context.Has(ReadExtras.HiddenText))
+                    {
+                        AddText(hiddenText, format with { Run = format.Run with { Hidden = true } }, target, collapse: true);
+                    }
                 }
 
+                break;
+            case "change" when _context.Has(ReadExtras.DeletedText):
+                ReadDeletion(Odf.Attr(element, Odf.Text, "change-id"), target, format);
                 break;
             case "number" when _skipNumber:
             case "tracked-changes":
@@ -220,7 +239,7 @@ internal sealed partial class OdtReader
             _afterSpace = false;
         }
 
-        if (value.Length == 0 || format.Run.Hidden)
+        if (value.Length == 0 || !Shown(format))
         {
             return;
         }
@@ -232,6 +251,83 @@ internal sealed partial class OdtReader
             _ => value,
         };
         target.Add(new TextRun(value, format.Run));
+    }
+
+    /// <summary>Whether text in a format is shown: hidden text only when text extraction keeps it.</summary>
+    private bool Shown(TextFormat format) => !format.Run.Hidden || _context.Has(ReadExtras.HiddenText);
+
+    /// <summary>
+    /// For text extraction: the text a tracked change deleted (<c>text:change</c>, whose content is kept apart in
+    /// <c>text:tracked-changes</c>), its paragraphs joined by spaces, as deleted text.
+    /// </summary>
+    private void ReadDeletion(string? id, List<WordInline> target, TextFormat format)
+    {
+        _deletions ??= Deletions();
+        if (id is null || !_deletions.TryGetValue(id, out var deletion) || !_readingDeletions.Add(id))
+        {
+            return;
+        }
+
+        try
+        {
+            var deleted = format with { Run = format.Run with { Deleted = true } };
+            var first = true;
+            static bool IsParagraph(XElement e) => Odf.Is(e, Odf.Text, "p") || Odf.Is(e, Odf.Text, "h");
+            foreach (var paragraph in deletion.Descendants().Where(e => IsParagraph(e) && !e.Ancestors().TakeWhile(a => a != deletion).Any(IsParagraph)))
+            {
+                if (!first)
+                {
+                    target.Add(new TextRun(" ", deleted.Run));
+                }
+
+                first = false;
+                ReadInlines(paragraph, target, deleted);
+            }
+        }
+        finally
+        {
+            _readingDeletions.Remove(id);
+        }
+    }
+
+    /// <summary>The deletions of the document's tracked changes (<c>text:deletion</c> in a <c>text:changed-region</c>), by id.</summary>
+    private Dictionary<string, XElement> Deletions()
+    {
+        var deletions = new Dictionary<string, XElement>(StringComparer.Ordinal);
+        var text = Odf.Child(Odf.Child(_package.Content, Odf.Office, "body"), Odf.Office, "text");
+        foreach (var region in Odf.Child(text, Odf.Text, "tracked-changes")?.Elements() ?? [])
+        {
+            if (Odf.Is(region, Odf.Text, "changed-region") && Odf.Child(region, Odf.Text, "deletion") is { } deletion
+                && (Odf.Attr(region, Odf.Text, "id") ?? Odf.Attr(region, Odf.Xml, "id")) is { } id)
+            {
+                deletions.TryAdd(id, deletion);
+            }
+        }
+
+        return deletions;
+    }
+
+    /// <summary>
+    /// For text extraction: a comment (<c>office:annotation</c>), its paragraphs kept in the document's comments and
+    /// referred to here (a comment in a comment is kept too, but not listed: the text follows references from the body).
+    /// </summary>
+    private void ReadComment(XElement element, List<WordInline> target)
+    {
+        var id = "o" + (++_comments).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var blocks = new List<WordBlock>();
+        var (afterSpace, breakBefore, skipNumber) = (_afterSpace, _breakBeforeNext, _skipNumber);
+        try
+        {
+            _skipNumber = false;
+            ReadBlocks(element, blocks, body: false);
+        }
+        finally
+        {
+            (_afterSpace, _breakBeforeNext, _skipNumber) = (afterSpace, breakBefore, skipNumber);
+        }
+
+        _document.Comments[id] = blocks;
+        target.Add(new CommentReference(id));
     }
 
     /// <summary>Text with the first letter of each word in capitals.</summary>

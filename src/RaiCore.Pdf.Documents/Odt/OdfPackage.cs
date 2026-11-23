@@ -146,7 +146,7 @@ internal sealed class OdfPackage : IDisposable
     }
 
     /// <summary>Whether data starts like an XML document (after a byte order mark and white space).</summary>
-    private static bool LooksLikeXml(byte[] data)
+    internal static bool LooksLikeXml(byte[] data)
     {
         var text = DocxPackage.Decode(data.Length > 1024 ? data[..1024] : data);
         return text.TrimStart('\uFEFF', ' ', '\t', '\r', '\n').StartsWith('<');

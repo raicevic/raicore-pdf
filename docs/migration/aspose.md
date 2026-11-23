@@ -134,7 +134,7 @@ DocxToPdf.Convert("report.docx").Save("report.pdf");
 | `PdfSaveOptions.OutlineOptions.HeadingsOutlineLevels` | `HeadingBookmarks` |
 | `FontSettings.SetFontsFolder` | `Fonts = new FontCollection().AddDirectory(...)`, `FallbackFontFamilies` |
 | `Document.WarningCallback` | `Diagnostics` |
-| `Document.GetText()`, `ToString(SaveFormat.Text)` | planned as a direct API ([#261](https://github.com/raicevic/raicore-pdf/issues/261)); today convert and use `TextExtractor` |
+| `Document.GetText()`, `ToString(SaveFormat.Text)` | `DocumentText.Extract(path)` (`DocumentTextOptions` for headers and footers, notes, comments, field codes) |
 | `LoadOptions.Password` | none: encrypted documents throw `NotSupportedException` |
 | `DocumentBuilder`, mail merge, editing | none: generate documents from HTML or Razor templates instead |
 

@@ -26,6 +26,8 @@ case "$target" in
   xls) while IFS= read -r file; do files+=("$file"); done < <(find "$fixtures"/Sheets/Xls -name '*.xls' -size -40k | sort) ;;
   rtf) while IFS= read -r file; do files+=("$file"); done < <(find "$fixtures"/Tika -name '*.rtf' -size -40k | sort) ;;
   doc) while IFS= read -r file; do files+=("$file"); done < <(find "$fixtures"/Documents/Doc -name '*.doc' -size -40k | sort) ;;
+  doctext) files=("$fixtures"/Fuzz/Seeds/docx/* "$fixtures"/Fuzz/Seeds/odt/* "$fixtures"/Fuzz/Seeds/rtf/*)
+    while IFS= read -r file; do files+=("$file"); done < <(find "$fixtures"/Documents/Doc -name '*.doc' -size -40k | sort) ;;
   *) files=() ;;
 esac
 files+=("$fixtures"/Fuzz/Seeds/"$target"/* "$fixtures"/Fuzz/Crashes/"$target"/*)

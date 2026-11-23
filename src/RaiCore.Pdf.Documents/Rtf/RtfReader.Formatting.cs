@@ -760,6 +760,8 @@ internal sealed partial class RtfReader
             SmallCaps = c.SmallCaps,
             LetterSpacing = Math.Clamp(c.Spacing / 20.0, -10, 100),
             RightToLeft = c.RightToLeft,
+            Hidden = c.Hidden,
+            Deleted = c.Deleted,
         };
         if (_formats.Count > 4096)
         {

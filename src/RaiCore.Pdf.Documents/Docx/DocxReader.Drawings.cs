@@ -143,6 +143,11 @@ internal sealed partial class DocxReader
     /// <summary>An image by relationship id, or <c>null</c> (with a diagnostic) if the package does not have it.</summary>
     private ImageInline? Image(string id, double width, double height, ImagePlacement placement, WordAlignment alignment, double? offset, string? alternative)
     {
+        if (_context.Has(ReadExtras.NoImages))
+        {
+            return null;
+        }
+
         if (!_relationships.TryGetValue(id, out var relationship) || relationship.External)
         {
             _context.Report(DocumentDiagnosticKind.ImageNotLoaded, "A linked image (not embedded in the document) is left out.");

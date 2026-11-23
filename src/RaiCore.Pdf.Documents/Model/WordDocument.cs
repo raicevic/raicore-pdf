@@ -17,6 +17,12 @@ internal sealed class WordDocument
     /// <summary>The endnotes by the id their references use.</summary>
     public Dictionary<string, List<WordBlock>> Endnotes { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// The comments by the id their references use (<see cref="CommentReference"/>); read only for text extraction
+    /// (<see cref="ReadExtras.Comments"/>).
+    /// </summary>
+    public Dictionary<string, List<WordBlock>> Comments { get; } = new(StringComparer.Ordinal);
+
     /// <summary>How footnote numbers are written.</summary>
     public NumberFormat FootnoteFormat { get; set; } = NumberFormat.Decimal;
 
