@@ -22,7 +22,7 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf.Email` | Email (.eml, Outlook .msg) and web archives (.mht) → PDF: header block, inline images, attachments embedded or appended | 🚧 Unreleased |
 | `RaiCore.Pdf.Sheets` | CSV and Excel (.xlsx, .xls) → PDF: paginated tables with repeated header rows, number formats, styles, merged cells, print areas | 🚧 Unreleased |
 | `RaiCore.Pdf.Slides` | PowerPoint (.pptx, .ppt) → PDF: one page per slide with masters, layouts, themes, shapes, text, pictures, tables | 🚧 Unreleased |
-| `RaiCore.Pdf.Documents` | Word (.docx), OpenDocument text (.odt) and RTF → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | 🚧 Unreleased |
+| `RaiCore.Pdf.Documents` | Word (.docx, .doc), OpenDocument text (.odt) and RTF → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | 🚧 Unreleased |
 | `RaiCore.Pdf.XslFo` | XSL-FO → PDF | ⚪ After 1.0 |
 
 All packages target .NET 10 and run on Windows, Linux (glibc and musl, so Alpine too) and macOS, x64 and Arm64, with
@@ -685,7 +685,8 @@ images (inline or floating), hyperlinks, bookmarks, footnotes and endnotes, and 
 numbers. Headings become PDF bookmarks. It converts OpenDocument text documents (`.odt`, `.ott` and flat `.fodt`, as
 LibreOffice writes them) the same way: styles, lists, tables, page styles with their headers and footers, images and
 notes. `RtfToPdf` converts Rich Text Format documents (`.rtf`) the same way too, with their code pages, lists,
-tables (nested ones too), sections, headers and footers, fields, pictures and notes. See the
+tables (nested ones too), sections, headers and footers, fields, pictures and notes, and `DocToPdf` Word 97-2003
+documents (`.doc`) with their styles, lists, tables, sections, headers and footers, fields, pictures and notes. See the
 [Word documents guide](https://raicevic.github.io/raicore-pdf/guides/documents.html).
 
 ```csharp
@@ -693,6 +694,7 @@ var pdf = DocxToPdf.Convert("letter.docx", new DocxConverterOptions { Tagged = t
 pdf.Save("letter.pdf");
 OdtToPdf.Convert("report.odt").Save("report.pdf");
 RtfToPdf.Convert("memo.rtf").Save("memo.pdf");
+DocToPdf.Convert("minutes.doc").Save("minutes.pdf");
 ```
 
 ### Fonts

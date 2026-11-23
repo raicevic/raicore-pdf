@@ -60,6 +60,24 @@ internal static class WordDocuments
         memo.Save("memo.pdf");
         #endregion
 
+        // A folder of Word 97-2003 documents to convert (empty here; put .doc files in it).
+        Directory.CreateDirectory("archive");
+
+        #region doc
+        foreach (var path in Directory.EnumerateFiles("archive", "*.doc"))
+        {
+            try
+            {
+                DocToPdf.Convert(path, new DocConverterOptions { Diagnostics = d => Console.WriteLine($"  {path}: {d.Message}") })
+                    .Save(Path.ChangeExtension(path, ".pdf"));
+            }
+            catch (NotSupportedException e)
+            {
+                Console.WriteLine($"  {path}: {e.Message}"); // Password-protected, or saved by Word 6 or Word 95.
+            }
+        }
+        #endregion
+
         // An OpenDocument text document to convert, as LibreOffice writes it (a ZIP package, mimetype first).
         WriteOpenDocument("quarterly.odt");
 

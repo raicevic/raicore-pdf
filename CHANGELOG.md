@@ -59,6 +59,32 @@ and versions follow [Semantic Versioning](https://semver.org/).
   workbooks (also with Excel's default password) and Excel 2.x-4.0 files `NotSupportedException`. `XlsxToPdf` now
   converts `.xls` workbooks too (it threw `NotSupportedException`), and `XlsToPdf` converts `.xlsx` workbooks named
   `.xls`. A new `xls` fuzz target with raw BIFF seeds; a corpus of Apache POI workbooks checked against xlrd (#205).
+- **Word 97-2003 to PDF** (`RaiCore.Pdf.Documents`): `DocToPdf.Convert` (also `ConvertToBytes` and `ConvertAsync`,
+  over bytes, streams and paths, with `DocConverterOptions`) converts binary Word documents (`.doc`, [MS-DOC], Word 97
+  to 2003) with the shared word-processing model and renderer of DOCX, on the core's compound file reader. The FIB
+  (stories by their character counts), the piece table (8-bit code page 1252 and UTF-16 pieces, fast-saved documents
+  with their pieces' property modifiers), the formatted disk pages of character and paragraph properties (with
+  `sprmPHugePapx`), property modifiers sized by their `spra` bits; the style sheet (paragraph and character styles with
+  their bases, toggles relative to the style) and font table; character formatting (fonts, sizes, bold, italic,
+  underline styles, strikethrough, palette and RGB colors, highlighting and shading, superscript, subscript, raised
+  text, letter spacing, capitals, small capitals, hidden text, deleted revisions left out, Symbol and Wingdings text as
+  Unicode) and paragraph formatting (alignment, indents, spacing, line spacing, keep, keep with next, page break
+  before, widow control, borders, shading, tab stops with leaders); lists (`PlfLst`/`PlfLfo` with level overrides and
+  start values, counted as Word counts them: restarts after a higher level with `ilvlRestartLim`, skipped levels, legal
+  numbering); tables (cell and row marks, nested tables by `sprmPItap`, the grid from all rows' `sprmTDefTable` cell
+  edges, merged cells both ways, table and cell borders, shading, padding, vertical alignment, row heights, header
+  rows); sections (PlcfSed/SEPX page size, margins, start, columns reported, page numbers), headers and footers for
+  first, even and odd pages (PlcfHdd, inherited from the section before); fields (`HYPERLINK` as links, `PAGE`,
+  `NUMPAGES`, `SECTIONPAGES` and `PAGEREF` computed, others as their result); inline pictures (PICF in the Data
+  stream) and floating ones (the drawing layer's BLIP store and shapes, `FSPA` anchors) in PNG, JPEG, TIFF and bitmap
+  formats; text boxes after their paragraph; bookmarks, footnotes and endnotes; title and author from the summary
+  information. EMF/WMF/PICT pictures, other shapes, comments and several columns are reported to `Diagnostics`.
+  Encrypted documents and Word 6/95 (and Word 1/2) files throw `NotSupportedException`, damaged ones
+  `PdfFormatException`; every offset is checked against its stream, within `ResourceLimits` (`MaxElements`,
+  `MaxNestingDepth`, `MaxTableCells`, `MaxResourceBytes`, `MaxDecompressedBytes`, `MaxPages`, `Timeout`). `DocxToPdf`
+  and `OdtToPdf` given a `.doc` file now name `DocToPdf` in their errors. A new `doc` fuzz target; Apache POI and Tika
+  samples checked against the text, list labels, links and errors their own unit tests expect, and olefile's summary
+  information (#204).
 - **ODT to PDF** (`RaiCore.Pdf.Documents`): `OdtToPdf.Convert` converts OpenDocument text documents (`.odt`, `.ott`
   templates and flat `.fodt` XML documents, ODF 1.0 to 1.3) with the shared word-processing model and renderer of
   DOCX. Common, automatic and default styles with `style:parent-style-name` chains and font face declarations;

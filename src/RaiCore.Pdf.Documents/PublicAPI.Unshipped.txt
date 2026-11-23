@@ -64,3 +64,13 @@ static RaiCore.Pdf.Documents.RtfToPdf.ConvertAsync(byte[]! rtf, RaiCore.Pdf.Docu
 static RaiCore.Pdf.Documents.RtfToPdf.ConvertAsync(System.IO.Stream! rtf, RaiCore.Pdf.Documents.RtfConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
 static RaiCore.Pdf.Documents.RtfToPdf.ConvertToBytes(byte[]! rtf, RaiCore.Pdf.Documents.RtfConverterOptions? options = null) -> byte[]!
 static RaiCore.Pdf.Documents.RtfToPdf.ConvertToBytes(System.IO.Stream! rtf, RaiCore.Pdf.Documents.RtfConverterOptions? options = null) -> byte[]!
+RaiCore.Pdf.Documents.DocConverterOptions
+RaiCore.Pdf.Documents.DocConverterOptions.DocConverterOptions() -> void
+RaiCore.Pdf.Documents.DocToPdf
+static RaiCore.Pdf.Documents.DocToPdf.Convert(byte[]! doc, RaiCore.Pdf.Documents.DocConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Documents.DocToPdf.Convert(string! path, RaiCore.Pdf.Documents.DocConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Documents.DocToPdf.Convert(System.IO.Stream! doc, RaiCore.Pdf.Documents.DocConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Documents.DocToPdf.ConvertAsync(byte[]! doc, RaiCore.Pdf.Documents.DocConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Documents.DocToPdf.ConvertAsync(System.IO.Stream! doc, RaiCore.Pdf.Documents.DocConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Documents.DocToPdf.ConvertToBytes(byte[]! doc, RaiCore.Pdf.Documents.DocConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Documents.DocToPdf.ConvertToBytes(System.IO.Stream! doc, RaiCore.Pdf.Documents.DocConverterOptions? options = null) -> byte[]!
