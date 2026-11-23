@@ -50,7 +50,13 @@ internal static class PdfASamples
         canvas.DrawText("Courier Oblique: 0123456789", StandardFont.CourierOblique, 12, 72, top - 36);
 
         // Embedded fonts: TrueType (Identity-H CIDFontType2) and CFF (CIDFontType0C subsets).
-        canvas.DrawText("Liberation Sans Bold (TrueType)", PdfFont.Load(Fixtures.Path("LiberationSans-Bold.ttf")), 12, 72, top - 54);
+        var bold = PdfFont.Load(Fixtures.Path("LiberationSans-Bold.ttf"));
+        canvas.DrawText("Liberation Sans Bold (TrueType)", bold, 12, 72, top - 54);
+
+        // One glyph drawn for two texts: the Latin A's glyph also stands for a Greek capital alpha, which gets a code of
+        // its own (a CIDToGIDMap stream maps it to the glyph) so that each extracts as itself.
+        var a = ((OpenTypePdfFont)bold).Font.GetGlyphId('A');
+        canvas.DrawGlyphs([new PositionedGlyph(a, 0.72, 0, 0, "A"), new PositionedGlyph(a, 0.72, 0, 0, "\u0391")], bold, 12, 300, top - 54);
         canvas.DrawText("RaiCore Sans 3 (CFF)", PdfFont.Load(Fixtures.Path("RaiCoreSans3-Subset.otf")), 12, 72, top - 72);
         canvas.DrawText("Noto Sans JP (CID-keyed CFF)", PdfFont.Load(Fixtures.Path("NotoSansJP-Subset.otf")), 12, 72, top - 90);
 
@@ -217,7 +223,10 @@ internal static class PdfASamples
         }
 
         canvas.DrawText("Helvetica: caf\u00E9 \u20AC 12 \u2013 \u201Cquoted\u201D", StandardFont.Helvetica, 12, 72, top);
-        canvas.DrawText("Liberation Sans Bold (TrueType)", PdfFont.Load(Fixtures.Path("LiberationSans-Bold.ttf")), 12, 72, top - 18);
+        var bold = PdfFont.Load(Fixtures.Path("LiberationSans-Bold.ttf"));
+        canvas.DrawText("Liberation Sans Bold (TrueType)", bold, 12, 72, top - 18);
+        var a = ((OpenTypePdfFont)bold).Font.GetGlyphId('A'); // A Greek capital alpha drawn with the A: a code of its own.
+        canvas.DrawGlyphs([new PositionedGlyph(a, 0.72, 0, 0, "A"), new PositionedGlyph(a, 0.72, 0, 0, "\u0391")], bold, 12, 300, top - 18);
         canvas.DrawText("RaiCore Sans 3 (CFF)", PdfFont.Load(Fixtures.Path("RaiCoreSans3-Subset.otf")), 12, 72, top - 36);
         canvas.DrawText("Noto Sans JP (CID-keyed CFF)", PdfFont.Load(Fixtures.Path("NotoSansJP-Subset.otf")), 12, 72, top - 54);
         canvas.DrawText("Visit example.com", StandardFont.Helvetica, 12, 72, top - 337);

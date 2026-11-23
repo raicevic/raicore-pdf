@@ -126,6 +126,7 @@ public class PdfA1Tests
         // the last glyph kept (and composite glyphs' components), a CFF subset the CIDs of its charset.
         var reader = PdfReader.Open(Sample(kind, level).ToArray());
         var checkedFonts = 0;
+        var aliasedFonts = 0;
         var unusedSlots = 0;
         foreach (var number in reader.Store.ObjectNumbers)
         {
@@ -141,8 +142,12 @@ public class PdfA1Tests
             Assert.Superset(used, set);
             if (descriptor["FontFile2"] is { } fontFile2)
             {
+                // Codes above the program's glyph IDs alias a glyph (one glyph drawn for two texts): CIDs too.
                 var program = reader.Store.Decode((PdfStreamObject)reader.Resolve(fontFile2)!);
-                Assert.Equal(Enumerable.Range(0, MaxpNumGlyphs(program)), set.Order());
+                var glyphs = MaxpNumGlyphs(program);
+                var aliases = used.Where(cid => cid >= glyphs).ToList();
+                Assert.Equal(Enumerable.Range(0, glyphs).Concat(aliases), set.Order());
+                aliasedFonts += aliases.Count > 0 ? 1 : 0;
                 unusedSlots += set.Count - used.Count - 1;
             }
             else
@@ -156,6 +161,7 @@ public class PdfA1Tests
 
         Assert.True(checkedFonts >= (kind == "canvas" ? 3 : 1));
         Assert.True(unusedSlots > 0); // TrueType subsets have glyph IDs the text does not use, which the CIDSet lists too.
+        Assert.Equal(kind == "canvas" ? 1 : 0, aliasedFonts);
     }
 
     [Fact]

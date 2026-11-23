@@ -14,6 +14,14 @@ and versions follow [Semantic Versioning](https://semver.org/).
   reference (linked images, `INCLUDEPICTURE` fields, external workbook links, data connections, linked pictures) is
   followed, and that the Office and email packages contain no file, network or process access of their own.
 
+### Fixed
+- **Text drawn with a glyph that stands for two characters extracts as each**: when one glyph is drawn for different
+  texts (HarfBuzz draws U+200B with the space glyph; fonts share glyphs between look-alike characters), the second text
+  gets a character code of its own, mapped to the glyph through a `/CIDToGIDMap` stream, so copying, searching and
+  screen readers give each text. Before, every use extracted as the first text drawn: after an empty paragraph in a
+  Word document, which is drawn as U+200B, every space extracted as U+200B. TrueType fonts; CFF fonts keep one text
+  per glyph.
+
 ### Documentation
 - **Format support**: one page comparing what each converter draws, format by format (DOCX, DOC, RTF, ODT; XLSX, XLS,
   CSV; PPTX, PPT; EML, MSG, MHT), linked from each format guide and the README.

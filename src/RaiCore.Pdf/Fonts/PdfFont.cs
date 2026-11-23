@@ -165,26 +165,109 @@ public abstract class PdfFont
 /// a font: each page keeps its own, the document merges them when it is saved, and the shared <see cref="PdfFont"/> is
 /// never written to.
 /// </summary>
-internal sealed class FontUsage
+/// <remarks>
+/// Glyphs are recorded by character code (the CID of an Identity-H font). A code is normally the glyph ID itself; when
+/// one glyph stands for two different texts (a font may draw U+0020 and U+200B, or U+002D and U+2010, with the same
+/// glyph), the second text gets a code of its own above the font's glyph IDs, mapped to the glyph through
+/// <see cref="Aliases"/>, so that each code has the right text in the ToUnicode map.
+/// </remarks>
+/// <param name="codes">The document's codes for the font, or <c>null</c> where a glyph's code is always its ID.</param>
+internal sealed class FontUsage(FontCodes? codes = null)
 {
-    /// <summary>Glyph ID → the text it represents, or <c>null</c> for glyphs with no own text (e.g. extra glyphs of a cluster).</summary>
+    /// <summary>Code → the text it represents, or <c>null</c> for glyphs with no own text (e.g. extra glyphs of a cluster).</summary>
     public SortedDictionary<int, string?> Glyphs { get; } = [];
 
-    /// <summary>Records a glyph. The first non-empty text wins, since ToUnicode maps each glyph to one string.</summary>
-    public void Add(int glyphId, string? text)
+    /// <summary>Codes that are not glyph IDs → the glyph ID each one draws.</summary>
+    public SortedDictionary<int, int> Aliases { get; } = [];
+
+    /// <summary>The glyph ID a code draws.</summary>
+    public int GlyphOf(int code) => Aliases.TryGetValue(code, out var gid) ? gid : code;
+
+    /// <summary>The glyph IDs used, each once, in order.</summary>
+    public IEnumerable<int> GlyphIds => Aliases.Count == 0 ? Glyphs.Keys : Glyphs.Keys.Select(GlyphOf).Distinct().Order();
+
+    /// <summary>Records a glyph drawn for <paramref name="text"/> and returns the code to draw it with.</summary>
+    public int Encode(int glyphId, string? text)
     {
-        if (!Glyphs.TryGetValue(glyphId, out var existing) || (string.IsNullOrEmpty(existing) && !string.IsNullOrEmpty(text)))
+        var code = codes?.Code(glyphId, text) ?? glyphId;
+        if (code != glyphId)
         {
-            Glyphs[glyphId] = text;
+            Aliases[code] = glyphId;
+        }
+
+        Add(code, text);
+        return code;
+    }
+
+    /// <summary>Records a code. The first non-empty text wins, since ToUnicode maps each code to one string.</summary>
+    public void Add(int code, string? text)
+    {
+        if (!Glyphs.TryGetValue(code, out var existing) || (string.IsNullOrEmpty(existing) && !string.IsNullOrEmpty(text)))
+        {
+            Glyphs[code] = text;
         }
     }
 
     public void MergeFrom(FontUsage other)
     {
-        foreach (var (gid, text) in other.Glyphs)
+        foreach (var (code, text) in other.Glyphs)
         {
-            Add(gid, text);
+            Add(code, text);
         }
+
+        foreach (var (code, gid) in other.Aliases)
+        {
+            Aliases[code] = gid;
+        }
+    }
+}
+
+/// <summary>
+/// The character codes one document uses for one font: each glyph ID is the code for the first text drawn with it, and
+/// each further text drawn with the same glyph gets a code of its own, counted up from the font's number of glyphs. Codes
+/// are handed out in drawing order, so output stays deterministic. Shared by the pages of a document (which is built on
+/// one thread at a time).
+/// </summary>
+/// <param name="firstAlias">The first code that is not a glyph ID: the font's number of glyphs.</param>
+internal sealed class FontCodes(int firstAlias)
+{
+    private readonly Dictionary<int, string> _textOfGlyph = [];
+    private readonly Dictionary<(int GlyphId, string Text), int> _aliases = [];
+    private int _next = firstAlias;
+
+    /// <summary>The code for a glyph drawn for a text.</summary>
+    public int Code(int glyphId, string? text)
+    {
+        // Glyph 0 (.notdef) keeps its code, so PDF/A's check for it sees every use; glyphs without text of their own
+        // (extra glyphs of a cluster) take whatever text their code has.
+        if (glyphId == 0 || string.IsNullOrEmpty(text))
+        {
+            return glyphId;
+        }
+
+        if (!_textOfGlyph.TryGetValue(glyphId, out var first))
+        {
+            _textOfGlyph[glyphId] = text;
+            return glyphId;
+        }
+
+        if (first == text)
+        {
+            return glyphId;
+        }
+
+        if (_aliases.TryGetValue((glyphId, text), out var alias))
+        {
+            return alias;
+        }
+
+        if (_next > 0xFFFF)
+        {
+            return glyphId; // No two-byte codes left: the first text wins, as for a font without room.
+        }
+
+        _aliases[(glyphId, text)] = _next;
+        return _next++;
     }
 }
 
@@ -370,10 +453,9 @@ internal sealed class OpenTypePdfFont(OpenTypeFont font, UnicodeRange[]? ranges 
         var bytes = new List<byte>(text.Length * 2);
         foreach (var rune in text.EnumerateRunes())
         {
-            var gid = Font.GetGlyphId(rune.Value);
-            usage.Add(gid, rune.ToString());
-            bytes.Add((byte)(gid >> 8));
-            bytes.Add((byte)gid);
+            var code = usage.Encode(Font.GetGlyphId(rune.Value), rune.ToString());
+            bytes.Add((byte)(code >> 8));
+            bytes.Add((byte)code);
         }
 
         return new PdfString([.. bytes], hex: true);

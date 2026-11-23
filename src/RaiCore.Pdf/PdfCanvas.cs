@@ -296,8 +296,8 @@ public sealed partial class PdfCanvas
                 segmentOpen = true;
             }
 
-            op.Append('<').Append(((ushort)glyph.GlyphId).ToString("X4", System.Globalization.CultureInfo.InvariantCulture)).Append('>');
-            usage.Add(glyph.GlyphId, glyph.Text);
+            var code = usage.Encode(glyph.GlyphId, glyph.Text);
+            op.Append('<').Append(((ushort)code).ToString("X4", System.Globalization.CultureInfo.InvariantCulture)).Append('>');
             if (actualText is null)
             {
                 NotePrivateUse(glyph.Text);
