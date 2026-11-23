@@ -218,6 +218,11 @@ internal sealed partial class PptReader
                 Flush();
                 paragraph.Runs.Add(new TextRun { Text = "\n", Style = RunStyle(master.Merge(props), slide) });
             }
+            else if (char.IsHighSurrogate(c) && i + 1 < end && char.IsLowSurrogate(text[i + 1]))
+            {
+                // A surrogate pair stays in one run, even when the style runs split it.
+                builder.Append(c).Append(text[++i]);
+            }
             else if (c >= ' ' || c == '\t')
             {
                 builder.Append(c);
@@ -351,7 +356,7 @@ internal sealed partial class PptReader
     private Bullet Bullet(ParagraphProps props, Sheet slide)
     {
         var font = props.BulletHasFont == true && props.BulletFont is { } index ? FontName(index) : null;
-        var character = props.BulletChar is { } c and not '\0' ? c : '\u2022';
+        var character = props.BulletChar is { } c and not '\0' && !char.IsSurrogate(c) ? c : '\u2022';
         string text;
         if (font is not null && (PptxReader.IsSymbolFont(font) || _symbolFonts.Contains(props.BulletFont!.Value)) || character is >= '\uF000' and <= '\uF0FF')
         {
