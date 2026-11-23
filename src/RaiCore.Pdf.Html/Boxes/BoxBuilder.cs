@@ -162,6 +162,36 @@ internal sealed partial class BoxBuilder
         return BuildInPage(root, contentWidth, width => BuildBlock(root, Style(root), width, marker: null) is { } block ? [block] : []);
     }
 
+    /// <summary>
+    /// The fonts of an HTML fragment's base text style (see <see cref="HtmlFragmentOptions.BaseStyle"/>), whose families
+    /// the fragment's root names: they are used for those families, also where the font collection has none of them.
+    /// </summary>
+    public IReadOnlyList<PdfFont> BaseFonts { get; init; } = [];
+
+    /// <summary>
+    /// Builds the content of an HTML fragment (see <see cref="HtmlFragment"/>): the blocks of the root, with the root's
+    /// and the body's boxes left out where they draw nothing (the fragment goes in a box of its own).
+    /// </summary>
+    /// <param name="width">The width the fragment is placed in.</param>
+    public List<Block> BuildFragment(double width)
+    {
+        var blocks = Build(width);
+        for (var level = 0; level < 2 && blocks is [ContainerBlock container] && IsPlain(container); level++)
+        {
+            blocks = [.. container.Children]; // html, then body.
+        }
+
+        return blocks;
+
+        // A box without borders and backgrounds whose other properties are the defaults (its borders' colors are the
+        // text's, and its background layers a list of its own).
+        static bool IsPlain(ContainerBlock block) =>
+            block is { Id: null, Link: null, Bookmark: null, Tag: null, Marker: null, PageName: null }
+            && block.Style.Border.Widths == BoxStyle.Default.Border.Widths
+            && block.Style.BackgroundLayers.Count == 0
+            && block.Style with { Border = BoxStyle.Default.Border, BackgroundLayers = BoxStyle.Default.BackgroundLayers } == BoxStyle.Default;
+    }
+
     public ComputedStyle Style(IElement element)
     {
         if (!_styles.TryGetValue(element, out var style))
@@ -1113,7 +1143,7 @@ internal sealed partial class BoxBuilder
             var name = family.Trim().Trim('"', '\'');
             var candidates = _webFonts?.Declares(name) == true
                 ? _webFonts.Find(name, style.FontWeight, style.Italic)
-                : _fonts.Find(name, style.FontWeight, style.Italic) is { } found ? [found] : [];
+                : FindFont(name, style.FontWeight, style.Italic) is { } found ? [found] : [];
             foreach (var font in candidates.Where(f => !fonts.Contains(f)))
             {
                 fonts.Add(font);
@@ -1128,6 +1158,23 @@ internal sealed partial class BoxBuilder
 
         _fontLists[key] = fonts;
         return fonts;
+    }
+
+    /// <summary>
+    /// The face of a family: one of <see cref="BaseFonts"/> when it is the very face asked for, else the collection's
+    /// (for bold and italic faces of the base family), else the closest base font of that family.
+    /// </summary>
+    private PdfFont? FindFont(string family, int weight, bool italic)
+    {
+        if (BaseFonts.Count == 0)
+        {
+            return _fonts.Find(family, weight, italic);
+        }
+
+        var faces = BaseFonts.Where(f => string.Equals(f.FamilyName, family, StringComparison.OrdinalIgnoreCase)).ToList();
+        return faces.Find(f => f.Weight == weight && f.IsItalic == italic)
+            ?? _fonts.Find(family, weight, italic)
+            ?? (faces.Count > 0 ? FontMatcher.Match(faces, f => f.Weight, f => f.IsItalic, weight, italic) : null);
     }
 
     private static List<string> ParseFeatures(string settings)

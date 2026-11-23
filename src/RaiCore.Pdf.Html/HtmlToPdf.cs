@@ -459,16 +459,29 @@ public static partial class HtmlToPdf
     /// resource loader) and appends the user stylesheet. Returns all CSS text with the URI its relative URLs resolve
     /// against (a linked stylesheet's own address), for reading the rules AngleSharp does not keep.
     /// </summary>
-    private static List<StyleSheetText> PrepareStyles(IDocument document, HtmlConverterOptions options, DiagnosticCollector diagnostics, Dictionary<IElement, string> originalInlineStyles)
+    /// <param name="document">The document.</param>
+    /// <param name="options">The options.</param>
+    /// <param name="diagnostics">Where to report stylesheets that do not load.</param>
+    /// <param name="originalInlineStyles">Receives the <c>style</c> attributes as written, of the elements whose attribute is rewritten.</param>
+    /// <param name="userAgentExtra">CSS appended to the user-agent stylesheet (an HTML fragment's base style).</param>
+    /// <param name="leadingCss">CSS that comes before the document's own (an HTML fragment's <see cref="HtmlFragmentOptions.Css"/>).</param>
+    private static List<StyleSheetText> PrepareStyles(
+        IDocument document, HtmlConverterOptions options, DiagnosticCollector diagnostics, Dictionary<IElement, string> originalInlineStyles, string? userAgentExtra = null, string? leadingCss = null)
     {
         var head = document.Head ?? document.DocumentElement.AppendElement(document.CreateElement("head"));
-        var userAgentCss = RewriteCss(UserAgentStyleSheet.Css);
+        var userAgentCss = RewriteCss(UserAgentStyleSheet.Css + userAgentExtra);
         var cssTexts = new List<StyleSheetText> { new(userAgentCss, null) };
         var linkedBases = new Dictionary<IElement, Uri?>();
 
         var userAgent = document.CreateElement("style");
         userAgent.TextContent = userAgentCss;
         head.Prepend(userAgent);
+        if (!string.IsNullOrWhiteSpace(leadingCss))
+        {
+            var leading = document.CreateElement("style");
+            leading.TextContent = leadingCss; // Rewritten below, with the document's own.
+            userAgent.After(leading);
+        }
 
         foreach (var link in document.QuerySelectorAll("link[rel~=stylesheet][href]").ToList())
         {

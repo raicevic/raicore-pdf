@@ -1,6 +1,7 @@
 #pragma warning disable CA1849, CA2007
 using RaiCore.Pdf;
 using RaiCore.Pdf.Fonts;
+using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Layout;
 
 namespace Snippets;
@@ -44,6 +45,33 @@ internal static class LayoutApi
             .Layout(width: 200);
         layout.Draw(pdfPage.Canvas, x: 72, top: pdfPage.Height - 72);
         document.Save("paragraph.pdf");
+        #endregion
+
+        #region fragment
+        // Rich text stored as HTML, e.g. in a database.
+        var notes = "<p>Delivered <b>on time</b>; see <a href=\"https://example.com/track\">tracking</a>.</p><ul><li>2 boxes</li><li>1 pallet</li></ul>";
+        var report = new FlowDocument(new PageSetup(PdfPageSize.A4, Thickness.All(56)));
+        report.Add(new ParagraphBlock(new Paragraph(h1).Add("Delivery report")));
+        var options = new HtmlFragmentOptions
+        {
+            BaseStyle = body, // The fragment's text starts from the report's body style.
+            Css = "p { margin: 0 0 6pt } ul { margin: 0; padding-left: 14pt }",
+            Width = report.Setup.ContentWidth,
+            Fonts = fonts,
+        };
+        var fragment = HtmlFragment.Parse(notes, options);
+        foreach (var diagnostic in fragment.Diagnostics)
+        {
+            Console.WriteLine(diagnostic); // CSS or resources that could not be converted.
+        }
+
+        fragment.AddTo(report);
+
+        // In a table cell: the same blocks go in the cell's content.
+        var cellNotes = HtmlFragment.Parse(notes, new HtmlFragmentOptions { BaseStyle = body, Css = options.Css, Width = 300, Fonts = fonts });
+        report.Add(new TableBlock { ColumnWidths = [Length.FromPoints(120), Length.FromPoints(300)] }
+            .Add(new TableRow(new TableCell(new Paragraph(body).Add("Notes")), new TableCell(cellNotes.Blocks))));
+        report.Render().Save("fragment.pdf");
         #endregion
 
         return Task.CompletedTask;

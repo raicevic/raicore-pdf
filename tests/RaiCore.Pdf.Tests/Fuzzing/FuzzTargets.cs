@@ -6,6 +6,7 @@ using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Fonts.OpenType;
 using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Images;
+using RaiCore.Pdf.Layout;
 using RaiCore.Pdf.Layout.Text;
 using RaiCore.Pdf.Sheets;
 using RaiCore.Pdf.Slides;
@@ -49,6 +50,7 @@ public static class FuzzTargets
     {
         ["html"] = Html,
         ["css"] = Css,
+        ["htmlfragment"] = Fragment,
         ["png"] = input => Image(WithValidPngCrcs(input)),
         ["jpeg"] = Image,
         ["gif"] = Image,
@@ -97,6 +99,36 @@ public static class FuzzTargets
 
     /// <summary>HTML conversion in the given output mode.</summary>
     public static void Html(byte[] input, OutputMode mode) => Convert(Encoding.UTF8.GetString(input), mode);
+
+    /// <summary>
+    /// An HTML fragment (<see cref="HtmlFragment"/>) placed between code-built paragraphs and in a table cell, with or
+    /// without a base style and CSS, in a tagged or untagged document (chosen by the input's length).
+    /// </summary>
+    public static void Fragment(byte[] input)
+    {
+        var html = Encoding.UTF8.GetString(input);
+        var fonts = BundledFonts.CreateCollection();
+        var body = new TextStyle(fonts.Find("serif")!, 11) { LineHeight = LineHeight.Multiple(1.3) };
+        HtmlFragmentOptions Options(double width) => new()
+        {
+            Fonts = fonts,
+            BaseStyle = input.Length % 2 == 0 ? body : null,
+            Css = input.Length % 3 == 0 ? "p { margin: 0 } td, th { padding: 2px; border: 1px solid }" : null,
+            Width = width,
+            Limits = Limits,
+            ResourceLoader = _ => null,
+        };
+
+        var flow = new FlowDocument(new PageSetup(PdfPageSize.A5, Thickness.All(36)));
+        flow.Add(new ParagraphBlock(new Paragraph(body).Add("Before the fragment.")));
+        HtmlFragment.Parse(html, Options(flow.Setup.ContentWidth)).AddTo(flow);
+        var cell = HtmlFragment.Parse(html, Options(150));
+        flow.Add(new TableBlock().Add(new TableRow(new TableCell(new Paragraph(body).Add("Cell")), new TableCell(cell.Blocks) { Width = Length.FromPoints(150) })));
+        flow.Add(new ParagraphBlock(new Paragraph(body).Add("After the fragment.")));
+        var document = new PdfDocument { Tagged = input.Length % 4 == 1 };
+        flow.RenderTo(document);
+        document.ToArray();
+    }
 
     /// <summary>CSS: the input as a style sheet for a document that uses most kinds of boxes.</summary>
     public static void Css(byte[] input) => Css(input, ModeOf(input));
