@@ -21,5 +21,6 @@ internal static class DocConverter
     }
 
     /// <summary>Reads a document into the model (also for tests).</summary>
-    internal static WordDocument Read(byte[] data, ConversionContext context) => DocReader.Read(data, context);
+    internal static WordDocument Read(byte[] data, ConversionContext context) =>
+        data.AsSpan().StartsWith("PK"u8) ? DocxConverter.Read(data, context) : DocReader.Read(data, context);
 }

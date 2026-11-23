@@ -330,5 +330,8 @@ public class DocReaderTests
         data[at] = 0x00;
         data[at + 1] = 0xD8;
         Assert.Contains(Paragraphs(Read(data)).SelectMany(Runs), r => r.Text.Contains("\uFFFDubscript", StringComparison.Ordinal));
+
+        // List label texts and the summary information are cleaned the same way.
+        Assert.Equal("a\uFFFDb\uD83D\uDE00\uFFFD", DocFile.WithoutLoneSurrogates("a\uDC00b\uD83D\uDE00\uD800"));
     }
 }

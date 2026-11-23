@@ -50,15 +50,13 @@ internal sealed class DocxPackage : IDisposable
     }
 
     /// <summary>Opens a package.</summary>
-    /// <exception cref="NotSupportedException">The data is an encrypted document or a Word 97-2003 file.</exception>
+    /// <exception cref="NotSupportedException">The data is an encrypted document.</exception>
     /// <exception cref="PdfFormatException">The data is not a ZIP package.</exception>
     public static DocxPackage Open(byte[] data, ConversionContext context)
     {
         if (CompoundFile.IsCompoundFile(data))
         {
-            throw new NotSupportedException(IsWord97(data, context)
-                ? "The data is a Word 97-2003 (.doc) document, not a Word document (a ZIP package); convert it with DocToPdf."
-                : "The data is a Compound File: a password-protected (encrypted) document, which is not supported, or a Word 97-2003 (.doc) document, which DocToPdf converts.");
+            throw new NotSupportedException("The data is a Compound File without a Word 97-2003 document: a password-protected (encrypted) document, which is not supported.");
         }
 
         if (!data.AsSpan().StartsWith("PK"u8))
@@ -69,19 +67,6 @@ internal sealed class DocxPackage : IDisposable
         }
 
         return OpenZip(data, context);
-    }
-
-    /// <summary>Whether a compound file holds a Word 97-2003 document (a WordDocument stream) rather than an encrypted package.</summary>
-    private static bool IsWord97(byte[] data, ConversionContext context)
-    {
-        try
-        {
-            return CompoundFile.Open(data, context.Limits).Root["WordDocument"] is not null;
-        }
-        catch (PdfFormatException)
-        {
-            return false;
-        }
     }
 
     /// <summary>Opens a ZIP package of any kind, without checking what it holds.</summary>

@@ -43,6 +43,7 @@ namespace RaiCore.Pdf.Documents;
 /// <see cref="ResourceLimits.MaxImagePixels"/>, and pages and time by <see cref="ResourceLimits.MaxPages"/> and
 /// <see cref="ResourceLimits.Timeout"/>.
 /// </para>
+/// <para>A Word document (<c>.docx</c>, a ZIP package) given to it is converted as <see cref="DocxToPdf"/> converts it.</para>
 /// <para>Thread-safe: conversions can run in parallel.</para>
 /// </remarks>
 /// <example>

@@ -31,8 +31,8 @@ namespace RaiCore.Pdf.Documents;
 /// SmartArt, embedded objects, EMF and WMF images, comments, several text columns (laid out as one), footnotes at the
 /// bottom of the page, line numbers, page borders, watermarks, right-to-left and vertical text beyond what the layout
 /// engine does by itself. What is left out is reported to <see cref="DocumentConverterOptions.Diagnostics"/>.
-/// Password-protected (encrypted) documents and Word 97-2003 (<c>.doc</c>) files throw
-/// <see cref="NotSupportedException"/>; macros in <c>.docm</c> files are ignored.
+/// Password-protected (encrypted) documents throw <see cref="NotSupportedException"/>; a Word 97-2003 (<c>.doc</c>)
+/// document is converted as <see cref="DocToPdf"/> converts it; macros in <c>.docm</c> files are ignored.
 /// </para>
 /// <para>
 /// Documents are untrusted input: their parts are read with no DTDs and nothing external resolved, and bounded by the
@@ -55,7 +55,7 @@ public static class DocxToPdf
     /// <param name="docx">The document's bytes.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
     /// <exception cref="PdfFormatException">The data is not a valid Word document (a ZIP package with a main document part).</exception>
-    /// <exception cref="NotSupportedException">The data is an encrypted document or a Word 97-2003 file.</exception>
+    /// <exception cref="NotSupportedException">The data is an encrypted document (or an unsupported Word 6/95 document).</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     public static PdfDocument Convert(byte[] docx, DocxConverterOptions? options = null)
     {
@@ -77,7 +77,7 @@ public static class DocxToPdf
     /// <param name="path">The file's path.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
     /// <exception cref="PdfFormatException">The file is not a valid Word document (a ZIP package with a main document part).</exception>
-    /// <exception cref="NotSupportedException">The file is an encrypted document or a Word 97-2003 file.</exception>
+    /// <exception cref="NotSupportedException">The file is an encrypted document (or an unsupported Word 6/95 document).</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     public static PdfDocument Convert(string path, DocxConverterOptions? options = null)
     {
@@ -98,7 +98,7 @@ public static class DocxToPdf
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
     /// <param name="cancellationToken">Cancels the conversion.</param>
     /// <exception cref="PdfFormatException">The data is not a valid Word document (a ZIP package with a main document part).</exception>
-    /// <exception cref="NotSupportedException">The data is an encrypted document or a Word 97-2003 file.</exception>
+    /// <exception cref="NotSupportedException">The data is an encrypted document (or an unsupported Word 6/95 document).</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
     public static Task<PdfDocument> ConvertAsync(byte[] docx, DocxConverterOptions? options = null, CancellationToken cancellationToken = default)

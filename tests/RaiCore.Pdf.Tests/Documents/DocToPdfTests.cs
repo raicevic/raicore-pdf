@@ -114,9 +114,22 @@ public class DocToPdfTests
     }
 
     [Fact]
-    public void Other_files_are_format_errors_that_name_the_right_converter()
+    public void DocToPdf_and_DocxToPdf_convert_each_others_documents()
     {
-        Assert.Contains("DocxToPdf", Assert.Throws<PdfFormatException>(() => DocToPdf.Convert(Fixtures.Read(Path.Combine("Documents", "minimal.docx")))).Message, StringComparison.Ordinal);
+        // A .docx given to DocToPdf, and a .doc given to DocxToPdf, are converted as what they are.
+        Assert.Contains("simple word document", Docx.AllText(DocxToPdf.ConvertToBytes(Sample("test2.doc"))), StringComparison.Ordinal);
+        Assert.Equal(Docx.AllText(DocxToPdf.ConvertToBytes(Fixtures.Read(Path.Combine("Documents", "minimal.docx")))),
+            Docx.AllText(DocToPdf.ConvertToBytes(Fixtures.Read(Path.Combine("Documents", "minimal.docx")))));
+        Assert.Throws<NotSupportedException>(() => DocxToPdf.Convert(Sample("testWORD6.doc")));
+
+        // An encrypted .docx is a compound file without a WordDocument stream.
+        Assert.Contains("encrypted", Assert.Throws<NotSupportedException>(() => DocxToPdf.Convert(Fixtures.Read(Path.Combine("Poi", "bug53475-password-is-pass.docx")))).Message, StringComparison.Ordinal);
+        Assert.Contains("WordDocument", Assert.Throws<PdfFormatException>(() => DocToPdf.Convert(Fixtures.Read(Path.Combine("Poi", "bug53475-password-is-pass.docx")))).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Other_files_are_format_errors()
+    {
         Assert.Contains("RtfToPdf", Assert.Throws<PdfFormatException>(() => DocToPdf.Convert(Fixtures.Read(Path.Combine("Documents", "Rtf", "minimal.rtf")))).Message, StringComparison.Ordinal);
         Assert.Throws<PdfFormatException>(() => DocToPdf.Convert("not a document"u8.ToArray()));
         Assert.Throws<PdfFormatException>(() => DocToPdf.Convert([]));
@@ -124,10 +137,7 @@ public class DocToPdfTests
         // A compound file without a WordDocument stream (an Outlook message).
         Assert.Contains("WordDocument", Assert.Throws<PdfFormatException>(() => DocToPdf.Convert(Fixtures.Read(Path.Combine("Poi", "quick.msg")))).Message, StringComparison.Ordinal);
 
-        // DocxToPdf and OdtToPdf point at DocToPdf for a .doc file.
-        var docx = Assert.Throws<NotSupportedException>(() => DocxToPdf.Convert(Sample("test2.doc")));
-        Assert.Contains("DocToPdf", docx.Message, StringComparison.Ordinal);
-        Assert.Contains("encrypted", Assert.Throws<NotSupportedException>(() => DocxToPdf.Convert(Fixtures.Read(Path.Combine("Poi", "bug53475-password-is-pass.docx")))).Message, StringComparison.Ordinal);
+        // OpenDocument's converter names DocToPdf for a .doc file.
         Assert.Contains("DocToPdf", Assert.Throws<PdfFormatException>(() => OdtToPdf.Convert(Sample("test2.doc"))).Message, StringComparison.Ordinal);
     }
 

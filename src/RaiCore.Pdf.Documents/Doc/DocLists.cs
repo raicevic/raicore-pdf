@@ -241,7 +241,7 @@ internal sealed class DocLists
             return level;
         }
 
-        level.Text = Encoding.Unicode.GetString(data.Slice(position, 2 * length));
+        level.Text = DocFile.WithoutLoneSurrogates(Encoding.Unicode.GetString(data.Slice(position, 2 * length)));
         position += 2 * length;
         return level;
     }

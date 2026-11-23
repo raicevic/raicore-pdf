@@ -504,7 +504,7 @@ public class DocxToPdfTests
     public void Encrypted_and_legacy_documents_are_not_supported()
     {
         Assert.Throws<NotSupportedException>(() => DocxToPdf.Convert(Fixtures.Read(Path.Combine("Poi", "bug53475-password-is-pass.docx"))));
-        Assert.Throws<NotSupportedException>(() => DocxToPdf.Convert(Fixtures.Read(Path.Combine("Poi", "documentProperties.doc"))));
+        Assert.Throws<NotSupportedException>(() => DocxToPdf.Convert(Fixtures.Read(Path.Combine("Documents", "Doc", "testWORD_protected_passtika.doc"))));
     }
 
     [Fact]

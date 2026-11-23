@@ -82,7 +82,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
   Encrypted documents and Word 6/95 (and Word 1/2) files throw `NotSupportedException`, damaged ones
   `PdfFormatException`; every offset is checked against its stream, within `ResourceLimits` (`MaxElements`,
   `MaxNestingDepth`, `MaxTableCells`, `MaxResourceBytes`, `MaxDecompressedBytes`, `MaxPages`, `Timeout`). `DocxToPdf`
-  and `OdtToPdf` given a `.doc` file now name `DocToPdf` in their errors. A new `doc` fuzz target; Apache POI and Tika
+  given a `.doc` file and `DocToPdf` given a `.docx` file convert it as what it is (no longer `NotSupportedException`);
+  `OdtToPdf` names `DocToPdf` in its error. A new `doc` fuzz target; Apache POI and Tika
   samples checked against the text, list labels, links and errors their own unit tests expect, and olefile's summary
   information (#204).
 - **ODT to PDF** (`RaiCore.Pdf.Documents`): `OdtToPdf.Convert` converts OpenDocument text documents (`.odt`, `.ott`

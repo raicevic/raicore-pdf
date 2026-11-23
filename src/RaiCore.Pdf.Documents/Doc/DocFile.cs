@@ -194,14 +194,30 @@ internal sealed class DocFile
                 throw new NotSupportedException("The document is in the Word for Windows 1 or 2 format, which is not supported; only Word 97-2003 documents are.");
             }
 
-            throw new PdfFormatException(data.AsSpan().StartsWith("PK"u8)
-                ? "The data is a ZIP package (such as a .docx document), not a Word 97-2003 document; use DocxToPdf."
-                : data.AsSpan().StartsWith(@"{\rtf"u8)
-                    ? "The data is an RTF document, not a Word 97-2003 document; use RtfToPdf."
-                    : "The data is not a Word 97-2003 document (a compound file).");
+            throw new PdfFormatException(data.AsSpan().StartsWith(@"{\rtf"u8)
+                ? "The data is an RTF document, not a Word 97-2003 document; use RtfToPdf."
+                : "The data is not a Word 97-2003 document (a compound file).");
         }
 
         return new DocFile(CompoundFile.Open(data, context.Limits), context);
+    }
+
+    /// <summary>Whether data is a compound file with a WordDocument stream (rather than, say, an encrypted package).</summary>
+    public static bool IsWordDocument(byte[] data, ConversionContext context)
+    {
+        if (!CompoundFile.IsCompoundFile(data))
+        {
+            return false;
+        }
+
+        try
+        {
+            return CompoundFile.Open(data, context.Limits).Root["WordDocument"] is not null;
+        }
+        catch (PdfFormatException)
+        {
+            return false;
+        }
     }
 
     /// <summary>The character count of a story.</summary>
@@ -408,7 +424,20 @@ internal sealed class DocFile
             }
         }
 
-        // A surrogate without its other half (damage) is a replacement character.
+        ReplaceLoneSurrogates(text);
+        return text;
+    }
+
+    /// <summary>Text with each surrogate that lacks its other half (damage) replaced by a replacement character.</summary>
+    public static string WithoutLoneSurrogates(string text)
+    {
+        var chars = text.ToCharArray();
+        ReplaceLoneSurrogates(chars);
+        return new string(chars);
+    }
+
+    private static void ReplaceLoneSurrogates(Span<char> text)
+    {
         for (var i = 0; i < text.Length; i++)
         {
             if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
@@ -420,8 +449,6 @@ internal sealed class DocFile
                 text[i] = '\uFFFD';
             }
         }
-
-        return text;
     }
 
     /// <summary>

@@ -111,8 +111,9 @@ each image, and `MaxPages` and `Timeout` the pages and the time. Exceeding one t
 naming it.
 
 Malformed packages (not a ZIP file, no main document part, XML that is not well-formed) throw `PdfFormatException`.
-Password-protected (encrypted) documents and Word 97-2003 `.doc` files, which are Compound Files, throw
-`NotSupportedException` (whose message names `DocToPdf` for a `.doc` file).
+Password-protected (encrypted) documents, which are Compound Files, throw `NotSupportedException`. A Word 97-2003
+`.doc` file (also a Compound File) is converted as one, as [`DocToPdf`](#word-97-2003-documents) does; `DocToPdf` in
+turn converts a `.docx` package given to it.
 
 ## OpenDocument text
 
@@ -257,8 +258,8 @@ layout engine does by itself. Revisions are shown as if accepted.
 
 Password-protected (encrypted) documents and documents saved by Word 6, Word 95 or earlier throw
 `NotSupportedException`; data that is not a Word 97-2003 document (a compound file with a WordDocument stream, its
-file information block, table stream and piece table) throws `PdfFormatException`, with a message that names
-`DocxToPdf` or `RtfToPdf` for those formats. Every offset and size in the file is checked against the stream it
+file information block, table stream and piece table) throws `PdfFormatException` (naming `RtfToPdf` for an RTF
+document), except a `.docx` package, which is converted as `DocxToPdf` converts it. Every offset and size in the file is checked against the stream it
 points into, and reading is bounded by `Limits`: `MaxElements` the compound file's entries and the paragraphs and runs,
 `MaxDecompressedBytes` each stream, `MaxNestingDepth` the nesting of tables, `MaxTableCells` the cells of a table,
 `MaxResourceBytes` each picture (a larger picture is left out) and `MaxImagePixels` its pixels, and `MaxPages` and

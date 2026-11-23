@@ -87,7 +87,7 @@ internal sealed partial class DocReader
     private static string? Clean(string? value)
     {
         var trimmed = value?.Trim('\0', ' ');
-        return string.IsNullOrEmpty(trimmed) ? null : trimmed;
+        return string.IsNullOrEmpty(trimmed) ? null : DocFile.WithoutLoneSurrogates(trimmed);
     }
 
     /// <summary>The document properties ([MS-DOC] 2.7 Dop): different headers on facing pages, the default tab stop.</summary>

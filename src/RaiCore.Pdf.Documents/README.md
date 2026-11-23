@@ -45,8 +45,8 @@ DocToPdf.Convert("minutes.doc").Save("minutes.pdf");
   Encrypted documents and Word 6/95 files throw `NotSupportedException`.
 - **Untrusted input:** no DTDs, nothing external; decompressed bytes, XML elements (and repeated table rows and cells),
   nesting, table cells, pages and time are bounded by `ResourceLimits`. Malformed documents throw
-  `PdfFormatException`; encrypted documents `NotSupportedException` (and `DocxToPdf` given a `.doc` file names
-  `DocToPdf`).
+  `PdfFormatException`; encrypted documents `NotSupportedException`. `DocxToPdf` and `DocToPdf` each convert the
+  other's format too.
 
 Not supported: text boxes and shapes as floating frames (their text follows their paragraph), charts (an OpenDocument
 chart's replacement image is shown), SmartArt, embedded objects, EMF and WMF images, comments, forms, several text
