@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using RaiCore.Pdf.Cfb;
 using RaiCore.Pdf.Email.Mime;
 using RaiCore.Pdf.Html;
 
@@ -39,7 +40,7 @@ internal sealed class EmailConverter
         using (limits.Enforce(cancellationToken))
         {
             // An Outlook message is written as the MIME message it stands for, and read like one.
-            root = MimeParser.Parse(Cfb.CompoundFile.IsCompoundFile(data) ? Msg.MsgToMime.Write(Msg.MsgMessage.Read(data, limits)) : data, limits);
+            root = MimeParser.Parse(CompoundFile.IsCompoundFile(data) ? Msg.MsgToMime.Write(Msg.MsgMessage.Read(data, limits)) : data, limits);
         }
 
         return new EmailConverter(options, clock, cancellationToken, data).ConvertAsync(root);
@@ -132,7 +133,7 @@ internal sealed class EmailConverter
     /// </summary>
     private void EmbedOriginal(PdfDocument document, bool webArchive, string subject, IEnumerable<string> taken)
     {
-        var (extension, mediaType, description) = Cfb.CompoundFile.IsCompoundFile(_original) ? (".msg", "application/vnd.ms-outlook", "Original message")
+        var (extension, mediaType, description) = CompoundFile.IsCompoundFile(_original) ? (".msg", "application/vnd.ms-outlook", "Original message")
             : webArchive ? (".mht", "multipart/related", "Original web archive")
             : (".eml", "message/rfc822", "Original message");
         var fileName = EmailAttachment.OriginalFileName(subject, extension, taken);

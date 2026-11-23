@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using RaiCore.Pdf.Email;
-using RaiCore.Pdf.Email.Cfb;
+using RaiCore.Pdf.Cfb;
 using RaiCore.Pdf.Email.Msg;
 using RaiCore.Pdf.Extraction;
 

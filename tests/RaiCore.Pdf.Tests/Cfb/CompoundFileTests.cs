@@ -1,9 +1,9 @@
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text.Json;
-using RaiCore.Pdf.Email.Cfb;
+using RaiCore.Pdf.Cfb;
 
-namespace RaiCore.Pdf.Tests.Email;
+namespace RaiCore.Pdf.Tests.Cfb;
 
 /// <summary>
 /// The compound file reader against fixtures made by make-cfb.py, whose expected.json records what olefile (an

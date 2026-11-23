@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Email.Cfb;
+namespace RaiCore.Pdf.Cfb;
 
 /// <summary>What a directory entry of a compound file is.</summary>
 internal enum CfbEntryKind

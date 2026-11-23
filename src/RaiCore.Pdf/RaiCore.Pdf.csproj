@@ -15,6 +15,11 @@
     <InternalsVisibleTo Include="RaiCore.Pdf.Extraction" />
     <!-- Editing copies and writes existing files with the reader's object store and the file writer. -->
     <InternalsVisibleTo Include="RaiCore.Pdf.Editing" />
+    <!-- Compound File Binary (OLE2) reader: Outlook .msg, Word .doc, Excel .xls and PowerPoint .ppt files. -->
+    <InternalsVisibleTo Include="RaiCore.Pdf.Email" />
+    <InternalsVisibleTo Include="RaiCore.Pdf.Documents" />
+    <InternalsVisibleTo Include="RaiCore.Pdf.Sheets" />
+    <InternalsVisibleTo Include="RaiCore.Pdf.Slides" />
   </ItemGroup>
 
   <ItemGroup>

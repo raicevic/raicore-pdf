@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
-using RaiCore.Pdf.Email.Cfb;
+using RaiCore.Pdf.Cfb;
 
 namespace RaiCore.Pdf.Email.Msg;
 

@@ -1,5 +1,6 @@
 using System.Text;
 using System.Xml.Linq;
+using RaiCore.Pdf.Cfb;
 using RaiCore.Pdf.Documents.Docx;
 
 namespace RaiCore.Pdf.Documents.Odt;
@@ -43,9 +44,6 @@ internal sealed class OdfPackage : IDisposable
     /// <summary>Whether the document has scripts (macros), which are not run.</summary>
     public bool HasScripts { get; }
 
-    /// <summary>The bytes of a Compound File (OLE2): Word 97-2003 files and encrypted Office Open XML documents.</summary>
-    private static ReadOnlySpan<byte> CompoundFileSignature => [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
-
     /// <summary>Opens a document.</summary>
     /// <exception cref="PdfFormatException">The data is not an OpenDocument text document.</exception>
     /// <exception cref="NotSupportedException">The document is encrypted.</exception>
@@ -56,7 +54,7 @@ internal sealed class OdfPackage : IDisposable
             return OpenZip(data, context);
         }
 
-        if (data.AsSpan().StartsWith(CompoundFileSignature))
+        if (CompoundFile.IsCompoundFile(data))
         {
             throw new PdfFormatException("The data is a Compound File (a Word 97-2003 document or an encrypted Office document), not an OpenDocument text document.");
         }

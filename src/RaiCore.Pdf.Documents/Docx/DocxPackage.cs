@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using RaiCore.Pdf.Cfb;
 
 namespace RaiCore.Pdf.Documents.Docx;
 
@@ -48,15 +49,12 @@ internal sealed class DocxPackage : IDisposable
         }
     }
 
-    /// <summary>The bytes of a Compound File (OLE2): encrypted documents and Word 97-2003 files.</summary>
-    private static ReadOnlySpan<byte> CompoundFileSignature => [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
-
     /// <summary>Opens a package.</summary>
     /// <exception cref="NotSupportedException">The data is an encrypted document or a Word 97-2003 file.</exception>
     /// <exception cref="PdfFormatException">The data is not a ZIP package.</exception>
     public static DocxPackage Open(byte[] data, ConversionContext context)
     {
-        if (data.AsSpan().StartsWith(CompoundFileSignature))
+        if (CompoundFile.IsCompoundFile(data))
         {
             throw new NotSupportedException(
                 "The data is a Compound File: a password-protected (encrypted) document or a Word 97-2003 (.doc) file, which are not supported.");

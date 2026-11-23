@@ -151,7 +151,7 @@ public class MsgTests
     [Fact]
     public void Compressed_rtf_that_would_grow_past_the_limit_throws()
     {
-        var file = RaiCore.Pdf.Email.Cfb.CompoundFile.Open(Fixtures.Read("Msg/rtf.msg"));
+        var file = RaiCore.Pdf.Cfb.CompoundFile.Open(Fixtures.Read("Msg/rtf.msg"));
         var compressed = file.Read(file.Root["__substg1.0_10090102"]!);
         var rawSize = (int)BitConverter.ToUInt32(compressed, 4);
         Assert.Equal(rawSize, CompressedRtf.Decompress(compressed, rawSize).Length);
