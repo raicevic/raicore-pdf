@@ -2,6 +2,29 @@ using System.Diagnostics;
 
 namespace RaiCore.Pdf.Documents;
 
+/// <summary>What the readers keep in the model beyond what a conversion shows (see <see cref="ConversionContext.Extras"/>).</summary>
+[Flags]
+internal enum ReadExtras
+{
+    /// <summary>Nothing more.</summary>
+    None = 0,
+
+    /// <summary>Hidden text, as runs whose format is <see cref="Model.RunFormat.Hidden"/>.</summary>
+    HiddenText = 1,
+
+    /// <summary>Deleted text of tracked changes, as runs whose format is <see cref="Model.RunFormat.Deleted"/>.</summary>
+    DeletedText = 2,
+
+    /// <summary>Field instructions, as <see cref="Model.FieldStart"/> and <see cref="Model.FieldEnd"/> around each field's result.</summary>
+    FieldCodes = 4,
+
+    /// <summary>Comments (<see cref="Model.WordDocument.Comments"/>) and where they are (<see cref="Model.CommentReference"/>).</summary>
+    Comments = 8,
+
+    /// <summary>No images: their data is not read (text extraction has no use for it).</summary>
+    NoImages = 16,
+}
+
 /// <summary>
 /// What a conversion shares between its reader and its renderer: the limits, a checkpoint for time and cancellation,
 /// and the diagnostics (each distinct one reported once).
@@ -22,6 +45,15 @@ internal sealed class ConversionContext
 
     /// <summary>The limits.</summary>
     public ResourceLimits Limits { get; }
+
+    /// <summary>
+    /// What the readers keep in the model beyond what a conversion shows (for text extraction); none for conversions,
+    /// whose renderer never sees these.
+    /// </summary>
+    public ReadExtras Extras { get; init; }
+
+    /// <summary>Whether <see cref="Extras"/> has any of the given ones.</summary>
+    public bool Has(ReadExtras extras) => (Extras & extras) != 0;
 
     /// <summary>
     /// Throws when the conversion is canceled or has taken longer than <see cref="ResourceLimits.Timeout"/>. Called

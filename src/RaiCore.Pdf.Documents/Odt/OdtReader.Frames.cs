@@ -203,6 +203,11 @@ internal sealed partial class OdtReader
     /// </summary>
     private (byte[] Data, string Name)? Image(List<XElement> images)
     {
+        if (_context.Has(ReadExtras.NoImages))
+        {
+            return null;
+        }
+
         var candidates = new List<(byte[] Data, string Name)>();
         foreach (var image in images)
         {

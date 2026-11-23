@@ -80,6 +80,12 @@ internal sealed record RunFormat
     /// <summary>Hidden text, which is not shown.</summary>
     public bool Hidden { get; init; }
 
+    /// <summary>
+    /// Text deleted by a tracked change, which is not shown (changes count as accepted). Readers keep it only for text
+    /// extraction (<see cref="ReadExtras.DeletedText"/>).
+    /// </summary>
+    public bool Deleted { get; init; }
+
     /// <summary>Extra space between characters, in points.</summary>
     public double LetterSpacing { get; init; }
 
@@ -293,4 +299,30 @@ internal sealed class AnchoredBlocks : WordInline
 {
     /// <summary>The blocks.</summary>
     public List<WordBlock> Blocks { get; } = [];
+}
+
+/// <summary>
+/// The start of a field, before its result: its instruction (<c>PAGE</c>, <c>HYPERLINK "..."</c>). Readers add it, and
+/// the <see cref="FieldEnd"/> after the result, only for text extraction (<see cref="ReadExtras.FieldCodes"/>); fields in
+/// another field's instruction have none.
+/// </summary>
+internal sealed class FieldStart : WordInline
+{
+    /// <summary>The instruction, known once the reader has read it.</summary>
+    public string Code { get; set; } = string.Empty;
+}
+
+/// <summary>The end of a field's result (see <see cref="FieldStart"/>).</summary>
+internal sealed class FieldEnd : WordInline
+{
+}
+
+/// <summary>
+/// Where a comment is anchored (<see cref="WordDocument.Comments"/>). Readers add it only for text extraction
+/// (<see cref="ReadExtras.Comments"/>).
+/// </summary>
+internal sealed class CommentReference(string id) : WordInline
+{
+    /// <summary>The comment's id.</summary>
+    public string Id { get; } = id;
 }

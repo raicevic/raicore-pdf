@@ -89,6 +89,24 @@ internal static class WordDocuments
         });
         report.Save("quarterly.pdf");
         #endregion
+
+        #region text
+        // The text, read directly (no PDF, no layout): DOCX, DOC, RTF or ODT, detected from the data.
+        string text = DocumentText.Extract("letter.docx");
+        Console.WriteLine(text);
+
+        // Headers and footers, notes and comments too, with Windows line ends and table cells separated by " | ".
+        string everything = DocumentText.Extract("quarterly.odt", new DocumentTextOptions
+        {
+            IncludeHeadersAndFooters = true,
+            IncludeNotes = true,
+            IncludeComments = true,
+            ParagraphSeparator = "\r\n",
+            TableRowSeparator = "\r\n",
+            TableCellSeparator = " | ",
+        });
+        File.WriteAllText("quarterly.txt", everything);
+        #endregion
     }
 
     /// <summary>Writes a minimal OpenDocument text document: a heading, a paragraph, a numbered list and a footer.</summary>
