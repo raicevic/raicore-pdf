@@ -35,6 +35,12 @@ and versions follow [Semantic Versioning](https://semver.org/).
   ending, hidden rows and columns or not, and values as displayed in a culture or as stored. Excel 97-2003 workbooks
   and CSV files open read only. `XlsxToPdf.Convert(Workbook)` converts a workbook with its changes. Opening is bounded
   by `WorkbookOptions.Limits`; a new fuzz target, `workbook`, opens, edits and saves.
+- **Sheets: diagnostics** (#256): `SheetOptions.Diagnostics` receives a `SheetDiagnostic` (sheet name,
+  `SheetDiagnosticKind`, message with the count) for each kind of content a sheet has that the conversion leaves out
+  or simplifies, once per kind and sheet: charts and chart sheets, pictures, shapes and form controls, embedded objects
+  and ActiveX controls, comments, conditional formatting rules, sparklines, pivot tables, headers and footers, page
+  breaks set by hand, and cells with rich, rotated or shrunk text, in `.xlsx` and `.xls` alike; and content that does
+  not fit the page (`Layout`, with its page numbers, also for CSV). A workbook with none of these reports nothing.
 
 ### Fixed
 - **A CFF2 font with a huge blend count** in a DICT threw `ArgumentOutOfRangeException` when it was subset (the count times the

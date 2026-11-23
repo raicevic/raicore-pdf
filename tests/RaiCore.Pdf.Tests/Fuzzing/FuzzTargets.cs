@@ -343,7 +343,7 @@ public static class FuzzTargets
     /// <summary>
     /// CSV data: decoded (encoding detected), split into records (delimiter detected), its cells classified, and laid
     /// out as tables with fitted columns; every other input (by length) on landscape pages fitted to the width, every
-    /// third one tagged.
+    /// third one tagged, every other odd one with diagnostics.
     /// </summary>
     public static void Csv(byte[] input) => CsvToPdf.ConvertToBytes(input, new CsvConverterOptions
     {
@@ -353,6 +353,7 @@ public static class FuzzTargets
             Landscape = input.Length % 2 == 0,
             FitToWidth = input.Length % 2 == 0,
             Tagged = input.Length % 3 == 0,
+            Diagnostics = input.Length % 4 == 1 ? _ => { } : null,
         },
     });
 
@@ -360,7 +361,7 @@ public static class FuzzTargets
     /// An XLSX workbook: its package and parts read (shared strings, styles, theme, defined names), every visible
     /// worksheet with its values formatted, and laid out with its styles, merged cells, sizes and page setup;
     /// every other input (by length) with sheet names as headings and fitted to the width, every third one tagged, every
-    /// fifth one fitted to the content.
+    /// fifth one fitted to the content; every odd one with diagnostics (its drawings and comments read too).
     /// </summary>
     public static void Xlsx(byte[] input) => XlsxToPdf.ConvertToBytes(input, new XlsxConverterOptions
     {
@@ -369,6 +370,7 @@ public static class FuzzTargets
             Limits = Limits,
             FitToWidth = input.Length % 2 == 0,
             Tagged = input.Length % 3 == 0,
+            Diagnostics = input.Length % 2 == 1 ? _ => { } : null,
         },
         ShowSheetNames = input.Length % 2 == 0,
         AutoFit = input.Length % 5 == 0,
@@ -378,7 +380,7 @@ public static class FuzzTargets
     /// An Excel 97-2003 workbook (a compound file, or a bare BIFF stream): its records read (shared strings across
     /// CONTINUE records, formats, sheets, names), every visible worksheet with its values formatted, and laid out as an
     /// XLSX worksheet is; every other input (by length) with sheet names as headings and fitted to the width, every third
-    /// one tagged, every fifth one fitted to the content.
+    /// one tagged, every fifth one fitted to the content, every odd one with diagnostics.
     /// </summary>
     public static void Xls(byte[] input) => XlsToPdf.ConvertToBytes(input, new XlsxConverterOptions
     {
@@ -387,6 +389,7 @@ public static class FuzzTargets
             Limits = Limits,
             FitToWidth = input.Length % 2 == 0,
             Tagged = input.Length % 3 == 0,
+            Diagnostics = input.Length % 2 == 1 ? _ => { } : null,
         },
         ShowSheetNames = input.Length % 2 == 0,
         AutoFit = input.Length % 5 == 0,

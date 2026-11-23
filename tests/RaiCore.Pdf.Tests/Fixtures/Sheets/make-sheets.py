@@ -2,7 +2,10 @@
 both: python -m venv venv && venv/bin/pip install xlsxwriter openpyxl; from this folder: venv/bin/python make-sheets.py).
 The files are deterministic: fixed document dates, no random data."""
 import datetime
+import io
+import struct
 import zipfile
+import zlib
 
 import openpyxl
 import xlsxwriter
@@ -197,10 +200,69 @@ def minimal():
             z.writestr(info, text)
 
 
+def png(width, height, rgb):
+    """A small PNG of one color (written by hand, so that no imaging library is needed)."""
+    def chunk(kind, data):
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+    rows = b"".join(b"\x00" + bytes(rgb) * width for _ in range(height))
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(rows, 9)) + chunk(b"IEND", b""))
+
+
+def content():
+    """Content the converter does not support, a few of each kind on its own sheet, and a sheet with none: pictures,
+    a text box and a chart; comments, conditional formatting (also a data bar and a sparkline, stored twice and in the
+    extension list); a header, a footer and page breaks; rich text, rotated text and shrink to fit; a chart sheet."""
+    wb = xlsxwriter.Workbook("content.xlsx")
+    wb.set_properties({"created": CREATED})
+
+    plain = wb.add_worksheet("Plain")
+    plain.write_row(0, 0, ["Nothing", "unsupported", 1, 2, 3])
+
+    drawings = wb.add_worksheet("Drawings")
+    drawings.write_column(0, 0, [3, 1, 4, 1, 5])
+    drawings.insert_image("C1", "red.png", {"image_data": io.BytesIO(png(8, 8, (255, 0, 0)))})
+    drawings.insert_image("C6", "blue.png", {"image_data": io.BytesIO(png(8, 8, (0, 0, 255)))})
+    drawings.insert_textbox("E1", "A text box")
+    chart = wb.add_chart({"type": "column"})
+    chart.add_series({"values": "=Drawings!$A$1:$A$5"})
+    drawings.insert_chart("E8", chart)
+
+    notes = wb.add_worksheet("Notes")
+    notes.write_column(0, 0, [10, 20, 30, 40])
+    notes.write_comment("A1", "First comment")
+    notes.write_comment("A3", "Second comment")
+    notes.conditional_format("A1:A4", {"type": "cell", "criteria": ">", "value": 15, "format": wb.add_format({"bold": True})})
+    notes.conditional_format("A1:A4", {"type": "3_color_scale"})
+    notes.conditional_format("B1:B4", {"type": "data_bar", "data_bar_2010": True})
+    notes.add_sparkline("C1", {"range": "Notes!A1:A4"})
+
+    printing = wb.add_worksheet("Print")
+    printing.write_column(0, 0, [f"Row {i}" for i in range(1, 31)])
+    printing.set_header("&CA header")
+    printing.set_footer("&CPage &P")
+    printing.set_h_pagebreaks([10, 20])
+    printing.set_v_pagebreaks([1])
+
+    formats = wb.add_worksheet("Formats")
+    formats.write_rich_string(0, 0, "plain ", wb.add_format({"bold": True}), "bold")
+    formats.write_rich_string(1, 0, wb.add_format({"italic": True}), "italic", " plain")
+    formats.write(2, 0, "Rotated", wb.add_format({"rotation": 45}))
+    formats.write(3, 0, "Stacked", wb.add_format({"rotation": 270}))
+    formats.write(4, 0, "Shrunk to fit", wb.add_format({"shrink": True}))
+    formats.write(5, 0, None, wb.add_format({"rotation": 90, "border": 1}))  # Nothing to rotate.
+
+    sheet_chart = wb.add_chart({"type": "line"})
+    sheet_chart.add_series({"values": "=Drawings!$A$1:$A$5"})
+    chartsheet = wb.add_chartsheet("Chart1")
+    chartsheet.set_chart(sheet_chart)
+    wb.close()
+
+
 def seeds():
     """Uncompressed copies of the small fixtures as fuzzing seeds: mutations then reach the XML (ZIP readers do not
     check the CRC), where compressed data would mostly fail to inflate. Only one keeps its theme part."""
-    for name in ["minimal", "styled", "formats", "inline", "date1904", "multi"]:
+    for name in ["minimal", "styled", "formats", "inline", "date1904", "multi", "content"]:
         with zipfile.ZipFile(f"{name}.xlsx") as z:
             entries = [(info.filename, z.read(info.filename)) for info in z.infolist()
                        if not info.filename.startswith("docProps/") and (name == "styled" or not info.filename.startswith("xl/theme/"))]
@@ -217,4 +279,5 @@ if __name__ == "__main__":
     date1904()
     inline()
     minimal()
+    content()
     seeds()

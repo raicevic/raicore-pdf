@@ -32,8 +32,8 @@ internal static class XlsxConverter
             var checkpoint = CsvConverter.Checkpoint(limits, clock, cancellationToken);
             using var package = XlsxPackage.Open(data, limits, checkpoint);
             var workbook = XlsxWorkbook.Read(package, options.Culture ?? CultureInfo.InvariantCulture);
-            var selected = Select(workbook, options);
-            return SheetRenderer.Render(Sheets(package, workbook, selected, options, limits, checkpoint), options.Sheet, Creator, workbook.Title, checkpoint);
+            var chosen = Choose(workbook.Sheets, options);
+            return SheetRenderer.Render(Sheets(package, workbook, chosen, options, limits, checkpoint), options.Sheet, Creator, workbook.Title, checkpoint);
         }
     }
 
@@ -44,19 +44,47 @@ internal static class XlsxConverter
         var limits = options.Sheet.Limits;
         using var package = XlsxPackage.Open(data, limits);
         var workbook = XlsxWorkbook.Read(package, options.Culture ?? CultureInfo.InvariantCulture);
-        return [.. Sheets(package, workbook, Select(workbook, options), options, limits, null)];
+        return [.. Sheets(package, workbook, Choose(workbook.Sheets, options), options, limits, null)];
     }
 
-    /// <summary>Reads and builds the selected sheets one at a time, so that only one is in memory while it is laid out.</summary>
-    private static IEnumerable<Sheet> Sheets(XlsxPackage package, XlsxWorkbook workbook, List<XlsxSheetEntry> selected, XlsxConverterOptions options, ResourceLimits limits, Action? checkpoint)
+    /// <summary>
+    /// Reads and builds the chosen worksheets one at a time, so that only one is in memory while it is laid out, and
+    /// reports what each has that is not supported (when diagnostics are wanted), and the chosen chart sheets.
+    /// </summary>
+    private static IEnumerable<Sheet> Sheets(XlsxPackage package, XlsxWorkbook workbook, List<XlsxSheetEntry> chosen, XlsxConverterOptions options, ResourceLimits limits, Action? checkpoint)
     {
-        foreach (var entry in selected)
+        var diagnostics = options.Sheet.Diagnostics;
+        var bookmarks = chosen.Count(s => s.IsWorksheet) > 1;
+        foreach (var entry in chosen)
         {
             checkpoint?.Invoke();
+            if (!entry.IsWorksheet)
+            {
+                ReportChartSheet(entry, diagnostics);
+                continue;
+            }
+
             var worksheet = entry.Path is { } path
                 ? package.Parse(path, reader => XlsxWorksheet.Read(reader, workbook, limits.MaxTableCells, checkpoint), XlsxWorksheet.Empty)
                 : XlsxWorksheet.Empty;
-            yield return Build(worksheet, entry, workbook, options, limits.MaxTableCells, selected.Count > 1);
+            if (diagnostics is not null && entry.Path is { } part)
+            {
+                XlsxContent.Collect(package, part, worksheet.Unsupported, checkpoint);
+                worksheet.Unsupported.Report(entry.Name, diagnostics);
+            }
+
+            yield return Build(worksheet, entry, workbook, options, limits.MaxTableCells, bookmarks);
+        }
+    }
+
+    /// <summary>Reports a chosen chart sheet, which is not converted.</summary>
+    internal static void ReportChartSheet(XlsxSheetEntry entry, Action<SheetDiagnostic>? diagnostics)
+    {
+        if (entry.IsChartSheet)
+        {
+            var content = new UnsupportedContent();
+            content.Add(SheetDiagnosticKind.ChartSheet);
+            content.Report(entry.Name, diagnostics);
         }
     }
 
@@ -67,11 +95,18 @@ internal static class XlsxConverter
     internal static List<XlsxSheetEntry> Select(XlsxWorkbook workbook, XlsxConverterOptions options) => Select(workbook.Sheets, options);
 
     /// <inheritdoc cref="Select(XlsxWorkbook, XlsxConverterOptions)"/>
-    internal static List<XlsxSheetEntry> Select(IReadOnlyList<XlsxSheetEntry> sheets, XlsxConverterOptions options)
+    internal static List<XlsxSheetEntry> Select(IReadOnlyList<XlsxSheetEntry> sheets, XlsxConverterOptions options) =>
+        [.. Choose(sheets, options).Where(s => s.IsWorksheet)];
+
+    /// <summary>
+    /// The sheets the options choose, in the workbook's order: those they name or number (hidden ones too), else the
+    /// visible worksheets and chart sheets. Of these, the worksheets are converted and the chart sheets reported.
+    /// </summary>
+    internal static List<XlsxSheetEntry> Choose(IReadOnlyList<XlsxSheetEntry> sheets, XlsxConverterOptions options)
     {
         if (options.SheetNames is null && options.SheetIndexes is null)
         {
-            return [.. sheets.Where(s => s.IsWorksheet && !s.Hidden)];
+            return [.. sheets.Where(s => (s.IsWorksheet || s.IsChartSheet) && !s.Hidden)];
         }
 
         var chosen = new HashSet<int>();
@@ -93,7 +128,7 @@ internal static class XlsxConverter
             chosen.Add(index);
         }
 
-        return [.. sheets.Where(s => s.IsWorksheet && chosen.Contains(s.Index))];
+        return [.. sheets.Where(s => chosen.Contains(s.Index))];
     }
 
     /// <summary>
@@ -201,6 +236,7 @@ internal static class XlsxConverter
                 Heading = options.ShowSheetNames ? entry.Name : null,
                 Bookmark = bookmark ? entry.Name : null,
             },
+            Name = entry.Name,
         };
     }
 

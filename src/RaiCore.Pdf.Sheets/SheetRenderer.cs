@@ -48,7 +48,9 @@ internal static partial class SheetRenderer
     {
         var flow = Layout(sheet, options, checkpoint);
         var document = new PdfDocument { Tagged = options.Tagged };
+        var problems = LayoutProblems.Collect(flow, options.Diagnostics, 1);
         flow.RenderTo(document);
+        problems?.Report(sheet.Name, options.Diagnostics);
         document.Info.Title = options.Title;
         document.Info.Creator = creator;
         return document;

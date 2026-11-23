@@ -36,7 +36,10 @@ internal static partial class SheetRenderer
         foreach (var sheet in sheets)
         {
             count++;
-            Layout(sheet, options, checkpoint).RenderTo(document);
+            var flow = Layout(sheet, options, checkpoint);
+            var problems = LayoutProblems.Collect(flow, options.Diagnostics, document.Pages.Count + 1);
+            flow.RenderTo(document);
+            problems?.Report(sheet.Name, options.Diagnostics);
             var limit = options.Limits.MaxPages;
             if (document.Pages.Count > limit)
             {

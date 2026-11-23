@@ -19,8 +19,11 @@ internal enum XlsValueKind
     Error,
 }
 
-/// <summary>The value of a cell record, as stored: formulas are their last calculated values.</summary>
-internal readonly record struct XlsValue(XlsValueKind Kind, double Number = 0, string Text = "")
+/// <summary>
+/// The value of a cell record, as stored: formulas are their last calculated values. <see cref="Rich"/> tells text with
+/// formatting runs (rich text), which is shown in the cell's font.
+/// </summary>
+internal readonly record struct XlsValue(XlsValueKind Kind, double Number = 0, string Text = "", bool Rich = false)
 {
     public static XlsValue Blank => new(XlsValueKind.Blank);
 
@@ -42,7 +45,8 @@ internal readonly record struct XlsValue(XlsValueKind Kind, double Number = 0, s
 /// <summary>
 /// Reads a worksheet substream of a binary workbook ([MS-XLS] 2.1.7.20.5): its cells, row and column sizes and
 /// visibility, merged ranges and page setup, into the worksheet the XLSX converter builds sheets from. Embedded
-/// substreams (charts) and the records it does not use (drawings, comments, conditional formats) are skipped.
+/// substreams (charts) are skipped, and the records of content it does not support (drawing objects, comments,
+/// conditional formats, headers and footers, page breaks, pivot tables) only counted.
 /// </summary>
 internal static class XlsWorksheet
 {
@@ -69,6 +73,16 @@ internal static class XlsWorksheet
     private const ushort Formula3 = 0x0206;
     private const ushort Formula4 = 0x0406;
     private const ushort StringRecord = 0x0207;
+    private const ushort Obj = 0x005D;
+    private const ushort Note = 0x001C;
+    private const ushort Cf = 0x01B1;
+    private const ushort Cf12 = 0x087A;
+    private const ushort Header = 0x0014;
+    private const ushort Footer = 0x0015;
+    private const ushort HeaderFooter = 0x089C;
+    private const ushort HorizontalPageBreaks = 0x001B;
+    private const ushort VerticalPageBreaks = 0x001A;
+    private const ushort SxView = 0x00B0;
 
     /// <summary>The BOF type of a worksheet (or dialog sheet).</summary>
     private const int WorksheetType = 0x0010;
@@ -111,7 +125,12 @@ internal static class XlsWorksheet
                     break;
             }
 
-            sheet.Add(row, column, XlsxWorkbook.ToCell(formatted, style.Format, alignment, colored), maxCells);
+            var cell = XlsxWorkbook.ToCell(formatted, style.Format, alignment, colored);
+            sheet.Add(row, column, cell, maxCells);
+            if (cell.Kind != CellKind.Empty)
+            {
+                sheet.CountFormatting(style, value.Rich);
+            }
         });
         return sheet;
     }
@@ -229,11 +248,12 @@ internal static class XlsWorksheet
                     break;
                 case LabelSst when data.Length >= 10:
                     var index = BiffReader.U32(data, 6);
-                    Cell(data, new XlsValue(XlsValueKind.Text, Text: index < (uint)workbook.SharedStrings.Count ? workbook.SharedStrings[(int)index] : string.Empty));
+                    Cell(data, new XlsValue(XlsValueKind.Text, Text: index < (uint)workbook.SharedStrings.Count ? workbook.SharedStrings[(int)index] : string.Empty,
+                        Rich: index <= int.MaxValue && workbook.RichStrings.Contains((int)index)));
                     break;
                 case Label or RString when data.Length >= 8:
                     var start = 6;
-                    Cell(data, new XlsValue(XlsValueKind.Text, Text: BiffReader.ReadString(data, reader.Breaks, ref start, 2, workbook.CodePage)));
+                    Cell(data, new XlsValue(XlsValueKind.Text, Text: BiffReader.ReadString(data, reader.Breaks, ref start, 2, workbook.CodePage), Rich: id == RString));
                     break;
                 case Number when data.Length >= 14:
                     Cell(data, NumberValue(BinaryPrimitives.ReadDoubleLittleEndian(data[6..])));
@@ -281,6 +301,9 @@ internal static class XlsWorksheet
                     }
 
                     break;
+                default:
+                    CountUnsupported(id, data, workbook.Biff, sheet.Unsupported);
+                    break;
             }
         }
 
@@ -298,6 +321,116 @@ internal static class XlsWorksheet
                 cells(row, column, xf, value);
             }
         }
+    }
+
+    /// <summary>
+    /// Counts a record of content that is not supported: a drawing object (OBJ: chart, picture, embedded object, shape or
+    /// control; not those that do not print, nor the shapes of comments and groups), a comment (NOTE), a conditional
+    /// formatting rule (CF, CF12), a header or footer text (HEADER, FOOTER, and the first and even page ones of
+    /// HEADERFOOTER), page breaks set by hand, and a pivot table (SXVIEW).
+    /// </summary>
+    private static void CountUnsupported(ushort id, ReadOnlySpan<byte> data, int biff, UnsupportedContent unsupported)
+    {
+        switch (id)
+        {
+            case Obj:
+                if (ObjectKind(data, biff) is { } kind)
+                {
+                    unsupported.Add(kind);
+                }
+
+                break;
+            case Note when data.Length >= 2:
+                // In BIFF5 a long note goes on in NOTE records of row 0xFFFF.
+                if (biff == 8 || BiffReader.U16(data, 0) != 0xFFFF)
+                {
+                    unsupported.Add(SheetDiagnosticKind.Comment);
+                }
+
+                break;
+            case Cf or Cf12:
+                unsupported.Add(SheetDiagnosticKind.ConditionalFormatting);
+                break;
+            case Header or Footer when (biff == 8 ? BiffReader.U16(data, 0) : data.Length > 0 ? data[0] : 0) > 0:
+                unsupported.Add(SheetDiagnosticKind.HeaderFooter);
+                break;
+            case HeaderFooter when data.Length >= 38:
+                for (var i = 0; i < 4; i++)
+                {
+                    if (BiffReader.U16(data, 30 + (2 * i)) > 0)
+                    {
+                        unsupported.Add(SheetDiagnosticKind.HeaderFooter);
+                    }
+                }
+
+                break;
+            case HorizontalPageBreaks or VerticalPageBreaks:
+                unsupported.Add(SheetDiagnosticKind.PageBreak, BiffReader.U16(data, 0));
+                break;
+            case SxView:
+                unsupported.Add(SheetDiagnosticKind.PivotTable);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// The kind of a drawing object (an OBJ record, [MS-XLS] 2.4.181: its common data first, then its subrecords), or
+    /// <c>null</c> for one that is not counted: a group, a comment's shape (its NOTE record counts), and objects that
+    /// do not print (such as the drop-down arrows of filters and lists).
+    /// </summary>
+    internal static SheetDiagnosticKind? ObjectKind(ReadOnlySpan<byte> data, int biff)
+    {
+        int type;
+        if (biff == 8)
+        {
+            // FtCmo: ft 0x15, cb, object type, id, flags (fPrint 0x10).
+            if (data.Length < 10 || BiffReader.U16(data, 0) != 0x15 || (BiffReader.U16(data, 8) & 0x10) == 0)
+            {
+                return null;
+            }
+
+            type = BiffReader.U16(data, 4);
+        }
+        else
+        {
+            if (data.Length < 6)
+            {
+                return null;
+            }
+
+            type = BiffReader.U16(data, 4);
+        }
+
+        return type switch
+        {
+            0x00 or 0x19 => null,
+            0x05 => SheetDiagnosticKind.Chart,
+            0x08 => biff == 8 && HasSubrecord(data, 0x0009) ? SheetDiagnosticKind.OleObject : SheetDiagnosticKind.Picture,
+            _ => SheetDiagnosticKind.Shape,
+        };
+    }
+
+    /// <summary>Whether a BIFF8 OBJ record has a subrecord of a type (0x0009: the formula of an embedded object, FtPictFmla).</summary>
+    private static bool HasSubrecord(ReadOnlySpan<byte> data, int type)
+    {
+        var position = 0;
+        while (position + 4 <= data.Length)
+        {
+            var ft = BiffReader.U16(data, position);
+            if (ft == type)
+            {
+                return true;
+            }
+
+            if (ft is 0x0000 or 0x0013)
+            {
+                return false; // The end, or a list's data (whose size its length does not give).
+            }
+
+            position += 4 + BiffReader.U16(data, position + 2);
+        }
+
+        return false;
     }
 
     /// <summary>A number, or the error a spreadsheet shows for one that is not finite.</summary>
