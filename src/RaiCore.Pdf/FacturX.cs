@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Xml;
 using RaiCore.Pdf.Xmp;
 
@@ -52,7 +53,7 @@ public static class FacturX
     /// <c>EmbedStandardFonts()</c> from RaiCore.Pdf.Fonts.
     /// </remarks>
     /// <exception cref="ArgumentException">The XML is not well-formed, or its root is not a CII invoice.</exception>
-    /// <exception cref="InvalidOperationException">The document is PDF/A-2b or PDF/A-2a, or already has an e-invoice.</exception>
+    /// <exception cref="InvalidOperationException">The document is PDF/A-1 or PDF/A-2, or already has an e-invoice.</exception>
     public static PdfDocument AttachFacturXInvoice(this PdfDocument document, byte[] invoiceXml, FacturXProfile profile)
     {
         ArgumentNullException.ThrowIfNull(document);
@@ -63,9 +64,11 @@ public static class FacturX
         }
 
         CheckInvoiceXml(invoiceXml);
-        if (document.PdfAConformance.Part() == 2)
+        if (document.PdfAConformance.Part() is 1 or 2)
         {
-            throw new InvalidOperationException("A Factur-X / ZUGFeRD invoice is a PDF/A-3 document, but this one is set to PDF/A-2.");
+            throw new InvalidOperationException(string.Create(
+                CultureInfo.InvariantCulture,
+                $"A Factur-X / ZUGFeRD invoice is a PDF/A-3 document, but this one is set to PDF/A-{document.PdfAConformance.Part()}."));
         }
 
         if (document.XmpExtensions.Exists(extension => extension.Namespace.Uri == Namespace.Uri))

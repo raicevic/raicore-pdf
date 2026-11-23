@@ -13,12 +13,12 @@ public sealed partial class PdfDocument
     /// Files attached to the document, shown in the viewer's attachments panel. Each is written as an embedded file
     /// (Flate-compressed, with its MIME type, size, dates and MD5 checksum) in the catalog's <c>/EmbeddedFiles</c> name
     /// tree and as an associated file of the document (<c>/AF</c>) with its <see cref="PdfAttachment.Relationship"/>.
-    /// File names must be unique. PDF/A-2 does not allow attachments (except PDF/A files, which are not checked here):
-    /// use PDF/A-3 (<see cref="PdfAConformance.PdfA3B"/> or <see cref="PdfAConformance.PdfA3A"/>), which allows any file.
+    /// File names must be unique. PDF/A-1 does not allow attachments, nor does PDF/A-2 (except PDF/A files, which are
+    /// not checked here): use PDF/A-3 (<see cref="PdfAConformance.PdfA3B"/> or <see cref="PdfAConformance.PdfA3A"/>), which allows any file.
     /// </summary>
     public IList<PdfAttachment> Attachments { get; } = new List<PdfAttachment>();
 
-    /// <summary>Checks the attachments before anything is written: unique names, and none under PDF/A-2.</summary>
+    /// <summary>Checks the attachments before anything is written: unique names, and none under PDF/A-1 or PDF/A-2.</summary>
     private void CheckAttachments()
     {
         var names = new HashSet<string>(StringComparer.Ordinal);
@@ -29,6 +29,12 @@ public sealed partial class PdfDocument
             {
                 throw new InvalidOperationException($"Two attachments are named \"{attachment.FileName}\"; attachment names must be unique.");
             }
+        }
+
+        if (Attachments.Count > 0 && PdfAConformance.Part() == 1)
+        {
+            throw new InvalidOperationException(
+                "PDF/A-1 does not allow attached files: use PDF/A-3 (PdfAConformance.PdfA3B or PdfA3A), which allows any file.");
         }
 
         if (Attachments.Count > 0 && PdfAConformance.Part() == 2)

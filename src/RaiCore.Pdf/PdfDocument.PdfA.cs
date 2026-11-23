@@ -7,9 +7,11 @@ using RaiCore.Pdf.Xmp;
 
 namespace RaiCore.Pdf;
 
-// PDF/A (ISO 19005-2 and -3, levels B and A): the checks made before writing, the sRGB output intent and the XMP
+// PDF/A (ISO 19005-1, -2 and -3, levels B and A): the checks made before writing, the sRGB output intent and the XMP
 // identification. Rules that concern single objects are checked where those are written (see PdfFileWriter.PdfA):
 // fonts must be embedded and must not draw .notdef, images must not be CMYK, and at level A every glyph maps to Unicode.
+// PDF/A-1 (PDF 1.4) adds: no transparency (checked here, and for images where they are written), CIDSets in font
+// subsets, no OpenType font programs, 8-bit image samples, and no structure types newer than PDF 1.4.
 public sealed partial class PdfDocument
 {
     /// <summary>The ICC profile of the output intent: sRGB IEC 61966-2.1, ICC v2 (CC0, Compact-ICC-Profiles).</summary>
@@ -27,10 +29,11 @@ public sealed partial class PdfDocument
 
     /// <summary>
     /// Writes the document as PDF/A for long-term archiving: <see cref="PdfAConformance.PdfA2B"/>,
-    /// <see cref="PdfAConformance.PdfA3B"/>, or level A, <see cref="PdfAConformance.PdfA2A"/> and
-    /// <see cref="PdfAConformance.PdfA3A"/>. The document then gets an sRGB output intent, XMP metadata that identifies
-    /// it as PDF/A (and describes custom properties in an extension schema), and every rule the library can break is
-    /// checked when it is saved, which throws <see cref="InvalidOperationException"/> naming the problem:
+    /// <see cref="PdfAConformance.PdfA3B"/>, <see cref="PdfAConformance.PdfA1B"/>, or level A,
+    /// <see cref="PdfAConformance.PdfA2A"/>, <see cref="PdfAConformance.PdfA3A"/> and <see cref="PdfAConformance.PdfA1A"/>.
+    /// The document then gets an sRGB output intent, XMP metadata that identifies it as PDF/A (and describes custom
+    /// properties in an extension schema), and every rule the library can break is checked when it is saved, which
+    /// throws <see cref="InvalidOperationException"/> naming the problem:
     /// <list type="bullet">
     /// <item>every font must be embedded: the standard fonts need a <see cref="StandardFontSubstitute"/>
     /// (<c>EmbedStandardFonts()</c> in the RaiCore.Pdf.Fonts package), and Symbol and ZapfDingbats cannot be used;</item>
@@ -48,7 +51,12 @@ public sealed partial class PdfDocument
     /// <item>no page drawn on before the document was tagged, and no Private Use Area characters (icon fonts) drawn
     /// without actual text (<see cref="PdfCanvas.DrawGlyphs"/> takes it).</item>
     /// </list>
-    /// Transparency, links, outlines and gradients are written as PDF/A allows. Defaults to
+    /// Transparency, links, outlines and gradients are written as PDF/A allows. PDF/A-1
+    /// (<see cref="PdfAConformance.PdfA1B"/>, <see cref="PdfAConformance.PdfA1A"/>) writes a PDF 1.4 file and allows
+    /// no transparency: a translucent color, a transparency group, a gradient with translucent colors, an SVG image that
+    /// uses one, or an image with semi-transparent pixels is rejected (images with only fully transparent and fully
+    /// opaque pixels get a stencil mask); neither are attachments, nor CFF fonts that cannot be subset. Its level A uses
+    /// the structure types of PDF 1.4 (table row groups are left out) and language tags of letters only. Defaults to
     /// <see cref="PdfAConformance.None"/>.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not one of the defined levels.</exception>
@@ -101,6 +109,19 @@ public sealed partial class PdfDocument
         {
             throw new InvalidOperationException(
                 "Pages imported from (or drawn from) other PDF files cannot be written as PDF/A: their content cannot be checked against its rules.");
+        }
+
+        if (PdfAConformance.Part() == 1)
+        {
+            foreach (var page in pages)
+            {
+                if (page.Transparency() is { } what)
+                {
+                    throw new InvalidOperationException(string.Create(
+                        CultureInfo.InvariantCulture,
+                        $"PDF/A-1 does not allow transparency, but page {PageNumber(page)} draws {what}. Draw it opaque, or use PDF/A-2 or PDF/A-3."));
+                }
+            }
         }
 
         if (PdfAConformance.IsLevelA())
@@ -156,6 +177,13 @@ public sealed partial class PdfDocument
                     $"PDF/A level A requires the standard structure types (PdfStructureTypes), but an element has the type \"{element.Type}\", and no role map is written.");
             }
 
+            // PDF 1.5 added these types; table row groups that hold only rows are left out (StructureTreeWriter.IsLeftOut).
+            if (PdfAConformance.Part() == 1 && Pdf15StructureTypes.Contains(element.Type) && !StructureTreeWriter.IsLeftOut(element, PdfAConformance))
+            {
+                throw new InvalidOperationException(
+                    $"PDF/A-1 level A requires the standard structure types of PDF 1.4, but an element has the type \"{element.Type}\", which PDF 1.5 added, and no role map is written.");
+            }
+
             if (element.Type is PdfStructureTypes.Figure or PdfStructureTypes.Formula
                 && string.IsNullOrWhiteSpace(element.AlternateText) && string.IsNullOrWhiteSpace(element.ActualText))
             {
@@ -179,9 +207,18 @@ public sealed partial class PdfDocument
     /// <summary>The page's number in the document, counting from 1.</summary>
     private int PageNumber(PdfPage page) => _pages.IndexOf(page) + 1;
 
-    /// <summary>Throws unless <paramref name="language"/> is a language tag as PDF/A level A requires (ISO 32000-1, 14.9.2).</summary>
-    private static void CheckLanguageTag(string language, string what)
+    /// <summary>
+    /// Throws unless <paramref name="language"/> is a language tag as PDF/A level A requires (ISO 32000-1, 14.9.2); PDF/A-1
+    /// takes the tags of RFC 1766 (PDF 1.4), whose subtags are letters only.
+    /// </summary>
+    private void CheckLanguageTag(string language, string what)
     {
+        if (PdfAConformance.Part() == 1 && !Rfc1766LanguageTag().IsMatch(language.Trim()))
+        {
+            throw new InvalidOperationException(
+                $"{what} is \"{language}\", which is not a language tag of letters such as \"en\" or \"de-CH\" (RFC 1766), as PDF/A-1 level A requires.");
+        }
+
         if (!LanguageTag().IsMatch(language.Trim()))
         {
             throw new InvalidOperationException($"{what} is \"{language}\", which is not a BCP 47 language tag such as \"en\" or \"de-CH\", as PDF/A level A requires.");
@@ -192,6 +229,10 @@ public sealed partial class PdfDocument
     [GeneratedRegex("^[a-zA-Z]{1,8}(-[a-zA-Z0-9]{1,8})*$")]
     private static partial Regex LanguageTag();
 
+    /// <summary>A language tag as veraPDF checks it for PDF/A-1: subtags of letters joined by hyphens.</summary>
+    [GeneratedRegex("^[a-zA-Z]{1,8}(-[a-zA-Z]{1,8})*$")]
+    private static partial Regex Rfc1766LanguageTag();
+
     /// <summary>The standard structure types of ISO 32000-1, section 14.8.4.</summary>
     private static readonly HashSet<string> StandardStructureTypes = new(StringComparer.Ordinal)
     {
@@ -200,6 +241,12 @@ public sealed partial class PdfDocument
         "Table", "TR", "TH", "TD", "THead", "TBody", "TFoot",
         "Span", "Quote", "Note", "Reference", "BibEntry", "Code", "Link", "Annot", "Ruby", "RB", "RT", "RP", "Warichu", "WT", "WP",
         "Figure", "Formula", "Form",
+    };
+
+    /// <summary>The standard structure types that PDF 1.5 added, which PDF/A-1 (PDF 1.4) does not have.</summary>
+    private static readonly HashSet<string> Pdf15StructureTypes = new(StringComparer.Ordinal)
+    {
+        "THead", "TBody", "TFoot", "Annot", "Ruby", "RB", "RT", "RP", "Warichu", "WT", "WP",
     };
 
     /// <summary>The PDF/A output intent: every device color is sRGB.</summary>

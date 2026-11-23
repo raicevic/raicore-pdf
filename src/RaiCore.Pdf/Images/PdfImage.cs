@@ -97,6 +97,9 @@ public sealed class PdfImage
     /// <summary>Whether drawing the image uses PDF transparency (alpha or groups): only SVG images with opacity do.</summary>
     internal bool UsesTransparency => _svg?.UsesTransparency ?? false;
 
+    /// <summary>For an SVG image that uses transparency (see <see cref="PdfPage.Transparency"/>), what it uses; otherwise <c>null</c>.</summary>
+    internal string? SvgTransparency() => _svg?.Transparency() is { } what ? "an SVG image with " + what : null;
+
     /// <summary>The decoded raster image. Not available for SVG.</summary>
     internal DecodedImage Image => _raster ?? throw new InvalidOperationException("An SVG image has no pixels.");
 
@@ -269,7 +272,11 @@ public sealed class PdfImage
         return (width * xu, height * yu, width * xv, height * yv, x + (width * x0), y + (height * y0));
     }
 
-    /// <summary>Writes the image (and its soft mask) as XObjects; an SVG becomes a form XObject.</summary>
+    /// <summary>
+    /// Writes the image (and its soft mask) as XObjects; an SVG becomes a form XObject. PDF/A-1 (PDF 1.4) has no soft
+    /// masks and no 16-bit samples: an alpha channel of fully transparent and opaque pixels becomes a stencil mask, and
+    /// 16-bit samples keep their high byte.
+    /// </summary>
     internal PdfReference WriteTo(PdfFileWriter writer)
     {
         if (_svg is { } svg)
@@ -283,6 +290,25 @@ public sealed class PdfImage
             // PDF/A allows device CMYK only with a CMYK output intent; the document's is sRGB.
             throw new InvalidOperationException(
                 "PDF/A documents use an sRGB output intent, which does not allow CMYK images: convert the CMYK image to RGB.");
+        }
+
+        var pdfA1 = writer.PdfA.Part() == 1;
+        if (pdfA1 && image.Alpha is { } partial && partial.Any(a => a is not (0 or 255)))
+        {
+            // PDF/A-1 has no soft masks. Pixels that are fully transparent or opaque make a stencil mask instead (below).
+            throw new InvalidOperationException(
+                "PDF/A-1 does not allow transparency, but an image has semi-transparent pixels (an alpha channel). Flatten it onto an opaque background, or use PDF/A-2 or PDF/A-3.");
+        }
+
+        if (pdfA1 && image.BitsPerComponent == 16)
+        {
+            // PDF 1.4 has no 16-bit samples: keep the high byte of each.
+            image = image with
+            {
+                BitsPerComponent = 8,
+                Data = [.. image.Data.Where((_, i) => i % 2 == 0)],
+                ColorKey = image.ColorKey?.Select(k => k >> 8).ToArray(),
+            };
         }
 
         PdfStreamObject stream;
@@ -349,7 +375,29 @@ public sealed class PdfImage
             dict["Mask"] = PdfArray.OfNumbers([.. key.Select(k => (double)k)]);
         }
 
-        if (image.Alpha is { } alpha)
+        if (pdfA1 && image.Alpha is { } stencil)
+        {
+            // Explicit masking (PDF 1.3) with a 1-bit image mask: 1 masks a pixel out, 0 paints it.
+            var rowBytes = (image.Width + 7) / 8;
+            var bits = new byte[rowBytes * image.Height];
+            for (var i = 0; i < stencil.Length; i++)
+            {
+                if (stencil[i] == 0)
+                {
+                    var (row, column) = Math.DivRem(i, image.Width);
+                    bits[(row * rowBytes) + (column / 8)] |= (byte)(0x80 >> (column % 8));
+                }
+            }
+
+            var mask = PdfStreamObject.CreateCompressed(bits);
+            mask.Dictionary["Type"] = new PdfName("XObject");
+            mask.Dictionary["Subtype"] = new PdfName("Image");
+            mask.Dictionary["Width"] = new PdfInteger(image.Width);
+            mask.Dictionary["Height"] = new PdfInteger(image.Height);
+            mask.Dictionary["ImageMask"] = PdfBoolean.True;
+            dict["Mask"] = writer.Add(mask);
+        }
+        else if (image.Alpha is { } alpha)
         {
             var mask = PdfStreamObject.CreateCompressed(alpha);
             mask.Dictionary["Type"] = new PdfName("XObject");

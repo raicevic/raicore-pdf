@@ -110,7 +110,11 @@ internal sealed class StructureTreeWriter
         {
             if (IsWritten(next))
             {
-                elements.Add(next);
+                if (!IsLeftOut(next, _writer.PdfA))
+                {
+                    elements.Add(next);
+                }
+
                 foreach (var child in next.Children)
                 {
                     pending.Push(child);
@@ -121,16 +125,15 @@ internal sealed class StructureTreeWriter
         foreach (var element in elements)
         {
             var dictionary = new PdfDictionary { ["Type"] = new PdfName("StructElem"), ["S"] = new PdfName(element.Type) };
-            dictionary["P"] = element.Parent is { } parent ? Reference(parent) : treeRootReference;
-            var kids = new PdfArray();
-            foreach (var kid in element.Kids)
+            var parent = element.Parent;
+            while (parent is not null && IsLeftOut(parent, _writer.PdfA))
             {
-                if (Kid(kid, pages) is { } written)
-                {
-                    kids.Items.Add(written);
-                }
+                parent = parent.Parent;
             }
 
+            dictionary["P"] = parent is null ? treeRootReference : Reference(parent);
+            var kids = new PdfArray();
+            AddKids(kids, element, pages);
             dictionary["K"] = kids;
             AddText(dictionary, "T", element.Title);
             AddText(dictionary, "Lang", element.Language?.Trim());
@@ -156,6 +159,31 @@ internal sealed class StructureTreeWriter
         treeRoot["ParentTreeNextKey"] = new PdfInteger(_nextKey);
         catalog["StructTreeRoot"] = treeRootReference;
         catalog["MarkInfo"] = new PdfDictionary { ["Marked"] = PdfBoolean.True };
+    }
+
+    /// <summary>
+    /// Whether an element is left out of the tree, its children taking its place: under PDF/A-1 (PDF 1.4, which has
+    /// no THead, TBody or TFoot), a table's row group that holds only rows.
+    /// </summary>
+    internal static bool IsLeftOut(PdfStructureElement element, PdfAConformance level) =>
+        level.Part() == 1
+        && element.Type is PdfStructureTypes.TableHead or PdfStructureTypes.TableBody or PdfStructureTypes.TableFoot
+        && element.Kids.All(kid => kid is ElementKid);
+
+    /// <summary>Adds the kids of <paramref name="element"/> to <paramref name="kids"/>, those of the children left out in their place.</summary>
+    private void AddKids(PdfArray kids, PdfStructureElement element, IReadOnlyDictionary<PdfPage, PdfReference> pages)
+    {
+        foreach (var kid in element.Kids)
+        {
+            if (kid is ElementKid child && IsWritten(child.Element) && IsLeftOut(child.Element, _writer.PdfA))
+            {
+                AddKids(kids, child.Element, pages);
+            }
+            else if (Kid(kid, pages) is { } written)
+            {
+                kids.Items.Add(written);
+            }
+        }
     }
 
     /// <summary>Adds a parent tree entry mapping a stream's MCIDs to their elements; returns its key, or <c>null</c> if unmarked.</summary>

@@ -17,7 +17,7 @@ public sealed partial class PdfDocument
     /// <see cref="PdfCanvas.BeginTag(PdfStructureElement)"/> and <see cref="PdfCanvas.EndTag"/> belongs to the structure
     /// elements under <see cref="StructureRoot"/>, everything else is written as artifacts, and links are tagged. Set it
     /// before drawing. <see cref="PdfUA"/> and the PDF/A level A conformances (<see cref="PdfAConformance.PdfA2A"/>,
-    /// <see cref="PdfAConformance.PdfA3A"/>) imply it.
+    /// <see cref="PdfAConformance.PdfA3A"/>, <see cref="PdfAConformance.PdfA1A"/>) imply it.
     /// </summary>
     public bool Tagged
     {

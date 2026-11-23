@@ -42,6 +42,13 @@ internal static class CidFontWriter
         else
         {
             // The font asks not to be subset, or its CFF uses features the subsetter does not handle: embed it whole.
+            if (writer.PdfA.Part() == 1)
+            {
+                throw new InvalidOperationException(
+                    $"PDF/A-1 (PDF 1.4) does not allow OpenType font programs, but the CFF font '{font.FullName}' cannot be subset and would be embedded whole as one. "
+                    + "Use a TrueType font, or PDF/A-2 or PDF/A-3.");
+            }
+
             subset = false;
             fontFile = PdfStreamObject.CreateCompressed(ExtractFace(font));
             fontFile.Dictionary["Subtype"] = new PdfName("OpenType");
@@ -52,6 +59,18 @@ internal static class CidFontWriter
 
         var descriptor = Descriptor(font, baseFont, Flags(font, symbolic: true));
         descriptor[isTrueType ? "FontFile2" : "FontFile3"] = writer.Add(fontFile);
+        if (subset && writer.PdfA.Part() == 1)
+        {
+            // PDF/A-1 requires a subset's CIDSet: a bit per CID (= glyph ID here), most significant first, set for those embedded.
+            var cids = glyphIds.Append(0).ToList();
+            var cidSet = new byte[(cids.Max() / 8) + 1];
+            foreach (var gid in cids)
+            {
+                cidSet[gid / 8] |= (byte)(0x80 >> (gid % 8));
+            }
+
+            descriptor["CIDSet"] = writer.Add(PdfStreamObject.CreateCompressed(cidSet));
+        }
 
         var cidFont = new PdfDictionary
         {

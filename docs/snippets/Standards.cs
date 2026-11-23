@@ -30,6 +30,13 @@ internal static class Standards
         archivedAccessible.Save("archived-accessible.pdf");
         #endregion
 
+        #region pdfa-1
+        // PDF/A-1a, for archives that require ISO 19005-1: like PDF/A-2a, but PDF 1.4, so no transparency (opacity,
+        // rgba() colors, semi-transparent images): saving throws, naming what needs it.
+        var archivedPdfA1 = HtmlToPdf.Convert(html, new HtmlConverterOptions { PdfAConformance = PdfAConformance.PdfA1A });
+        archivedPdfA1.Save("archived-pdfa1.pdf");
+        #endregion
+
         var crossIndustryInvoice = """<?xml version="1.0" encoding="UTF-8"?><rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100"/>"""u8.ToArray();
 
         #region facturx

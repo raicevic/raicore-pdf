@@ -55,7 +55,7 @@ public sealed partial class PdfDocument
             _writer = new PdfFileWriter { PdfA = document.PdfAConformance, StandardFontSubstitute = document.StandardFontSubstitute };
             _imports = new PdfImportWriter(_writer, _compress);
             _structure = document.Tagged ? new StructureTreeWriter(_writer, document.StructureRoot) : null;
-            _writer.Begin(stream, security: _security);
+            _writer.Begin(stream, version: document.PdfAConformance.Part() == 1 ? "1.4" : "1.7", security: _security); // PDF/A-1 is based on PDF 1.4.
             _catalogRef = _writer.Reserve();
             _pageTreeRef = _writer.Reserve();
         }

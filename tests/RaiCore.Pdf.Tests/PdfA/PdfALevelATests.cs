@@ -39,6 +39,8 @@ public class PdfALevelATests
     [InlineData(PdfAConformance.PdfA3B, false)]
     [InlineData(PdfAConformance.PdfA2A, true)]
     [InlineData(PdfAConformance.PdfA3A, true)]
+    [InlineData(PdfAConformance.PdfA1B, false)]
+    [InlineData(PdfAConformance.PdfA1A, true)]
     public void Level_A_implies_tagging(PdfAConformance level, bool tagged)
     {
         var doc = new PdfDocument { PdfAConformance = level };
@@ -53,6 +55,8 @@ public class PdfALevelATests
     [InlineData(PdfAConformance.PdfA2A, 2)]
     [InlineData(PdfAConformance.PdfA3B, 3)]
     [InlineData(PdfAConformance.PdfA3A, 3)]
+    [InlineData(PdfAConformance.PdfA1B, 1)]
+    [InlineData(PdfAConformance.PdfA1A, 1)]
     public void Each_level_has_its_part(PdfAConformance level, int part)
     {
         Assert.Equal(part, level.Part());
@@ -63,6 +67,8 @@ public class PdfALevelATests
     [InlineData(PdfAConformance.PdfA3B, "3", "B")]
     [InlineData(PdfAConformance.PdfA2A, "2", "A")]
     [InlineData(PdfAConformance.PdfA3A, "3", "A")]
+    [InlineData(PdfAConformance.PdfA1B, "1", "B")]
+    [InlineData(PdfAConformance.PdfA1A, "1", "A")]
     public void Xmp_identifies_the_part_and_conformance(PdfAConformance level, string part, string conformance)
     {
         var xmp = PdfMetadataReader.Xmp(Tagged(level).ToArray());
@@ -74,6 +80,7 @@ public class PdfALevelATests
     [Theory]
     [InlineData(PdfAConformance.PdfA2A)]
     [InlineData(PdfAConformance.PdfA3A)]
+    [InlineData(PdfAConformance.PdfA1A)]
     public void A_level_A_document_is_marked_and_has_a_structure_tree(PdfAConformance level)
     {
         var bytes = Tagged(level).ToArray();
