@@ -13,7 +13,7 @@ internal sealed partial class DocReader
     private const int MaxGridColumns = 1024;
 
     /// <summary>A table being read at one nesting level.</summary>
-    private sealed class TableBuilder
+    internal sealed class TableBuilder
     {
         public List<WordBlock> Cell { get; set; } = [];
 
@@ -118,7 +118,7 @@ internal sealed partial class DocReader
     /// Makes a table from its rows: the grid from the cell edges of all rows, cells spanning the grid columns between
     /// their edges, merged cells joined, borders, shading, padding and alignment from the row definitions.
     /// </summary>
-    private static WordTable BuildTable(TableBuilder builder)
+    internal static WordTable BuildTable(TableBuilder builder)
     {
         var table = new WordTable();
         var rows = builder.Rows.Where(r => r.Cells.Count > 0).ToList();

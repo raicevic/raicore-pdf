@@ -9,7 +9,8 @@ Word 97-2003 documents (`.doc`) from the test data of [Apache POI](https://poi.a
   (headers and footers: first page, even and odd pages, tables in them, Unicode text), `footnote.doc` (a footnote, an
   endnote and a comment), `rasp.doc` (fast-saved, Cyrillic), `Bug48075.doc` (Cyrillic, a page narrower than its
   margins), `capitalized.doc` (capitals by formatting), `table-merges.doc` (merged cells), `PngPicture.doc` (a PNG
-  picture) and `clusterfuzz-testcase-minimized-POIHWPFFuzzer-5418937293340672.doc` (damaged: no table stream).
+  picture), `Bug51890.doc` (PNG and bitmap pictures, linked pictures with their copies) and
+  `clusterfuzz-testcase-minimized-POIHWPFFuzzer-5418937293340672.doc` (damaged: no table stream).
 - Source: <https://github.com/apache/tika/tree/6ef8f501b1610fcb36d275332d2337e3113de74d/tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-microsoft-module/src/test/resources/test-documents>,
   files `testWORD.doc` (headings, a nested table, links, summary information), `testWORD_various.doc` (formatting,
   footnote, header and footer, text box, tables, lists, sections with two columns, Japanese and Gothic text),

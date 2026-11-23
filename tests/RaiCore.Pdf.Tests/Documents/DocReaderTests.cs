@@ -259,4 +259,76 @@ public class DocReaderTests
         Assert.Equal("Keith Bennett", document.Author);
         Assert.Equal("\u041A\u0440\u0435\u0434\u0438\u0442\u043E\u0432\u0430\u043D\u0438\u0435", ReadSample("Bug48075.doc").Title?[..12]);
     }
+    [Fact]
+    public void Paragraph_properties_come_from_their_pages_and_styles()
+    {
+        // A PAPX of cb words holds 2cb - 1 bytes after its count ([MS-DOC] 2.9.179): odd lengths.
+        var file = DocFile.Open(Sample("testWORD.doc"), new ConversionContext(ResourceLimits.Default, null, CancellationToken.None));
+        Assert.Contains(file.ParagraphRuns, r => r.Length % 2 == 1);
+        Assert.All(file.ParagraphRuns, r => Assert.True(r.FcEnd > r.FcStart));
+
+        // A style with a base other than Normal inherits its base's properties (an OpenOffice "List" style on "Text
+        // body", whose own UPX holds only its style number).
+        var styles = DocStyles.Read(DocFile.Open(Sample("PngPicture.doc"), new ConversionContext(ResourceLimits.Default, null, CancellationToken.None)));
+        Assert.Equal("List", styles.Name(18));
+        Assert.True(styles.Paragraph(17).Pap.After > 0);
+        Assert.Equal(styles.Paragraph(17).Pap.After, styles.Paragraph(18).Pap.After);
+
+        // Word 2007's Normal style: 1.15 lines, 10 points after; Heading 1 (a UPX of odd size before its character
+        // properties) bold and larger.
+        var document = ReadSample("Lists.doc");
+        var body = Paragraph(document, "This document has different lists");
+        Assert.Equal((1.15, LineSpacingRule.Multiple, 10.0), (body.Format.LineSpacing, body.Format.LineRule, body.Format.SpaceAfter));
+        var heading = Run(document, "Heading Level 1");
+        Assert.True(heading.Format.Bold);
+        Assert.True(heading.Format.FontSize > 12);
+        Assert.Equal(1.5, Paragraph(ReadSample("rasp.doc"), "\u041B\u0438\u0446\u0435\u0432\u043E\u0439").Format.LineSpacing);
+    }
+
+    [Fact]
+    public void Page_numbers_in_footers_are_computed()
+    {
+        var footer = ReadSample("PageSpecificHeadFoot.doc").Sections[0].Footers.Values.SelectMany(All).SelectMany(p => Inlines(p.Inlines));
+        var field = footer.OfType<FieldInline>().First();
+        Assert.Equal(FieldKind.Page, field.Kind);
+        Assert.Equal("2", field.CachedResult);
+    }
+
+    [Fact]
+    public void Pictures_of_several_formats_are_read()
+    {
+        // POI TestBugs.java line 566: a PNG and two bitmaps (the other pictures cannot be drawn).
+        var diagnostics = new List<DocumentDiagnostic>();
+        var images = AllInlines(ReadSample("Bug51890.doc", diagnostics)).OfType<ImageInline>().ToList();
+        Assert.Single(images, i => i.Data.AsSpan().StartsWith((ReadOnlySpan<byte>)[0x89, (byte)'P', (byte)'N', (byte)'G']));
+        Assert.Equal(2, images.Count(i => i.Data.AsSpan().StartsWith("BM"u8)));
+        Assert.Contains(diagnostics, d => d.Kind == DocumentDiagnosticKind.ImageNotLoaded);
+    }
+
+    [Fact]
+    public void Horizontally_merged_cells_join_the_cell_before()
+    {
+        // Word 97's merged cells (fFirstMerged, fMerged): the merged cell's edge extends the first one.
+        var definition = new DocRowDefinition { Left = 0 };
+        definition.Cells.Add(new DocCellDefinition { Right = 1000, HorizontalMerge = 1 });
+        definition.Cells.Add(new DocCellDefinition { Right = 2000, HorizontalMerge = 2 });
+        definition.Cells.Add(new DocCellDefinition { Right = 3000 });
+        var builder = new DocReader.TableBuilder();
+        builder.Rows.Add((definition, [[new WordParagraph()], [new WordParagraph()], [new WordParagraph()]]));
+        var row = Assert.Single(DocReader.BuildTable(builder).Rows);
+        Assert.Equal(2, row.Cells.Count);
+        Assert.Equal((0, 2), (row.Cells[0].Column, row.Cells[0].ColumnSpan));
+        Assert.Equal(2, row.Cells[1].Column);
+    }
+
+    [Fact]
+    public void Surrogates_without_their_other_half_are_replacement_characters()
+    {
+        // "subscript" in UTF-16 in testWORD_various.doc, its first letter made a lone high surrogate.
+        var data = Sample("testWORD_various.doc");
+        var at = data.AsSpan().IndexOf(System.Text.Encoding.Unicode.GetBytes("subscript"));
+        data[at] = 0x00;
+        data[at + 1] = 0xD8;
+        Assert.Contains(Paragraphs(Read(data)).SelectMany(Runs), r => r.Text.Contains("\uFFFDubscript", StringComparison.Ordinal));
+    }
 }

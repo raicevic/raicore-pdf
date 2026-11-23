@@ -1,5 +1,6 @@
 using System.Text.Json;
 using RaiCore.Pdf.Documents;
+using RaiCore.Pdf.Documents.Model;
 using RaiCore.Pdf.Extraction;
 using static RaiCore.Pdf.Tests.WordDocuments.Doc;
 
@@ -71,6 +72,12 @@ public class DocToPdfTests
 
         // Labels with their paragraph's text, from the model (the PDF's text may put a wide label apart from its text).
         var document = Read(data);
+        if (entry.TryGetProperty("pictures", out var pictures))
+        {
+            var blocks = document.Sections.SelectMany(s => s.Blocks.Concat(s.Headers.Values.Concat(s.Footers.Values).SelectMany(b => b)));
+            Assert.Equal(pictures.GetInt32(), AllParagraphs(blocks).SelectMany(p => Inlines(p.Inlines)).OfType<ImageInline>().Count());
+        }
+
         var labelled = Compact(string.Join("\n", AllParagraphs(document.Sections.SelectMany(s => s.Blocks)).Select(p => p.Label?.Text + " " + Text(p))));
         foreach (var item in entry.GetProperty("labels").EnumerateArray())
         {

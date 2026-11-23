@@ -101,6 +101,8 @@ SOURCES = {
     },
     # POI converter/TestWordToHtmlConverter.java line 105 (merged cells spanning 3 and 2 columns).
     "table-merges.doc": {"source": POI + "converter/TestWordToHtmlConverter.java:105", "colspans": [3, 2]},
+    # POI usermodel/TestBugs.java line 566 (eight pictures: a PNG and two bitmaps, the others of unknown types).
+    "Bug51890.doc": {"source": POI + "usermodel/TestBugs.java:566", "pictures": 3},
     # POI usermodel/TestPictures.java line 346 (one PNG picture).
     "PngPicture.doc": {"source": POI + "usermodel/TestPictures.java:346", "pictures": 1},
     # Tika WordParserTest.java lines 115-134.
@@ -144,6 +146,8 @@ SOURCES = {
             "1.1.1.1...1 1.1.1.1...1", "1st.2.3someText 1st.2.3someText", "1st.2.2someOtherText.1 1st.2.2someOtherText.1",
             "5th 5th", "1.a.I 1.a.I", "1.b.III 1.b.III", "2.a.I 2.a.I", "2.b 2.b", "(1)) (1))", "2.17 2.17",
             "2.18.2.1 2.18.2.1", "00 00", "01 01", "01. 01.", "01..1 01..1", "02 02",
+            # Lines 538-540, without the ">" of the element before: a level whose format an override changes.
+            "A A", "B B", "C C",
         ],
     },
     # Tika WordParserTest.java lines 136-145 (three pictures, then this text).
