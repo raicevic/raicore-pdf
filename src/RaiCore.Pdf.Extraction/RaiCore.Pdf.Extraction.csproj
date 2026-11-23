@@ -8,10 +8,8 @@
     <PackageLicenseExpression>Apache-2.0 AND BSD-3-Clause AND Unicode-3.0</PackageLicenseExpression>
     <!--
       A core package (it reads the core's PDF parser, stream decoders and font tables through InternalsVisibleTo, so
-      it is released with the core at the same version). It has no released version to validate against yet: set the
-      baseline to the first release that includes it.
+      it is released with the core at the same version).
     -->
-    <PackageValidationBaselineVersion></PackageValidationBaselineVersion>
   </PropertyGroup>
 
   <ItemGroup>

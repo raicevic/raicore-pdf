@@ -5,10 +5,8 @@
     <PackageTags>$(PackageTags);csv;tsv;csv-to-pdf;xlsx;xls;excel;xlsx-to-pdf;xls-to-pdf;excel-to-pdf;spreadsheet;table</PackageTags>
     <!--
       A core package, released with the core at the same version. It uses only the public API of RaiCore.Pdf.Layout
-      and RaiCore.Pdf.Fonts. It has no released version to validate against yet: set the baseline to the first release
-      that includes it.
+      and RaiCore.Pdf.Fonts.
     -->
-    <PackageValidationBaselineVersion></PackageValidationBaselineVersion>
   </PropertyGroup>
 
   <ItemGroup>
