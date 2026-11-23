@@ -99,6 +99,17 @@ public class NamedPageLayoutTests
     }
 
     [Fact]
+    public void A_named_container_starts_with_the_page_name_of_its_first_child()
+    {
+        // CSS start page value: the innermost name at the start of the box wins over the container's own.
+        var inner = Para(1, name: "wide");
+        var result = Flow(Para(1), new ContainerBlock(null, new ContainerBlock(null, inner), Para(1)) { PageName = "outer" }).Paginate();
+
+        Assert.Equal([null, "wide", "outer"], result.Frames.Select(f => f.Context.Name));
+        Assert.Equal(1, result.Placements.Single(p => p.Block == inner).Page);
+    }
+
+    [Fact]
     public void Content_continuing_on_an_automatic_break_keeps_the_page_name()
     {
         var flow = Flow(Para(1), Para(40, name: "wide"));
