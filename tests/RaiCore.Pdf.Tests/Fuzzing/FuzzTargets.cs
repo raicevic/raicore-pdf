@@ -74,6 +74,7 @@ public static class FuzzTargets
         ["docx"] = Docx,
         ["odt"] = Odt,
         ["rtf"] = Rtf,
+        ["doc"] = Doc,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -444,6 +445,18 @@ public static class FuzzTargets
     /// tagged, every other one without heading bookmarks.
     /// </summary>
     public static void Rtf(byte[] input) => RtfToPdf.ConvertToBytes(input, new RtfConverterOptions
+    {
+        Limits = Limits,
+        Tagged = input.Length % 3 == 0,
+        HeadingBookmarks = input.Length % 2 == 0,
+        Diagnostics = _ => { },
+    });
+
+    /// <summary>
+    /// Word 97-2003 conversion (compound file, FIB, piece table, formatted disk pages, style sheet, lists, tables,
+    /// fields, pictures), every third input (by length) tagged, every other one without heading bookmarks.
+    /// </summary>
+    public static void Doc(byte[] input) => DocToPdf.ConvertToBytes(input, new DocConverterOptions
     {
         Limits = Limits,
         Tagged = input.Length % 3 == 0,

@@ -1,10 +1,11 @@
 # Word documents to PDF
 
-`RaiCore.Pdf.Documents` converts Word documents (`.docx`), OpenDocument text documents (`.odt`, see
-[below](#opendocument-text)) and RTF documents (`.rtf`, see [below](#rtf-documents)) to PDF with the layout engine:
-styles, numbered and bulleted lists, tables, sections with their page setup, headers and footers with page numbers,
-images, hyperlinks and notes. No word processor, no browser, no native dependencies. The package is the home of the
-word-processing formats: the converters share its document model and options, and a Word 97-2003 converter will too.
+`RaiCore.Pdf.Documents` converts Word documents (`.docx`), Word 97-2003 documents (`.doc`, see
+[below](#word-97-2003-documents)), OpenDocument text documents (`.odt`, see [below](#opendocument-text)) and RTF
+documents (`.rtf`, see [below](#rtf-documents)) to PDF with the layout engine: styles, numbered and bulleted lists,
+tables, sections with their page setup, headers and footers with page numbers, images, hyperlinks and notes. No word
+processor, no browser, no native dependencies. The package is the home of the word-processing formats: the converters
+share its document model and options.
 
 ```sh
 dotnet add package RaiCore.Pdf.Documents
@@ -110,8 +111,9 @@ each image, and `MaxPages` and `Timeout` the pages and the time. Exceeding one t
 naming it.
 
 Malformed packages (not a ZIP file, no main document part, XML that is not well-formed) throw `PdfFormatException`.
-Password-protected (encrypted) documents and Word 97-2003 `.doc` files, which are Compound Files, throw
-`NotSupportedException`.
+Password-protected (encrypted) documents, which are Compound Files, throw `NotSupportedException`. A Word 97-2003
+`.doc` file (also a Compound File) is converted as one, as [`DocToPdf`](#word-97-2003-documents) does; `DocToPdf` in
+turn converts a `.docx` package given to it.
 
 ## OpenDocument text
 
@@ -211,6 +213,57 @@ RTF is read in one pass without recursion, within `Limits`: `MaxElements` bounds
 runs of text), `MaxNestingDepth` the nesting of groups and of tables, `MaxTableCells` the cells of a table,
 `MaxResourceBytes` each picture's data (a larger picture is left out) and `MaxImagePixels` its pixels, and `MaxPages`
 and `Timeout` the pages and the time. Data that does not start with `{\rtf` throws `PdfFormatException`.
+
+## Word 97-2003 documents
+
+`DocToPdf` converts Word 97-2003 documents (`.doc`, the binary format of Word 97 to Word 2003, which later versions
+still save) with the same renderer, so they are laid out like Word documents. `DocConverterOptions` has the options
+above; `Convert`, `ConvertToBytes` and `ConvertAsync` take a path, a stream or bytes.
+
+[!code-csharp[](../snippets/WordDocuments.cs#doc)]
+
+What is converted ([MS-DOC]):
+
+- **Text:** the piece table's text, in 8-bit (code page 1252) and UTF-16 pieces, and that of fast-saved documents
+  (their pieces' property modifiers included); the main text, headers and footers, footnotes, endnotes and text boxes;
+  Symbol and Wingdings text, and symbols inserted as such (`sprmCSymbol`), as the Unicode characters they show.
+- **Styles and formatting:** the style sheet's paragraph and character styles with their bases (headings by their
+  outline level or built-in style), the font table, and each paragraph's and run's own property modifiers on top:
+  fonts, sizes, bold, italic, underline styles, strikethrough, colors (palette and RGB), highlighting and shading,
+  superscript and subscript, raised and lowered text, letter spacing, capitals, small capitals, hidden text and deleted
+  revisions left out; alignment, indents, spacing, line spacing, keep together, keep with next, page break before,
+  widow control, borders and shading; tab stops with their alignment and leaders.
+- **Lists:** the list definitions and their overrides (`PlfLst`, `PlfLfo`) with labels counted as Word counts them
+  (start values and overrides of them, restarts after a higher level, skipped levels, legal numbering, bullets in
+  symbol fonts) and the levels' indents and label formatting.
+- **Tables:** cells and rows from the table marks, nested tables, the grid from the cell edges of all rows
+  (`sprmTDefTable`), merged cells both ways, table and cell borders, shading, padding, vertical alignment, row heights,
+  header rows repeated on every page and rows that may not break.
+- **Sections, headers and footers:** each section's page size, orientation, margins and start, headers and footers for
+  the first page, even and odd pages (inherited from the section before), page numbers restarted and formatted per
+  section. A page that is narrower or lower than its margins (as some writers save) gets the size of A4 or Letter
+  paper.
+- **Fields:** `HYPERLINK` fields are links (to web addresses and bookmarks), `PAGE`, `NUMPAGES`, `SECTIONPAGES` and
+  `PAGEREF` are computed, other fields show their last result (field instructions are never shown).
+- **Pictures:** inline pictures (in the Data stream) and floating ones (the drawing layer's pictures) in PNG, JPEG,
+  TIFF and bitmap formats, at their size and scale less their cropping; an embedded object's preview picture.
+- **More:** bookmarks as named destinations, footnotes and endnotes with their numbers, the title and author of the
+  summary information as the PDF's.
+
+Not supported, and reported to `Diagnostics`: EMF, WMF and PICT pictures (`ImageNotLoaded`, as are pictures larger
+than `MaxResourceBytes` and damaged ones), drawing shapes other than pictures and text boxes, comments, several text
+columns; text boxes are laid out after their paragraph. Also not supported: frames and positioned paragraphs, form
+fields' boxes, footnotes at the bottom of the page, page borders, right-to-left and vertical text beyond what the
+layout engine does by itself. Revisions are shown as if accepted.
+
+Password-protected (encrypted) documents and documents saved by Word 6, Word 95 or earlier throw
+`NotSupportedException`; data that is not a Word 97-2003 document (a compound file with a WordDocument stream, its
+file information block, table stream and piece table) throws `PdfFormatException` (naming `RtfToPdf` for an RTF
+document), except a `.docx` package, which is converted as `DocxToPdf` converts it. Every offset and size in the file is checked against the stream it
+points into, and reading is bounded by `Limits`: `MaxElements` the compound file's entries and the paragraphs and runs,
+`MaxDecompressedBytes` each stream, `MaxNestingDepth` the nesting of tables, `MaxTableCells` the cells of a table,
+`MaxResourceBytes` each picture (a larger picture is left out) and `MaxImagePixels` its pixels, and `MaxPages` and
+`Timeout` the pages and the time.
 
 ## Not supported
 

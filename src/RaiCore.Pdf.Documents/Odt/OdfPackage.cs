@@ -56,7 +56,7 @@ internal sealed class OdfPackage : IDisposable
 
         if (CompoundFile.IsCompoundFile(data))
         {
-            throw new PdfFormatException("The data is a Compound File (a Word 97-2003 document or an encrypted Office document), not an OpenDocument text document.");
+            throw new PdfFormatException("The data is a Compound File (a Word 97-2003 document, which DocToPdf converts, or an encrypted Office document), not an OpenDocument text document.");
         }
 
         if (data.AsSpan().StartsWith(@"{\rtf"u8))

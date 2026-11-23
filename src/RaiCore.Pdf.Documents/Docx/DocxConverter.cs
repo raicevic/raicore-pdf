@@ -25,6 +25,12 @@ internal static class DocxConverter
     /// <summary>Reads a document into the model (also for tests).</summary>
     internal static WordDocument Read(byte[] data, ConversionContext context)
     {
+        // A Word 97-2003 document given to the DOCX converter is converted as such (and DocToPdf converts .docx).
+        if (Doc.DocFile.IsWordDocument(data, context))
+        {
+            return Doc.DocReader.Read(data, context);
+        }
+
         using var package = DocxPackage.Open(data, context);
         return DocxReader.Read(package, context);
     }

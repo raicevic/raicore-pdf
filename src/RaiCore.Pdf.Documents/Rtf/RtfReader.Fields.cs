@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 using System.Text;
 using RaiCore.Pdf.Documents.Docx;
 using RaiCore.Pdf.Documents.Model;
@@ -328,7 +329,7 @@ internal sealed partial class RtfReader
         byte[]? data = picture.Format switch
         {
             "PNG" or "JPEG" => [.. picture.Data],
-            "DIB" => Bitmap(picture.Data),
+            "DIB" => Bitmap(CollectionsMarshal.AsSpan(picture.Data)),
             _ => null,
         };
         if (picture.TooLarge)
@@ -358,9 +359,9 @@ internal sealed partial class RtfReader
     }
 
     /// <summary>A device-independent bitmap (a BMP file without its file header) as a BMP file, or <c>null</c> if damaged.</summary>
-    private static byte[]? Bitmap(List<byte> dib)
+    internal static byte[]? Bitmap(ReadOnlySpan<byte> dib)
     {
-        if (dib.Count < 16)
+        if (dib.Length < 16)
         {
             return null;
         }

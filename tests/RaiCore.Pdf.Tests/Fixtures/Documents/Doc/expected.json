@@ -1,0 +1,476 @@
+{
+  "Bug48075.doc": {
+    "absent": [],
+    "anywhere": [],
+    "author": "Lebedev",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "source": "poi-scratchpad/src/test/java/org/apache/poi/hwpf/extractor/TestWordExtractor.java:335",
+    "text": [
+      "\u041f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0435"
+    ],
+    "title": "\u041a\u0440\u0435\u0434\u0438\u0442\u043e\u0432\u0430\u043d\u0438\u0435 \u0444\u0438\u0437\u0438\u0447\u0435\u0441\u043a\u0438\u0445 \u043b\u0438\u0446 \u043d\u0430 \u043f\u043e\u043a\u0443\u043f\u043a\u0443 \u0430\u0432\u0442\u043e\u043c\u043e\u0431\u0438\u043b\u044f",
+    "word_document": true
+  },
+  "Bug51890.doc": {
+    "absent": [],
+    "anywhere": [],
+    "author": "enpc",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "pictures": 3,
+    "source": "poi-scratchpad/src/test/java/org/apache/poi/hwpf/usermodel/TestBugs.java:566",
+    "text": [],
+    "title": "Astus n\u00b0 1",
+    "word_document": true
+  },
+  "DiffFirstPageHeadFoot.doc": {
+    "absent": [],
+    "anywhere": [
+      "I am the header on the first page, and I\u2019m nice and simple",
+      "First header column!\tMid header Right header!",
+      "The footer of the first page",
+      "Footer Left\tFooter Middle Footer Right"
+    ],
+    "author": "Nick Burch",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "source": "poi-scratchpad/src/test/java/org/apache/poi/hwpf/usermodel/TestHeaderStories.java:162",
+    "text": [],
+    "title": null,
+    "word_document": true
+  },
+  "HeaderFooterUnicode.doc": {
+    "absent": [],
+    "anywhere": [
+      "This is a simple header, with a \u20ac euro symbol in it.",
+      "The footer, with Moli\u00e8re, has Unicode in it."
+    ],
+    "author": "Nick Burch",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "source": "poi-scratchpad/src/test/java/org/apache/poi/hwpf/extractor/TestWordExtractor.java:200",
+    "text": [],
+    "title": null,
+    "word_document": true
+  },
+  "Lists.doc": {
+    "absent": [],
+    "anywhere": [],
+    "author": "Windows User",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "source": "poi-scratchpad/src/test/java/org/apache/poi/hwpf/usermodel/TestLists.java:42",
+    "text": [
+      "Heading Level 1",
+      "This document has different lists in it for testing",
+      "Unordered list 1",
+      "UL 2",
+      "UL 3",
+      "Next up is an ordered list:",
+      "Ordered list 1",
+      "OL 2",
+      "OL 3",
+      "Now for an un-ordered list with a different bullet style:",
+      "Tick 1",
+      "Tick 2",
+      "Multi-level un-ordered list:",
+      "ML 1:1",
+      "ML 1:2",
+      "ML 2:1",
+      "ML 2:2",
+      "ML 2:3",
+      "ML 3:1",
+      "ML 4:1",
+      "ML 5:1",
+      "ML 5:2",
+      "ML 2:4",
+      "ML 1:3",
+      "Multi-level ordered list:",
+      "OL 1",
+      "OL 2",
+      "OL 2.1",
+      "OL 2.2",
+      "OL 2.2.1",
+      "OL 2.2.2",
+      "OL 2.2.2.1",
+      "OL 2.2.3",
+      "OL 3",
+      "Finally we want some indents, to tell the difference",
+      "Indented once",
+      "Indented twice",
+      "Indented three times",
+      "The end!"
+    ],
+    "title": null,
+    "word_document": true
+  },
+  "PageSpecificHeadFoot.doc": {
+    "absent": [],
+    "anywhere": [
+      "[This is an Even Page, with a Header]",
+      "August 20, 2008",
+      "[ODD Page Header text]",
+      "Footer Left\tFooter Middle Footer Right"
+    ],
+    "author": "Nick Burch",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "source": "poi-scratchpad/src/test/java/org/apache/poi/hwpf/usermodel/TestHeaderStories.java:140",
+    "text": [],
+    "title": "ODD Page Header text",
+    "word_document": true
+  },
+  "PngPicture.doc": {
+    "absent": [],
+    "anywhere": [],
+    "author": "Nevin Nollop",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "pictures": 1,
+    "source": "poi-scratchpad/src/test/java/org/apache/poi/hwpf/usermodel/TestPictures.java:346",
+    "text": [],
+    "title": "The quick brown fox jumps over the lazy dog",
+    "word_document": true
+  },
+  "ThreeColHeadFoot.doc": {
+    "absent": [],
+    "anywhere": [
+      "First header column!\tMid header Right header!",
+      "Footer Left\tFooter Middle Footer Right"
+    ],
+    "author": "Nick Burch",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "source": "poi-scratchpad/src/test/java/org/apache/poi/hwpf/extractor/TestWordExtractor.java:190",
+    "text": [],
+    "title": null,
+    "word_document": true
+  },
+  "capitalized.doc": {
+    "absent": [],
+    "anywhere": [],
+    "author": "franz",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "source": "poi-scratchpad/src/test/java/org/apache/poi/hwpf/extractor/TestWordExtractor.java:421",
+    "text": [
+      "The following word is: CAPITALIZED."
+    ],
+    "title": null,
+    "word_document": true
+  },
+  "clusterfuzz-testcase-minimized-POIHWPFFuzzer-5418937293340672.doc": {
+    "absent": [],
+    "anywhere": [],
+    "author": "Sergey Vladimirov",
+    "error": "Format",
+    "labels": [],
+    "links": [],
+    "source": "POI test-data",
+    "text": [],
+    "title": null,
+    "word_document": true
+  },
+  "footnote.doc": {
+    "absent": [
+      "TestComment"
+    ],
+    "anywhere": [
+      "TestFootnote",
+      "TestEndnote"
+    ],
+    "author": "Maxim Valyanskiy",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "source": "poi-scratchpad/src/test/java/org/apache/poi/hwpf/extractor/TestWordExtractor.java:234",
+    "text": [],
+    "title": null,
+    "word_document": true
+  },
+  "rasp.doc": {
+    "absent": [],
+    "anywhere": [
+      "\u0425\u0425\u0425\u0425\u0425",
+      "\u0423\u0423\u0423\u0423\u0423"
+    ],
+    "author": "sgg",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "source": "poi-scratchpad/src/test/java/org/apache/poi/hwpf/extractor/TestWordExtractor.java:323",
+    "text": [],
+    "title": "\u0420\u0430\u0441\u043f\u043e\u0440\u044f\u0436\u0435\u043d\u0438\u0435 \u043d\u0430 \u0432\u044b\u0434\u0430\u0447\u0443 \u0438\u043d\u0444\u043e\u0440\u043c\u0430\u0446\u0438\u0438 \u0438\u0437 \u0440\u0435\u0435\u0441\u0442\u0440\u0430 _________________________________________",
+    "word_document": true
+  },
+  "table-merges.doc": {
+    "absent": [],
+    "anywhere": [],
+    "author": "Sergey Vladimirov",
+    "colspans": [
+      3,
+      2
+    ],
+    "error": null,
+    "labels": [],
+    "links": [],
+    "source": "poi-scratchpad/src/test/java/org/apache/poi/hwpf/converter/TestWordToHtmlConverter.java:105",
+    "text": [],
+    "title": null,
+    "word_document": true
+  },
+  "test2.doc": {
+    "absent": [],
+    "anywhere": [],
+    "author": "Hogwarts",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "source": "poi-scratchpad/src/test/java/org/apache/poi/hwpf/extractor/TestWordExtractor.java:63",
+    "text": [
+      "This is a simple word document",
+      "It has a number of paragraphs in it",
+      "Some of them even feature bold, italic and underlined text",
+      "This bit is in a different font and size",
+      "This bit features some red text.",
+      "It is otherwise very very boring."
+    ],
+    "title": "This is a simple word document",
+    "word_document": true
+  },
+  "testWORD.doc": {
+    "absent": [],
+    "anywhere": [
+      "Sample Word Document",
+      "Tika",
+      "This one"
+    ],
+    "author": "Keith Bennett",
+    "error": null,
+    "labels": [],
+    "links": [
+      "http://tika.apache.org/"
+    ],
+    "source": "WordParserTest.java:115",
+    "text": [
+      "Heading Level 1",
+      "Heading Level 3",
+      "BOLD",
+      "ITALIC"
+    ],
+    "title": "Sample Word Document",
+    "word_document": true
+  },
+  "testWORD6.doc": {
+    "absent": [],
+    "anywhere": [],
+    "author": "Nevin Nollop",
+    "error": "NotSupported",
+    "labels": [],
+    "links": [],
+    "source": "WordParserTest.java:200",
+    "text": [],
+    "title": "The quick brown fox jumps over the lazy dog",
+    "word_document": true
+  },
+  "testWORD_3imgs.doc": {
+    "absent": [],
+    "anywhere": [
+      "The end!"
+    ],
+    "author": "Nevin Nollop",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "pictures": 3,
+    "source": "WordParserTest.java:136",
+    "text": [],
+    "title": "The quick brown fox jumps over the lazy dog",
+    "word_document": true
+  },
+  "testWORD_boldHyperlink.doc": {
+    "absent": [],
+    "anywhere": [
+      "hyper link",
+      "; bold"
+    ],
+    "author": "Allison, Timothy B.",
+    "error": null,
+    "labels": [],
+    "links": [
+      "http://tika.apache.org/"
+    ],
+    "source": "WordParserTest.java:593",
+    "text": [],
+    "title": null,
+    "word_document": true
+  },
+  "testWORD_header_hyperlink.doc": {
+    "absent": [
+      "HYPERLINK"
+    ],
+    "anywhere": [
+      "example.com"
+    ],
+    "author": "Lutz Theurer",
+    "error": null,
+    "labels": [],
+    "links": [
+      "http://tw-systemhaus.de",
+      "mailto:ab@example.com"
+    ],
+    "source": "WordParserTest.java:415",
+    "text": [],
+    "title": null,
+    "word_document": true
+  },
+  "testWORD_numbered_list.doc": {
+    "absent": [
+      "add a list here"
+    ],
+    "anywhere": [],
+    "author": "Allison, Timothy B.",
+    "error": null,
+    "labels": [
+      "1) This",
+      "a) Is",
+      "i) A multi",
+      "ii) Level",
+      "1. Within cell 1",
+      "b. Cell b",
+      "iii) List",
+      "2) foo",
+      "ii) baz",
+      "ii) foo",
+      "II. bar",
+      "6. six",
+      "7. seven",
+      "a. seven a",
+      "e. seven e",
+      "2. A ii 2",
+      "3. page break list 3",
+      "Some-1-CrazyFormat Greek numbering with crazy format - alpha",
+      "1.1.1. 1.1.1"
+    ],
+    "links": [],
+    "source": "WordParserTest.java:481",
+    "text": [],
+    "title": null,
+    "word_document": true
+  },
+  "testWORD_override_list_numbering.doc": {
+    "absent": [],
+    "anywhere": [],
+    "author": null,
+    "error": null,
+    "labels": [
+      "1.1.1.1...1 1.1.1.1...1",
+      "1st.2.3someText 1st.2.3someText",
+      "1st.2.2someOtherText.1 1st.2.2someOtherText.1",
+      "5th 5th",
+      "1.a.I 1.a.I",
+      "1.b.III 1.b.III",
+      "2.a.I 2.a.I",
+      "2.b 2.b",
+      "(1)) (1))",
+      "2.17 2.17",
+      "2.18.2.1 2.18.2.1",
+      "00 00",
+      "01 01",
+      "01. 01.",
+      "01..1 01..1",
+      "02 02",
+      "A A",
+      "B B",
+      "C C"
+    ],
+    "links": [],
+    "source": "WordParserTest.java:513",
+    "text": [],
+    "title": null,
+    "word_document": true
+  },
+  "testWORD_phonetic.doc": {
+    "absent": [
+      "jc2"
+    ],
+    "anywhere": [],
+    "author": "Allison, Timothy B.",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "source": "WordParserTest.java:683",
+    "text": [],
+    "title": null,
+    "word_document": true
+  },
+  "testWORD_protected_passtika.doc": {
+    "absent": [],
+    "anywhere": [],
+    "author": "Antoni",
+    "error": "NotSupported",
+    "labels": [],
+    "links": [],
+    "source": "WordParserTest.java:667",
+    "text": [],
+    "title": null,
+    "word_document": true
+  },
+  "testWORD_various.doc": {
+    "absent": [],
+    "anywhere": [
+      "Footnote appears here",
+      "This is a footnote.",
+      "This is the header text.",
+      "This is the footer text.",
+      "Here is a text box",
+      "Bold",
+      "italic",
+      "underline",
+      "superscript",
+      "subscript",
+      "Here is a citation:",
+      "Figure 1 This is a caption for Figure 1",
+      "(Kramer)",
+      "Row 1 Col 1 Row 1 Col 2 Row 1 Col 3 Row 2 Col 1 Row 2 Col 2 Row 2 Col 3",
+      "Row 1 column 1",
+      "Row 2 column 1",
+      "Row 1 column 2",
+      "Row 2 column 2",
+      "This is a hyperlink",
+      "Here is a list:",
+      "Bullet 1",
+      "Bullet 2",
+      "Bullet 3",
+      "Here is a numbered list:",
+      "Number bullet 1",
+      "Number bullet 2",
+      "Number bullet 3",
+      "Keyword1 Keyword2",
+      "Subject is here",
+      "Suddenly some Japanese text:",
+      "\uff08\uff27\uff28\uff31\uff09",
+      "\u30be\u30eb\u30b2\u3068\u5c3e\u5d0e\u3001\u6de1\u3005\u3068\u6700\u671f",
+      "And then some Gothic text:",
+      "\ud800\udf32\ud800\udf3f\ud800\udf44\ud800\udf39\ud800\udf43\ud800\udf3a"
+    ],
+    "author": "Michael McCandless",
+    "error": null,
+    "labels": [],
+    "links": [],
+    "source": "WordParserTest.java:251",
+    "text": [],
+    "title": null,
+    "word_document": true
+  }
+}

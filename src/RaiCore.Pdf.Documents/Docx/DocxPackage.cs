@@ -50,14 +50,13 @@ internal sealed class DocxPackage : IDisposable
     }
 
     /// <summary>Opens a package.</summary>
-    /// <exception cref="NotSupportedException">The data is an encrypted document or a Word 97-2003 file.</exception>
+    /// <exception cref="NotSupportedException">The data is an encrypted document.</exception>
     /// <exception cref="PdfFormatException">The data is not a ZIP package.</exception>
     public static DocxPackage Open(byte[] data, ConversionContext context)
     {
         if (CompoundFile.IsCompoundFile(data))
         {
-            throw new NotSupportedException(
-                "The data is a Compound File: a password-protected (encrypted) document or a Word 97-2003 (.doc) file, which are not supported.");
+            throw new NotSupportedException("The data is a Compound File without a Word 97-2003 document: a password-protected (encrypted) document, which is not supported.");
         }
 
         if (!data.AsSpan().StartsWith("PK"u8))
