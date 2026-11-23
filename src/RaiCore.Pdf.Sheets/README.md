@@ -55,8 +55,10 @@ workbook.Worksheets[0].InsertRows(10, 2);
 workbook.Save("invoice.xlsx");
 ```
 
-Not supported in conversion to PDF: charts, images, conditional formatting, comments, headers and footers, pivot tables,
-formula calculation, `.xlsb`, Excel 2.x-4.0 and password-protected files.
+Not supported in conversion to PDF: charts, images and other drawings, conditional formatting, comments, headers and
+footers, pivot tables, formula calculation, `.xlsb`, Excel 2.x-4.0 and password-protected files. Content a conversion
+leaves out is reported through `SheetOptions.Diagnostics`, one diagnostic per kind and sheet with its count, so that
+nothing is dropped silently.
 
 Fonts, gridlines, tagging (accessible tables) and the page are set in `SheetOptions`.
 

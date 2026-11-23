@@ -38,8 +38,8 @@ internal static class XlsConverter
             var clock = Stopwatch.StartNew();
             var checkpoint = CsvConverter.Checkpoint(limits, clock, cancellationToken);
             var (workbook, title) = Open(data, limits, options.Culture ?? CultureInfo.InvariantCulture, checkpoint);
-            var selected = XlsxConverter.Select(workbook.Sheets, options);
-            return SheetRenderer.Render(Sheets(workbook, selected, options, limits, checkpoint), options.Sheet, XlsxConverter.Creator, title, checkpoint);
+            var chosen = XlsxConverter.Choose(workbook.Sheets, options);
+            return SheetRenderer.Render(Sheets(workbook, chosen, options, limits, checkpoint), options.Sheet, XlsxConverter.Creator, title, checkpoint);
         }
     }
 
@@ -49,7 +49,7 @@ internal static class XlsConverter
         options ??= new XlsxConverterOptions();
         var limits = options.Sheet.Limits;
         var (workbook, _) = Open(data, limits, options.Culture ?? CultureInfo.InvariantCulture, null);
-        return [.. Sheets(workbook, XlsxConverter.Select(workbook.Sheets, options), options, limits, null)];
+        return [.. Sheets(workbook, XlsxConverter.Choose(workbook.Sheets, options), options, limits, null)];
     }
 
     /// <summary>
@@ -123,15 +123,27 @@ internal static class XlsConverter
         }
     }
 
-    /// <summary>Reads and builds the selected sheets one at a time, so that only one is in memory while it is laid out.</summary>
-    private static IEnumerable<Sheet> Sheets(XlsWorkbook workbook, List<XlsxSheetEntry> selected, XlsxConverterOptions options, ResourceLimits limits, Action? checkpoint)
+    /// <summary>
+    /// Reads and builds the chosen worksheets one at a time, so that only one is in memory while it is laid out, and
+    /// reports what each has that is not supported, and the chosen chart sheets.
+    /// </summary>
+    private static IEnumerable<Sheet> Sheets(XlsWorkbook workbook, List<XlsxSheetEntry> chosen, XlsxConverterOptions options, ResourceLimits limits, Action? checkpoint)
     {
-        foreach (var entry in selected)
+        var diagnostics = options.Sheet.Diagnostics;
+        var bookmarks = chosen.Count(s => s.IsWorksheet) > 1;
+        foreach (var entry in chosen)
         {
             checkpoint?.Invoke();
+            if (!entry.IsWorksheet)
+            {
+                XlsxConverter.ReportChartSheet(entry, diagnostics);
+                continue;
+            }
+
             var worksheet = XlsWorksheet.Read(workbook, workbook.SheetOffsets[entry.Index], limits.MaxTableCells, checkpoint);
+            worksheet.Unsupported.Report(entry.Name, diagnostics);
             yield return XlsxConverter.Build(worksheet, entry, workbook.PrintArea(entry.Index), workbook.PrintTitleRows(entry.Index),
-                workbook.Styles.DefaultFontSize, workbook.Styles.DefaultFontName, options, limits.MaxTableCells, selected.Count > 1);
+                workbook.Styles.DefaultFontSize, workbook.Styles.DefaultFontName, options, limits.MaxTableCells, bookmarks);
         }
     }
 }

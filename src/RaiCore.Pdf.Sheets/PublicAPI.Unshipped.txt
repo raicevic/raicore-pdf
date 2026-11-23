@@ -1,5 +1,8 @@
 #nullable enable
 override RaiCore.Pdf.Sheets.Cell.ToString() -> string!
+override RaiCore.Pdf.Sheets.SheetDiagnostic.Equals(object? obj) -> bool
+override RaiCore.Pdf.Sheets.SheetDiagnostic.GetHashCode() -> int
+override RaiCore.Pdf.Sheets.SheetDiagnostic.ToString() -> string!
 RaiCore.Pdf.Sheets.Cell
 RaiCore.Pdf.Sheets.Cell.Address.get -> string!
 RaiCore.Pdf.Sheets.Cell.BooleanValue.get -> bool?
@@ -100,6 +103,35 @@ RaiCore.Pdf.Sheets.Row.IsHidden.set -> void
 RaiCore.Pdf.Sheets.Row.OutlineLevel.get -> int
 RaiCore.Pdf.Sheets.Row.OutlineLevel.set -> void
 RaiCore.Pdf.Sheets.Row.Worksheet.get -> RaiCore.Pdf.Sheets.Worksheet!
+RaiCore.Pdf.Sheets.SheetDiagnostic
+RaiCore.Pdf.Sheets.SheetDiagnostic.<Clone>$() -> RaiCore.Pdf.Sheets.SheetDiagnostic!
+RaiCore.Pdf.Sheets.SheetDiagnostic.Deconstruct(out string? SheetName, out RaiCore.Pdf.Sheets.SheetDiagnosticKind Kind, out string! Message) -> void
+RaiCore.Pdf.Sheets.SheetDiagnostic.Equals(RaiCore.Pdf.Sheets.SheetDiagnostic? other) -> bool
+RaiCore.Pdf.Sheets.SheetDiagnostic.Kind.get -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnostic.Kind.init -> void
+RaiCore.Pdf.Sheets.SheetDiagnostic.Message.get -> string!
+RaiCore.Pdf.Sheets.SheetDiagnostic.Message.init -> void
+RaiCore.Pdf.Sheets.SheetDiagnostic.SheetDiagnostic(string? SheetName, RaiCore.Pdf.Sheets.SheetDiagnosticKind Kind, string! Message) -> void
+RaiCore.Pdf.Sheets.SheetDiagnostic.SheetName.get -> string?
+RaiCore.Pdf.Sheets.SheetDiagnostic.SheetName.init -> void
+RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.Chart = 0 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.ChartSheet = 1 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.Comment = 5 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.ConditionalFormatting = 6 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.HeaderFooter = 9 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.Layout = 14 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.OleObject = 4 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.PageBreak = 10 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.Picture = 2 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.PivotTable = 8 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.RichText = 11 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.RotatedText = 12 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.Shape = 3 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.ShrinkToFit = 13 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetDiagnosticKind.Sparkline = 7 -> RaiCore.Pdf.Sheets.SheetDiagnosticKind
+RaiCore.Pdf.Sheets.SheetOptions.Diagnostics.get -> System.Action<RaiCore.Pdf.Sheets.SheetDiagnostic!>?
+RaiCore.Pdf.Sheets.SheetOptions.Diagnostics.init -> void
 RaiCore.Pdf.Sheets.Workbook
 RaiCore.Pdf.Sheets.Workbook.ActiveWorksheet.get -> RaiCore.Pdf.Sheets.Worksheet?
 RaiCore.Pdf.Sheets.Workbook.Date1904.get -> bool
@@ -151,6 +183,8 @@ RaiCore.Pdf.Sheets.WorksheetCollection.GetEnumerator() -> System.Collections.Gen
 RaiCore.Pdf.Sheets.WorksheetCollection.IndexOf(RaiCore.Pdf.Sheets.Worksheet! worksheet) -> int
 RaiCore.Pdf.Sheets.WorksheetCollection.this[int index].get -> RaiCore.Pdf.Sheets.Worksheet!
 RaiCore.Pdf.Sheets.WorksheetCollection.this[string! name].get -> RaiCore.Pdf.Sheets.Worksheet!
+static RaiCore.Pdf.Sheets.SheetDiagnostic.operator !=(RaiCore.Pdf.Sheets.SheetDiagnostic? left, RaiCore.Pdf.Sheets.SheetDiagnostic? right) -> bool
+static RaiCore.Pdf.Sheets.SheetDiagnostic.operator ==(RaiCore.Pdf.Sheets.SheetDiagnostic? left, RaiCore.Pdf.Sheets.SheetDiagnostic? right) -> bool
 static RaiCore.Pdf.Sheets.Workbook.Create() -> RaiCore.Pdf.Sheets.Workbook!
 static RaiCore.Pdf.Sheets.Workbook.Open(byte[]! data, RaiCore.Pdf.Sheets.WorkbookOptions? options = null) -> RaiCore.Pdf.Sheets.Workbook!
 static RaiCore.Pdf.Sheets.Workbook.Open(string! path, RaiCore.Pdf.Sheets.WorkbookOptions? options = null) -> RaiCore.Pdf.Sheets.Workbook!

@@ -54,6 +54,13 @@ internal sealed class XlsxWorksheet
 
     public bool RightToLeft { get; set; }
 
+    /// <summary>
+    /// What the sheet has that is left out or simplified, as far as its own part (or record stream) tells: conditional
+    /// formatting, headers and footers, page breaks, embedded objects, sparklines, and cells with rich, rotated or shrunk
+    /// text. The parts it refers to (drawings, comments) are counted by <see cref="XlsxContent"/>.
+    /// </summary>
+    public UnsupportedContent Unsupported { get; } = new();
+
     /// <summary>The key of a cell in <see cref="Cells"/>.</summary>
     public static long Key(int row, int column) => ((long)row << 16) | (uint)column;
 
@@ -68,6 +75,8 @@ internal sealed class XlsxWorksheet
         var section = string.Empty;
         int row = -1, column = -1;
         var read = 0L;
+        var fallbackDepth = -1;
+        HashSet<string>? extendedRules = null;
         while (reader.Read())
         {
             if (reader.NodeType != XmlNodeType.Element)
@@ -76,6 +85,18 @@ internal sealed class XlsxWorksheet
             }
 
             var depth = reader.Depth;
+            if (fallbackDepth >= 0 && depth > fallbackDepth)
+            {
+                continue; // The fallback of markup compatibility repeats its choice for older readers.
+            }
+
+            fallbackDepth = -1;
+            if (reader.LocalName == "Fallback" && reader.NamespaceURI == XlsxContent.MarkupCompatibility)
+            {
+                fallbackDepth = depth;
+                continue;
+            }
+
             if (depth == 1)
             {
                 section = reader.LocalName;
@@ -140,10 +161,59 @@ internal sealed class XlsxWorksheet
 
                     sheet.ReadCell(reader, workbook, ref row, ref column, maxCells);
                     break;
+                default:
+                    sheet.ReadUnsupported(reader, section, ref extendedRules);
+                    break;
             }
         }
 
         return sheet;
+    }
+
+    /// <summary>
+    /// Counts what an element of the sheet's other sections holds that is not supported: conditional formatting rules
+    /// (those of the extension list too, unless a rule of the main list stands for them), sparklines, header and footer
+    /// texts, page breaks set by hand, and embedded objects.
+    /// </summary>
+    private void ReadUnsupported(XmlReader reader, string section, ref HashSet<string>? extendedRules)
+    {
+        switch (section, reader.LocalName)
+        {
+            case ("conditionalFormatting", "cfRule"):
+                Unsupported.Add(SheetDiagnosticKind.ConditionalFormatting);
+                break;
+            case ("conditionalFormatting", "id"):
+                // The extension list's rule that adds to this one (a data bar of Excel 2010).
+                (extendedRules ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase)).Add(XlsxWorkbook.ReadText(reader).Trim());
+                break;
+            case ("extLst", "cfRule"):
+                if (reader.GetAttribute("id") is not { } id || extendedRules?.Contains(id.Trim()) != true)
+                {
+                    Unsupported.Add(SheetDiagnosticKind.ConditionalFormatting);
+                }
+
+                break;
+            case ("extLst", "sparkline"):
+                Unsupported.Add(SheetDiagnosticKind.Sparkline);
+                break;
+            case ("headerFooter", "oddHeader" or "oddFooter" or "evenHeader" or "evenFooter" or "firstHeader" or "firstFooter"):
+                if (!string.IsNullOrWhiteSpace(XlsxWorkbook.ReadText(reader)))
+                {
+                    Unsupported.Add(SheetDiagnosticKind.HeaderFooter);
+                }
+
+                break;
+            case ("rowBreaks" or "colBreaks", "brk"):
+                if (reader.GetAttribute("man") is "1" or "true")
+                {
+                    Unsupported.Add(SheetDiagnosticKind.PageBreak);
+                }
+
+                break;
+            case ("oleObjects", "oleObject"):
+                Unsupported.Add(SheetDiagnosticKind.OleObject);
+                break;
+        }
     }
 
     private void ReadCell(XmlReader reader, XlsxWorkbook workbook, ref int row, ref int column, long maxCells)
@@ -160,6 +230,7 @@ internal sealed class XlsxWorksheet
         var type = reader.GetAttribute("t");
         var style = Integer(reader.GetAttribute("s")) ?? 0;
         string? value = null, inline = null;
+        var rich = false;
         if (!reader.IsEmptyElement)
         {
             var depth = reader.Depth;
@@ -173,7 +244,7 @@ internal sealed class XlsxWorksheet
                             value = XlsxWorkbook.ReadText(reader);
                             break;
                         case "is":
-                            inline = XlsxWorkbook.ReadRichText(reader);
+                            inline = XlsxWorkbook.ReadRichText(reader, out rich);
                             break;
                     }
                 }
@@ -185,7 +256,32 @@ internal sealed class XlsxWorksheet
             return;
         }
 
-        Add(row, column, workbook.Cell(type, value, inline, style), maxCells);
+        var cell = workbook.Cell(type, value, inline, style);
+        Add(row, column, cell, maxCells);
+        if (cell.Kind != CellKind.Empty)
+        {
+            rich = type == "s" ? workbook.RichStrings.Count > 0 && Integer(value) is { } index && workbook.RichStrings.Contains(index) : rich && type == "inlineStr";
+            CountFormatting(workbook.Styles.CellStyle(style), rich);
+        }
+    }
+
+    /// <summary>Counts a cell that shows text with formatting that is not supported: rich text, rotation, shrinking to fit.</summary>
+    internal void CountFormatting(XlsxCellStyle style, bool rich)
+    {
+        if (rich)
+        {
+            Unsupported.Add(SheetDiagnosticKind.RichText);
+        }
+
+        if (style.Rotated)
+        {
+            Unsupported.Add(SheetDiagnosticKind.RotatedText);
+        }
+
+        if (style.ShrinkToFit)
+        {
+            Unsupported.Add(SheetDiagnosticKind.ShrinkToFit);
+        }
     }
 
     /// <summary>

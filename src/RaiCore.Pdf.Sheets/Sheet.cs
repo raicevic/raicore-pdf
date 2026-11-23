@@ -66,6 +66,9 @@ internal sealed class Sheet
     /// </summary>
     public SheetFormatting? Formatting { get; init; }
 
+    /// <summary>The sheet's name (in diagnostics), or <c>null</c> for CSV data.</summary>
+    public string? Name { get; init; }
+
     /// <summary>The rows, top to bottom; header rows first.</summary>
     public IReadOnlyList<SheetCell[]> Rows { get; }
 

@@ -63,7 +63,7 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Numbers, dates and times in their number formats | ✓ | ✓ | ◐ recognized and aligned |
 | Formulas | ◐ saved values | ◐ saved values | - |
 | Text, booleans, errors | ✓ | ✓ | ✓ |
-| Rich text within a cell | ◐ in the cell's font | ◐ in the cell's font | - |
+| Rich text within a cell | ◐ in the cell's font, R | ◐ in the cell's font, R | - |
 | Fonts, fills, borders, alignment, wrapping, indents | ✓ | ✓ | - |
 | Merged cells | ✓ | ✓ | - |
 | Column widths and row heights | ✓ | ✓ | ◐ fitted to the content |
@@ -71,13 +71,13 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Right-to-left sheets | ✓ | ✓ | ◐ text aligned by its direction |
 | Print area, print titles, orientation, scale, fit to width | ✓ | ✓ | - |
 | Header row repeated on every page | ✓ print titles | ✓ print titles | ✓ `HasHeaderRow` |
-| Pivot tables | ◐ their cells | ◐ their cells | - |
-| Charts and chart sheets | ✗ | ✗ | - |
-| Pictures and drawings | ✗ | ✗ | - |
-| Conditional formatting, data bars, color scales | ✗ | ✗ | - |
-| Comments and notes | ✗ | ✗ | - |
-| Headers and footers, page breaks set by hand | ✗ | ✗ | - |
-| Rotated text, shrink to fit | ✗ | ✗ | - |
+| Pivot tables | ◐ their cells, R | ◐ their cells, R | - |
+| Charts and chart sheets | R | R | - |
+| Pictures and drawings | R | R | - |
+| Conditional formatting, data bars, color scales | R | R | - |
+| Comments and notes | R | R | - |
+| Headers and footers, page breaks set by hand | R | R | - |
+| Rotated text, shrink to fit | R | R | - |
 | External links, data connections | ◐ saved values, never refreshed | ◐ saved values, never refreshed | - |
 | Tagged PDF (`Tagged`): tables with header cells | ✓ | ✓ | ✓ |
 | Binary `.xlsb` | ✗ `NotSupportedException` | - | - |
