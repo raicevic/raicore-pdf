@@ -235,10 +235,10 @@ public class RtfToPdfTests
         Assert.DoesNotContain("Fallbacktext", all, StringComparison.Ordinal);
         Assert.DoesNotContain("Commenttext", all, StringComparison.Ordinal);
         var images = new ImageExtractor(PdfReader.Open(data)).ExtractPage(0).Images;
-        Assert.Equal(4, images.Count); // PNG, JPEG, \bin PNG and the shape picture (the metafiles are left out).
+        Assert.Equal(4, images.Count); // PNG, JPEG, \bin PNG and the shape picture (the damaged metafile is left out).
         Assert.Contains(images, i => Math.Abs(i.Width - 80) < 0.5 && Math.Abs(i.Height - 40) < 0.5); // The goal size.
         Assert.Contains(images, i => Math.Abs(i.Width - 30) < 0.5); // 60 points scaled to 50%.
-        Assert.Contains(diagnostics, d => d.Kind == DocumentDiagnosticKind.UnsupportedContent && d.Message.Contains("EMF", StringComparison.Ordinal));
+        Assert.Contains(diagnostics, d => d.Kind == DocumentDiagnosticKind.ImageNotLoaded && d.Message.Contains("damaged", StringComparison.Ordinal));
         Assert.Contains(pdf.Outline, o => o.Title == "Details");
         AssertValid(data);
     }
@@ -296,7 +296,7 @@ public class RtfToPdfTests
     [Fact]
     public void Unsupported_content_is_reported_once()
     {
-        var (_, diagnostics) = Convert(Document(@"{\*\do x}{\*\do y}{\pict\emfblip 01}{\pict\wmetafile8 01}{\*\annotation c}\sectd\cols2 text\par"));
+        var (_, diagnostics) = Convert(Document(@"{\*\do x}{\*\do y}{\pict\macpict 01}{\pict\pmmetafile 01}{\*\annotation c}\sectd\cols2 text\par"));
         Assert.Equal(diagnostics.Count, diagnostics.Distinct().Count());
         Assert.All(diagnostics, d => Assert.Equal(DocumentDiagnosticKind.UnsupportedContent, d.Kind));
         Assert.Equal(5, diagnostics.Count);

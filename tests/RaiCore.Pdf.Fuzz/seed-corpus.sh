@@ -16,6 +16,8 @@ case "$target" in
   webp) files=("$fixtures"/WebP/*.webp) ;;
   tiff) files=("$fixtures"/Images/Tiff/*.tif) ;;
   svg) files=("$fixtures"/Svg/*.svg) ;;
+  wmf) files=("$fixtures"/Metafiles/*.wmf "$fixtures"/Poi/*.wmf) ;;
+  emf) files=("$fixtures"/Metafiles/*.emf "$fixtures"/Poi/*.emf) ;;
   font) files=("$fixtures"/*.ttf "$fixtures"/*.otf "$fixtures"/*.ttc) ;;
   pdf) files=("$fixtures"/Reader/*.pdf "$fixtures"/Reader/Encrypted/*.pdf) ;;
   extract) files=("$fixtures"/Reader/*.pdf "$fixtures"/Extraction/*.pdf) ;;

@@ -23,13 +23,13 @@ namespace RaiCore.Pdf.Documents;
 /// (<c>\itap</c>, <c>\nestcell</c>, <c>\nestrow</c>); sections with their page size, orientation, margins and start;
 /// headers and footers for the first, left and right pages; page numbers (<c>\chpgn</c>, <c>PAGE</c>,
 /// <c>NUMPAGES</c>, <c>SECTIONPAGES</c>), page references (<c>PAGEREF</c>) with the PDF's page numbers, hyperlinks
-/// (<c>HYPERLINK</c> fields) and other fields as their last result; PNG and JPEG pictures and device-independent
-/// bitmaps, scaled to their goal size (the shape picture <c>\shppict</c> rather than its fallback); bookmarks;
+/// (<c>HYPERLINK</c> fields) and other fields as their last result; PNG and JPEG pictures, device-independent bitmaps
+/// and EMF and WMF pictures (drawn as vector graphics), scaled to their goal size (the shape picture <c>\shppict</c> rather than its fallback); bookmarks;
 /// footnotes and endnotes; revisions as if accepted (deleted text left out); the title and author of the document's
 /// information (<c>\info</c>).
 /// </para>
 /// <para>
-/// Not supported: EMF, WMF and PICT pictures, drawing objects (<c>\do</c>), shapes as drawings (their pictures and text
+/// Not supported: PICT pictures, drawing objects (<c>\do</c>), shapes as drawings (their pictures and text
 /// are laid out in the text), embedded objects (their result is shown), comments (annotations), several text columns
 /// (laid out as one), frames and positioned paragraphs, footnotes at the bottom of the page (they follow their
 /// section), right-to-left and vertical text beyond what the layout engine does by itself. What is left out is

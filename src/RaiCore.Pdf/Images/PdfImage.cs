@@ -1,5 +1,6 @@
 using RaiCore.Pdf.Images;
 using RaiCore.Pdf.IO;
+using RaiCore.Pdf.Metafiles;
 using RaiCore.Pdf.Objects;
 using RaiCore.Pdf.Svg;
 
@@ -31,13 +32,19 @@ public enum PdfImageFormat
     /// multi-page file).
     /// </summary>
     Tiff,
+
+    /// <summary>WMF (Windows Metafile, with or without a placeable header), drawn as vector graphics.</summary>
+    Wmf,
+
+    /// <summary>EMF (Enhanced Metafile, including EMF+ records), drawn as vector graphics.</summary>
+    Emf,
 }
 
 /// <summary>
 /// An image that can be drawn on pages with <see cref="PdfCanvas.DrawImage"/>. JPEGs are embedded as they are;
 /// PNG, GIF, BMP, WebP and TIFF are decoded and recompressed, with transparency kept (JPEG and fax data in a TIFF are
-/// embedded as they are). SVG is drawn as vector graphics (a form XObject), not rasterized. An image drawn several
-/// times, on any number of pages, is stored in the PDF once.
+/// embedded as they are). SVG, WMF and EMF are drawn as vector graphics (a form XObject), not rasterized. An image
+/// drawn several times, on any number of pages, is stored in the PDF once.
 /// </summary>
 /// <remarks>
 /// Immutable and thread-safe. Embedded color profiles are ignored; colors are treated as sRGB. For the supported
@@ -49,6 +56,7 @@ public sealed class PdfImage
 
     private readonly DecodedImage? _raster;
     private readonly SvgImage? _svg;
+    private readonly MetafileImage? _metafile;
 
     private PdfImage(DecodedImage image, PdfImageFormat format)
     {
@@ -62,52 +70,65 @@ public sealed class PdfImage
         Format = PdfImageFormat.Svg;
     }
 
+    private PdfImage(MetafileImage metafile)
+    {
+        _metafile = metafile;
+        Format = metafile.Format;
+    }
+
     /// <summary>The file format.</summary>
     public PdfImageFormat Format { get; }
 
     /// <summary>
     /// Width in pixels as displayed (after applying the EXIF orientation of a JPEG or the orientation of a TIFF). For
-    /// SVG, the intrinsic width in CSS pixels, rounded; <see cref="NaturalWidth"/> is exact.
+    /// SVG, WMF and EMF, the intrinsic width in CSS pixels, rounded; <see cref="NaturalWidth"/> is exact.
     /// </summary>
-    public int PixelWidth => _svg is { } svg ? ToPixels(svg.Width) : SwapsAxes ? Image.Height : Image.Width;
+    public int PixelWidth => _svg is { } svg ? ToPixels(svg.Width) : _metafile is { } metafile ? ToPixels(metafile.Width) : SwapsAxes ? Image.Height : Image.Width;
 
     /// <summary>
     /// Height in pixels as displayed (after applying the EXIF orientation of a JPEG or the orientation of a TIFF). For
-    /// SVG, the intrinsic height in CSS pixels, rounded; <see cref="NaturalHeight"/> is exact.
+    /// SVG, WMF and EMF, the intrinsic height in CSS pixels, rounded; <see cref="NaturalHeight"/> is exact.
     /// </summary>
-    public int PixelHeight => _svg is { } svg ? ToPixels(svg.Height) : SwapsAxes ? Image.Width : Image.Height;
+    public int PixelHeight => _svg is { } svg ? ToPixels(svg.Height) : _metafile is { } metafile ? ToPixels(metafile.Height) : SwapsAxes ? Image.Width : Image.Height;
 
     /// <summary>
     /// The natural width in points, as CSS sizes an image: 0.75 points (one CSS pixel) per pixel, or an SVG's own
     /// width (from its <c>width</c> attribute or <c>viewBox</c>, else 300 pixels). A TIFF with a resolution (in
     /// pixels per inch or centimeter) has its physical size instead, so a scan at 300 dpi is as large as the paper it
-    /// was scanned from and a fax with non-square pixels keeps its proportions.
+    /// was scanned from and a fax with non-square pixels keeps its proportions. A WMF or EMF picture has the size its
+    /// header gives (the placeable header's bounding box, or the EMF frame).
     /// </summary>
-    public double NaturalWidth => _svg?.Width ?? NaturalSize(PixelWidth, SwapsAxes ? Image.Resolution?.Y : Image.Resolution?.X);
+    public double NaturalWidth => _svg?.Width ?? _metafile?.Width ?? NaturalSize(PixelWidth, SwapsAxes ? Image.Resolution?.Y : Image.Resolution?.X);
 
     /// <summary>
     /// The natural height in points: 0.75 points (one CSS pixel) per pixel, or an SVG's own height (from its
     /// <c>height</c> attribute or <c>viewBox</c>, else 150 pixels). A TIFF with a resolution has its physical size.
     /// </summary>
-    public double NaturalHeight => _svg?.Height ?? NaturalSize(PixelHeight, SwapsAxes ? Image.Resolution?.X : Image.Resolution?.Y);
+    public double NaturalHeight => _svg?.Height ?? _metafile?.Height ?? NaturalSize(PixelHeight, SwapsAxes ? Image.Resolution?.X : Image.Resolution?.Y);
 
-    /// <summary>Whether the image has transparent or semi-transparent pixels. Always true for SVG, which has no background.</summary>
-    public bool HasTransparency => _svg is not null || Image.Alpha is not null || Image.ColorKey is not null;
+    /// <summary>
+    /// Whether the image has transparent or semi-transparent pixels. Always true for SVG, WMF and EMF, which have no
+    /// background.
+    /// </summary>
+    public bool HasTransparency => _svg is not null || _metafile is not null || Image.Alpha is not null || Image.ColorKey is not null;
 
-    /// <summary>Whether drawing the image uses PDF transparency (alpha or groups): only SVG images with opacity do.</summary>
-    internal bool UsesTransparency => _svg?.UsesTransparency ?? false;
+    /// <summary>Whether drawing the image uses PDF transparency (alpha or groups): only SVG images with opacity and EMF+ pictures with translucent colors do.</summary>
+    internal bool UsesTransparency => _svg?.UsesTransparency ?? _metafile?.UsesTransparency ?? false;
 
-    /// <summary>For an SVG image that uses transparency (see <see cref="PdfPage.Transparency"/>), what it uses; otherwise <c>null</c>.</summary>
-    internal string? SvgTransparency() => _svg?.Transparency() is { } what ? "an SVG image with " + what : null;
+    /// <summary>For a vector image that uses transparency (see <see cref="PdfPage.Transparency"/>), what it uses; otherwise <c>null</c>.</summary>
+    internal string? SvgTransparency() =>
+        _svg?.Transparency() is { } what ? "an SVG image with " + what
+        : _metafile?.Transparency() is { } used ? (Format == PdfImageFormat.Emf ? "an EMF picture with " : "a WMF picture with ") + used
+        : null;
 
-    /// <summary>The decoded raster image. Not available for SVG.</summary>
-    internal DecodedImage Image => _raster ?? throw new InvalidOperationException("An SVG image has no pixels.");
+    /// <summary>The decoded raster image. Not available for SVG, WMF and EMF.</summary>
+    internal DecodedImage Image => _raster ?? throw new InvalidOperationException("A vector image has no pixels.");
 
     private bool SwapsAxes => Image.Orientation >= 5;
 
     /// <summary>
-    /// Loads an image file (JPEG, PNG, GIF, BMP, WebP, TIFF or SVG; the format is detected from the content). Of a
-    /// multi-page TIFF, the first page.
+    /// Loads an image file (JPEG, PNG, GIF, BMP, WebP, TIFF, SVG, WMF or EMF; the format is detected from the
+    /// content). Of a multi-page TIFF, the first page.
     /// </summary>
     public static PdfImage Load(string path) => Load(File.ReadAllBytes(path));
 
@@ -166,8 +187,37 @@ public sealed class PdfImage
             return new PdfImage(JpegReader.Read(data), PdfImageFormat.Jpeg);
         }
 
-        throw new ImageFormatException("Unsupported image format; JPEG, PNG, GIF, BMP, WebP, TIFF and SVG are supported.");
+        if (MetafileImage.IsMetafile(data))
+        {
+            return new PdfImage(MetafileImage.Load(data, MetafileOptions.Default));
+        }
+
+        throw new ImageFormatException(UnsupportedFormat);
     }
+
+    private const string UnsupportedFormat = "Unsupported image format; JPEG, PNG, GIF, BMP, WebP, TIFF, SVG, WMF and EMF are supported.";
+
+    /// <summary>
+    /// Loads a WMF or EMF picture with a converter's fonts and diagnostics (Documents, Slides and Sheets draw the
+    /// metafiles of their pictures through this). A damaged picture is drawn up to the damage, which is reported.
+    /// </summary>
+    /// <exception cref="ImageFormatException">The data is not a WMF or EMF picture, or its header is damaged.</exception>
+    internal static PdfImage LoadMetafile(byte[] data, MetafileOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(options);
+        return new PdfImage(MetafileImage.Load(data, options));
+    }
+
+    /// <summary>Whether data starts like a WMF or EMF picture.</summary>
+    internal static bool IsMetafile(ReadOnlySpan<byte> data) => MetafileImage.IsMetafile(data);
+
+    /// <summary>An image of decoded pixels (a bitmap in a metafile).</summary>
+    internal static PdfImage FromDecoded(DecodedImage image) =>
+        new(image, image.Encoding == ImageEncoding.Jpeg ? PdfImageFormat.Jpeg : PdfImageFormat.Bmp);
+
+    /// <summary>An image of a drawn metafile (a picture nested in another).</summary>
+    internal static PdfImage FromMetafile(MetafileImage metafile) => new(metafile);
 
     /// <summary>
     /// Loads one page of a multi-page TIFF from bytes (any other image has one page, index 0). The array must not be
@@ -218,9 +268,9 @@ public sealed class PdfImage
         }
 
         return SvgDocument.IsSvg(data) || PngDecoder.IsPng(data) || GifDecoder.IsGif(data) || WebPDecoder.IsWebP(data) || BmpDecoder.IsBmp(data)
-            || (data.Length >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF)
+            || (data.Length >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF) || MetafileImage.IsMetafile(data)
             ? 1
-            : throw new ImageFormatException("Unsupported image format; JPEG, PNG, GIF, BMP, WebP, TIFF and SVG are supported.");
+            : throw new ImageFormatException(UnsupportedFormat);
     }
 
     /// <summary>
@@ -261,6 +311,11 @@ public sealed class PdfImage
             return svg.GetMatrix(x, y, width, height);
         }
 
+        if (_metafile is { } metafile)
+        {
+            return metafile.GetMatrix(x, y, width, height);
+        }
+
         // Displayed position (X', Y') in [0, 1] for stored (u, v), per EXIF orientation 1-8.
         var (xu, xv, x0, yu, yv, y0) = Image.Orientation switch
         {
@@ -288,6 +343,11 @@ public sealed class PdfImage
         if (_svg is { } svg)
         {
             return svg.WriteTo(writer);
+        }
+
+        if (_metafile is { } metafile)
+        {
+            return metafile.WriteTo(writer);
         }
 
         var image = Image;

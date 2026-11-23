@@ -23,7 +23,7 @@ namespace RaiCore.Pdf.Slides;
 /// charts) are drawn as vector graphics from their cached data, with Excel's axis scaling and their text extractable.
 /// </para>
 /// <para>
-/// Not supported: surface charts, SmartArt without a stored drawing, EMF and WMF pictures, embedded objects without a
+/// Not supported: surface charts, SmartArt without a stored drawing, PICT pictures, embedded objects without a
 /// picture, video and audio (their poster picture is drawn), animations and transitions, 3D effects, shadows, glow,
 /// reflections, soft edges, WordArt transforms, multiple text columns, notes pages and comments. What is left out is
 /// reported to <see cref="PptxConverterOptions.Diagnostics"/>. Password-protected (encrypted) presentations and

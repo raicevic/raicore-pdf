@@ -44,7 +44,8 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Pictures: PNG, JPEG | ✓ | ✓ | ✓ | ✓ |
 | Pictures: GIF, BMP, TIFF, WebP | ✓ | ◐ TIFF and bitmaps | ◐ bitmaps | ✓ |
 | Pictures: SVG | - | - | - | ✓ |
-| Pictures: EMF, WMF, PICT | R | R | R | R |
+| Pictures: EMF, WMF (and EMF+) | ✓ | ✓ | ✓ | ✓ |
+| Pictures: PICT | R | R | R | R |
 | Floating pictures with text wrapping | ✓ | ✓ | ◐ in the text | ✓ |
 | Text boxes and shapes | ◐ text after the paragraph, R | ◐ text after the paragraph, R | ◐ in the text, R | ◐ text after the paragraph, R |
 | Charts | ✓ newer types as their stored picture, R | ◐ preview picture | ◐ object's result | ◐ replacement picture |
@@ -98,7 +99,8 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Tab stops | ✗ a few spaces | ✗ a few spaces |
 | Pictures: PNG, JPEG, TIFF, bitmaps | ✓ | ✓ |
 | Pictures: GIF, WebP, SVG | ✓ | - |
-| Pictures: EMF, WMF, PICT | R | R |
+| Pictures: EMF, WMF (and EMF+) | ✓ | ✓ |
+| Pictures: PICT | R | R |
 | Tables with table styles | ✓ | ◐ drawn as their shapes |
 | SmartArt | ◐ stored drawing, else R | - |
 | Charts | ✓ surface charts R, newer types as their stored picture | ◐ stored picture |

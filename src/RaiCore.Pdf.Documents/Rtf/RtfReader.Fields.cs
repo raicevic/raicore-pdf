@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using RaiCore.Pdf.Documents.Docx;
 using RaiCore.Pdf.Documents.Model;
+using RaiCore.Pdf.Metafiles;
 
 namespace RaiCore.Pdf.Documents.Rtf;
 
@@ -334,8 +335,8 @@ internal sealed partial class RtfReader
     }
 
     /// <summary>
-    /// Ends a picture: PNG and JPEG (and device-independent bitmaps, as BMP) become images at their goal size and
-    /// scale; metafiles are reported and left out.
+    /// Ends a picture: PNG, JPEG, EMF and WMF (and device-independent bitmaps, as BMP) become images at their goal
+    /// size and scale; other formats are reported and left out.
     /// </summary>
     private void EndPicture(Group group)
     {
@@ -345,10 +346,12 @@ internal sealed partial class RtfReader
         }
 
         var name = $"Picture {++_pictures}";
+        var metafile = picture.Format is "EMF" or "WMF";
         byte[]? data = picture.Format switch
         {
-            "PNG" or "JPEG" => [.. picture.Data],
+            "PNG" or "JPEG" or "EMF" => [.. picture.Data],
             "DIB" => Bitmap(CollectionsMarshal.AsSpan(picture.Data)),
+            "WMF" => MetafileBlip.WithPlaceable([.. picture.Data], (0, 0, 0, 0), picture.GoalWidth / 1440.0, picture.GoalHeight / 1440.0),
             _ => null,
         };
         if (picture.TooLarge)
@@ -360,7 +363,7 @@ internal sealed partial class RtfReader
         if (data is null)
         {
             _context.Report(DocumentDiagnosticKind.UnsupportedContent,
-                $"{name} is in {(picture.Format.Length > 0 ? picture.Format + " format" : "an unknown format")}, which cannot be drawn (EMF, WMF and PICT pictures are not supported); it is left out.");
+                $"{name} is in {(picture.Format.Length > 0 ? picture.Format + " format" : "an unknown format")}, which cannot be drawn (PICT pictures are not supported); it is left out.");
             return;
         }
 
@@ -369,9 +372,10 @@ internal sealed partial class RtfReader
             return;
         }
 
-        // The goal size is in twips; without one, a bitmap's size in pixels at 96 dpi.
-        var width = picture.GoalWidth > 0 ? picture.GoalWidth / 20.0 : picture.Width * 0.75;
-        var height = picture.GoalHeight > 0 ? picture.GoalHeight / 20.0 : picture.Height * 0.75;
+        // The goal size is in twips; without one, a bitmap's size in pixels at 96 dpi, a metafile's in 0.01 mm.
+        var unit = metafile ? 72 / 2540.0 : 0.75;
+        var width = picture.GoalWidth > 0 ? picture.GoalWidth / 20.0 : picture.Width * unit;
+        var height = picture.GoalHeight > 0 ? picture.GoalHeight / 20.0 : picture.Height * unit;
         width = Math.Min(14400, width * picture.ScaleX / 100.0);
         height = Math.Min(14400, height * picture.ScaleY / 100.0);
         AddInline(new ImageInline(data, width, height) { Name = name });

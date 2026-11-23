@@ -356,6 +356,16 @@ internal sealed partial class DocumentRenderer
 
     private static string NoteDestination(string prefix, int number) => "_" + prefix + number.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
+    /// <summary>
+    /// How WMF and EMF pictures are drawn: their text in the document's fonts (the same resolution as runs), their
+    /// problems reported for the image.
+    /// </summary>
+    private Metafiles.MetafileOptions Metafile(string name) => new()
+    {
+        Fonts = (face, bold, italic) => _styles.Fonts(face, bold, italic),
+        Report = (message, damaged) => _context.Report(damaged ? DocumentDiagnosticKind.ImageNotLoaded : DocumentDiagnosticKind.UnsupportedContent, $"{name}: {message}"),
+    };
+
     /// <summary>Loads an image once (shared by its uses), or <c>null</c> with a diagnostic if it cannot be drawn.</summary>
     private PdfImage? Image(ImageInline image)
     {
@@ -369,14 +379,14 @@ internal sealed partial class DocumentRenderer
             return loaded;
         }
 
+        var name = image.Name is { } n ? $"The image '{n}'" : "An image";
         try
         {
-            loaded = PdfImage.Load(image.Data);
+            loaded = PdfImage.IsMetafile(image.Data) ? PdfImage.LoadMetafile(image.Data, Metafile(name)) : PdfImage.Load(image.Data);
         }
         catch (ImageFormatException)
         {
-            var name = image.Name is { } n ? $"The image '{n}'" : "An image";
-            _context.Report(DocumentDiagnosticKind.ImageNotLoaded, $"{name} is in a format that cannot be drawn (such as EMF or WMF) or is damaged; it is left out.");
+            _context.Report(DocumentDiagnosticKind.ImageNotLoaded, $"{name} is in a format that cannot be drawn (such as PICT) or is damaged; it is left out.");
             loaded = null;
         }
 

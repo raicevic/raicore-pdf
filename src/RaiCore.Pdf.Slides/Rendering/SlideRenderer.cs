@@ -449,6 +449,16 @@ internal sealed partial class SlideRenderer
         canvas.RestoreState();
     }
 
+    /// <summary>
+    /// How WMF and EMF pictures are drawn: their text in the presentation's fonts, their problems reported (on the
+    /// slide where the picture is first drawn).
+    /// </summary>
+    private Metafiles.MetafileOptions Metafile(string? source) => new()
+    {
+        Fonts = (face, bold, italic) => _fonts.Get(face, null, null, bold, italic),
+        Report = (message, _) => Report("picture", $"The picture '{source}': {message}"),
+    };
+
     /// <summary>An image loaded once per conversion; <c>null</c> (reported on each slide it is on) when it cannot be read.</summary>
     private PdfImage? Image(byte[] data, string? source)
     {
@@ -456,16 +466,12 @@ internal sealed partial class SlideRenderer
         {
             try
             {
-                loaded = (PdfImage.Load(data), null);
+                loaded = (PdfImage.IsMetafile(data) ? PdfImage.LoadMetafile(data, Metafile(source)) : PdfImage.Load(data), null);
             }
             catch (Exception ex) when (ex is ImageFormatException or NotSupportedException or ArgumentException
                 or ResourceLimitExceededException { LimitName: nameof(ResourceLimits.MaxImagePixels) })
             {
-                var format = data.AsSpan().StartsWith((ReadOnlySpan<byte>)[0x01, 0x00, 0x00, 0x00]) ? "EMF"
-                    : data.AsSpan().StartsWith((ReadOnlySpan<byte>)[0xD7, 0xCD, 0xC6, 0x9A]) ? "WMF" : null;
-                loaded = (null, format is not null
-                    ? $"The {format} picture '{source}' is not drawn: {format} is not supported."
-                    : $"The picture '{source}' is not drawn: {ex.Message}");
+                loaded = (null, $"The picture '{source}' is not drawn: {ex.Message}");
             }
 
             _images[data] = loaded;

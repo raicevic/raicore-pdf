@@ -28,8 +28,8 @@ doc.Save("hello.pdf");
 ```
 
 - Fonts are subset to the glyphs used and stay searchable and copyable in every script.
-- JPEG (embedded as is), PNG (every color type, transparency), GIF, BMP, WebP (lossy and lossless, with alpha) and
-  SVG (drawn as vector graphics) images, each stored once per document.
+- JPEG (embedded as is), PNG (every color type, transparency), GIF, BMP, WebP (lossy and lossless, with alpha), and
+  SVG, WMF and EMF (drawn as vector graphics) images, each stored once per document.
 - Transparency: colors with an alpha (`new PdfColor(r, g, b, alpha)`) and transparency groups
   (`Canvas.BeginGroup(opacity)`/`EndGroup()`) that composite overlapping drawing as a whole.
 - Bookmarks: `PdfDocument.Outline` holds nested `PdfOutlineItem`s with Unicode titles.

@@ -36,13 +36,14 @@ legacy.Save("old-deck.pdf");
 
 - **PowerPoint 97-2003:** `PptToPdf` reads the binary `.ppt` format (also `.pps` and `.pot`): the edit history of
   the file (damaged ones recovered), masters and title masters with their text styles, color schemes and backgrounds,
-  OfficeArt shapes and groups (tables are groups), free forms, pictures (PNG, JPEG, TIFF, bitmaps), text with its
+  OfficeArt shapes and groups (tables are groups), free forms, pictures (PNG, JPEG, TIFF, bitmaps, WMF and EMF as
+  vector graphics), text with its
   runs, bullets and links, and the footers the presentation sets.
 
 - **Charts:** columns, bars, lines, pies, doughnuts, areas, scatter, bubble, radar and stock charts and their
   combinations, drawn as vector graphics with Excel's axis scaling, legends, titles and data labels as text.
 
-Not supported: surface charts, EMF, WMF and PICT pictures, animations, 3D effects, shadows, WordArt transforms, notes and
+Not supported: surface charts, PICT pictures, animations, 3D effects, shadows, WordArt transforms, notes and
 comments (reported to `Diagnostics`), encrypted presentations, and PowerPoint 95 and older files.
 
 More: the [PPTX guide](https://raicevic.github.io/raicore-pdf/guides/slides.html).

@@ -44,8 +44,10 @@ names. `ResourceLoaders.None` loads nothing, so only `data:` URIs work (see [Unt
 
 [!code-csharp[](../snippets/Images.cs#draw-images)]
 
-`PdfImage.Load` reads any of the formats from a file, stream or bytes; in the layout API, `ImageBlock` places an image
-as a block and `Paragraph.AddImage` in a line of text. For a multi-page TIFF, `PdfImage.GetPageCount` gives the number of
+`PdfImage.Load` reads any of the formats from a file, stream or bytes, and also WMF and EMF pictures (with their
+EMF+ records), drawn as vector graphics with their text in the standard PDF fonts (the Office converters draw them
+with the document's fonts; see the [Word documents guide](documents.md#wmf-and-emf-pictures)); in the layout API,
+`ImageBlock` places an image as a block and `Paragraph.AddImage` in a line of text. For a multi-page TIFF, `PdfImage.GetPageCount` gives the number of
 pages and `PdfImage.Load(data, pageIndex)` loads one of them:
 
 [!code-csharp[](../snippets/Images.cs#tiff-pages)]

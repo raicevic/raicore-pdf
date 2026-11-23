@@ -1,4 +1,4 @@
-using System.IO.Compression;
+using RaiCore.Pdf.Metafiles;
 using RaiCore.Pdf.Slides.Model;
 
 namespace RaiCore.Pdf.Slides.Ppt;
@@ -411,7 +411,7 @@ internal sealed partial class PptReader
 
     /// <summary>
     /// The image of a picture store entry (from 1), read once: PNG, JPEG, TIFF and DIB (as BMP) bitmaps; EMF and WMF
-    /// metafiles decompressed (the renderer reports them); <c>null</c> when it is missing or cannot be read.
+    /// metafiles decompressed (a WMF with its placeable header); <c>null</c> when it is missing or cannot be read.
     /// </summary>
     private byte[]? Blip(int index, out string? source)
     {
@@ -473,67 +473,14 @@ internal sealed partial class PptReader
                 return body.Length > uids + 1 + 40 ? Bmp(body[(uids + 1)..]) : null;
             case 0xF01A or 0xF01B:
             {
-                // EMF, WMF: a 34-byte metafile header (uncompressed size, bounds, size, compressed size, compression)
-                // and the zlib-compressed file.
-                if (body.Length < uids + 34)
-                {
-                    return null;
-                }
-
-                var header = body.Slice(uids, 34);
-                var compressed = body[(uids + 34)..];
-                var size = Bytes.U32(header, 0);
-                var file = Bytes.U8(header, 32) == 0 ? Inflate(compressed, size) : compressed.ToArray();
-                if (file is null)
-                {
-                    return null;
-                }
-
-                if (type == 0xF01B && !file.AsSpan().StartsWith((ReadOnlySpan<byte>)[0xD7, 0xCD, 0xC6, 0x9A]))
-                {
-                    // A WMF without its placeable header (which names the format).
-                    file = [0xD7, 0xCD, 0xC6, 0x9A, .. new byte[18], .. file];
-                }
-
+                // EMF, WMF: a 34-byte metafile header and the zlib-compressed file.
+                var file = body.Length > uids ? MetafileBlip.Decode(body[uids..], type == 0xF01B, _limits.MaxDecompressedBytes - _decompressed) : null;
+                _decompressed += file?.Length ?? 0;
                 return file;
             }
 
             default:
                 return null;
-        }
-    }
-
-    /// <summary>Decompresses zlib data, within <see cref="ResourceLimits.MaxDecompressedBytes"/> for all pictures together.</summary>
-    private byte[]? Inflate(ReadOnlySpan<byte> data, uint size)
-    {
-        try
-        {
-            using var input = new MemoryStream(data.ToArray());
-            using var zlib = new ZLibStream(input, CompressionMode.Decompress);
-            using var output = new MemoryStream();
-            var buffer = new byte[81920];
-            int read;
-            while ((read = zlib.Read(buffer, 0, buffer.Length)) > 0)
-            {
-                _decompressed += read;
-                if (_decompressed > _limits.MaxDecompressedBytes)
-                {
-                    throw new ResourceLimitExceededException(nameof(ResourceLimits.MaxDecompressedBytes), _limits.MaxDecompressedBytes,
-                        $"The presentation's pictures decompress to more than ResourceLimits.MaxDecompressedBytes ({_limits.MaxDecompressedBytes}).");
-                }
-
-                output.Write(buffer, 0, read);
-                if (output.Length > size && size > 0)
-                {
-                    break;
-                }
-            }
-
-            return output.ToArray();
-        }
-        catch (InvalidDataException)
-        {
-            return null;
         }
     }
 

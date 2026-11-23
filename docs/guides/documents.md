@@ -104,10 +104,36 @@ system's fonts, or Carlito, for Word's line breaks.
 - `UnsupportedContent`: charts that cannot be drawn (surface charts; newer chart types, shown as their stored
   picture; 3-D charts, drawn flat), SmartArt, embedded objects (shown as their preview image when it can be drawn),
   shapes and text boxes (their text is laid out after their paragraph), several text columns (laid out as one),
-  embedded document parts (`altChunk`), equations (shown as text).
-- `ImageNotLoaded`: images in formats that cannot be drawn (EMF, WMF), damaged, missing or linked images; they are
-  left out.
+  embedded document parts (`altChunk`), equations (shown as text), and what a WMF or EMF picture uses that is
+  approximated or left out (see below).
+- `ImageNotLoaded`: images in formats that cannot be drawn (PICT, StarView metafiles), damaged, missing or linked
+  images; they are left out. A damaged WMF or EMF picture is drawn up to the damage, and reported here too.
 - `Layout`: content wider than its box or taller than a page.
+
+## WMF and EMF pictures
+
+WMF and EMF pictures (and the EMF+ records in EMF files saved by newer Office versions) are drawn as PDF vector
+graphics, in every format: a picture, an embedded object's preview, a chart's replacement image. Lines, fills, text
+and bitmaps are drawn where the picture's records put them, through its mapping mode, window and viewport, world
+transforms and clipping, and the picture is cropped and scaled like any other image. Its text stays text (it can be
+selected and searched), in the font the converter picks for the picture's font name, as for the document's runs, and
+at the positions the picture gives each character.
+
+Supported: pens (widths, dashes, caps and joins), solid, hatched and bitmap brushes, the fill mode, paths, arcs,
+chords, pies, ellipses, rounded rectangles and Béziers, regions, clip rectangles, paths and regions, saved states,
+bitmaps (also with the raster operations that keep what is under white or black pixels), gradients, palettes, and
+the common EMF+ records: fills, lines, curves, paths, regions, solid, hatch and gradient brushes, pens with dashes and
+arrowheads, images (also pictures nested in pictures), strings, transforms, clipping and containers. A file with both
+kinds of records (EMF+ dual) is drawn from its EMF+ records, or from its EMF records when it uses an EMF+ feature that
+is not supported. Approximated and reported as `UnsupportedContent`: raster operations that mix colors (drawn as
+copies), EMF+ path gradients (drawn as radial gradients), triangle gradients (one color). Text stored as glyph
+numbers is drawn only when the fonts include the picture's font (the numbers belong to it); else it is left out and
+reported (a WMF that holds such an EMF is drawn from its own records instead). Also left out and reported: flood
+fills, inverted areas, and EMF+ texture brushes.
+
+A picture is read within `Limits`: `MaxElements` bounds its records and points (a picture with more is cut short),
+`MaxImagePixels` each of its bitmaps (a larger one is left out), and pictures nest at most four deep. A damaged
+record ends the drawing: the picture is drawn up to it, and reported as `ImageNotLoaded`.
 
 ## Untrusted documents
 
@@ -162,8 +188,8 @@ turn converts a `.docx` package given to it.
   addresses and bookmarks, bookmarks, footnotes and endnotes (with their own citations, numbered as the notes
   configuration says), page numbers, page counts and page references computed from the PDF's pages, other fields
   (dates, titles, chapters, sequences) as their text, tracked changes as if accepted, comments left out.
-- **Frames:** images in the package (PNG, JPEG, GIF, BMP, TIFF, WebP, SVG) or embedded as base64 in flat documents;
-  of several alternatives the first that can be drawn. Frames anchored as characters are in the line; frames anchored
+- **Frames:** images in the package (PNG, JPEG, GIF, BMP, TIFF, WebP, SVG, WMF, EMF) or embedded as base64 in flat
+  documents; of several alternatives the first that can be drawn (a bitmap or SVG before a metafile). Frames anchored as characters are in the line; frames anchored
   to the paragraph with text wrapping float at the left or right; others stand on a line of their own. Charts and
   other embedded objects are shown as their replacement image (when it can be drawn: LibreOffice often stores it as a
   StarView metafile, which cannot); the text of text boxes and shapes follows their paragraph.
@@ -210,14 +236,14 @@ What is converted (RTF 1.9.1):
   `PAGE` fields) restarted and formatted per section.
 - **Fields:** `HYPERLINK` fields are links (to web addresses and bookmarks), `PAGE`, `NUMPAGES`, `SECTIONPAGES` and
   `PAGEREF` are computed, other fields show their last result.
-- **Pictures:** PNG and JPEG (`\pngblip`, `\jpegblip`) and device-independent bitmaps, in hexadecimal or `\bin`
-  data, at their goal size and scale; the shape picture (`\shppict`) rather than its fallback; a shape's picture and
+- **Pictures:** PNG and JPEG (`\pngblip`, `\jpegblip`), EMF and WMF (`\emfblip`, `\wmetafile`) and
+  device-independent bitmaps, in hexadecimal or `\bin` data, at their goal size and scale; the shape picture (`\shppict`) rather than its fallback; a shape's picture and
   text, laid out in the text; an embedded object's result.
 - **Bookmarks and notes:** bookmarks (`\bkmkstart`) as named destinations, footnotes (`\footnote`, numbered from
   `\chftn`) and endnotes (`\ftnalt`); the title and author of the document's information (`\info`) as the PDF's.
 
-Not supported, and reported to `Diagnostics`: EMF, WMF and PICT pictures (`ImageNotLoaded` for pictures that cannot be
-decoded or are larger than `MaxResourceBytes`), drawing objects (`\do`), shapes as drawings, embedded objects (their
+Not supported, and reported to `Diagnostics`: PICT pictures (`ImageNotLoaded` for pictures that cannot be decoded or
+are larger than `MaxResourceBytes`), drawing objects (`\do`), shapes as drawings, embedded objects (their
 result is shown), comments (annotations), several text columns. Also not supported: frames and positioned paragraphs
 (laid out in the text), footnotes at the bottom of the page, page borders, right-to-left and vertical text beyond what
 the layout engine does by itself. Revisions are shown as if accepted.
@@ -259,12 +285,13 @@ What is converted ([MS-DOC]):
 - **Fields:** `HYPERLINK` fields are links (to web addresses and bookmarks), `PAGE`, `NUMPAGES`, `SECTIONPAGES` and
   `PAGEREF` are computed, other fields show their last result (field instructions are never shown).
 - **Pictures:** inline pictures (in the Data stream) and floating ones (the drawing layer's pictures) in PNG, JPEG,
-  TIFF and bitmap formats, at their size and scale less their cropping; an embedded object's preview picture.
+  TIFF, bitmap, EMF and WMF formats (also the metafile pictures of Word 6 era files' PICF), at their size and scale
+  less their cropping; an embedded object's preview picture (often an EMF or WMF).
 - **More:** bookmarks as named destinations, footnotes and endnotes with their numbers, the title and author of the
   summary information as the PDF's.
 
-Not supported, and reported to `Diagnostics`: EMF, WMF and PICT pictures (`ImageNotLoaded`, as are pictures larger
-than `MaxResourceBytes` and damaged ones), drawing shapes other than pictures and text boxes, comments, several text
+Not supported, and reported to `Diagnostics`: PICT pictures (`ImageNotLoaded`, as are pictures larger than
+`MaxResourceBytes` and damaged ones), drawing shapes other than pictures and text boxes, comments, several text
 columns; text boxes are laid out after their paragraph. Also not supported: frames and positioned paragraphs, form
 fields' boxes, footnotes at the bottom of the page, page borders, right-to-left and vertical text beyond what the
 layout engine does by itself. Revisions are shown as if accepted.
@@ -318,7 +345,7 @@ text, rows deleted from a Word table, charts, SmartArt and embedded objects have
 ## Not supported
 
 Floating text boxes and shapes as frames (their text is laid out after their paragraph), surface charts and charts in
-`.doc`, RTF and ODT files (beyond the pictures stored with them), SmartArt, embedded objects, EMF and WMF images, comments, several text columns, footnotes at the bottom of their page (they follow their
+`.doc`, RTF and ODT files (beyond the pictures stored with them), SmartArt, embedded objects, PICT images, comments, several text columns, footnotes at the bottom of their page (they follow their
 section), line numbers, page borders and backgrounds, watermarks, drop caps, vertical and right-to-left text beyond what
 the layout engine does by itself, hyphenation settings, and fields that would need calculating (their saved result is
 shown).

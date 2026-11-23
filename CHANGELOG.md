@@ -41,6 +41,15 @@ and versions follow [Semantic Versioning](https://semver.org/).
   ending, hidden rows and columns or not, and values as displayed in a culture or as stored. Excel 97-2003 workbooks
   and CSV files open read only. `XlsxToPdf.Convert(Workbook)` converts a workbook with its changes. Opening is bounded
   by `WorkbookOptions.Limits`; a new fuzz target, `workbook`, opens, edits and saves.
+- **WMF and EMF pictures** (#266), with EMF+ records: drawn as PDF vector graphics wherever the Office converters
+  used to leave them out (`ImageNotLoaded`): pictures in DOCX, DOC (also old metafile pictures), RTF and ODT
+  documents and in PPTX and PPT presentations, and the previews of embedded objects. Text stays text, in the
+  converter's fonts at the picture's character positions; mapping modes, world transforms, clipping, paths, pens,
+  hatched and bitmap brushes, bitmaps, regions, gradients and the common EMF+ records are supported, and a dual-mode
+  file falls back to its EMF records when it uses EMF+ features that are not. A damaged picture is drawn up to the
+  damage and reported; records and points count against `MaxElements`, bitmaps against `MaxImagePixels`.
+  `PdfImage.Load` reads WMF and EMF too (new `PdfImageFormat.Wmf` and `PdfImageFormat.Emf`). Fuzz targets `wmf` and
+  `emf`.
 - **Sheets: diagnostics** (#256): `SheetOptions.Diagnostics` receives a `SheetDiagnostic` (sheet name,
   `SheetDiagnosticKind`, message with the count) for each kind of content a sheet has that the conversion leaves out
   or simplifies, once per kind and sheet: charts and chart sheets, pictures, shapes and form controls, embedded objects

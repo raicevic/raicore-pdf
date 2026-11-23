@@ -761,7 +761,8 @@ decoded in managed code; lossy WebP matches libwebp bit for bit, and an animated
 (bilevel, gray, palette, RGB and CMYK, 1 to 16 bits, strips or tiles, PackBits, LZW, Deflate, alpha, BigTIFF) is
 decoded too, while its JPEG and CCITT fax data are embedded as they are; `PdfImage.GetPageCount` and
 `PdfImage.Load(data, pageIndex)` read the pages of a multi-page TIFF, such as a fax. SVG is
-drawn as PDF vector graphics, not rasterized, so logos and icons stay sharp at any zoom. Each image is stored once per document however
+drawn as PDF vector graphics, not rasterized, so logos and icons stay sharp at any zoom, and so are WMF and EMF pictures
+(with their EMF+ records), as the Office converters draw them. Each image is stored once per document however
 often it is drawn.
 
 ```csharp

@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using RaiCore.Pdf.Metafiles;
 
 namespace RaiCore.Pdf.Documents.Doc;
 
@@ -119,6 +120,13 @@ internal sealed class DocDrawings
             position += 1 + picf[position]; // The picture's name (a linked picture).
         }
 
+        if (mapping is >= 1 and <= 8 && WmfHeader.IsWmf(picf[position..]))
+        {
+            // An old picture: the WMF itself after the header (without its placeable header), at the goal size.
+            var wmf = MetafileBlip.WithPlaceable(picf[position..].ToArray(), (0, 0, 0, 0), goalWidth / 1440, goalHeight / 1440);
+            return (new DocBlip(wmf, "WMF"), width, height);
+        }
+
         if (mapping is not (0x64 or 0x66) || position >= picf.Length)
         {
             return (new DocBlip(null, mapping is 8 or 0x64 or 0x66 ? "WMF" : "an unknown format"), width, height);
@@ -203,7 +211,15 @@ internal sealed class DocDrawings
             0xF029 => "TIFF",
             _ => "an unknown format",
         };
-        if (kind is "EMF" or "WMF" or "PICT" or "an unknown format")
+        if (kind is "EMF" or "WMF")
+        {
+            // The UID (two when the instance is odd), then the metafile header and the compressed file.
+            var uids = 16 + ((instance & 1) == 1 ? 16 : 0);
+            var file = record.Length > uids ? MetafileBlip.Decode(record[uids..], kind == "WMF", ResourceLimits.Current.MaxDecompressedBytes) : null;
+            return new DocBlip(file, kind);
+        }
+
+        if (kind is "PICT" or "an unknown format")
         {
             return new DocBlip(null, kind);
         }

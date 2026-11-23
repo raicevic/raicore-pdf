@@ -77,6 +77,8 @@ public static class FuzzTargets
         ["rtf"] = Rtf,
         ["doc"] = Doc,
         ["doctext"] = DocumentText,
+        ["wmf"] = Metafile,
+        ["emf"] = Metafile,
         ["chart"] = Chart,
     };
 
@@ -158,6 +160,27 @@ public static class FuzzTargets
         var image = PdfImage.Load(input);
         var document = new PdfDocument();
         document.AddPage(PdfPageSize.A4).Canvas.DrawImage(image, 10, 10, 100, 100);
+        document.ToArray();
+    }
+
+    /// <summary>
+    /// A WMF or EMF picture (with its EMF+ records) as a converter draws it: its text in the bundled fonts, its problems
+    /// reported; drawn on a page, cropped, and written.
+    /// </summary>
+    public static void Metafile(byte[] input)
+    {
+        var fonts = BundledFonts.CreateCollection();
+        var reports = 0;
+        var options = new RaiCore.Pdf.Metafiles.MetafileOptions
+        {
+            Fonts = (face, bold, italic) => new[] { fonts.Find(face, bold ? 700 : 400, italic), fonts.Find("sans-serif", bold ? 700 : 400, italic) }.OfType<PdfFont>().ToArray(),
+            Report = (_, _) => reports++,
+        };
+        var image = PdfImage.LoadMetafile(input, options);
+        var document = new PdfDocument();
+        var canvas = document.AddPage(PdfPageSize.A4).Canvas;
+        canvas.DrawImage(image, 10, 10, 100, 100);
+        canvas.SaveState().Rectangle(200, 200, 50, 50).Clip().EndPath().DrawImage(image, 150, 150, 200, 100).RestoreState();
         document.ToArray();
     }
 
