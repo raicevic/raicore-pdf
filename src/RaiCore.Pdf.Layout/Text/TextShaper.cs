@@ -74,6 +74,7 @@ public static class TextShaper
         }
 
         options ??= ShapingOptions.Default;
+        text = LoneSurrogates.Replace(text);
         return LayoutCache.Current is { } cache
             ? cache.Shape(text, fonts, options, direction, () => ShapeUncached(text, openTypeFonts, options, direction))
             : ShapeUncached(text, openTypeFonts, options, direction);
