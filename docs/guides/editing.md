@@ -1,4 +1,4 @@
-# Editing pages
+# Editing PDFs
 
 `RaiCore.Pdf.Editing` opens an existing PDF file from any producer, lets you delete, insert, move and rotate its pages,
 and saves it, as often as you need.

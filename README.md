@@ -5,25 +5,26 @@
 
 An open-source .NET library for creating PDF documents and converting HTML, Razor and office documents to PDF, built on its own layout engine with no headless browser.
 
-> **Status:** 1.0, the first release: HTML, CSS and Razor to PDF with a stable API. See the
-> [documentation](https://raicevic.github.io/raicore-pdf/), the [changelog](CHANGELOG.md) and the [roadmap](#roadmap).
+> **Status:** 1.1: HTML, CSS and Razor to PDF; Word, Excel, PowerPoint, OpenDocument, RTF, CSV and email to PDF; text
+> and image extraction and editing of existing PDFs. See the [documentation](https://raicevic.github.io/raicore-pdf/),
+> the [changelog](CHANGELOG.md) and the [roadmap](#roadmap).
 
 ## Packages
 
 | Package | Purpose | Status |
 |---|---|---|
-| `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | ✅ 1.0 |
-| `RaiCore.Pdf.Razor` | Razor components → PDF | ✅ 1.0 |
-| `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables, flexbox | ✅ 1.0 |
-| `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | ✅ 1.0 |
-| `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | ✅ 1.0 |
-| `RaiCore.Pdf.Extraction` | Read existing PDFs: text by page in reading order, text search with positions, images with their placement and data | 🚧 Unreleased |
-| `RaiCore.Pdf.Editing` | Edit existing PDFs: delete, insert, move and rotate pages, save repeatedly | 🚧 Unreleased |
-| `RaiCore.Pdf.Email` | Email (.eml, Outlook .msg) and web archives (.mht) → PDF: header block, inline images, attachments embedded or appended | 🚧 Unreleased |
-| `RaiCore.Pdf.Sheets` | CSV and Excel (.xlsx, .xls) → PDF: paginated tables with repeated header rows, number formats, styles, merged cells, print areas | 🚧 Unreleased |
-| `RaiCore.Pdf.Slides` | PowerPoint (.pptx, .ppt) → PDF: one page per slide with masters, layouts, themes, shapes, text, pictures, tables | 🚧 Unreleased |
-| `RaiCore.Pdf.Documents` | Word (.docx, .doc), OpenDocument text (.odt) and RTF → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | 🚧 Unreleased |
-| `RaiCore.Pdf.XslFo` | XSL-FO → PDF | ⚪ After 1.0 |
+| `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | ✅ 1.1 |
+| `RaiCore.Pdf.Razor` | Razor components → PDF | ✅ 1.1 |
+| `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables, flexbox | ✅ 1.1 |
+| `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | ✅ 1.1 |
+| `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | ✅ 1.1 |
+| `RaiCore.Pdf.Extraction` | Read existing PDFs: text by page in reading order, text search with positions, images with their placement and data | ✅ 1.1 |
+| `RaiCore.Pdf.Editing` | Edit existing PDFs: delete, insert, move and rotate pages, read and flatten forms, flatten annotations, make files smaller, split by size | ✅ 1.1 |
+| `RaiCore.Pdf.Email` | Email (.eml, Outlook .msg) and web archives (.mht) → PDF: header block, inline images, attachments embedded or appended | ✅ 1.1 |
+| `RaiCore.Pdf.Sheets` | CSV and Excel (.xlsx, .xls) → PDF: paginated tables with repeated header rows, number formats, styles, merged cells, print areas | ✅ 1.1 |
+| `RaiCore.Pdf.Slides` | PowerPoint (.pptx, .ppt) → PDF: one page per slide with masters, layouts, themes, shapes, text, pictures, tables | ✅ 1.1 |
+| `RaiCore.Pdf.Documents` | Word (.docx, .doc), OpenDocument text (.odt) and RTF → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | ✅ 1.1 |
+| `RaiCore.Pdf.XslFo` | XSL-FO → PDF | ⚪ Planned |
 
 All packages target .NET 10 and run on Windows, Linux (glibc and musl, so Alpine too) and macOS, x64 and Arm64, with
 no native dependencies beyond HarfBuzz, which ships in the packages. Apps using them can be trimmed and published with
@@ -34,9 +35,17 @@ Native AOT, and run in containers (see [below](#trimming-and-native-aot)).
 Install the package for your input format from NuGet; the others come as dependencies:
 
 ```sh
-dotnet add package RaiCore.Pdf.Html     # HTML and CSS
-dotnet add package RaiCore.Pdf.Razor    # Razor components (includes RaiCore.Pdf.Html)
+dotnet add package RaiCore.Pdf.Html        # HTML and CSS
+dotnet add package RaiCore.Pdf.Razor       # Razor components (includes RaiCore.Pdf.Html)
+dotnet add package RaiCore.Pdf.Documents   # Word (.docx, .doc), OpenDocument text (.odt) and RTF
+dotnet add package RaiCore.Pdf.Sheets      # CSV and Excel (.xlsx, .xls)
+dotnet add package RaiCore.Pdf.Slides      # PowerPoint (.pptx, .ppt)
+dotnet add package RaiCore.Pdf.Email       # email (.eml, .msg) and web archives (.mht)
+dotnet add package RaiCore.Pdf.Extraction  # text and images out of existing PDFs
+dotnet add package RaiCore.Pdf.Editing     # editing existing PDFs
 ```
+
+All of these are released together at the same version.
 
 Symbols and SourceLink are published too, so you can step into the library code while debugging.
 
@@ -629,8 +638,9 @@ foreach (var page in new TextExtractor(PdfReader.Open("report.pdf")).ExtractPage
 }
 ```
 
-The `RaiCore.Pdf.Editing` package changes existing PDFs: delete, insert, move and rotate pages, and save as often as
-needed. Each save writes only what is still used, so deleted pages' fonts and images leave the file, along with the
+The `RaiCore.Pdf.Editing` package changes existing PDFs: delete, insert, move and rotate pages, read and flatten forms,
+flatten annotations, make files smaller and split them by size, and save as often as needed. Each save writes only what
+is still used, so deleted pages' fonts and images leave the file, along with the
 bookmarks and links that pointed at them. See the [editing guide](https://raicevic.github.io/raicore-pdf/guides/editing.html).
 
 ```csharp
@@ -666,19 +676,19 @@ var report = XlsxToPdf.Convert("report.xlsx", new XlsxConverterOptions { SheetNa
 report.Save("report.pdf");
 ```
 
-The `RaiCore.Pdf.Slides` package converts PowerPoint presentations (`.pptx`) to PDF, one page per slide at the slide's
+The `RaiCore.Pdf.Slides` package converts PowerPoint presentations (`.pptx`, and `.ppt` with `PptToPdf`) to PDF, one page per slide at the slide's
 size: the master's and layout's shapes and backgrounds, placeholders with their inherited positions and text styles,
 theme colors and fonts, preset and free-form shapes with gradient and picture fills, lines and arrowheads, text with
 bullets, numbering and autofit, cropped pictures, tables with their styles, groups and SmartArt drawings. `PptToPdf`
 converts PowerPoint 97-2003 presentations (`.ppt`) the same way: masters, color schemes, shapes, text, pictures and
-groups. See the [PPTX guide](https://raicevic.github.io/raicore-pdf/guides/slides.html).
+groups. See the [presentations guide](https://raicevic.github.io/raicore-pdf/guides/slides.html).
 
 ```csharp
 var deck = PptxToPdf.Convert("deck.pptx", new PptxConverterOptions { Tagged = true });
 deck.Save("deck.pdf");
 ```
 
-The `RaiCore.Pdf.Documents` package converts Word documents (`.docx`) to PDF: paragraph, character and table styles,
+The `RaiCore.Pdf.Documents` package converts Word documents (`.docx`, and `.doc` with `DocToPdf`) to PDF: paragraph, character and table styles,
 multi-level numbered and bulleted lists, tab stops, tables with merged cells and header rows repeated on every page,
 sections with their own page size and orientation, headers and footers for first, even and odd pages with page numbers,
 images (inline or floating), hyperlinks, bookmarks, footnotes and endnotes, and a table of contents with the PDF's page
@@ -924,17 +934,19 @@ can be an ASP.NET Core response body; while the stream is slow, the conversion w
 ## Architecture
 
 ```
- DOCX / ODT / RTF / XLSX / PPTX ─┐
- HTML + CSS / Razor             ─┼─► Document model ─► Layout engine ─► PDF writer
- XML (XSL-FO)                   ─┘
+ DOCX / DOC / ODT / RTF  ─┐
+ XLSX / XLS / CSV        ─┤
+ PPTX / PPT              ─┼─► Document model ─► Layout engine ─► PDF writer
+ EML / MSG / MHT         ─┤
+ HTML + CSS / Razor      ─┘
 ```
 
 Every input format is mapped to one shared document model and laid out by one engine, so improvements to fonts, tables and pagination benefit all formats.
 
 ## Roadmap
 
-1.0 is the first release: a stable, production-ready HTML/Razor to PDF library with its PDF writer and layout engine.
-The way there and what comes next are tracked in [GitHub milestones](https://github.com/raicevic/raicore-pdf/milestones):
+1.0 was the first release: a stable, production-ready HTML/Razor to PDF library with its PDF writer and layout engine.
+1.1 added reading, editing and conversions. The way there and what comes next are tracked in [GitHub milestones](https://github.com/raicevic/raicore-pdf/milestones):
 
 1. **Done:** the PDF writer, fonts, images, text shaping, line breaking, block layout and pagination, HTML/CSS with
    tables, flexbox and CSS Paged Media, Razor, and packaging with a release pipeline.
@@ -945,9 +957,10 @@ The way there and what comes next are tracked in [GitHub milestones](https://git
 4. **0.4 PDF standards:** PDF/A-3 and e-invoices, tagged PDF/PDF/UA, metadata, encryption, a PDF reader for merging.
 5. **0.5 Hardening:** visual comparison with browsers, fuzzing, resource limits, performance, deployment targets.
 6. **Done, 1.0:** API review and freeze, documentation, the release.
-7. **1.x Reading, editing and conversions:** text extraction, text search, image extraction and page editing (done), forms,
-   PDF/A level A, TIFF, email, CSV, XLSX, PPTX, DOCX, RTF and Office formats to PDF.
-8. **After 1.0:** XSL-FO, grid layout, multi-column layout, digital signatures.
+7. **Done, 1.1 Reading, editing and conversions:** text and image extraction, text search, page editing, forms,
+   annotation flattening, optimization, PDF/A-1 and level A, TIFF, HTML fragments in the layout API, and email, CSV,
+   XLSX/XLS, PPTX/PPT, DOCX/DOC, ODT and RTF to PDF.
+8. **Next:** XSL-FO, grid layout, multi-column layout, digital signatures.
 
 The 0.x milestones are internal stages, not releases.
 
