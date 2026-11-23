@@ -33,8 +33,12 @@ resolve against `HtmlConverterOptions.BaseUri`.
 
 The loader gets the resolved `Uri`, what the resource is for (`Kind`: style sheet, image or font) and a
 `CancellationToken` that is canceled when the conversion is canceled or runs out of time. Resources larger than
-`ResourceLimits.MaxResourceBytes` are skipped. For untrusted HTML, allow only what the document should reach: the
-default loader reads any local file a `file:` URL names.
+`ResourceLimits.MaxResourceBytes` are skipped. `data:` URIs never reach the loader: they are part of the document.
+
+For untrusted HTML, allow only what the document should reach: the default loader reads any local file a `file:` URL
+names. `ResourceLoaders.None` loads nothing, so only `data:` URIs work (see [Untrusted input](untrusted-input.md)):
+
+[!code-csharp[](../snippets/Images.cs#untrusted)]
 
 ## Drawing images in code
 

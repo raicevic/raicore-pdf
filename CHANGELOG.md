@@ -5,10 +5,27 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **`ResourceLoaders.None`** (`RaiCore.Pdf.Html`): a resource loader that loads nothing, so untrusted HTML can embed
+  images as `data:` URIs (which never reach a loader) but can't reach local files or the network. Use it with
+  `HtmlConverterOptions`, `HtmlFragmentOptions` and `EmailConverterOptions.Html`.
+- **Untrusted input guide**: what each converter may load besides its input (nothing, for the Office, spreadsheet,
+  presentation and email converters), and the limits that bound its work. Tests prove that no kind of external
+  reference (linked images, `INCLUDEPICTURE` fields, external workbook links, data connections, linked pictures) is
+  followed, and that the Office and email packages contain no file, network or process access of their own.
+
 ### Fixed
 - **Deeply nested layout content no longer overflows the stack** when `MaxNestingDepth` is raised: finding the forced
   break and the page name a block starts with walked its chain of first children recursively, without the stack check
   every other recursion has. A test that depended on how far the JIT had optimized the layout code is now stable.
+
+### Documentation
+- **Format support**: one page comparing what each converter draws, format by format (DOCX, DOC, RTF, ODT; XLSX, XLS,
+  CSV; PPTX, PPT; EML, MSG, MHT), linked from each format guide and the README.
+- **Migrating from Aspose** covers 1.1: a package for each Aspose product, and mapping tables for Aspose.PDF
+  (`TextAbsorber`, `TextFragmentAbsorber`, `ImagePlacementAbsorber`, `Form.Flatten`, `OptimizeResources`,
+  `Pages.Delete`, ...), Aspose.Words, Aspose.Cells, Aspose.Slides and Aspose.Email.
+- **PdfDocument or PdfEditor?**: a section in the editing guide on which class does what.
 
 ## [1.1.0] - 2026-11-23
 

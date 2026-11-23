@@ -13,6 +13,8 @@ dotnet add package RaiCore.Pdf.Sheets
 `CsvToPdf.Convert` takes a path, a stream or bytes; `ConvertAsync` (on the thread pool, with a cancellation token)
 and `ConvertToBytes` do the same.
 
+The [format support](format-support.md) page compares all formats side by side.
+
 ## Reading CSV
 
 The data is read as RFC 4180 describes it, and as spreadsheet programs read what does not follow it:
@@ -185,6 +187,8 @@ Workbooks are ZIP packages of XML parts. They are read with no DTDs and nothing 
 checked before they take up memory), and `MaxPages` and `Timeout` the pages of all sheets and the time. Malformed
 packages and XML throw `SpreadsheetFormatException`; password-protected (encrypted) workbooks and binary `.xlsb`
 workbooks throw `NotSupportedException`. Excel 97-2003 `.xls` files are converted as `XlsToPdf` converts them (below).
+External workbook links, data connections, query tables, web queries and DDE or OLE links are never followed or
+refreshed: formulas show the values stored with them (see [Untrusted input](untrusted-input.md)).
 
 Not supported in workbooks: charts and chart sheets, images and other drawings, conditional formatting, data bars,
 comments, headers and footers, page breaks set by hand, pivot tables, rich text formatting within a cell, rotated

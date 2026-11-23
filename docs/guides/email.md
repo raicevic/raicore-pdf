@@ -17,6 +17,8 @@ dotnet add package RaiCore.Pdf.Email
   its inline images in place.
 - **The attachments,** embedded as PDF file attachments that the reader can open.
 
+The [format support](format-support.md) page compares all formats side by side.
+
 ## The body
 
 | Message structure | What is shown |
@@ -120,7 +122,8 @@ gets no header block, unless `HeaderFields` names fields.
   (attachments included) and the time (`Timeout`, for the whole conversion).
 - **No local files:** images and style sheets come from the message itself. Other URLs go to `Html.ResourceLoader`,
   except `file:` URLs, which a message never loads; the default loader loads nothing from the network, so remote
-  images stay out unless you supply a loader that fetches them.
+  images stay out unless you supply a loader that fetches them. `ResourceLoaders.None` makes that explicit; see
+  [Untrusted input](untrusted-input.md).
 
 Not supported: TNEF (`winmail.dat`) attachments (embedded as they are), Outlook items other than messages (contacts,
 appointments: their message properties are shown), OLE objects attached to `.msg` files, S/MIME and PGP

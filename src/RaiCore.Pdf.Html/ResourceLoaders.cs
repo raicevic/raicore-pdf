@@ -35,7 +35,8 @@ public static class ResourceLoaders
 {
     /// <summary>
     /// Loads <c>data:</c> and <c>file:</c> URIs; everything else returns <c>null</c>. Files larger than the
-    /// <see cref="ResourceLimits.MaxResourceBytes"/> in effect are not read.
+    /// <see cref="ResourceLimits.MaxResourceBytes"/> in effect are not read. A document can name any local file this
+    /// way, so for untrusted HTML use <see cref="None"/> or a loader that allows only what the document should reach.
     /// </summary>
     public static byte[]? Default(ResourceRequest request)
     {
@@ -51,6 +52,22 @@ public static class ResourceLoaders
             return ReadFile(uri.LocalPath, ResourceLimits.Current.MaxResourceBytes);
         }
 
+        return null;
+    }
+
+    /// <summary>
+    /// Loads nothing: every URL is refused, so no file and no network is ever reached. <c>data:</c> URIs still work:
+    /// they are part of the document and are decoded without a loader. Use it for untrusted HTML (uploads, email
+    /// bodies) that may embed images as <c>data:</c> URIs but must not load anything else.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var pdf = HtmlToPdf.ConvertToBytes(untrustedHtml, new HtmlConverterOptions { ResourceLoader = ResourceLoaders.None });
+    /// </code>
+    /// </example>
+    public static byte[]? None(ResourceRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
         return null;
     }
 

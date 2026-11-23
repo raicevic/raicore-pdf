@@ -22,6 +22,32 @@ list of pages, in order:
 
 `Pages[i]` also gives the page's `MediaBox`, `CropBox`, `Width` and `Height`.
 
+## PdfDocument or PdfEditor?
+
+The two classes do different jobs. `PdfDocument` (in `RaiCore.Pdf`) **writes a new PDF**: you add pages and draw on
+them, or a converter (`HtmlToPdf`, `DocxToPdf`, `XlsxToPdf`, ...) returns one. Pages can be written to the output as
+you go, so a `PdfDocument` only ever grows. `PdfEditor` **changes an existing PDF** from any producer: it reads the whole
+file, lets you reorganize it, and writes it out again with everything you didn't touch kept.
+
+| You want to | Use |
+|---|---|
+| Create a PDF: draw, lay out, convert HTML, Office files or email | `PdfDocument` (what every converter returns) |
+| Delete, insert, move or rotate pages of an existing file | `PdfEditor.Pages` |
+| Append the pages of other files to an existing one, keeping its outline, forms and tags | `PdfEditor.Pages.Add(reader)` |
+| Build a new document from pages of other files, with pages and bookmarks of your own | `PdfDocument.ImportPages(reader)` (`KeepOutline`, `KeepAnnotations`) |
+| Put a page of another file on a page you draw (stamp, letterhead, several pages on one sheet) | `PdfCanvas.DrawPage(reader.Pages[i], ...)` |
+| Flatten forms or annotations, optimize, split by size, read form fields | `PdfEditor` |
+| Read text or images | `TextExtractor`, `ImageExtractor` ([text](text-extraction.md), [images](image-extraction.md)) |
+
+To change what a converter made (drop its last page, say), save it and open the bytes in an editor:
+
+```csharp
+var pdf = DocxToPdf.Convert("report.docx");
+var editor = PdfEditor.Open(pdf.ToArray());
+editor.Pages.Delete(editor.Pages.Count - 1);
+editor.Save("report.pdf");
+```
+
 ## Saving
 
 `Save(path)`, `Save(stream)`, `SaveAsync(stream)` and `ToArray()` write a complete new file. They can be called any

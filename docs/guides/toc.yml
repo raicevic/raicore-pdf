@@ -18,6 +18,8 @@
   href: layout-api.md
 - name: PDF/A, accessibility and security
   href: standards.md
+- name: Untrusted input
+  href: untrusted-input.md
 - name: Text extraction
   href: text-extraction.md
 - name: Image extraction
@@ -32,5 +34,7 @@
   href: slides.md
 - name: Word, ODT and RTF to PDF
   href: documents.md
+- name: Format support
+  href: format-support.md
 - name: Experimental APIs
   href: ../experimental.md
