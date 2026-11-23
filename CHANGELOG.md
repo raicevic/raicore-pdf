@@ -14,6 +14,11 @@ and versions follow [Semantic Versioning](https://semver.org/).
   reference (linked images, `INCLUDEPICTURE` fields, external workbook links, data connections, linked pictures) is
   followed, and that the Office and email packages contain no file, network or process access of their own.
 
+### Fixed
+- **Deeply nested layout content no longer overflows the stack** when `MaxNestingDepth` is raised: finding the forced
+  break and the page name a block starts with walked its chain of first children recursively, without the stack check
+  every other recursion has. A test that depended on how far the JIT had optimized the layout code is now stable.
+
 ### Documentation
 - **Format support**: one page comparing what each converter draws, format by format (DOCX, DOC, RTF, ODT; XLSX, XLS,
   CSV; PPTX, PPT; EML, MSG, MHT), linked from each format guide and the README.

@@ -364,12 +364,14 @@ public class ResourceLimitsTests
     [Fact]
     public void Deep_nesting_on_a_small_stack_stops_with_an_exception_instead_of_a_stack_overflow()
     {
-        var flow = new FlowDocument(PageSetup.A4).Add(Nested(450));
+        // Deep enough that 256 KB can't hold it even once the JIT has optimized the layout methods (smaller frames): the
+        // stack probe must stop it, whatever ran before this test.
+        var flow = new FlowDocument(PageSetup.A4).Add(Nested(2000));
         Exception? error = null;
         var thread = new Thread(
             () =>
             {
-                using ((ResourceLimits.Default with { MaxNestingDepth = 1000 }).Enforce(TestContext.Current.CancellationToken))
+                using ((ResourceLimits.Default with { MaxNestingDepth = 10_000 }).Enforce(TestContext.Current.CancellationToken))
                 {
                     error = Record.Exception(() => flow.Render());
                 }
