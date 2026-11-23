@@ -16,6 +16,10 @@ RaiCore.Pdf.Email.EmailConverterOptions.Html.init -> void
 RaiCore.Pdf.Email.EmailConverterOptions.ListAttachments.get -> bool
 RaiCore.Pdf.Email.EmailConverterOptions.ListAttachments.init -> void
 RaiCore.Pdf.Email.EmailToPdf
+RaiCore.Pdf.Email.MessageFormatException
+RaiCore.Pdf.Email.MessageFormatException.MessageFormatException() -> void
+RaiCore.Pdf.Email.MessageFormatException.MessageFormatException(string! message, System.Exception! innerException) -> void
+RaiCore.Pdf.Email.MessageFormatException.MessageFormatException(string! message) -> void
 static RaiCore.Pdf.Email.EmailToPdf.Convert(byte[]! message, RaiCore.Pdf.Email.EmailConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
 static RaiCore.Pdf.Email.EmailToPdf.Convert(string! path, RaiCore.Pdf.Email.EmailConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
 static RaiCore.Pdf.Email.EmailToPdf.Convert(System.IO.Stream! message, RaiCore.Pdf.Email.EmailConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!

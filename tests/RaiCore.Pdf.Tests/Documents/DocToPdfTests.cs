@@ -51,7 +51,7 @@ public class DocToPdfTests
         if (entry.GetProperty("error").GetString() is { } error)
         {
             var exception = Record.Exception(() => DocToPdf.Convert(data));
-            Assert.IsType(error == "NotSupported" ? typeof(NotSupportedException) : typeof(PdfFormatException), exception);
+            Assert.IsType(error == "NotSupported" ? typeof(NotSupportedException) : typeof(DocumentFormatException), exception);
             return;
         }
 
@@ -124,21 +124,21 @@ public class DocToPdfTests
 
         // An encrypted .docx is a compound file without a WordDocument stream.
         Assert.Contains("encrypted", Assert.Throws<NotSupportedException>(() => DocxToPdf.Convert(Fixtures.Read(Path.Combine("Poi", "bug53475-password-is-pass.docx")))).Message, StringComparison.Ordinal);
-        Assert.Contains("WordDocument", Assert.Throws<PdfFormatException>(() => DocToPdf.Convert(Fixtures.Read(Path.Combine("Poi", "bug53475-password-is-pass.docx")))).Message, StringComparison.Ordinal);
+        Assert.Contains("WordDocument", Assert.Throws<DocumentFormatException>(() => DocToPdf.Convert(Fixtures.Read(Path.Combine("Poi", "bug53475-password-is-pass.docx")))).Message, StringComparison.Ordinal);
     }
 
     [Fact]
     public void Other_files_are_format_errors()
     {
-        Assert.Contains("RtfToPdf", Assert.Throws<PdfFormatException>(() => DocToPdf.Convert(Fixtures.Read(Path.Combine("Documents", "Rtf", "minimal.rtf")))).Message, StringComparison.Ordinal);
-        Assert.Throws<PdfFormatException>(() => DocToPdf.Convert("not a document"u8.ToArray()));
-        Assert.Throws<PdfFormatException>(() => DocToPdf.Convert([]));
+        Assert.Contains("RtfToPdf", Assert.Throws<DocumentFormatException>(() => DocToPdf.Convert(Fixtures.Read(Path.Combine("Documents", "Rtf", "minimal.rtf")))).Message, StringComparison.Ordinal);
+        Assert.Throws<DocumentFormatException>(() => DocToPdf.Convert("not a document"u8.ToArray()));
+        Assert.Throws<DocumentFormatException>(() => DocToPdf.Convert([]));
 
         // A compound file without a WordDocument stream (an Outlook message).
-        Assert.Contains("WordDocument", Assert.Throws<PdfFormatException>(() => DocToPdf.Convert(Fixtures.Read(Path.Combine("Poi", "quick.msg")))).Message, StringComparison.Ordinal);
+        Assert.Contains("WordDocument", Assert.Throws<DocumentFormatException>(() => DocToPdf.Convert(Fixtures.Read(Path.Combine("Poi", "quick.msg")))).Message, StringComparison.Ordinal);
 
         // OpenDocument's converter names DocToPdf for a .doc file.
-        Assert.Contains("DocToPdf", Assert.Throws<PdfFormatException>(() => OdtToPdf.Convert(Sample("test2.doc"))).Message, StringComparison.Ordinal);
+        Assert.Contains("DocToPdf", Assert.Throws<DocumentFormatException>(() => OdtToPdf.Convert(Sample("test2.doc"))).Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public class DocToPdfTests
         foreach (var length in new[] { 8, 512, 1024, 2048, 4096, data.Length / 2, data.Length - 512, data.Length - 1 })
         {
             var exception = Record.Exception(() => DocToPdf.ConvertToBytes(data[..length]));
-            Assert.True(exception is null or PdfFormatException, $"{length}: {exception}");
+            Assert.True(exception is null or DocumentFormatException, $"{length}: {exception}");
         }
     }
 
@@ -175,7 +175,7 @@ public class DocToPdfTests
             }
 
             var exception = Record.Exception(() => DocToPdf.ConvertToBytes(data, new DocConverterOptions { Limits = limits }));
-            Assert.True(exception is null or PdfFormatException or NotSupportedException or ResourceLimitExceededException, $"{name} round {round}: {exception}");
+            Assert.True(exception is null or DocumentFormatException or NotSupportedException or ResourceLimitExceededException, $"{name} round {round}: {exception}");
         }
     }
 

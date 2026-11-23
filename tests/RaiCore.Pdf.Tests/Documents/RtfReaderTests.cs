@@ -667,10 +667,10 @@ public class RtfReaderTests
     [Fact]
     public void Data_that_is_not_rtf_throws_a_format_exception()
     {
-        Assert.Contains("not an RTF document", Assert.Throws<PdfFormatException>(() => Read("hello"u8.ToArray())).Message, StringComparison.Ordinal);
-        Assert.Contains("ZIP package", Assert.Throws<PdfFormatException>(() => Read("PK\u0003\u0004xx"u8.ToArray())).Message, StringComparison.Ordinal);
-        Assert.Throws<PdfFormatException>(() => Read([]));
-        Assert.Throws<PdfFormatException>(() => Read(Encoding.Latin1.GetBytes(new string(' ', 100) + @"{\rtf1 x}")));
+        Assert.Contains("not an RTF document", Assert.Throws<DocumentFormatException>(() => Read("hello"u8.ToArray())).Message, StringComparison.Ordinal);
+        Assert.Contains("ZIP package", Assert.Throws<DocumentFormatException>(() => Read("PK\u0003\u0004xx"u8.ToArray())).Message, StringComparison.Ordinal);
+        Assert.Throws<DocumentFormatException>(() => Read([]));
+        Assert.Throws<DocumentFormatException>(() => Read(Encoding.Latin1.GetBytes(new string(' ', 100) + @"{\rtf1 x}")));
     }
 
     [Fact]

@@ -104,13 +104,13 @@ system's fonts, or Carlito, for Word's line breaks.
 ## Untrusted documents
 
 Documents are ZIP packages of XML parts. They are read with no DTDs and nothing external resolved (a document with a
-DTD throws `PdfFormatException`), and within `Limits`: `MaxDecompressedBytes` bounds the decompressed size of all parts
+DTD throws `DocumentFormatException`), and within `Limits`: `MaxDecompressedBytes` bounds the decompressed size of all parts
 together (a ZIP bomb stops there), `MaxElements` the XML elements of all parts together (counted while they are read),
 `MaxNestingDepth` the nesting of XML elements and of tables, `MaxTableCells` the cells of each table, `MaxImagePixels`
 each image, and `MaxPages` and `Timeout` the pages and the time. Exceeding one throws `ResourceLimitExceededException`
 naming it.
 
-Malformed packages (not a ZIP file, no main document part, XML that is not well-formed) throw `PdfFormatException`.
+Malformed packages (not a ZIP file, no main document part, XML that is not well-formed) throw `DocumentFormatException`.
 Password-protected (encrypted) documents, which are Compound Files, throw `NotSupportedException`. A Word 97-2003
 `.doc` file (also a Compound File) is converted as one, as [`DocToPdf`](#word-97-2003-documents) does; `DocToPdf` in
 turn converts a `.docx` package given to it.
@@ -158,7 +158,7 @@ turn converts a `.docx` package given to it.
 Not supported in OpenDocument text: drawing shapes (their text is kept), several columns of a page style or section,
 forms and their controls, scripts (ignored), comments, line numbering and page backgrounds; each is reported to
 `Diagnostics`. Password-protected (encrypted) documents throw `NotSupportedException`; malformed packages and XML that
-is not well-formed `PdfFormatException`. Linked images (outside the package) are left out. The `Limits` apply as to
+is not well-formed `DocumentFormatException`. Linked images (outside the package) are left out. The `Limits` apply as to
 Word documents, the XML of flat documents included; table rows and cells that repeat others
 (`table:number-rows-repeated`, `table:number-columns-repeated`) count against `MaxElements`, and their cells against
 `MaxTableCells`.
@@ -212,7 +212,7 @@ the layout engine does by itself. Revisions are shown as if accepted.
 RTF is read in one pass without recursion, within `Limits`: `MaxElements` bounds the tokens (control words, groups and
 runs of text), `MaxNestingDepth` the nesting of groups and of tables, `MaxTableCells` the cells of a table,
 `MaxResourceBytes` each picture's data (a larger picture is left out) and `MaxImagePixels` its pixels, and `MaxPages`
-and `Timeout` the pages and the time. Data that does not start with `{\rtf` throws `PdfFormatException`.
+and `Timeout` the pages and the time. Data that does not start with `{\rtf` throws `DocumentFormatException`.
 
 ## Word 97-2003 documents
 
@@ -258,7 +258,7 @@ layout engine does by itself. Revisions are shown as if accepted.
 
 Password-protected (encrypted) documents and documents saved by Word 6, Word 95 or earlier throw
 `NotSupportedException`; data that is not a Word 97-2003 document (a compound file with a WordDocument stream, its
-file information block, table stream and piece table) throws `PdfFormatException` (naming `RtfToPdf` for an RTF
+file information block, table stream and piece table) throws `DocumentFormatException` (naming `RtfToPdf` for an RTF
 document), except a `.docx` package, which is converted as `DocxToPdf` converts it. Every offset and size in the file is checked against the stream it
 points into, and reading is bounded by `Limits`: `MaxElements` the compound file's entries and the paragraphs and runs,
 `MaxDecompressedBytes` each stream, `MaxNestingDepth` the nesting of tables, `MaxTableCells` the cells of a table,

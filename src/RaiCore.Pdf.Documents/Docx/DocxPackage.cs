@@ -18,7 +18,7 @@ internal readonly record struct Relationship(string Id, string Type, string Targ
 /// <see cref="ResourceLimits.MaxDecompressedBytes"/> (all parts together), and parsed as XML with no DTDs and nothing
 /// external resolved, their elements counted against <see cref="ResourceLimits.MaxElements"/> (all parts together) and
 /// nested no deeper than <see cref="ResourceLimits.MaxNestingDepth"/>. Malformed ZIP or XML data throws
-/// <see cref="PdfFormatException"/>. The OpenDocument reader uses it too, for ODF packages (<see cref="OpenZip"/>) and
+/// <see cref="DocumentFormatException"/>. The OpenDocument reader uses it too, for ODF packages (<see cref="OpenZip"/>) and
 /// flat XML documents (<see cref="ForXml"/>).
 /// </summary>
 internal sealed class DocxPackage : IDisposable
@@ -51,7 +51,7 @@ internal sealed class DocxPackage : IDisposable
 
     /// <summary>Opens a package.</summary>
     /// <exception cref="NotSupportedException">The data is an encrypted document.</exception>
-    /// <exception cref="PdfFormatException">The data is not a ZIP package.</exception>
+    /// <exception cref="DocumentFormatException">The data is not a ZIP package.</exception>
     public static DocxPackage Open(byte[] data, ConversionContext context)
     {
         if (CompoundFile.IsCompoundFile(data))
@@ -61,7 +61,7 @@ internal sealed class DocxPackage : IDisposable
 
         if (!data.AsSpan().StartsWith("PK"u8))
         {
-            throw new PdfFormatException(data.AsSpan().StartsWith(@"{\rtf"u8)
+            throw new DocumentFormatException(data.AsSpan().StartsWith(@"{\rtf"u8)
                 ? "The data is an RTF document, not a Word document (a ZIP package)."
                 : "The data is not a Word document (a ZIP package).");
         }
@@ -70,7 +70,7 @@ internal sealed class DocxPackage : IDisposable
     }
 
     /// <summary>Opens a ZIP package of any kind, without checking what it holds.</summary>
-    /// <exception cref="PdfFormatException">The data is not a valid ZIP package.</exception>
+    /// <exception cref="DocumentFormatException">The data is not a valid ZIP package.</exception>
     public static DocxPackage OpenZip(byte[] data, ConversionContext context)
     {
         try
@@ -79,7 +79,7 @@ internal sealed class DocxPackage : IDisposable
         }
         catch (Exception ex) when (ex is InvalidDataException or IOException or ArgumentException)
         {
-            throw new PdfFormatException("The data is not a valid ZIP package: " + ex.Message, ex);
+            throw new DocumentFormatException("The data is not a valid ZIP package: " + ex.Message, ex);
         }
     }
 
@@ -125,13 +125,13 @@ internal sealed class DocxPackage : IDisposable
         }
         catch (Exception ex) when (ex is InvalidDataException or IOException or NotSupportedException)
         {
-            throw new PdfFormatException($"The document part '{path}' cannot be decompressed: {ex.Message}", ex);
+            throw new DocumentFormatException($"The document part '{path}' cannot be decompressed: {ex.Message}", ex);
         }
     }
 
     /// <summary>
     /// Parses a part as XML into a tree, or returns <c>null</c> if the package has no such part. Malformed XML throws
-    /// <see cref="PdfFormatException"/>.
+    /// <see cref="DocumentFormatException"/>.
     /// </summary>
     public XElement? Load(string path)
     {
@@ -140,7 +140,7 @@ internal sealed class DocxPackage : IDisposable
 
     /// <summary>
     /// Parses XML bytes (a part, or a whole flat document) into a tree, its elements counted with the package's.
-    /// Malformed XML throws <see cref="PdfFormatException"/>.
+    /// Malformed XML throws <see cref="DocumentFormatException"/>.
     /// </summary>
     public XElement? Parse(byte[] data, string path)
     {
@@ -151,7 +151,7 @@ internal sealed class DocxPackage : IDisposable
         }
         catch (XmlException ex)
         {
-            throw new PdfFormatException($"The document part '{path}' is not well-formed XML: {ex.Message}", ex);
+            throw new DocumentFormatException($"The document part '{path}' is not well-formed XML: {ex.Message}", ex);
         }
     }
 

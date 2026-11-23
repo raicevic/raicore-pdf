@@ -57,7 +57,7 @@ public static class DocToPdf
     /// <summary>Converts a Word 97-2003 document to a PDF document.</summary>
     /// <param name="doc">The document's bytes.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
-    /// <exception cref="PdfFormatException">The data is not a Word 97-2003 document (a compound file with a WordDocument stream) or is damaged beyond reading.</exception>
+    /// <exception cref="DocumentFormatException">The data is not a Word 97-2003 document (a compound file with a WordDocument stream) or is damaged beyond reading.</exception>
     /// <exception cref="NotSupportedException">The document is encrypted (password-protected) or in the Word 6 or Word 95 format.</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     public static PdfDocument Convert(byte[] doc, DocConverterOptions? options = null)
@@ -79,7 +79,7 @@ public static class DocToPdf
     /// <summary>Converts a Word 97-2003 file to a PDF document.</summary>
     /// <param name="path">The file's path.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
-    /// <exception cref="PdfFormatException">The file is not a Word 97-2003 document (a compound file with a WordDocument stream) or is damaged beyond reading.</exception>
+    /// <exception cref="DocumentFormatException">The file is not a Word 97-2003 document (a compound file with a WordDocument stream) or is damaged beyond reading.</exception>
     /// <exception cref="NotSupportedException">The document is encrypted (password-protected) or in the Word 6 or Word 95 format.</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     public static PdfDocument Convert(string path, DocConverterOptions? options = null)
@@ -100,7 +100,7 @@ public static class DocToPdf
     /// <param name="doc">The document's bytes.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
     /// <param name="cancellationToken">Cancels the conversion.</param>
-    /// <exception cref="PdfFormatException">The data is not a Word 97-2003 document (a compound file with a WordDocument stream) or is damaged beyond reading.</exception>
+    /// <exception cref="DocumentFormatException">The data is not a Word 97-2003 document (a compound file with a WordDocument stream) or is damaged beyond reading.</exception>
     /// <exception cref="NotSupportedException">The document is encrypted (password-protected) or in the Word 6 or Word 95 format.</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>

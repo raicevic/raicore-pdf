@@ -102,6 +102,9 @@ it stands for:
   place and stay out of the list, as Outlook shows them; attached messages are read the same way, recursively, and are
   embedded and appended as `.eml` files. With `EmbedOriginal`, the `.msg` itself is embedded.
 
+A compound file that is not an Outlook message, or one too damaged to read, throws `MessageFormatException` (a
+`PdfException`).
+
 ## Web archives
 
 A web archive (MHTML, as browsers and Word save pages) is a `multipart/related` message whose parts have

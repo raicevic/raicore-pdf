@@ -55,7 +55,7 @@ internal sealed partial class DocReader
     }
 
     /// <summary>Reads a Word 97-2003 document.</summary>
-    /// <exception cref="PdfFormatException">The data is not a Word 97-2003 document or is damaged beyond reading.</exception>
+    /// <exception cref="DocumentFormatException">The data is not a Word 97-2003 document or is damaged beyond reading.</exception>
     /// <exception cref="NotSupportedException">The document is encrypted or in the Word 6/95 format.</exception>
     public static WordDocument Read(byte[] data, ConversionContext context) => new DocReader(DocFile.Open(data, context), context).ReadDocument();
 

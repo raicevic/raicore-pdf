@@ -99,17 +99,25 @@ internal sealed class MsgMessage
     public List<MsgAttachment> Attachments { get; } = [];
 
     /// <summary>Reads the message of an Outlook <c>.msg</c> file.</summary>
-    /// <exception cref="PdfFormatException">It is not an Outlook message.</exception>
+    /// <exception cref="MessageFormatException">It is not an Outlook message, or its compound file is damaged.</exception>
     /// <exception cref="ResourceLimitExceededException">It nests attached messages too deep, or has too many parts (see <see cref="CompoundFile"/>).</exception>
     public static MsgMessage Read(ReadOnlyMemory<byte> data, ResourceLimits limits)
     {
-        var file = CompoundFile.Open(data, limits);
-        if (file.Root["__properties_version1.0"] is null)
+        try
         {
-            throw new PdfFormatException("The compound file is not an Outlook message (no __properties_version1.0 stream).");
-        }
+            var file = CompoundFile.Open(data, limits);
+            if (file.Root["__properties_version1.0"] is null)
+            {
+                throw new MessageFormatException("The compound file is not an Outlook message (no __properties_version1.0 stream).");
+            }
 
-        return Read(file, file.Root, 32, limits);
+            return Read(file, file.Root, 32, limits);
+        }
+        catch (PdfFormatException ex)
+        {
+            // The compound file reader's own errors (it is shared with the other formats).
+            throw new MessageFormatException("The message's compound file is damaged: " + ex.Message, ex);
+        }
     }
 
     /// <summary>
@@ -194,7 +202,7 @@ internal sealed class MsgMessage
                     TextBody = RtfBody.Text(rtf);
                 }
             }
-            catch (PdfFormatException)
+            catch (MessageFormatException)
             {
                 // A damaged RTF body: the plain text one (if any) stands in.
             }

@@ -139,8 +139,8 @@ public class MsgTests
 
         Assert.Equal(rtf, CompressedRtf.Decompress(data, 1000));
         BitConverter.TryWriteBytes(data.AsSpan(8), 0x12345678u);
-        Assert.Throws<PdfFormatException>(() => CompressedRtf.Decompress(data, 1000));
-        Assert.Throws<PdfFormatException>(() => CompressedRtf.Decompress(data.AsSpan(0, 10), 1000));
+        Assert.Throws<MessageFormatException>(() => CompressedRtf.Decompress(data, 1000));
+        Assert.Throws<MessageFormatException>(() => CompressedRtf.Decompress(data.AsSpan(0, 10), 1000));
 
         // Found by fuzzing: a size that ends within the header.
         BitConverter.TryWriteBytes(data.AsSpan(0), 3u);
@@ -167,8 +167,19 @@ public class MsgTests
     [Fact]
     public void A_compound_file_that_is_not_a_message_throws()
     {
-        Assert.Throws<PdfFormatException>(() => MsgMessage.Read(Fixtures.Read("Cfb/v3-basic.cfb"), ResourceLimits.Default));
-        Assert.Throws<PdfFormatException>(() => EmailToPdf.Convert(Fixtures.Read("Cfb/v3-basic.cfb")));
+        Assert.Throws<MessageFormatException>(() => MsgMessage.Read(Fixtures.Read("Cfb/v3-basic.cfb"), ResourceLimits.Default));
+        Assert.Throws<MessageFormatException>(() => EmailToPdf.Convert(Fixtures.Read("Cfb/v3-basic.cfb")));
+    }
+
+    [Fact]
+    public void A_damaged_compound_file_throws_a_message_format_exception()
+    {
+        // The compound file reader is shared with the other formats; its errors come out as the Email package's own.
+        var message = Fixtures.Read("Msg/rtf.msg");
+        var truncated = message.AsSpan(0, 1024).ToArray();
+        var exception = Assert.Throws<MessageFormatException>(() => EmailToPdf.Convert(truncated));
+        Assert.IsType<PdfFormatException>(exception.InnerException);
+        Assert.Contains("compound file is damaged", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

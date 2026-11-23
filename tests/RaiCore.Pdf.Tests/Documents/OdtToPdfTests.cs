@@ -414,7 +414,7 @@ public class OdtToPdfTests
     [Fact]
     public void Not_an_opendocument_text_throws_a_format_exception()
     {
-        string Message(byte[] data) => Assert.Throws<PdfFormatException>(() => OdtToPdf.Convert(data)).Message;
+        string Message(byte[] data) => Assert.Throws<DocumentFormatException>(() => OdtToPdf.Convert(data)).Message;
         Assert.Contains("not an OpenDocument text document", Message(Encoding.ASCII.GetBytes("hello")), StringComparison.Ordinal);
         Assert.Contains("not an OpenDocument text document", Message(Fixtures.Read(Path.Combine("Tika", "testODTnotaZipFile.odt"))), StringComparison.Ordinal);
         Assert.Contains("RTF", Message(Encoding.ASCII.GetBytes(@"{\rtf1 x}")), StringComparison.Ordinal);
@@ -455,8 +455,8 @@ public class OdtToPdfTests
     public void Dtds_and_external_entities_are_refused()
     {
         var content = $"<?xml version=\"1.0\"?><!DOCTYPE x [<!ENTITY e SYSTEM \"file:///etc/passwd\">]><office:document-content {Namespaces}><office:body><office:text><text:p>&e;</text:p></office:text></office:body></office:document-content>";
-        Assert.Contains("DTD", Assert.Throws<PdfFormatException>(() => OdtToPdf.Convert(Package(MediaType, ("content.xml", content)))).Message, StringComparison.Ordinal);
-        Assert.Contains("DTD", Assert.Throws<PdfFormatException>(() => OdtToPdf.Convert(Encoding.UTF8.GetBytes(content.Replace("document-content", "document", StringComparison.Ordinal)))).Message, StringComparison.Ordinal);
+        Assert.Contains("DTD", Assert.Throws<DocumentFormatException>(() => OdtToPdf.Convert(Package(MediaType, ("content.xml", content)))).Message, StringComparison.Ordinal);
+        Assert.Contains("DTD", Assert.Throws<DocumentFormatException>(() => OdtToPdf.Convert(Encoding.UTF8.GetBytes(content.Replace("document-content", "document", StringComparison.Ordinal)))).Message, StringComparison.Ordinal);
     }
 
     [Fact]
