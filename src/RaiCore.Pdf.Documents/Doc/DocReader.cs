@@ -34,6 +34,7 @@ internal sealed partial class DocReader
     private readonly WordDocument _document = new();
     private readonly Dictionary<int, int> _footnoteReferences = [];
     private readonly Dictionary<int, int> _endnoteReferences = [];
+    private readonly Dictionary<int, int> _commentReferences = [];
     private readonly Dictionary<int, List<string>> _bookmarks = [];
     private readonly Dictionary<int, DocShape> _mainShapes;
     private readonly Dictionary<int, DocShape> _headerShapes;
@@ -67,7 +68,11 @@ internal sealed partial class DocReader
         ReadNoteReferences(2, _footnoteReferences);
         ReadNoteReferences(46, _endnoteReferences);
         ReadBookmarks();
-        if (_file.TableData(4).Length > 4)
+        if (_context.Has(ReadExtras.Comments))
+        {
+            ReadNoteReferences(4, _commentReferences, 30);
+        }
+        else if (_file.TableData(4).Length > 4)
         {
             _context.Report(DocumentDiagnosticKind.UnsupportedContent, "Comments (annotations) are left out.");
         }
@@ -75,6 +80,7 @@ internal sealed partial class DocReader
         ReadSections();
         ReadNotes(3, DocStory.Footnotes, _footnoteReferences, _document.Footnotes, "f");
         ReadNotes(47, DocStory.Endnotes, _endnoteReferences, _document.Endnotes, "e");
+        ReadNotes(5, DocStory.Comments, _commentReferences, _document.Comments, "c");
         ReadTextBoxes();
         if (_document.Sections.Count == 0)
         {
@@ -118,10 +124,13 @@ internal sealed partial class DocReader
         return count == 0 ? [] : positions;
     }
 
-    /// <summary>Where the notes' reference marks are in the text (PlcffndRef, PlcfendRef): their index by character position.</summary>
-    private void ReadNoteReferences(int index, Dictionary<int, int> references)
+    /// <summary>
+    /// Where the notes' (or comments') reference marks are in the text (PlcffndRef, PlcfendRef, PlcfandRef): their index by
+    /// character position.
+    /// </summary>
+    private void ReadNoteReferences(int index, Dictionary<int, int> references, int dataSize = 2)
     {
-        var positions = Positions(_file.TableData(index), 2, out var count);
+        var positions = Positions(_file.TableData(index), dataSize, out var count);
         for (var i = 0; i < count; i++)
         {
             references.TryAdd(positions[i], i);
@@ -347,7 +356,7 @@ internal sealed partial class DocReader
         }
     }
 
-    /// <summary>The notes (PlcffndTxt, PlcfendTxt): each note's story, by the id of its reference.</summary>
+    /// <summary>The notes (PlcffndTxt, PlcfendTxt) or comments (PlcfandTxt): each one's story, by the id of its reference.</summary>
     private void ReadNotes(int index, DocStory kind, Dictionary<int, int> references, Dictionary<string, List<WordBlock>> notes, string prefix)
     {
         if (references.Count == 0)

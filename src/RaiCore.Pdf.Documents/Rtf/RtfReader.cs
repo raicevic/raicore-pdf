@@ -82,6 +82,7 @@ internal sealed partial class RtfReader
     private readonly StringBuilder _run = new();
     private RunFormat? _runFormat;
     private int _skip;
+    private int _comments;
 
     private RtfReader(byte[] data, ConversionContext context)
     {
@@ -776,6 +777,15 @@ internal sealed partial class RtfReader
                 SetDestination(RtfDestination.Skip);
                 return true;
             case "annotation":
+                if (_context.Has(ReadExtras.Comments) && group.Story is null && group.Field is null)
+                {
+                    var id = (++_comments).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    AddInline(new CommentReference(id));
+                    StartStory(group, StoryKind.Comment);
+                    group.Data = id;
+                    return true;
+                }
+
                 _context.Report(DocumentDiagnosticKind.UnsupportedContent, "Comments (annotations) are left out.");
                 SetDestination(RtfDestination.Skip);
                 return true;

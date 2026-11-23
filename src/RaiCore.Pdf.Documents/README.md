@@ -48,6 +48,11 @@ DocToPdf.Convert("minutes.doc").Save("minutes.pdf");
   `DocumentFormatException`; encrypted documents `NotSupportedException`. `DocxToPdf` and `DocToPdf` each convert the
   other's format too.
 
+- **Text:** `DocumentText.Extract("report.docx")` gets the plain text of a DOCX, DOC, RTF or ODT document directly,
+  without converting it (much faster than converting and extracting the PDF's text): paragraphs on lines, list labels,
+  table cells separated by tabs, and optionally headers and footers, notes, comments, hidden text, deleted text of
+  tracked changes and field codes.
+
 Charts in Word documents are drawn as vector graphics by the same chart engine as presentations' (columns, bars,
 lines, pies, areas, scatter, bubble, radar and stock charts); the newer chart types show the picture stored with them.
 

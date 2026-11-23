@@ -48,6 +48,9 @@ internal sealed partial class DocxReader
 
         public RunFormat Format { get; set; } = format;
 
+        /// <summary>The field's start in the model, when field codes are kept (<see cref="ReadExtras.FieldCodes"/>).</summary>
+        public FieldStart? Marker { get; set; }
+
         public bool HasResultFormat { get; set; }
 
         public StringBuilder Result { get; } = new();
@@ -115,7 +118,7 @@ internal sealed partial class DocxReader
         paragraph.Inlines.AddRange(_pendingBookmarks);
         _pendingBookmarks.Clear();
         ReadInlines(p, paragraph.Inlines, run);
-        EndParagraphFields();
+        EndParagraphFields(paragraph.Inlines);
         return paragraph;
     }
 
@@ -183,6 +186,14 @@ internal sealed partial class DocxReader
                     }
 
                     break;
+                case "del":
+                case "moveFrom":
+                    if (_context.Has(ReadExtras.DeletedText))
+                    {
+                        ReadInlines(element, target, paragraphRun with { Deleted = true });
+                    }
+
+                    break;
                 case "ins":
                 case "moveTo":
                 case "smartTag":
@@ -220,7 +231,7 @@ internal sealed partial class DocxReader
     {
         foreach (var element in r.Elements())
         {
-            if (format.Hidden && element.Name.LocalName is not ("fldChar" or "instrText" or "t"))
+            if (format.Hidden && element.Name.LocalName is not ("fldChar" or "instrText" or "t") && !_context.Has(ReadExtras.HiddenText))
             {
                 continue; // Hidden text is not shown; its text still sets a field result's format.
             }
@@ -244,6 +255,20 @@ internal sealed partial class DocxReader
             {
                 case "t":
                     AddText(element.Value, format, target);
+                    break;
+                case "delText":
+                    if (format.Deleted)
+                    {
+                        AddText(element.Value, format, target);
+                    }
+
+                    break;
+                case "commentReference":
+                    if (_context.Has(ReadExtras.Comments) && Ooxml.Attr(element, "id") is { } comment)
+                    {
+                        Emit(new CommentReference(comment), target);
+                    }
+
                     break;
                 case "instrText":
                     if (_fields.Count > 0 && !_fields[^1].InResult)
@@ -345,7 +370,7 @@ internal sealed partial class DocxReader
             field.HasResultFormat = true;
         }
 
-        if (format.Hidden)
+        if (format.Hidden && !_context.Has(ReadExtras.HiddenText))
         {
             return;
         }
@@ -374,24 +399,25 @@ internal sealed partial class DocxReader
     /// Adds inline content where the fields being read put it: nowhere inside a field's instruction, into the fallback
     /// text of a computed field, into the hyperlink of a link field, otherwise into <paramref name="target"/>.
     /// </summary>
-    private void Emit(WordInline inline, List<WordInline> target)
+    /// <returns>Whether the content was added to the model (not to a computed field's fallback text, nor left out).</returns>
+    private bool Emit(WordInline inline, List<WordInline> target)
     {
         FieldState? link = null;
         foreach (var field in _fields)
         {
             if (!field.InResult)
             {
-                return;
+                return false;
             }
 
             if (field.Action == FieldAction.Compute)
             {
-                if (inline is TextRun text)
+                if (inline is TextRun { Format.Hidden: false, Format.Deleted: false } text)
                 {
                     field.Result.Append(text.Text);
                 }
 
-                return;
+                return false;
             }
 
             if (field.Action == FieldAction.Link)
@@ -410,10 +436,11 @@ internal sealed partial class DocxReader
             }
 
             link.Link.Value.Link.Inlines.Add(inline);
-            return;
+            return true;
         }
 
         target.Add(inline);
+        return true;
     }
 
     /// <summary>Handles a <c>w:fldChar</c>: the begin, separator and end of a complex field.</summary>
@@ -424,7 +451,9 @@ internal sealed partial class DocxReader
             case "begin":
                 if (_fields.Count < MaxFieldDepth)
                 {
-                    _fields.Add(new FieldState(format));
+                    var marker = _context.Has(ReadExtras.FieldCodes) ? new FieldStart() : null;
+                    var placed = marker is not null && Emit(marker, target);
+                    _fields.Add(new FieldState(format) { Marker = placed ? marker : null });
                 }
 
                 break;
@@ -450,6 +479,11 @@ internal sealed partial class DocxReader
                     {
                         Emit(Computed(field), target);
                     }
+
+                    if (field.Marker is not null)
+                    {
+                        Emit(new FieldEnd(), target);
+                    }
                 }
 
                 break;
@@ -463,10 +497,16 @@ internal sealed partial class DocxReader
     /// At the end of a paragraph: fields still in their instruction or computing their value (which never span
     /// paragraphs in valid documents) are closed, so a damaged field cannot swallow the rest of the document.
     /// </summary>
-    private void EndParagraphFields()
+    private void EndParagraphFields(List<WordInline> paragraph)
     {
         while (_fields.Count > 0 && (!_fields[^1].InResult || _fields[^1].Action == FieldAction.Compute))
         {
+            if (_fields[^1].Marker is { } marker)
+            {
+                marker.Code = _fields[^1].Instruction.ToString();
+                paragraph.Add(new FieldEnd());
+            }
+
             _fields.RemoveAt(_fields.Count - 1);
         }
     }
@@ -474,6 +514,11 @@ internal sealed partial class DocxReader
     /// <summary>Decides what a field does from its instruction (<c>PAGE</c>, <c>HYPERLINK "..."</c>).</summary>
     private static void Classify(FieldState field)
     {
+        if (field.Marker is { } marker)
+        {
+            marker.Code = field.Instruction.ToString();
+        }
+
         var tokens = Tokenize(field.Instruction.ToString());
         if (tokens.Count == 0)
         {
@@ -639,14 +684,24 @@ internal sealed partial class DocxReader
         var field = new FieldState(paragraphRun);
         field.Instruction.Append(Ooxml.Attr(element, "instr"));
         Classify(field);
+        var marked = _context.Has(ReadExtras.FieldCodes) && Emit(new FieldStart { Code = field.Instruction.ToString() }, target);
+        ReadSimpleFieldResult(element, target, paragraphRun, field);
+        if (marked)
+        {
+            Emit(new FieldEnd(), target);
+        }
+    }
+
+    private void ReadSimpleFieldResult(XElement element, List<WordInline> target, RunFormat paragraphRun, FieldState field)
+    {
         switch (field.Action)
         {
             case FieldAction.Compute:
                 var result = new List<WordInline>();
                 ReadInlines(element, result, paragraphRun);
-                var first = result.OfType<TextRun>().FirstOrDefault();
-                field.Format = first?.Format ?? paragraphRun;
-                foreach (var text in result.OfType<TextRun>())
+                var shown = result.OfType<TextRun>().Where(r => !r.Format.Hidden && !r.Format.Deleted).ToList();
+                field.Format = shown.FirstOrDefault()?.Format ?? paragraphRun;
+                foreach (var text in shown)
                 {
                     field.Result.Append(text.Text);
                 }

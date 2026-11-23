@@ -13,6 +13,7 @@ to the bytes of the PDF file. The documents are generated deterministically
 | `FlexDashboard` | 240 wrapped flex cards (8 pages), each a flex column with nested flex rows. |
 | `Canvas1000Pages` | 1,000 pages of 60 lines of text drawn with the canvas (no layout), then saved. |
 | `WritingBenchmarks.*` | The canvas pages and the flow report written page by page (`BeginSave`). |
+| `TextBenchmarks.*` | The text of a Word document (44 pages) and an RTF document (61 pages): `DocumentText.Extract` against converting to PDF and extracting the PDF's text. |
 
 ## Running
 
@@ -116,3 +117,14 @@ What it can and cannot do:
   complete the copied objects.
 - `Save` uses the same writer and flushes each page too, so a document written page by page is byte for byte the file
   `Save` writes.
+
+## Text of word-processing documents
+
+`TextBenchmarks` compares `DocumentText.Extract`, which reads a document into the converters' model and writes its
+text with no layout, with converting the document to PDF and extracting the PDF's text with `TextExtractor`. Apple M2,
+.NET 10.0.14, BenchmarkDotNet 0.15.8, short job (3 warmup and 3 measured iterations), fastest iteration:
+
+| Document | `DocumentText.Extract` | Convert + `TextExtractor` | Allocated (extract / convert) |
+| --- | ---: | ---: | ---: |
+| DOCX, 44 pages (400 paragraphs, a 100-row table) | 3.2 ms | 257 ms | 5.1 MB / 361 MB |
+| RTF, 61 pages (the same content) | 3.2 ms | 250 ms | 2.9 MB / 369 MB |

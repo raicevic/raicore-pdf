@@ -712,7 +712,8 @@ numbers. Headings become PDF bookmarks. It converts OpenDocument text documents 
 LibreOffice writes them) the same way: styles, lists, tables, page styles with their headers and footers, images and
 notes. `RtfToPdf` converts Rich Text Format documents (`.rtf`) the same way too, with their code pages, lists,
 tables (nested ones too), sections, headers and footers, fields, pictures and notes, and `DocToPdf` Word 97-2003
-documents (`.doc`) with their styles, lists, tables, sections, headers and footers, fields, pictures and notes. See the
+documents (`.doc`) with their styles, lists, tables, sections, headers and footers, fields, pictures and notes.
+`DocumentText.Extract` gets the plain text of any of these documents directly, without converting it. See the
 [Word documents guide](https://raicevic.github.io/raicore-pdf/guides/documents.html).
 
 ```csharp
@@ -721,6 +722,7 @@ pdf.Save("letter.pdf");
 OdtToPdf.Convert("report.odt").Save("report.pdf");
 RtfToPdf.Convert("memo.rtf").Save("memo.pdf");
 DocToPdf.Convert("minutes.doc").Save("minutes.pdf");
+string text = DocumentText.Extract("minutes.doc");
 ```
 
 ### Fonts

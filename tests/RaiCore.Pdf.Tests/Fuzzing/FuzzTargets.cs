@@ -76,6 +76,7 @@ public static class FuzzTargets
         ["odt"] = Odt,
         ["rtf"] = Rtf,
         ["doc"] = Doc,
+        ["doctext"] = DocumentText,
         ["wmf"] = Metafile,
         ["emf"] = Metafile,
         ["chart"] = Chart,
@@ -611,6 +612,19 @@ public static class FuzzTargets
         HeadingBookmarks = input.Length % 2 == 0,
         Diagnostics = _ => { },
     });
+
+    /// <summary>
+    /// Text extraction from word-processing documents of any format (DOCX, DOC, RTF, ODT, detected from the data): every
+    /// other input (by length) with everything included (headers and footers, notes, comments, hidden and deleted text,
+    /// field codes), the others with the defaults.
+    /// </summary>
+    public static void DocumentText(byte[] input) => Documents.DocumentText.Extract(input, input.Length % 2 == 0
+        ? new DocumentTextOptions
+        {
+            Limits = Limits, IncludeHeadersAndFooters = true, IncludeNotes = true, IncludeComments = true, IncludeHiddenText = true,
+            IncludeDeletedText = true, FieldCodes = true,
+        }
+        : new DocumentTextOptions { Limits = Limits });
 
     /// <summary>
     /// The PNG with the CRC of every chunk corrected, so that mutated data gets past the CRC check to the decoder

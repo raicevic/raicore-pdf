@@ -305,6 +305,43 @@ points into, and reading is bounded by `Limits`: `MaxElements` the compound file
 `MaxResourceBytes` each picture (a larger picture is left out) and `MaxImagePixels` its pixels, and `MaxPages` and
 `Timeout` the pages and the time.
 
+## Text
+
+`DocumentText.Extract` gets the plain text of a document directly, without converting it to PDF: Word documents
+(`.docx` and the other Office Open XML kinds), Word 97-2003 documents, RTF and OpenDocument text (`.odt`, `.ott`,
+`.fodt`), the format detected from the data. The document is read into the same model the converters lay out, with no
+layout and without reading its images, so it is much faster than converting and extracting the PDF's text (about 80
+times on a 44-page document, with 70 times less memory allocated; see the
+[benchmarks](https://github.com/raicevic/raicore-pdf/tree/main/benchmarks)). It takes a path, a stream or bytes;
+`ExtractAsync` runs on the thread pool with a cancellation token.
+
+[!code-csharp[](../snippets/WordDocuments.cs#text)]
+
+By default the text is what a reader sees of the body: each paragraph on a line of its own (also ended by
+`ParagraphSeparator` after the last one; line breaks end lines too, and a page or column break ends a line when text
+follows it), list numbers and bullets as the converters count them, followed by a tab, a space or nothing as the list
+level says, table rows on lines of their own with their cells separated by tabs, and the text of text boxes after the
+paragraph they are anchored in. Within a table cell, paragraphs, breaks and tabs become spaces, so each row stays on
+one line, and nested tables are flattened into their cell. Fields show the results the document was saved with.
+
+| `DocumentTextOptions` | What it does |
+|---|---|
+| `ParagraphSeparator` | What ends each paragraph and line (default `"\n"`). |
+| `ListLabels` | List numbers and bullets before their paragraphs (default `true`). |
+| `TableCellSeparator`, `TableRowSeparator` | What separates the cells of a row (default `"\t"`) and ends each row (default `"\n"`). |
+| `IncludeHeadersAndFooters` | Each section's own headers before its text and footers after it, each once: the first page's (with a title page), the other pages', and even pages' (with different even and odd headers) (default `false`). |
+| `IncludeNotes` | Footnote and endnote numbers where they are referred to, and the notes at the end of the text, each starting with its number (default `false`). |
+| `IncludeComments` | The comments' text at the end of the text, after the notes, in the order of their anchors (default `false`). |
+| `IncludeTextBoxes` | The text of text boxes and shapes (default `true`). |
+| `IncludeHiddenText` | Hidden text (default `false`). |
+| `IncludeDeletedText` | Text deleted by tracked changes, where it was (default `false`: changes count as accepted, as when converting). |
+| `FieldCodes` | Fields as their codes, `{ PAGE }` or `{ HYPERLINK "https://example.com" }`, instead of their results (default `false`). A field inside another field's code has no code of its own; OpenDocument fields have no codes. |
+| `Limits` | The `ResourceLimits` of reading, as for the converters. |
+
+Documents are read within `Limits` as the converters read them, malformed data throws `DocumentFormatException`, and
+encrypted documents (and Word 6/95 documents) `NotSupportedException`. Hidden sections and paragraphs of OpenDocument
+text, rows deleted from a Word table, charts, SmartArt and embedded objects have no text here either.
+
 ## Not supported
 
 Floating text boxes and shapes as frames (their text is laid out after their paragraph), surface charts and charts in
