@@ -47,7 +47,7 @@ public sealed class HtmlFragmentOptions
 
     /// <summary>
     /// Loads images, stylesheets and web fonts, as <see cref="HtmlConverterOptions.ResourceLoader"/> does. The default
-    /// allows only <c>data:</c> URIs and <c>file:</c> URIs.
+    /// reads <c>file:</c> URIs; for untrusted HTML use <see cref="ResourceLoaders.None"/> (only <c>data:</c> URIs work).
     /// </summary>
     public ResourceLoader ResourceLoader { get; init; } = ResourceLoaders.Default;
 

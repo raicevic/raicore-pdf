@@ -24,16 +24,21 @@ Security fixes go into the latest minor release (see [SUPPORT.md](SUPPORT.md)).
 
 ## Scope
 
-RaiCore.Pdf is meant to convert untrusted HTML and to read untrusted PDF, font and image files. In scope, for
-example:
+RaiCore.Pdf is meant to convert untrusted HTML, Office documents, spreadsheets, presentations and email, and to read
+untrusted PDF, font and image files. In scope, for example:
 
 - a crash, hang or exception other than the ones the API documents (such as `PdfException` and its subclasses,
   `ResourceLimitExceededException` and `OperationCanceledException`) on any input;
 - work, memory or output size that `ResourceLimits` should bound but does not;
 - a document that makes the default `ResourceLoader` read something other than `data:` URIs and `file:` URIs, or makes
   the converter load anything without going through the `ResourceLoader`;
+- a document that makes an Office, spreadsheet, presentation or email converter read anything besides its input
+  (linked images, linked workbooks, data connections, `file:` URLs in email), or a PDF reader follow an external
+  reference;
 - weaknesses in PDF encryption as written or read (the standard security handler).
 
 Out of scope: which URIs a `ResourceLoader` loads, and limits you raise yourself. The default loader reads `file:`
-URIs, so a document can reference local files; for untrusted HTML, supply a loader that allows only what the
-document should reach.
+URIs, so a document can reference local files; for untrusted HTML, use `ResourceLoaders.None` (only `data:` URIs) or
+a loader that allows only what the document should reach. The
+[untrusted input guide](https://raicevic.github.io/raicore-pdf/guides/untrusted-input.html) lists what each converter
+may load.

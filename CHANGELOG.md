@@ -5,6 +5,15 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **`ResourceLoaders.None`** (`RaiCore.Pdf.Html`): a resource loader that loads nothing, so untrusted HTML can embed
+  images as `data:` URIs (which never reach a loader) but can't reach local files or the network. Use it with
+  `HtmlConverterOptions`, `HtmlFragmentOptions` and `EmailConverterOptions.Html`.
+- **Untrusted input guide**: what each converter may load besides its input (nothing, for the Office, spreadsheet,
+  presentation and email converters), and the limits that bound its work. Tests prove that no kind of external
+  reference (linked images, `INCLUDEPICTURE` fields, external workbook links, data connections, linked pictures) is
+  followed, and that the Office and email packages contain no file, network or process access of their own.
+
 ## [1.1.0] - 2026-11-23
 
 Reading, editing and converting: text and images out of PDFs, editing existing files, and Office documents, email

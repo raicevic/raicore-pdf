@@ -39,8 +39,18 @@ internal static class Images
             BaseUri = new Uri("https://example.com/invoices/"),
             ResourceLoader = request => request.Uri.Host == "example.com"   // only what you allow
                 ? http.GetByteArrayAsync(request.Uri, request.CancellationToken).GetAwaiter().GetResult()
-                : ResourceLoaders.Default(request),
+                : ResourceLoaders.None(request),                        // everything else: nothing
         };
+        #endregion
+
+        #region untrusted
+        var upload = $"<p>Sent by a user</p><img src=\"data:image/png;base64,{Pixel}\"><img src=\"file:///etc/hosts\">";
+        var pdf = HtmlToPdf.ConvertToBytes(upload, new HtmlConverterOptions
+        {
+            ResourceLoader = ResourceLoaders.None,   // data: URIs only: no files, no network
+            Limits = ResourceLimits.Default with { Timeout = TimeSpan.FromSeconds(30) },
+        });
+        File.WriteAllBytes("untrusted.pdf", pdf);
         #endregion
 
         #region draw-images
