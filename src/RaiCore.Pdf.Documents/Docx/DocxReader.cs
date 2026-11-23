@@ -404,7 +404,18 @@ internal sealed partial class DocxReader
     /// <summary>
     /// The branch of <c>mc:AlternateContent</c> to read: the first <c>mc:Choice</c> (the markup this reader knows,
     /// such as WordprocessingML shapes and newer drawing extensions, all read the same), else the <c>mc:Fallback</c>.
+    /// A choice that needs a newer chart type (chartex) gives way to the fallback, its stored picture.
     /// </summary>
-    private static XElement? Choose(XElement alternate) =>
-        alternate.Elements().FirstOrDefault(e => e.Name.LocalName == "Choice") ?? alternate.Elements().FirstOrDefault(e => e.Name.LocalName == "Fallback");
+    private XElement? Choose(XElement alternate)
+    {
+        var choice = alternate.Elements().FirstOrDefault(e => e.Name.LocalName == "Choice");
+        var fallback = alternate.Elements().FirstOrDefault(e => e.Name.LocalName == "Fallback");
+        if (choice is not null && fallback is not null && RequiresChartEx(choice))
+        {
+            _context.Report(DocumentDiagnosticKind.UnsupportedContent, "A chart of a newer type (such as a waterfall or treemap chart) is shown as its stored picture.");
+            return fallback;
+        }
+
+        return choice ?? fallback;
+    }
 }

@@ -239,6 +239,8 @@ internal sealed partial class PptxReader
                     continue;
                 }
 
+                ReportChartEx(element, chosen);
+
                 ReadTree(chosen, sheet, shapes, groupFill, depth);
                 continue;
             }
@@ -549,7 +551,7 @@ internal sealed partial class PptxReader
         return group.Children.Count > 0 ? group : null;
     }
 
-    /// <summary>Reads a graphic frame: a table, a SmartArt diagram (its drawing), an OLE object (its picture); charts are reported.</summary>
+    /// <summary>Reads a graphic frame: a table, a chart, a SmartArt diagram (its drawing), an OLE object (its picture).</summary>
     private void GraphicFrame(XElement element, Sheet sheet, List<Shape> shapes, int depth)
     {
         var (cNvPr, _) = NonVisual(element);
@@ -571,7 +573,11 @@ internal sealed partial class PptxReader
                 shapes.Add(Table(tbl, box, cNvPr, sheet));
                 break;
             case ChartUri:
-                Report(_slideNumber, "chart", "Charts are not drawn.");
+                if (ChartOf(data, box, cNvPr, sheet) is { } chart)
+                {
+                    shapes.Add(chart);
+                }
+
                 break;
             case DiagramUri:
                 if (DiagramDrawing(data.El("relIds"), sheet) is { } drawing)

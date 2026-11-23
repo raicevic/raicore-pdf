@@ -600,7 +600,7 @@ public class DocxReaderTests
         Assert.Same(images[0].Data, images[1].Data); // Read once.
         Assert.Contains(diagnostics, d => d.Kind == DocumentDiagnosticKind.ImageNotLoaded && d.Message.Contains("media/none.png", StringComparison.Ordinal));
         Assert.Contains(diagnostics, d => d.Kind == DocumentDiagnosticKind.ImageNotLoaded && d.Message.Contains("linked", StringComparison.Ordinal));
-        Assert.Contains(diagnostics, d => d.Message == "A chart is left out.");
+        Assert.Contains(diagnostics, d => d.Message == "A chart without its chart part is left out.");
         Assert.Contains(diagnostics, d => d.Message == "A SmartArt diagram is left out.");
     }
 

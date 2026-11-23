@@ -19,10 +19,11 @@ namespace RaiCore.Pdf.Slides;
 /// picture fills, lines with dashes and arrowheads, rotated, flipped and grouped. Pictures (PNG, JPEG, GIF, BMP, TIFF,
 /// WebP, SVG) keep their cropping and the shape they are clipped to; tables their style (bands, header row and column),
 /// cell fills, borders, merged cells and text, rows growing to fit their text. SmartArt is drawn from the drawing
-/// PowerPoint stores with it.
+/// PowerPoint stores with it. Charts (columns, bars, lines, pies, doughnuts, areas, scatter, bubble, radar and stock
+/// charts) are drawn as vector graphics from their cached data, with Excel's axis scaling and their text extractable.
 /// </para>
 /// <para>
-/// Not supported: charts, SmartArt without a stored drawing, EMF and WMF pictures, embedded objects without a
+/// Not supported: surface charts, SmartArt without a stored drawing, EMF and WMF pictures, embedded objects without a
 /// picture, video and audio (their poster picture is drawn), animations and transitions, 3D effects, shadows, glow,
 /// reflections, soft edges, WordArt transforms, multiple text columns, notes pages and comments. What is left out is
 /// reported to <see cref="PptxConverterOptions.Diagnostics"/>. Password-protected (encrypted) presentations and
