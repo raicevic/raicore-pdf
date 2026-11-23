@@ -571,20 +571,38 @@ internal sealed partial class Paginator
     /// </summary>
     private static PageBreak StartBreak(Block block)
     {
-        var own = block.Style.BreakBefore;
+        // A loop, not recursion: the chain of first children is as long as the content is deep. The breaks combine from
+        // the innermost block outwards.
+        var chain = new List<PageBreak>();
+        for (Block? current = block; current is not null; current = FirstInFlowChild(current))
+        {
+            chain.Add(current.Style.BreakBefore);
+        }
+
+        var result = chain[^1];
+        for (var i = chain.Count - 2; i >= 0; i--)
+        {
+            result = SideOf(result) is not null || !IsForced(chain[i]) ? result : chain[i];
+        }
+
+        return result;
+    }
+
+    /// <summary>A container's first child that takes up space, or <c>null</c>.</summary>
+    private static Block? FirstInFlowChild(Block block)
+    {
         if (block is ContainerBlock container)
         {
             foreach (var child in container.Children)
             {
                 if (!TakesNoSpace(child))
                 {
-                    var inner = StartBreak(child);
-                    return SideOf(inner) is not null || !IsForced(own) ? inner : own;
+                    return child;
                 }
             }
         }
 
-        return own;
+        return null;
     }
 
     /// <summary>
@@ -593,16 +611,10 @@ internal sealed partial class Paginator
     /// </summary>
     private static string? StartName(Block block, string? inherited)
     {
-        var name = block.PageName ?? inherited;
-        if (block is ContainerBlock container)
+        var name = inherited;
+        for (Block? current = block; current is not null; current = FirstInFlowChild(current))
         {
-            foreach (var child in container.Children)
-            {
-                if (!TakesNoSpace(child))
-                {
-                    return StartName(child, name);
-                }
-            }
+            name = current.PageName ?? name;
         }
 
         return name;

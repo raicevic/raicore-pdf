@@ -15,6 +15,9 @@ and versions follow [Semantic Versioning](https://semver.org/).
   followed, and that the Office and email packages contain no file, network or process access of their own.
 
 ### Fixed
+- **Deeply nested layout content no longer overflows the stack** when `MaxNestingDepth` is raised: finding the forced
+  break and the page name a block starts with walked its chain of first children recursively, without the stack check
+  every other recursion has. A test that depended on how far the JIT had optimized the layout code is now stable.
 - **Text drawn with a glyph that stands for two characters extracts as each**: when one glyph is drawn for different
   texts (HarfBuzz draws U+200B with the space glyph; fonts share glyphs between look-alike characters), the second text
   gets a character code of its own, mapped to the glyph through a `/CIDToGIDMap` stream, so copying, searching and
