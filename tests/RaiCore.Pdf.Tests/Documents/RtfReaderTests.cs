@@ -598,19 +598,20 @@ public class RtfReaderTests
             + $@"{{\listtext{{\pict\pngblip {hex}}}}}{{\field{{\*\fldinst PAGE}}{{\fldrslt {{\pict\pngblip {hex}}}}}}}x\par",
             diagnostics: diagnostics);
         var images = Paragraphs(document)[0].Inlines.OfType<ImageInline>().ToList();
-        Assert.Equal(6, images.Count);
+        Assert.Equal(8, images.Count);
         Assert.Equal((50.0, 100.0), (images[0].Width, images[0].Height)); // The goal size, scaled.
         Assert.Equal(png, images[0].Data);
         Assert.Equal((30.0, 15.0), (images[1].Width, images[1].Height)); // Pixels at 96 dpi.
         Assert.Equal(png, images[2].Data); // \bin data.
         Assert.Equal((0.0, 0.0), (images[2].Width, images[2].Height));
         Assert.Equal(5, images[3].Width); // The shape picture, not its fallback.
-        Assert.Equal(10, images[4].Width); // A shape's picture (pib), not its fill.
-        Assert.Equal(15, images[5].Width); // An object's result.
+        Assert.Equal([0x01, 0x00], images[4].Data); // An EMF picture, as it is.
+        Assert.Equal([0xD7, 0xCD, 0xC6, 0x9A], images[5].Data[..4]); // A WMF picture, with a placeable header.
+        Assert.Equal(10, images[6].Width); // A shape's picture (pib), not its fill.
+        Assert.Equal(15, images[7].Width); // An object's result.
         Assert.Contains(Paragraphs(document)[0].Inlines, i => i is AnchoredBlocks anchored && Text((WordParagraph)anchored.Blocks[0]) == "boxed");
         Assert.DoesNotContain("fallback", Text(Paragraphs(document)[0]), StringComparison.Ordinal);
-        Assert.Contains(diagnostics, d => d.Kind == DocumentDiagnosticKind.UnsupportedContent && d.Message.Contains("EMF", StringComparison.Ordinal));
-        Assert.Contains(diagnostics, d => d.Message.Contains("WMF format", StringComparison.Ordinal));
+        Assert.DoesNotContain(diagnostics, d => d.Message.Contains("EMF", StringComparison.Ordinal) || d.Message.Contains("WMF", StringComparison.Ordinal));
         Assert.Contains(diagnostics, d => d.Message.Contains("PICT", StringComparison.Ordinal));
         Assert.Contains(diagnostics, d => d.Message.Contains("unknown format", StringComparison.Ordinal));
         Assert.Contains(diagnostics, d => d.Message.Contains("embedded object", StringComparison.Ordinal));

@@ -15,11 +15,12 @@ namespace RaiCore.Pdf.Slides;
 /// spacing; font, size, bold, italic, underline, color, superscript and subscript, and links. Shapes are drawn from
 /// their preset or free-form geometry with solid, gradient, pattern (as an average color) and picture fills, lines
 /// with dashes and arrowheads, rotated, flipped and grouped; tables, which the format stores as groups of shapes, as
-/// those shapes. Pictures (PNG, JPEG, TIFF, and device-independent bitmaps) keep their cropping. The master's date,
+/// those shapes. Pictures (PNG, JPEG, TIFF, device-independent bitmaps, and EMF and WMF drawn as vector graphics) keep
+/// their cropping. The master's date,
 /// footer and slide number placeholders show as the presentation's header and footer settings say.
 /// </para>
 /// <para>
-/// Not supported: EMF, WMF and PICT pictures, embedded objects without a picture (charts and other objects are
+/// Not supported: PICT pictures, embedded objects without a picture (charts and other objects are
 /// drawn as the picture PowerPoint stores with them), automatic numbering, automatic dates, WordArt, shadows, 3D
 /// effects, animations and transitions, notes pages and comments. What is left out is reported to
 /// <see cref="PptxConverterOptions.Diagnostics"/>. Password-protected (encrypted) presentations, PowerPoint 95 and

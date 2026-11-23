@@ -456,8 +456,7 @@ public partial class PptToPdfTests
         Assert.Contains(diagnostics, d => d.Message.Contains("PICT is not supported", StringComparison.Ordinal));
         var converted = new List<SlideDiagnostic>();
         var pdf = PptToPdf.ConvertToBytes(Fixture("pictures.ppt"), new PptxConverterOptions { Diagnostics = converted.Add });
-        Assert.Contains(converted, d => d.Message.Contains("WMF is not supported", StringComparison.Ordinal));
-        Assert.Contains(converted, d => d.Message.Contains("EMF is not supported", StringComparison.Ordinal));
+        Assert.DoesNotContain(converted, d => d.Message.Contains("WMF", StringComparison.Ordinal) || d.Message.Contains("EMF", StringComparison.Ordinal));
         Assert.Contains(" Do", PptxToPdfTests.Content(pdf), StringComparison.Ordinal);
 
         // Backgrounds: a picture, a pattern (as a color), a texture, a gradient; shapes filled alike.

@@ -17,7 +17,10 @@ public enum DocumentDiagnosticKind
     /// </summary>
     UnsupportedContent,
 
-    /// <summary>An image that cannot be drawn (a format such as EMF or WMF, or damaged data); it is left out.</summary>
+    /// <summary>
+    /// An image that cannot be drawn (a format such as PICT, or damaged data); it is left out. A damaged WMF or EMF
+    /// picture is drawn up to the damage and reported as this too.
+    /// </summary>
     ImageNotLoaded,
 
     /// <summary>Content that does not fit where it is laid out: a line or table wider than its box, content taller than a page.</summary>

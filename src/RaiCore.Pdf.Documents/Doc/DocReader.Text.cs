@@ -792,7 +792,7 @@ internal sealed partial class DocReader
         if (blip.Data is null)
         {
             _context.Report(DocumentDiagnosticKind.ImageNotLoaded,
-                $"{name} is in {(blip.Kind.StartsWith("an ", StringComparison.Ordinal) ? blip.Kind : blip.Kind + " format")}, which cannot be drawn (EMF, WMF and PICT pictures are not supported); it is left out.");
+                $"{name} is in {(blip.Kind.StartsWith("an ", StringComparison.Ordinal) ? blip.Kind : blip.Kind + " format")}, which cannot be drawn (PICT pictures are not supported); it is left out.");
             return;
         }
 

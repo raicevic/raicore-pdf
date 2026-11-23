@@ -28,7 +28,7 @@ namespace RaiCore.Pdf.Documents;
 /// </para>
 /// <para>
 /// Not supported: text boxes and shapes as floating frames (their text is laid out after their paragraph), charts,
-/// SmartArt, embedded objects, EMF and WMF images, comments, several text columns (laid out as one), footnotes at the
+/// SmartArt, embedded objects (their preview image is shown), comments, several text columns (laid out as one), footnotes at the
 /// bottom of the page, line numbers, page borders, watermarks, right-to-left and vertical text beyond what the layout
 /// engine does by itself. What is left out is reported to <see cref="DocumentConverterOptions.Diagnostics"/>.
 /// Password-protected (encrypted) documents throw <see cref="NotSupportedException"/>; a Word 97-2003 (<c>.doc</c>)

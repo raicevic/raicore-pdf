@@ -1,1 +1,3 @@
 #nullable enable
+RaiCore.Pdf.PdfImageFormat.Emf = 8 -> RaiCore.Pdf.PdfImageFormat
+RaiCore.Pdf.PdfImageFormat.Wmf = 7 -> RaiCore.Pdf.PdfImageFormat

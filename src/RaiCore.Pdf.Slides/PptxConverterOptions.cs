@@ -62,8 +62,8 @@ public sealed class PptxConverterOptions
 
     /// <summary>
     /// Receives what the converter did not draw as a presentation program would: charts, SmartArt without a stored
-    /// drawing, pictures in formats it cannot read (such as EMF and WMF), preset shapes drawn as rectangles, and so
-    /// on. Each distinct issue is reported once per slide, on the conversion's thread, while the conversion runs.
+    /// drawing, pictures in formats it cannot read (such as PICT), what a WMF or EMF picture uses that is approximated,
+    /// preset shapes drawn as rectangles, and so on. Each distinct issue is reported once per slide, on the conversion's thread, while the conversion runs.
     /// <c>null</c> (the default) collects nothing.
     /// </summary>
     /// <example>

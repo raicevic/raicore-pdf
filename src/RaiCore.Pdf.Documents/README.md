@@ -49,8 +49,9 @@ DocToPdf.Convert("minutes.doc").Save("minutes.pdf");
   other's format too.
 
 Not supported: text boxes and shapes as floating frames (their text follows their paragraph), charts (an OpenDocument
-chart's replacement image is shown), SmartArt, embedded objects, EMF and WMF images, comments, forms, several text
-columns, footnotes at the bottom of the page; in RTF and `.doc` also PICT pictures and drawing objects. What is left
+chart's replacement image is shown), SmartArt, embedded objects (their preview image is shown), comments, forms,
+several text columns, footnotes at the bottom of the page; in RTF and `.doc` also PICT pictures and drawing objects.
+WMF and EMF pictures (also EMF+) are drawn as vector graphics. What is left
 out is reported to the options' `Diagnostics`.
 
 More: the [Word documents guide](https://raicevic.github.io/raicore-pdf/guides/documents.html) and its

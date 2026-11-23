@@ -69,9 +69,18 @@ belongs to.
 
 [!code-csharp[](../snippets/Slides.cs#fonts)]
 
+## WMF and EMF pictures
+
+WMF and EMF pictures (with their EMF+ records), and the previews PowerPoint stores for embedded objects in these
+formats, are drawn as vector graphics, cropped and clipped like any picture; their text stays text, in the fonts the
+presentation's text would get for the picture's font names. What is approximated or left out (raster operations
+that mix colors, path gradients, text stored as glyph numbers when the picture's font is missing, and the like) and
+damage (a damaged picture is drawn up to the damage) are reported to `Diagnostics` with the subject `picture`. The
+[Word documents guide](documents.md#wmf-and-emf-pictures) lists what is supported, and the limits.
+
 ## Not supported
 
-Charts, SmartArt without a stored drawing, EMF and WMF pictures, embedded objects without a picture, animations and
+Charts, SmartArt without a stored drawing, PICT pictures, embedded objects without a picture, animations and
 transitions, 3D effects, shadows, glow, reflections and soft edges, WordArt transforms, multiple text columns, tab
 stops (a tab is a few spaces), notes pages and comments. Password-protected (encrypted) presentations throw
 `NotSupportedException`, and so do PowerPoint 97-2003 (`.ppt`) files given to `PptxToPdf`: convert those with
@@ -104,8 +113,9 @@ pdf.Save("old-deck.pdf");
 - **Text:** insets, anchoring, wrapping and vertical text; paragraphs with alignment, indents and rulers, spacing, line
   spacing and bullets (symbol fonts' bullets as Unicode); runs with font, size, bold, italic, underline, color,
   superscript and subscript and links. WordArt is drawn as plain text, and reported.
-- **Pictures:** PNG, JPEG, TIFF and device-independent bitmaps, cropped; embedded objects (charts, workbooks) as the
-  picture PowerPoint stores with them. EMF, WMF and PICT pictures are not drawn, and reported.
+- **Pictures:** PNG, JPEG, TIFF, device-independent bitmaps, EMF and WMF (as vector graphics), cropped; embedded
+  objects (charts, workbooks) as the picture PowerPoint stores with them, often an EMF or WMF. PICT pictures are not
+  drawn, and reported.
 
 Not supported: automatic numbering, automatic dates, shadows, 3D effects, animations and transitions, sounds and
 movies, notes pages and comments. Password-protected (encrypted) presentations, and PowerPoint 95 and older files,

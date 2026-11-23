@@ -198,7 +198,7 @@ internal sealed partial class OdtReader
 
     /// <summary>
     /// The image of a frame's <c>draw:image</c> elements to draw: the first in a format that can be drawn (PNG, JPEG,
-    /// GIF, BMP, TIFF, WebP, then SVG), else the first that loads, which is reported when drawn. Linked and missing
+    /// GIF, BMP, TIFF, WebP, then SVG, then WMF and EMF), else the first that loads, which is reported when drawn. Linked and missing
     /// images are reported and left out.
     /// </summary>
     private (byte[] Data, string Name)? Image(List<XElement> images)
@@ -212,7 +212,7 @@ internal sealed partial class OdtReader
             }
         }
 
-        foreach (var rank in new[] { 0, 1 })
+        foreach (var rank in new[] { 0, 1, 2 })
         {
             foreach (var candidate in candidates)
             {
@@ -226,7 +226,7 @@ internal sealed partial class OdtReader
         return candidates.Count > 0 ? candidates[0] : null;
     }
 
-    /// <summary>0 for raster formats that can be drawn, 1 for SVG, 2 for others (EMF, WMF, StarView metafiles).</summary>
+    /// <summary>0 for raster formats that can be drawn, 1 for SVG, 2 for WMF and EMF, 3 for others (StarView metafiles).</summary>
     private static int Rank(byte[] data)
     {
         ReadOnlySpan<byte> span = data;
@@ -238,7 +238,7 @@ internal sealed partial class OdtReader
         }
 
         var head = System.Text.Encoding.UTF8.GetString(data, 0, Math.Min(data.Length, 1024));
-        return head.Contains("<svg", StringComparison.Ordinal) ? 1 : 2;
+        return head.Contains("<svg", StringComparison.Ordinal) ? 1 : PdfImage.IsMetafile(data) ? 2 : 3;
     }
 
     /// <summary>Whether a reference points outside the package: an address with a scheme, or a path from the root or above it.</summary>

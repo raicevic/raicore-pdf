@@ -20,7 +20,7 @@ namespace RaiCore.Pdf.Documents;
 /// rows, borders, padding, backgrounds and vertical alignment, and nested tables; sections and indexes (tables of
 /// contents) as their content; master pages with their page layout (size, orientation, margins, header and footer
 /// height), headers and footers for left, right and first pages, switched by paragraph and table styles, and page
-/// number restarts and formats; PNG, JPEG, GIF, BMP, TIFF, WebP and SVG images in the package (or embedded as base64 in
+/// number restarts and formats; PNG, JPEG, GIF, BMP, TIFF, WebP, SVG, WMF and EMF images in the package (or embedded as base64 in
 /// flat documents), in the line or anchored (anchored images with text wrapping float at the left or right margin,
 /// others stand on a line of their own before their paragraph); the replacement images of charts and embedded objects;
 /// links to web addresses and to bookmarks; page numbers, page counts and page references computed from the PDF's
@@ -29,7 +29,7 @@ namespace RaiCore.Pdf.Documents;
 /// </para>
 /// <para>
 /// Not supported: text boxes and drawing shapes as floating frames (their text is laid out after their paragraph),
-/// charts and embedded objects beyond their replacement images, EMF, WMF and StarView images, comments, forms,
+/// charts and embedded objects beyond their replacement images, StarView images, comments, forms,
 /// several text columns (laid out as one), footnotes at the bottom of the page, line numbers, page borders and
 /// backgrounds, right-to-left and vertical text beyond what the layout engine does by itself. What is left out is
 /// reported to <see cref="DocumentConverterOptions.Diagnostics"/>. Password-protected (encrypted) documents throw

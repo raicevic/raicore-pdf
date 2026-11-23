@@ -29,6 +29,7 @@ These files are in the repository but in no package.
 | Source Sans 3 and Source Sans 3 VF (subsets, renamed RaiCore Sans3 because "Source" is a Reserved Font Name) | `tests/RaiCore.Pdf.Tests/Fixtures/RaiCoreSans3-Subset.otf`, `RaiCoreSans3VF-Subset.otf` | [SIL Open Font License 1.1](tests/RaiCore.Pdf.Tests/Fixtures/RaiCoreSans3-OFL.txt) |
 | Noto Sans JP (a subset) | `tests/RaiCore.Pdf.Tests/Fixtures/NotoSansJP-Subset.otf` | [SIL Open Font License 1.1](tests/RaiCore.Pdf.Tests/Fixtures/NotoSansCJK-OFL.txt) |
 | PDFs written by reportlab, PyMuPDF and fpdf2 with Liberation Sans and Serif subsets, and what MuPDF reads from them | `tests/RaiCore.Pdf.Tests/Fixtures/Extraction` (made by `make-fixtures.py` there) | Generated; the embedded fonts are under the [SIL Open Font License 1.1](src/RaiCore.Pdf.Fonts/Liberation/OFL.txt) |
+| Apache POI test data: WMF and EMF pictures, and documents and presentations with them (also the other samples listed in its README) | `tests/RaiCore.Pdf.Tests/Fixtures/Poi` | [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) (see the folder's [README](tests/RaiCore.Pdf.Tests/Fixtures/Poi/README.md)) |
 | Liberation Sans as WOFF and WOFF2 | `tests/RaiCore.Pdf.Tests/Fixtures/LiberationSans-Regular.woff`, `.woff2` | [SIL Open Font License 1.1](tests/RaiCore.Pdf.Tests/Fixtures/LiberationSans-OFL.txt) |
 | Excel workbooks (`.xlsx`, `.xlsm`) from the test data of [Apache POI](https://poi.apache.org/) | `tests/RaiCore.Pdf.Tests/Fixtures/Workbooks/Poi` | Apache License 2.0; see [README.md](tests/RaiCore.Pdf.Tests/Fixtures/Workbooks/Poi/README.md) |
 | [Simple HTML invoice template](https://github.com/sparksuite/simple-html-invoice-template) by Sparksuite | `tests/Fidelity/Corpus/sparksuite-invoice` | [MIT](tests/Fidelity/Corpus/sparksuite-invoice/LICENSE) |
@@ -41,7 +42,8 @@ These files are in the repository but in no package.
 | [Start Bootstrap Resume](https://github.com/StartBootstrap/startbootstrap-resume) (HTML and CSS) | `tests/Fidelity/Corpus/startbootstrap-resume` | [MIT](tests/Fidelity/Corpus/startbootstrap-resume/LICENSE) |
 
 The other test fixtures (the `RaiCoreTest*` fonts, and the BMP, WebP, JPEG, GIF, SVG, PDF and invoice XML files) are made for this
-project by the scripts in `tools/` or by hand, and are under its Apache License 2.0.
+project by the scripts in `tools/` or by hand, and are under its Apache License 2.0; so are the WMF and EMF pictures in
+`tests/RaiCore.Pdf.Tests/Fixtures/Metafiles`, made by `make-metafiles.py` there.
 So are the fidelity corpus documents not listed above, and the placeholder images (`placeholder-*.svg`) that replace
 remote images in the adapted templates.
 So are the fuzzing seeds and the inputs fuzzing found (`tests/RaiCore.Pdf.Tests/Fixtures/Fuzz`): written by hand,
