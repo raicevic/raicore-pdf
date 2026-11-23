@@ -16,6 +16,24 @@ and versions follow [Semantic Versioning](https://semver.org/).
   tagged document). What only pages have (`@page`, running elements, `string-set`, named pages, page numbers of
   `target-counter()`) is left out and reported in `HtmlFragment.Diagnostics` with the converter's usual diagnostics;
   headings become bookmarks only with `CreateBookmarks`. A new `htmlfragment` fuzz target (#197).
+- **PowerPoint 97-2003 to PDF** (`RaiCore.Pdf.Slides`): `PptToPdf.Convert` (also `ConvertToBytes` and `ConvertAsync`,
+  over bytes, streams and paths, with `PptxConverterOptions`) converts binary PowerPoint presentations (`.ppt`, `.pps`,
+  `.pot`) with the slide model and renderer of the PPTX converter. The compound file's "Current User" and
+  "PowerPoint Document" streams, the user edit chain with its persist directories (newer edits win; a looping or
+  broken chain is recovered from the directories in the stream), PowerPoint 95 files' PowerPoint 97 copy
+  (`PP97_DUALSTORAGE`); the document (slide size, fonts, default text styles, the drawing group's default shape
+  properties and picture store, slide headers and footers, hyperlinks), the slide list in order with its outline text,
+  masters and title masters (shapes, backgrounds, color schemes, text master styles by text type and level), hidden
+  slides; OfficeArt drawings: shapes with their primary, secondary and tertiary properties and master shapes, client
+  and child anchors (rotated anchors turned back), groups (tables are groups), about 90 preset shape types with adjust
+  values, free forms from their vertices and segments, solid, gradient, pattern, picture and texture fills, lines with
+  dashes, joins, caps and arrowheads, pictures from the "Pictures" stream (PNG, JPEG, TIFF, DIB as BMP; EMF and WMF
+  decompressed and reported, PICT reported), cropped, and embedded objects as their picture; text from text boxes or
+  outline text references with paragraph and character runs, text rulers, bullets (symbol fonts as Unicode), links,
+  WordArt as plain text, and the master's date, footer and slide number placeholders as the headers and footers say.
+  Encrypted presentations, PowerPoint 95 and 4.0 files throw `NotSupportedException`; `PptxToPdf` given a `.ppt` file
+  now points at `PptToPdf`. A new `ppt` fuzz target; a corpus of Apache POI and Apache Tika samples checked against an
+  independent record reader and against POI's and Tika's own test expectations (#206).
 - **ODT to PDF** (`RaiCore.Pdf.Documents`): `OdtToPdf.Convert` converts OpenDocument text documents (`.odt`, `.ott`
   templates and flat `.fodt` XML documents, ODF 1.0 to 1.3) with the shared word-processing model and renderer of
   DOCX. Common, automatic and default styles with `style:parent-style-name` chains and font face declarations;

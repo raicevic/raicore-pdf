@@ -39,14 +39,14 @@ internal static class PptxConverter
             checkpoint);
     }
 
-    private static ResourceLimits Validate(PptxConverterOptions options)
+    internal static ResourceLimits Validate(PptxConverterOptions options)
     {
         ArgumentNullException.ThrowIfNull(options.FallbackFontFamilies, nameof(options));
         return options.Limits ?? throw new ArgumentException("The resource limits must not be null.", nameof(options));
     }
 
     /// <summary>The diagnostics callback as the reader and renderer call it (each issue once per slide), or <c>null</c>.</summary>
-    private static Action<int, string, string>? Report(PptxConverterOptions options)
+    internal static Action<int, string, string>? Report(PptxConverterOptions options)
     {
         if (options.Diagnostics is not { } diagnostics)
         {

@@ -2,7 +2,7 @@ using RaiCore.Pdf.Fonts;
 
 namespace RaiCore.Pdf.Slides;
 
-/// <summary>Options for <see cref="PptxToPdf"/>.</summary>
+/// <summary>Options for <see cref="PptxToPdf"/> and <see cref="PptToPdf"/> (PowerPoint 97-2003 presentations).</summary>
 /// <remarks>
 /// Options are immutable once created and can be shared by conversions running at the same time.
 /// </remarks>

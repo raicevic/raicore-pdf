@@ -26,7 +26,8 @@ namespace RaiCore.Pdf.Slides;
 /// picture, video and audio (their poster picture is drawn), animations and transitions, 3D effects, shadows, glow,
 /// reflections, soft edges, WordArt transforms, multiple text columns, notes pages and comments. What is left out is
 /// reported to <see cref="PptxConverterOptions.Diagnostics"/>. Password-protected (encrypted) presentations and
-/// PowerPoint 97-2003 (<c>.ppt</c>) files throw <see cref="NotSupportedException"/>.
+/// PowerPoint 97-2003 (<c>.ppt</c>) files throw <see cref="NotSupportedException"/>: convert the latter with
+/// <see cref="PptToPdf"/>.
 /// </para>
 /// <para>
 /// Presentations are untrusted input: their parts are read with no DTDs and nothing external resolved (linked pictures

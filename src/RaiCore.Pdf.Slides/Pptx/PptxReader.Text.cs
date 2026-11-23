@@ -17,7 +17,7 @@ internal sealed partial class PptxReader
     private static partial Regex Escape();
 
     /// <summary>Characters of the symbol fonts used for bullets, as Unicode (Wingdings and Symbol).</summary>
-    private static readonly Dictionary<char, string> SymbolBullets = new()
+    internal static readonly Dictionary<char, string> SymbolBullets = new()
     {
         ['l'] = "\u25CF",
         ['n'] = "\u25A0",
@@ -429,9 +429,10 @@ internal sealed partial class PptxReader
     }
 
     /// <summary>Whether a font maps its characters to symbols (bullets are written in it as letters).</summary>
-    private static bool IsSymbolFont(string face) =>
+    internal static bool IsSymbolFont(string face) =>
         face.StartsWith("Wingdings", StringComparison.OrdinalIgnoreCase) || face.Equals("Symbol", StringComparison.OrdinalIgnoreCase)
-        || face.Equals("Webdings", StringComparison.OrdinalIgnoreCase) || face.StartsWith("Marlett", StringComparison.OrdinalIgnoreCase);
+        || face.Equals("Webdings", StringComparison.OrdinalIgnoreCase) || face.StartsWith("Marlett", StringComparison.OrdinalIgnoreCase)
+        || face.StartsWith("Monotype Sorts", StringComparison.OrdinalIgnoreCase) || face.Replace(" ", string.Empty, StringComparison.Ordinal).StartsWith("ZapfDingbats", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>A number in an automatic numbering scheme (<c>arabicPeriod</c>: 1., <c>alphaLcParenR</c>: a), ...).</summary>
     internal static string Number(string scheme, int number)

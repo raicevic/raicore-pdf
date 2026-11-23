@@ -69,6 +69,7 @@ public static class FuzzTargets
         ["cfb"] = Cfb,
         ["xlsx"] = Xlsx,
         ["pptx"] = Pptx,
+        ["ppt"] = Ppt,
         ["docx"] = Docx,
         ["odt"] = Odt,
         ["rtf"] = Rtf,
@@ -375,6 +376,19 @@ public static class FuzzTargets
     /// length) with hidden slides too, every third one tagged.
     /// </summary>
     public static void Pptx(byte[] input) => PptxToPdf.ConvertToBytes(input, new PptxConverterOptions
+    {
+        Limits = Limits,
+        IncludeHiddenSlides = input.Length % 2 == 0,
+        Tagged = input.Length % 3 == 0,
+        Diagnostics = _ => { },
+    });
+
+    /// <summary>
+    /// A PowerPoint 97-2003 presentation: its compound file, edit history and persist directory, document, masters
+    /// and slides read, every slide drawn with its shapes, text, pictures and groups; every other input (by length)
+    /// with hidden slides too, every third one tagged.
+    /// </summary>
+    public static void Ppt(byte[] input) => PptToPdf.ConvertToBytes(input, new PptxConverterOptions
     {
         Limits = Limits,
         IncludeHiddenSlides = input.Length % 2 == 0,
