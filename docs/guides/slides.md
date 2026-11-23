@@ -14,6 +14,8 @@ dotnet add package RaiCore.Pdf.Slides
 and `ConvertToBytes` do the same. It reads `.pptx`, `.pptm`, `.ppsx` and `.potx` files, also in strict Office Open
 XML.
 
+The [format support](format-support.md) page compares all formats side by side.
+
 ## Options
 
 [!code-csharp[](../snippets/Slides.cs#options)]

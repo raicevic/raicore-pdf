@@ -14,6 +14,14 @@ and versions follow [Semantic Versioning](https://semver.org/).
   reference (linked images, `INCLUDEPICTURE` fields, external workbook links, data connections, linked pictures) is
   followed, and that the Office and email packages contain no file, network or process access of their own.
 
+### Documentation
+- **Format support**: one page comparing what each converter draws, format by format (DOCX, DOC, RTF, ODT; XLSX, XLS,
+  CSV; PPTX, PPT; EML, MSG, MHT), linked from each format guide and the README.
+- **Migrating from Aspose** covers 1.1: a package for each Aspose product, and mapping tables for Aspose.PDF
+  (`TextAbsorber`, `TextFragmentAbsorber`, `ImagePlacementAbsorber`, `Form.Flatten`, `OptimizeResources`,
+  `Pages.Delete`, ...), Aspose.Words, Aspose.Cells, Aspose.Slides and Aspose.Email.
+- **PdfDocument or PdfEditor?**: a section in the editing guide on which class does what.
+
 ## [1.1.0] - 2026-11-23
 
 Reading, editing and converting: text and images out of PDFs, editing existing files, and Office documents, email

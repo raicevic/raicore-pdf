@@ -34,5 +34,7 @@
   href: slides.md
 - name: Word, ODT and RTF to PDF
   href: documents.md
+- name: Format support
+  href: format-support.md
 - name: Experimental APIs
   href: ../experimental.md

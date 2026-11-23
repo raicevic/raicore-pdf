@@ -17,6 +17,8 @@ dotnet add package RaiCore.Pdf.Email
   its inline images in place.
 - **The attachments,** embedded as PDF file attachments that the reader can open.
 
+The [format support](format-support.md) page compares all formats side by side.
+
 ## The body
 
 | Message structure | What is shown |

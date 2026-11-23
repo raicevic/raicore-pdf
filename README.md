@@ -26,6 +26,9 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf.Documents` | Word (.docx, .doc), OpenDocument text (.odt) and RTF → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | ✅ 1.1 |
 | `RaiCore.Pdf.XslFo` | XSL-FO → PDF | ⚪ Planned |
 
+What each converter draws, format by format (including the Word 97-2003, Excel 97-2003 and PowerPoint 97-2003 binary
+formats), is in the [format support](https://raicevic.github.io/raicore-pdf/guides/format-support.html) table.
+
 All packages target .NET 10 and run on Windows, Linux (glibc and musl, so Alpine too) and macOS, x64 and Arm64, with
 no native dependencies beyond HarfBuzz, which ships in the packages. Apps using them can be trimmed and published with
 Native AOT, and run in containers (see [below](#trimming-and-native-aot)).
@@ -983,7 +986,9 @@ and [tools/README.md](tools/README.md) for the maintainer scripts.
 ## Support and security
 
 [SUPPORT.md](SUPPORT.md) says where to ask, which versions and .NET releases are supported and how often releases
-come. Report vulnerabilities privately, as [SECURITY.md](SECURITY.md) describes. Everyone taking part follows the
+come. Report vulnerabilities privately, as [SECURITY.md](SECURITY.md) describes. Converting files from strangers?
+See [untrusted input](https://raicevic.github.io/raicore-pdf/guides/untrusted-input.html) for what each converter may
+load and the limits that bound it. Everyone taking part follows the
 [code of conduct](CODE_OF_CONDUCT.md).
 
 ## License
