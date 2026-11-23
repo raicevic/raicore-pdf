@@ -1,4 +1,4 @@
-# PPTX to PDF
+# PowerPoint to PDF
 
 `RaiCore.Pdf.Slides` converts PowerPoint presentations to PDF: each slide becomes one page of the slide's size, drawn
 with its master's and layout's shapes, its background, theme colors and fonts, shapes, text, pictures, tables and

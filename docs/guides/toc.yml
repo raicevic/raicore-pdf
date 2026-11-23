@@ -22,15 +22,15 @@
   href: text-extraction.md
 - name: Image extraction
   href: image-extraction.md
-- name: Editing pages
+- name: Editing PDFs
   href: editing.md
 - name: Email and web archives
   href: email.md
 - name: CSV, XLSX and XLS to PDF
   href: sheets.md
-- name: PPTX to PDF
+- name: PowerPoint (PPTX, PPT) to PDF
   href: slides.md
-- name: Word documents to PDF
+- name: Word, ODT and RTF to PDF
   href: documents.md
 - name: Experimental APIs
   href: ../experimental.md

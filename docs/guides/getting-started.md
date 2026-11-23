@@ -1,7 +1,8 @@
 # Getting started
 
-RaiCore.Pdf creates PDF documents in .NET 10: from HTML and CSS, from Razor components, or by drawing and laying out
-content in code. It has its own layout engine, so there is no browser to install and the output is the same on every
+RaiCore.Pdf creates PDF documents in .NET 10: from HTML and CSS, from Razor components, from Word, Excel, PowerPoint,
+OpenDocument, RTF, CSV and email files, or by drawing and laying out content in code. It also reads, searches and
+edits existing PDFs. It has its own layout engine, so there is no browser to install and the output is the same on every
 machine.
 
 ## Install
@@ -13,6 +14,14 @@ machine.
 | `RaiCore.Pdf.Layout` | Paragraphs, tables and multi-page documents from code |
 | `RaiCore.Pdf` | Drawing PDF pages directly, reading and merging PDFs |
 | `RaiCore.Pdf.Fonts` | The bundled Liberation fonts |
+| `RaiCore.Pdf.Documents` | Word (`.docx`, `.doc`), OpenDocument text (`.odt`) and RTF to PDF: see [Word documents](documents.md) |
+| `RaiCore.Pdf.Sheets` | CSV and Excel (`.xlsx`, `.xls`) to PDF: see [Spreadsheets](sheets.md) |
+| `RaiCore.Pdf.Slides` | PowerPoint (`.pptx`, `.ppt`) to PDF: see [Presentations](slides.md) |
+| `RaiCore.Pdf.Email` | Email (`.eml`, `.msg`) and web archives (`.mht`) to PDF: see [Email](email.md) |
+| `RaiCore.Pdf.Extraction` | Text, search and images of existing PDFs: see [Text extraction](text-extraction.md) |
+| `RaiCore.Pdf.Editing` | Editing existing PDFs: see [Editing](editing.md) |
+
+All packages are released together at the same version, so install them at one version.
 
 ```sh
 dotnet add package RaiCore.Pdf.Html
