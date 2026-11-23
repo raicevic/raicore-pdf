@@ -8,7 +8,7 @@ namespace RaiCore.Pdf.Sheets.Xlsx;
 internal sealed class XlsxColors
 {
     /// <summary>The default indexed palette (ECMA-376 18.8.27), 0 to 63; 64 is the system foreground, 65 the background.</summary>
-    private static readonly uint[] DefaultPalette =
+    internal static readonly uint[] DefaultPalette =
     [
         0x000000, 0xFFFFFF, 0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF, 0x00FFFF,
         0x000000, 0xFFFFFF, 0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF, 0x00FFFF,
@@ -55,7 +55,7 @@ internal sealed class XlsxColors
         }
         else if (indexed is not null && int.TryParse(indexed, NumberStyles.None, CultureInfo.InvariantCulture, out var i))
         {
-            value = i < _palette.Length ? _palette[i] : i == 64 ? 0x000000u : null;
+            value = PaletteValue(i);
         }
         else if (auto is "1" or "true")
         {
@@ -74,6 +74,14 @@ internal sealed class XlsxColors
 
         return FromRgb(color);
     }
+
+    /// <summary>
+    /// A color of the indexed palette (the workbook's own, or the default one): black for 64 (the system foreground),
+    /// <c>null</c> for 65 (the system background) and indexes out of range.
+    /// </summary>
+    public PdfColor? PaletteColor(int index) => PaletteValue(index) is { } value ? FromRgb(value) : null;
+
+    private uint? PaletteValue(int index) => index >= 0 && index < _palette.Length ? _palette[index] : index == 64 ? 0x000000u : null;
 
     /// <summary>
     /// Lightens (positive tint) or darkens (negative) a color in HSL, as spreadsheets apply theme tints: the luminance

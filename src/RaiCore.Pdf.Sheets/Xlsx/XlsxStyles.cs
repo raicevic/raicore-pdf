@@ -263,42 +263,41 @@ internal sealed class XlsxStyles
             PdfColor? Resolve((string?, string?, string?, string?, string?)? c) =>
                 c is var (rgb, indexed, theme, tint, auto) ? colors.Resolve(rgb, indexed, theme, tint, auto) : null;
 
-            if (pattern is null)
-            {
-                fills[index] = Resolve(stop);
-                return;
-            }
-
-            // Patterns are shown as their average color: the share of the foreground over the background.
-            var coverage = pattern switch
-            {
-                "solid" => 1,
-                "darkGray" => 0.75,
-                "mediumGray" => 0.5,
-                "lightGray" => 0.25,
-                "gray125" => 0.125,
-                "gray0625" => 0.0625,
-                "none" => 0,
-                _ => pattern.StartsWith("dark", StringComparison.Ordinal) ? 0.5 : 0.25,
-            };
-            if (coverage == 0)
-            {
-                return;
-            }
-
-            var fg = Resolve(foreground);
-            var bg = Resolve(background);
-            if (coverage == 1)
-            {
-                fills[index] = fg ?? bg;
-                return;
-            }
-
-            var front = fg ?? PdfColor.Black;
-            var back = bg ?? PdfColor.FromRgb(255, 255, 255);
-            byte Mix(double f, double b) => (byte)Math.Round(((f * coverage) + (b * (1 - coverage))) * 255);
-            fills[index] = PdfColor.FromRgb(Mix(front.Red, back.Red), Mix(front.Green, back.Green), Mix(front.Blue, back.Blue));
+            fills[index] = pattern is null ? Resolve(stop) : PatternFill(pattern, Resolve(foreground), Resolve(background));
         };
+    }
+
+    /// <summary>
+    /// The background of a pattern fill (<c>solid</c>, <c>gray125</c>, <c>darkGrid</c>...): patterns are shown as their
+    /// average color, the share of the foreground over the background; <c>null</c> for none.
+    /// </summary>
+    internal static PdfColor? PatternFill(string pattern, PdfColor? foreground, PdfColor? background)
+    {
+        var coverage = pattern switch
+        {
+            "solid" => 1,
+            "darkGray" => 0.75,
+            "mediumGray" => 0.5,
+            "lightGray" => 0.25,
+            "gray125" => 0.125,
+            "gray0625" => 0.0625,
+            "none" => 0,
+            _ => pattern.StartsWith("dark", StringComparison.Ordinal) ? 0.5 : 0.25,
+        };
+        if (coverage == 0)
+        {
+            return null;
+        }
+
+        if (coverage == 1)
+        {
+            return foreground ?? background;
+        }
+
+        var front = foreground ?? PdfColor.Black;
+        var back = background ?? PdfColor.FromRgb(255, 255, 255);
+        byte Mix(double f, double b) => (byte)Math.Round(((f * coverage) + (b * (1 - coverage))) * 255);
+        return PdfColor.FromRgb(Mix(front.Red, back.Red), Mix(front.Green, back.Green), Mix(front.Blue, back.Blue));
     }
 
     private static Action<XlsxColors> ReadBorder(XmlReader reader, List<CellFormat> borders)
@@ -339,22 +338,28 @@ internal sealed class XlsxStyles
                 }
 
                 var color = side.Color is var (rgb, indexed, theme, tint, auto) ? colors.Resolve(rgb, indexed, theme, tint, auto) : null;
-                var (width, style) = side.Style switch
-                {
-                    "hair" => (0.6, BorderStyle.Solid),
-                    "medium" => (1.5, BorderStyle.Solid),
-                    "thick" => (2.25, BorderStyle.Solid),
-                    "double" => (2.25, BorderStyle.Double),
-                    "dotted" => (0.75, BorderStyle.Dotted),
-                    "dashed" or "dashDot" or "dashDotDot" => (0.75, BorderStyle.Dashed),
-                    "mediumDashed" or "mediumDashDot" or "mediumDashDotDot" or "slantDashDot" => (1.5, BorderStyle.Dashed),
-                    _ => (0.75, BorderStyle.Solid),
-                };
-                return new CellBorder(width, color ?? PdfColor.Black, style);
+                return Border(side.Style, color);
             }
 
             borders[index] = CellFormat.Default with { Top = Side("top"), Right = Side("right"), Bottom = Side("bottom"), Left = Side("left") };
         };
+    }
+
+    /// <summary>A border side of a style (<c>thin</c>, <c>medium</c>, <c>dashed</c>...), black without a color.</summary>
+    internal static CellBorder Border(string style, PdfColor? color)
+    {
+        var (width, line) = style switch
+        {
+            "hair" => (0.6, BorderStyle.Solid),
+            "medium" => (1.5, BorderStyle.Solid),
+            "thick" => (2.25, BorderStyle.Solid),
+            "double" => (2.25, BorderStyle.Double),
+            "dotted" => (0.75, BorderStyle.Dotted),
+            "dashed" or "dashDot" or "dashDotDot" => (0.75, BorderStyle.Dashed),
+            "mediumDashed" or "mediumDashDot" or "mediumDashDotDot" or "slantDashDot" => (1.5, BorderStyle.Dashed),
+            _ => (0.75, BorderStyle.Solid),
+        };
+        return new CellBorder(width, color ?? PdfColor.Black, line);
     }
 
     private static XfInfo ReadXf(XmlReader reader)

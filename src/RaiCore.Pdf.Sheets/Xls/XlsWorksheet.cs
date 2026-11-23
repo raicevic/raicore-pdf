@@ -1,0 +1,315 @@
+using System.Buffers.Binary;
+using RaiCore.Pdf.Sheets.Xlsx;
+
+namespace RaiCore.Pdf.Sheets.Xls;
+
+/// <summary>What a cell record holds.</summary>
+internal enum XlsValueKind
+{
+    /// <summary>Nothing (a cell with a format only).</summary>
+    Blank,
+
+    Number,
+
+    Text,
+
+    Boolean,
+
+    /// <summary>An error value (<c>#DIV/0!</c>), as its text.</summary>
+    Error,
+}
+
+/// <summary>The value of a cell record, as stored: formulas are their last calculated values.</summary>
+internal readonly record struct XlsValue(XlsValueKind Kind, double Number = 0, string Text = "")
+{
+    public static XlsValue Blank => new(XlsValueKind.Blank);
+
+    /// <summary>The text of an error code ([MS-XLS] 2.5.10).</summary>
+    public static XlsValue Error(int code) => new(XlsValueKind.Error, code, code switch
+    {
+        0x00 => "#NULL!",
+        0x07 => "#DIV/0!",
+        0x0F => "#VALUE!",
+        0x17 => "#REF!",
+        0x1D => "#NAME?",
+        0x24 => "#NUM!",
+        0x2A => "#N/A",
+        0x2B => "#GETTING_DATA",
+        _ => "#N/A",
+    });
+}
+
+/// <summary>
+/// Reads a worksheet substream of a binary workbook ([MS-XLS] 2.1.7.20.5): its cells, row and column sizes and
+/// visibility, merged ranges and page setup, into the worksheet the XLSX converter builds sheets from. Embedded
+/// substreams (charts) and the records it does not use (drawings, comments, conditional formats) are skipped.
+/// </summary>
+internal static class XlsWorksheet
+{
+    // Record types ([MS-XLS] 2.3).
+    private const ushort Row = 0x0208;
+    private const ushort ColInfo = 0x007D;
+    private const ushort DefColWidth = 0x0055;
+    private const ushort StandardWidth = 0x0099;
+    private const ushort DefaultRowHeight = 0x0225;
+    private const ushort WsBool = 0x0081;
+    private const ushort Setup = 0x00A1;
+    private const ushort Window2 = 0x023E;
+    private const ushort MergedCells = 0x00E5;
+    private const ushort LabelSst = 0x00FD;
+    private const ushort Label = 0x0204;
+    private const ushort RString = 0x00D6;
+    private const ushort Number = 0x0203;
+    private const ushort Rk = 0x027E;
+    private const ushort MulRk = 0x00BD;
+    private const ushort Blank = 0x0201;
+    private const ushort MulBlank = 0x00BE;
+    private const ushort BoolErr = 0x0205;
+    private const ushort Formula = 0x0006;
+    private const ushort Formula3 = 0x0206;
+    private const ushort Formula4 = 0x0406;
+    private const ushort StringRecord = 0x0207;
+
+    /// <summary>The BOF type of a worksheet (or dialog sheet).</summary>
+    private const int WorksheetType = 0x0010;
+
+    /// <summary>The most columns a BIFF8 worksheet has.</summary>
+    private const int MaxColumns = 256;
+
+    /// <summary>Called for each cell record: its row, column, XF index and value.</summary>
+    public delegate void CellSink(int row, int column, int xf, XlsValue value);
+
+    /// <summary>Reads a worksheet into a worksheet the sheet builder uses, its cells formatted for display.</summary>
+    /// <param name="workbook">The workbook, for its stream, strings and formats.</param>
+    /// <param name="offset">The offset of the sheet's BOF record in the stream.</param>
+    /// <param name="maxCells">The most cells that show something the sheet may have.</param>
+    /// <param name="checkpoint">Called regularly; throws to stop.</param>
+    public static XlsxWorksheet Read(XlsWorkbook workbook, int offset, long maxCells, Action? checkpoint)
+    {
+        var sheet = new XlsxWorksheet();
+        var colored = new Dictionary<(CellFormat, PdfColor), CellFormat>();
+        var styles = workbook.Styles;
+        Read(workbook, offset, sheet, checkpoint, (row, column, xf, value) =>
+        {
+            var style = styles.CellStyle(xf);
+            var alignment = style.Alignment;
+            FormattedValue formatted;
+            switch (value.Kind)
+            {
+                case XlsValueKind.Number:
+                    formatted = style.NumberFormat.Format(value.Number, workbook.Settings);
+                    break;
+                case XlsValueKind.Text:
+                    formatted = style.NumberFormat.FormatText(value.Text);
+                    break;
+                case XlsValueKind.Boolean or XlsValueKind.Error:
+                    formatted = new FormattedValue(value.Text, CellKind.Text);
+                    alignment = alignment == CellAlignment.General ? CellAlignment.Center : alignment;
+                    break;
+                default:
+                    formatted = new FormattedValue(string.Empty, CellKind.Text);
+                    break;
+            }
+
+            sheet.Add(row, column, XlsxWorkbook.ToCell(formatted, style.Format, alignment, colored), maxCells);
+        });
+        return sheet;
+    }
+
+    /// <summary>
+    /// Reads a worksheet's records: its layout into <paramref name="sheet"/> and its cells, as stored, to
+    /// <paramref name="cells"/>. Reads nothing unless the substream at the offset is a worksheet.
+    /// </summary>
+    public static void Read(XlsWorkbook workbook, int offset, XlsxWorksheet sheet, Action? checkpoint, CellSink cells)
+    {
+        var reader = new BiffReader(workbook.Stream, offset);
+        if (offset < 0 || !reader.Next() || reader.Id != XlsWorkbook.Bof || BiffReader.U16(reader.Data, 2) != WorksheetType)
+        {
+            return;
+        }
+
+        var depth = 1;
+        var count = 0;
+        (int Row, int Column, int Xf)? pending = null;
+        while (reader.Next())
+        {
+            if (++count % 4096 == 0)
+            {
+                checkpoint?.Invoke();
+            }
+
+            var id = reader.Id;
+            if (id == XlsWorkbook.Bof)
+            {
+                depth++; // An embedded chart's substream.
+                continue;
+            }
+
+            if (id == XlsWorkbook.Eof && --depth == 0)
+            {
+                break;
+            }
+
+            if (depth != 1)
+            {
+                continue;
+            }
+
+            var data = reader.Data;
+            if (pending is var (pendingRow, pendingColumn, pendingXf))
+            {
+                // A formula's string result follows it in a STRING record, maybe after its shared or array formula.
+                if (id == StringRecord)
+                {
+                    var position = 0;
+                    Emit(pendingRow, pendingColumn, pendingXf, new XlsValue(XlsValueKind.Text,
+                        Text: BiffReader.ReadString(data, reader.Breaks, ref position, 2, workbook.CodePage)));
+                    pending = null;
+                    continue;
+                }
+
+                if (id is not (0x04BC or 0x0221 or 0x0236))
+                {
+                    Emit(pendingRow, pendingColumn, pendingXf, new XlsValue(XlsValueKind.Text));
+                    pending = null;
+                }
+            }
+
+            switch (id)
+            {
+                case Row when data.Length >= 14:
+                    var flags = BiffReader.U16(data, 12);
+                    sheet.Rows[BiffReader.U16(data, 0)] = new XlsxRow(
+                        (flags & 0x40) != 0 ? (BiffReader.U16(data, 6) & 0x7FFF) / 20.0 : null,
+                        (flags & 0x20) != 0);
+                    break;
+                case ColInfo when data.Length >= 10:
+                    var first = BiffReader.U16(data, 0);
+                    var last = Math.Min(BiffReader.U16(data, 2), MaxColumns - 1);
+                    if (first <= last)
+                    {
+                        sheet.Columns.Add(new XlsxColumns(first, last, BiffReader.U16(data, 4) / 256.0, (BiffReader.U16(data, 8) & 0x01) != 0));
+                    }
+
+                    break;
+                case DefColWidth when data.Length >= 2:
+                    sheet.BaseColumnWidth = Math.Min(BiffReader.U16(data, 0), 255);
+                    break;
+                case StandardWidth when data.Length >= 2:
+                    sheet.DefaultColumnWidth = BiffReader.U16(data, 0) / 256.0;
+                    break;
+                case DefaultRowHeight when data.Length >= 2:
+                    sheet.ZeroHeight = (BiffReader.U16(data, 0) & 0x02) != 0;
+                    break;
+                case WsBool when data.Length >= 2:
+                    sheet.FitToPage = (BiffReader.U16(data, 0) & 0x0100) != 0;
+                    break;
+                case Setup when data.Length >= 12:
+                    var options = BiffReader.U16(data, 10);
+                    var noPrinterSettings = (options & 0x04) != 0;
+                    sheet.Landscape = !noPrinterSettings && (options & 0x02) == 0 && (options & 0x40) == 0;
+                    sheet.Scale = noPrinterSettings ? null : BiffReader.U16(data, 2);
+                    sheet.FitToWidth = BiffReader.U16(data, 6);
+                    break;
+                case Window2 when data.Length >= 2:
+                    sheet.RightToLeft = (BiffReader.U16(data, 0) & 0x0040) != 0;
+                    break;
+                case MergedCells:
+                    for (var i = 0; i < BiffReader.U16(data, 0) && 2 + (8 * i) + 8 <= data.Length; i++)
+                    {
+                        var at = 2 + (8 * i);
+                        int row1 = BiffReader.U16(data, at), row2 = BiffReader.U16(data, at + 2);
+                        int column1 = BiffReader.U16(data, at + 4), column2 = Math.Min(BiffReader.U16(data, at + 6), MaxColumns - 1);
+                        if (row1 <= row2 && column1 <= column2)
+                        {
+                            sheet.Merges.Add(new CellRange(row1, column1, row2, column2));
+                        }
+                    }
+
+                    break;
+                case LabelSst when data.Length >= 10:
+                    var index = BiffReader.U32(data, 6);
+                    Cell(data, new XlsValue(XlsValueKind.Text, Text: index < (uint)workbook.SharedStrings.Count ? workbook.SharedStrings[(int)index] : string.Empty));
+                    break;
+                case Label or RString when data.Length >= 8:
+                    var start = 6;
+                    Cell(data, new XlsValue(XlsValueKind.Text, Text: BiffReader.ReadString(data, reader.Breaks, ref start, 2, workbook.CodePage)));
+                    break;
+                case Number when data.Length >= 14:
+                    Cell(data, NumberValue(BinaryPrimitives.ReadDoubleLittleEndian(data[6..])));
+                    break;
+                case Rk when data.Length >= 10:
+                    Cell(data, NumberValue(RkValue(BiffReader.U32(data, 6))));
+                    break;
+                case MulRk when data.Length >= 6:
+                    for (var i = 0; 4 + (6 * i) + 6 <= data.Length; i++)
+                    {
+                        Emit(BiffReader.U16(data, 0), BiffReader.U16(data, 2) + i, BiffReader.U16(data, 4 + (6 * i)), NumberValue(RkValue(BiffReader.U32(data, 6 + (6 * i)))));
+                    }
+
+                    break;
+                case Blank when data.Length >= 6:
+                    Cell(data, XlsValue.Blank);
+                    break;
+                case MulBlank when data.Length >= 6:
+                    for (var i = 0; 4 + (2 * i) + 2 <= data.Length - 2; i++)
+                    {
+                        Emit(BiffReader.U16(data, 0), BiffReader.U16(data, 2) + i, BiffReader.U16(data, 4 + (2 * i)), XlsValue.Blank);
+                    }
+
+                    break;
+                case BoolErr when data.Length >= 8:
+                    Cell(data, data[7] != 0 ? XlsValue.Error(data[6]) : new XlsValue(XlsValueKind.Boolean, data[6] != 0 ? 1 : 0, data[6] != 0 ? "TRUE" : "FALSE"));
+                    break;
+                case Formula or Formula3 or Formula4 when data.Length >= 14: // Also the older record types some writers use.
+                    if (BiffReader.U16(data, 12) != 0xFFFF)
+                    {
+                        Cell(data, NumberValue(BinaryPrimitives.ReadDoubleLittleEndian(data[6..])));
+                    }
+                    else if (data[6] == 0)
+                    {
+                        pending = (BiffReader.U16(data, 0), BiffReader.U16(data, 2), BiffReader.U16(data, 4));
+                    }
+                    else
+                    {
+                        Cell(data, data[6] switch
+                        {
+                            1 => new XlsValue(XlsValueKind.Boolean, data[8] != 0 ? 1 : 0, data[8] != 0 ? "TRUE" : "FALSE"),
+                            2 => XlsValue.Error(data[8]),
+                            _ => new XlsValue(XlsValueKind.Text),
+                        });
+                    }
+
+                    break;
+            }
+        }
+
+        if (pending is var (lastRow, lastColumn, lastXf))
+        {
+            Emit(lastRow, lastColumn, lastXf, new XlsValue(XlsValueKind.Text));
+        }
+
+        void Cell(ReadOnlySpan<byte> data, XlsValue value) => Emit(BiffReader.U16(data, 0), BiffReader.U16(data, 2), BiffReader.U16(data, 4), value);
+
+        void Emit(int row, int column, int xf, XlsValue value)
+        {
+            if (column < MaxColumns)
+            {
+                cells(row, column, xf, value);
+            }
+        }
+    }
+
+    /// <summary>A number, or the error a spreadsheet shows for one that is not finite.</summary>
+    private static XlsValue NumberValue(double number) => double.IsFinite(number) ? new XlsValue(XlsValueKind.Number, number) : XlsValue.Error(0x24);
+
+    /// <summary>
+    /// The number of an RK value ([MS-XLS] 2.5.217): a 30-bit integer or the high 30 bits of a double, divided by 100
+    /// when its lowest bit is set.
+    /// </summary>
+    internal static double RkValue(uint rk)
+    {
+        var number = (rk & 0x02) != 0 ? (int)rk >> 2 : BitConverter.Int64BitsToDouble((long)(rk & 0xFFFFFFFC) << 32);
+        return (rk & 0x01) != 0 ? number / 100 : number;
+    }
+}

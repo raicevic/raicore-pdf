@@ -42,6 +42,7 @@ RaiCore.Pdf.Sheets.SpreadsheetFormatException
 RaiCore.Pdf.Sheets.SpreadsheetFormatException.SpreadsheetFormatException() -> void
 RaiCore.Pdf.Sheets.SpreadsheetFormatException.SpreadsheetFormatException(string! message) -> void
 RaiCore.Pdf.Sheets.SpreadsheetFormatException.SpreadsheetFormatException(string! message, System.Exception! innerException) -> void
+RaiCore.Pdf.Sheets.XlsToPdf
 RaiCore.Pdf.Sheets.XlsxConverterOptions
 RaiCore.Pdf.Sheets.XlsxConverterOptions.AutoFit.get -> bool
 RaiCore.Pdf.Sheets.XlsxConverterOptions.AutoFit.init -> void
@@ -66,6 +67,13 @@ static RaiCore.Pdf.Sheets.CsvToPdf.ConvertAsync(System.IO.Stream! csv, RaiCore.P
 static RaiCore.Pdf.Sheets.CsvToPdf.ConvertAsync(byte[]! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
 static RaiCore.Pdf.Sheets.CsvToPdf.ConvertToBytes(System.IO.Stream! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null) -> byte[]!
 static RaiCore.Pdf.Sheets.CsvToPdf.ConvertToBytes(byte[]! csv, RaiCore.Pdf.Sheets.CsvConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Sheets.XlsToPdf.Convert(System.IO.Stream! xls, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Sheets.XlsToPdf.Convert(byte[]! xls, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Sheets.XlsToPdf.Convert(string! path, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Sheets.XlsToPdf.ConvertAsync(System.IO.Stream! xls, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Sheets.XlsToPdf.ConvertAsync(byte[]! xls, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Sheets.XlsToPdf.ConvertToBytes(System.IO.Stream! xls, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Sheets.XlsToPdf.ConvertToBytes(byte[]! xls, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> byte[]!
 static RaiCore.Pdf.Sheets.XlsxToPdf.Convert(System.IO.Stream! xlsx, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
 static RaiCore.Pdf.Sheets.XlsxToPdf.Convert(byte[]! xlsx, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
 static RaiCore.Pdf.Sheets.XlsxToPdf.Convert(string! path, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!

@@ -68,6 +68,7 @@ public static class FuzzTargets
         ["edit"] = Edit,
         ["cfb"] = Cfb,
         ["xlsx"] = Xlsx,
+        ["xls"] = Xls,
         ["pptx"] = Pptx,
         ["ppt"] = Ppt,
         ["docx"] = Docx,
@@ -359,6 +360,24 @@ public static class FuzzTargets
     /// fifth one fitted to the content.
     /// </summary>
     public static void Xlsx(byte[] input) => XlsxToPdf.ConvertToBytes(input, new XlsxConverterOptions
+    {
+        Sheet = new SheetOptions
+        {
+            Limits = Limits,
+            FitToWidth = input.Length % 2 == 0,
+            Tagged = input.Length % 3 == 0,
+        },
+        ShowSheetNames = input.Length % 2 == 0,
+        AutoFit = input.Length % 5 == 0,
+    });
+
+    /// <summary>
+    /// An Excel 97-2003 workbook (a compound file, or a bare BIFF stream): its records read (shared strings across
+    /// CONTINUE records, formats, sheets, names), every visible worksheet with its values formatted, and laid out as an
+    /// XLSX worksheet is; every other input (by length) with sheet names as headings and fitted to the width, every third
+    /// one tagged, every fifth one fitted to the content.
+    /// </summary>
+    public static void Xls(byte[] input) => XlsToPdf.ConvertToBytes(input, new XlsxConverterOptions
     {
         Sheet = new SheetOptions
         {
