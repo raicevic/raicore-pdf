@@ -5,10 +5,8 @@
     <PackageTags>$(PackageTags);pdf-editing;pdf-merge</PackageTags>
     <!--
       A core package (it uses the core's PDF reader and writer through InternalsVisibleTo, so it is released with the
-      core at the same version). It has no released version to validate against yet: set the baseline to the first
-      release that includes it.
+      core at the same version).
     -->
-    <PackageValidationBaselineVersion></PackageValidationBaselineVersion>
   </PropertyGroup>
 
   <ItemGroup>
