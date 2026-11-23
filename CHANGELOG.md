@@ -6,6 +6,18 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **PDF/A-1b and PDF/A-1a** (#195): `PdfAConformance.PdfA1B` and `PdfA1A` write PDF/A-1 (ISO 19005-1) for archives
+  that do not accept PDF/A-2 or 3. The file is PDF 1.4 (`%PDF-1.4`, a cross-reference table), and XMP says
+  `pdfaid:part` 1. PDF/A-1 has no transparency: saving throws `InvalidOperationException` naming the page and the
+  feature (a translucent color, a transparency group as for CSS `opacity`, a gradient with translucent colors, an SVG
+  image that uses one, or an image with semi-transparent pixels) instead of dropping it; images whose pixels are fully
+  transparent or opaque (GIFs, PNGs with a transparent color) keep their transparency as a stencil mask. 16-bit images
+  are written with 8 bits per sample, CID font subsets get a `CIDSet` of every CID the embedded program has, and a CFF font that would be embedded whole as
+  OpenType is rejected. Attachments and Factur-X are rejected (email conversion leaves attachments out with a warning,
+  as for PDF/A-2). Level A is tagged like PDF/A-2a with the structure types of PDF 1.4: table row groups (THead,
+  TBody, TFoot) are left out, their rows going to the table, other PDF 1.5 types are rejected, and languages must be
+  RFC 1766 tags (letters only). veraPDF (CI) validates canvas, HTML and layout documents for 1b and 1a, also combined
+  with PDF/UA-1.
 - **HTML fragments in the layout API** (`RaiCore.Pdf.Html`): `HtmlFragment.Parse` and `ParseAsync` convert HTML with
   optional CSS (`HtmlFragmentOptions.Css`) into layout blocks for a `FlowDocument`, a `ContainerBlock` or a table cell
   (`AddTo`, `Blocks`), with the engine and the options of the HTML converter (`BaseUri`, `ResourceLoader`, `Fonts`,
@@ -244,6 +256,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
   follows clipping paths and form bounding boxes, so hidden text and images can be told apart (#184, #185).
 
 ### Fixed
+- Tagged PDF: an empty table cell (such as `<td></td>`) is written as a cell without content instead of being left
+  out, so every row of a table keeps its columns, as PDF/UA requires (ISO 14289-1, 7.2).
 - HTML conversion no longer throws on CSS that fuzzing found: colors whose alpha is empty or a number with a unit
   in `lab()`, `lch()`, `oklab()`, `oklch()` and `rgb()` (`rgb(1 2 3 / )`) are dropped as invalid; an empty
   `local()` in an `@font-face` `src` is skipped; and a nesting selector (`&`) outside a nested rule is reported as

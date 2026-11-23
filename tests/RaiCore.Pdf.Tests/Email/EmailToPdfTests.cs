@@ -349,6 +349,8 @@ public class EmailToPdfTests
     [InlineData(PdfAConformance.PdfA3B, 1)]
     [InlineData(PdfAConformance.PdfA2A, 0)]
     [InlineData(PdfAConformance.PdfA3A, 1)]
+    [InlineData(PdfAConformance.PdfA1B, 0)]
+    [InlineData(PdfAConformance.PdfA1A, 0)]
     public void Pdf_a_2_gets_no_attached_files_and_says_so(PdfAConformance conformance, int attachments)
     {
         var diagnostics = new List<HtmlDiagnostic>();

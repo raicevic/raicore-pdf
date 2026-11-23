@@ -109,10 +109,10 @@ internal sealed class EmailConverter
 
         if (_options.EmbedAttachments && attachments.Count > 0)
         {
-            if (document.PdfAConformance is PdfAConformance.PdfA2B or PdfAConformance.PdfA2A)
+            if (document.PdfAConformance is PdfAConformance.PdfA2B or PdfAConformance.PdfA2A or PdfAConformance.PdfA1B or PdfAConformance.PdfA1A)
             {
                 Report(HtmlDiagnosticKind.ResourceNotLoaded, HtmlDiagnosticSeverity.Warning, attachments[0].FileName,
-                    "The attachments are not embedded: PDF/A-2 does not allow attached files (PDF/A-3 does).");
+                    "The attachments are not embedded: PDF/A-1 and PDF/A-2 do not allow attached files (PDF/A-3 does).");
             }
             else
             {
@@ -128,8 +128,8 @@ internal sealed class EmailConverter
 
     /// <summary>
     /// Embeds the message's own bytes as the document's source (<see cref="PdfAttachmentRelationship.Source"/>), named
-    /// after the subject and unique among the embedded attachments; under PDF/A-2 it is left out and reported, as the
-    /// attachments are.
+    /// after the subject and unique among the embedded attachments; under PDF/A-1 or PDF/A-2 it is left out and
+    /// reported, as the attachments are.
     /// </summary>
     private void EmbedOriginal(PdfDocument document, bool webArchive, string subject, IEnumerable<string> taken)
     {
@@ -137,10 +137,10 @@ internal sealed class EmailConverter
             : webArchive ? (".mht", "multipart/related", "Original web archive")
             : (".eml", "message/rfc822", "Original message");
         var fileName = EmailAttachment.OriginalFileName(subject, extension, taken);
-        if (document.PdfAConformance is PdfAConformance.PdfA2B or PdfAConformance.PdfA2A)
+        if (document.PdfAConformance is PdfAConformance.PdfA2B or PdfAConformance.PdfA2A or PdfAConformance.PdfA1B or PdfAConformance.PdfA1A)
         {
             Report(HtmlDiagnosticKind.ResourceNotLoaded, HtmlDiagnosticSeverity.Warning, fileName,
-                "The original message is not embedded: PDF/A-2 does not allow attached files (PDF/A-3 does).");
+                "The original message is not embedded: PDF/A-1 and PDF/A-2 do not allow attached files (PDF/A-3 does).");
             return;
         }
 

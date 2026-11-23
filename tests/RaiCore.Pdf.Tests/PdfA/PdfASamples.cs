@@ -181,6 +181,158 @@ internal static class PdfASamples
         return doc;
     }
 
+    // Opaque gradients, a shape with an opaque fill and stroke, and text: nothing that needs transparency (PDF/A-1).
+    public const string OpaqueSvg = """
+        <svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100">
+          <defs>
+            <linearGradient id="fade"><stop offset="0" stop-color="#d33"/><stop offset="1" stop-color="#33d"/></linearGradient>
+            <radialGradient id="glow"><stop offset="0" stop-color="#ff0"/><stop offset="1" stop-color="#f80"/></radialGradient>
+          </defs>
+          <rect width="200" height="60" fill="url(#fade)"/>
+          <circle cx="170" cy="75" r="20" fill="url(#glow)" stroke="#333" stroke-width="2"/>
+          <text x="10" y="95" font-family="serif" font-size="14" font-weight="bold">SVG text</text>
+        </svg>
+        """;
+
+    /// <summary>
+    /// A canvas-drawn document without transparency, for PDF/A-1: the fonts of <see cref="Canvas"/>, a 16-bit PNG, a
+    /// PNG and a GIF whose pixels are fully transparent or opaque (stencil masks), a 16-bit PNG with a transparent color,
+    /// JPEG, an opaque SVG, links of every kind, an outline, custom metadata and the language.
+    /// </summary>
+    public static PdfDocument Opaque(PdfAConformance level)
+    {
+        var doc = new PdfDocument { PdfAConformance = level, Language = "en-GB" }.EmbedStandardFonts();
+        doc.Info.CreationDate = Created;
+        doc.Info.Title = "PDF/A-1 sample";
+        doc.Info.Author = "RaiCore.Pdf tests";
+        doc.Info.Keywords = "archive, PDF/A-1";
+        doc.Info.CustomProperties["Department"] = "Archive & Records";
+
+        var first = doc.AddPage();
+        var canvas = first.Canvas;
+        var top = first.Height - 72;
+        if (doc.Tagged)
+        {
+            canvas.BeginTag(doc.StructureRoot.AddChild(PdfStructureTypes.Paragraph));
+        }
+
+        canvas.DrawText("Helvetica: caf\u00E9 \u20AC 12 \u2013 \u201Cquoted\u201D", StandardFont.Helvetica, 12, 72, top);
+        canvas.DrawText("Liberation Sans Bold (TrueType)", PdfFont.Load(Fixtures.Path("LiberationSans-Bold.ttf")), 12, 72, top - 18);
+        canvas.DrawText("RaiCore Sans 3 (CFF)", PdfFont.Load(Fixtures.Path("RaiCoreSans3-Subset.otf")), 12, 72, top - 36);
+        canvas.DrawText("Noto Sans JP (CID-keyed CFF)", PdfFont.Load(Fixtures.Path("NotoSansJP-Subset.otf")), 12, 72, top - 54);
+        canvas.DrawText("Visit example.com", StandardFont.Helvetica, 12, 72, top - 337);
+        if (doc.Tagged)
+        {
+            canvas.EndTag();
+        }
+
+        var images = new (string File, string Description)[]
+        {
+            ("PngSuite/basn2c16.png", "A 16-bit RGB gradient"),
+            ("PngSuite/tbbn3p08.png", "A palette image with transparent pixels"),
+            ("PngSuite/tbbn2c16.png", "A 16-bit image with a transparent color"),
+            ("Images/rgb.jpg", "Four colored squares"),
+            ("Images/transparent.gif", "A GIF with a transparent color"),
+            ("svg", "Gradients and text"),
+        };
+        for (var i = 0; i < images.Length; i++)
+        {
+            var (file, description) = images[i];
+            var image = file == "svg" ? PdfImage.LoadSvg(OpaqueSvg) : PdfImage.Load(Fixtures.Path(file));
+            var (x, y, width) = file == "svg" ? (72.0, top - 300, 200.0) : (72 + (i * 78.0), top - 160, 64.0);
+            if (doc.Tagged)
+            {
+                var figure = doc.StructureRoot.AddChild(PdfStructureTypes.Figure);
+                figure.AlternateText = description;
+                canvas.BeginTag(figure);
+            }
+
+            canvas.DrawImage(image, x, y, width, file == "svg" ? 100 : 64);
+            if (doc.Tagged)
+            {
+                canvas.EndTag();
+            }
+        }
+
+        var second = doc.AddPage();
+        if (doc.Tagged)
+        {
+            second.Canvas.BeginTag(doc.StructureRoot.AddChild(PdfStructureTypes.Heading1));
+        }
+
+        second.Canvas.DrawText("Second page", StandardFont.Helvetica, 18, 72, second.Height - 72);
+        if (doc.Tagged)
+        {
+            second.Canvas.EndTag();
+        }
+
+        doc.NamedDestinations["second"] = new PdfDestination(second, top: second.Height - 72);
+        first.AddLink(72, top - 340, 100, 14, new Uri("https://example.com/archive?q=pdf%2Fa"));
+        first.AddLink(72, top - 360, 100, 14, new PdfDestination(second));
+        first.AddLink(72, top - 380, 100, 14, "second");
+
+        doc.Outline.Add(new PdfOutlineItem("First page", first) { Children = { new PdfOutlineItem("Images", first, top - 120) } });
+        doc.Outline.Add(new PdfOutlineItem("Second page", second));
+        return doc;
+    }
+
+    /// <summary>
+    /// An invoice-like HTML document without transparency, for PDF/A-1 (and level A: alt text, a table with header, body
+    /// and footer rows, a list, languages): a web font, an opaque gradient, JPEG, a 16-bit PNG, a GIF with a transparent
+    /// color, an SVG figure and links.
+    /// </summary>
+    public static readonly string OpaqueHtml = $$"""
+        <!DOCTYPE html>
+        <html lang="en-GB">
+        <head>
+          <title>Invoice 2026-117</title>
+          <meta name="author" content="RaiCore.Pdf tests">
+          <style>
+            @font-face { font-family: Brand; src: url(data:font/woff2;base64,{{Convert.ToBase64String(Fixtures.Read("LiberationSans-Regular.woff2"))}}) format("woff2"); }
+            body { font-family: serif; font-size: 10pt; }
+            h1 { font-family: Brand; color: #234; border-bottom: 2px solid #234; }
+            .banner { height: 24px; background: linear-gradient(to right, #c33, #33c); border-radius: 6px; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #666; padding: 3px 6px; }
+            th { background: #dde; text-align: left; }
+            td.num, th.num { text-align: right; }
+            code { font-family: monospace; }
+          </style>
+        </head>
+        <body>
+          <h1>Invoice 2026-117</h1>
+          <div class="banner"></div>
+          <p>Thank you for your order. The <a href="https://example.com/terms">terms</a> apply; see the <a href="#totals">totals</a>
+             and reference <code>INV-2026-117</code>.</p>
+          <p><img src="data:image/jpeg;base64,{{Convert.ToBase64String(Fixtures.Read("Images/rgb.jpg"))}}" width="48" height="48" alt="Four colored squares">
+             <img src="data:image/png;base64,{{Convert.ToBase64String(Fixtures.Read("PngSuite/basn2c16.png"))}}" width="48" height="48" alt="A color gradient">
+             <img src="data:image/gif;base64,{{Convert.ToBase64String(Fixtures.Read("Images/transparent.gif"))}}" width="48" height="48" alt="A GIF with a transparent color"></p>
+          <table>
+            <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Price</th></tr></thead>
+            <tbody>
+              <tr><td>Archive boxes</td><td class="num">4</td><td class="num">60.00</td></tr>
+              <tr><td>Labels</td><td class="num">2</td><td class="num">40.00</td></tr>
+            </tbody>
+            <tfoot><tr><td>Net</td><td></td><td class="num">100.00</td></tr></tfoot>
+          </table>
+          <h2 id="totals">Totals</h2>
+          <ul><li>Net: 100.00</li><li>VAT: 25.00</li><li>Total: 125.00</li></ul>
+          <svg width="160" height="60" viewBox="0 0 160 60"><title>A bar chart of the items</title>
+            <rect x="10" y="10" width="120" height="18" fill="#36c"/><rect x="10" y="34" width="80" height="18" fill="#c63"/>
+          </svg>
+          <p lang="da">Tak for handlen.</p>
+        </body>
+        </html>
+        """;
+
+    /// <summary><see cref="OpaqueHtml"/> converted with <paramref name="level"/> (tagged as PDF/UA-1 with <paramref name="pdfUA"/>).</summary>
+    public static PdfDocument HtmlOpaque(PdfAConformance level, bool pdfUA = false)
+    {
+        var doc = HtmlToPdf.Convert(OpaqueHtml, new HtmlConverterOptions { PdfAConformance = level, Tagged = pdfUA, PdfUA = pdfUA });
+        doc.Info.CreationDate = Created;
+        return doc;
+    }
+
     /// <summary>A layout API document (heading, paragraph, figure, table with a header row) rendered with <paramref name="level"/>.</summary>
     public static PdfDocument Layout(PdfAConformance level)
     {

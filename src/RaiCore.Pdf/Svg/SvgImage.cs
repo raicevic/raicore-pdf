@@ -109,6 +109,9 @@ internal sealed class SvgImage
     /// <summary>Whether the drawing uses transparency (alpha or groups).</summary>
     public bool UsesTransparency => _sheet.UsesTransparency;
 
+    /// <summary>What the drawing uses that needs transparency, which PDF/A-1 forbids, or <c>null</c> (see <see cref="PdfPage.Transparency"/>).</summary>
+    public string? Transparency() => _sheet.Transparency();
+
     /// <summary>
     /// Writes the drawing as a form XObject with its own resources. It is not a transparency group itself: its
     /// translucent shapes blend with whatever it is drawn over.

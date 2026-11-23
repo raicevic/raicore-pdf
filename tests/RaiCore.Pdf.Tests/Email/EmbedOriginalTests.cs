@@ -120,6 +120,7 @@ public class EmbedOriginalTests
     [Theory]
     [InlineData(PdfAConformance.PdfA2B)]
     [InlineData(PdfAConformance.PdfA2A)]
+    [InlineData(PdfAConformance.PdfA1B)]
     public void Pdf_a_2_leaves_it_out_and_says_so_as_for_attachments(PdfAConformance conformance)
     {
         var diagnostics = new List<HtmlDiagnostic>();

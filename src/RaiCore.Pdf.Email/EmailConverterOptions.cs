@@ -50,9 +50,10 @@ public sealed class EmailConverterOptions
 
     /// <summary>
     /// Whether the attachments are embedded in the PDF as attached files (<see cref="PdfDocument.Attachments"/>),
-    /// with their names and media types, so the reader can open them. Defaults to <c>true</c>. PDF/A-2 does not allow
-    /// that: with <see cref="PdfAConformance.PdfA2B"/> or <see cref="PdfAConformance.PdfA2A"/>, attachments are not
-    /// embedded (use <see cref="PdfAConformance.PdfA3B"/> or <see cref="PdfAConformance.PdfA3A"/>).
+    /// with their names and media types, so the reader can open them. Defaults to <c>true</c>. PDF/A-1 and PDF/A-2 do
+    /// not allow that: with <see cref="PdfAConformance.PdfA1B"/>, <see cref="PdfAConformance.PdfA1A"/>,
+    /// <see cref="PdfAConformance.PdfA2B"/> or <see cref="PdfAConformance.PdfA2A"/>, attachments are not embedded
+    /// (use <see cref="PdfAConformance.PdfA3B"/> or <see cref="PdfAConformance.PdfA3A"/>).
     /// </summary>
     public bool EmbedAttachments { get; init; } = true;
 
@@ -86,8 +87,8 @@ public sealed class EmailConverterOptions
     /// name, the original gets <c>(2)</c> and so on, like attachments of the same name do.
     /// </para>
     /// <para>
-    /// PDF/A-2 does not allow it, as for <see cref="EmbedAttachments"/>: with <see cref="PdfAConformance.PdfA2B"/> or
-    /// <see cref="PdfAConformance.PdfA2A"/>, the original is not embedded and a warning goes to
+    /// PDF/A-1 and PDF/A-2 do not allow it, as for <see cref="EmbedAttachments"/>: with a PDF/A-1 or PDF/A-2 level
+    /// (such as <see cref="PdfAConformance.PdfA2B"/>), the original is not embedded and a warning goes to
     /// <see cref="HtmlConverterOptions.Diagnostics"/> (use <see cref="PdfAConformance.PdfA3B"/> or
     /// <see cref="PdfAConformance.PdfA3A"/>).
     /// </para>

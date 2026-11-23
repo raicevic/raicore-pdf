@@ -305,7 +305,7 @@ var pdf = HtmlToPdf.ConvertToBytes(html, new HtmlConverterOptions
 });
 ```
 
-`HtmlConverterOptions.PdfAConformance` writes PDF/A-2b, PDF/A-3b, PDF/A-2a or PDF/A-3a for archiving (see
+`HtmlConverterOptions.PdfAConformance` writes PDF/A-1b, PDF/A-1a, PDF/A-2b, PDF/A-3b, PDF/A-2a or PDF/A-3a for archiving (see
 [PDF/A](#pdfa)); the conversion throws if the document breaks a rule, e.g. text that no font has a glyph for:
 
 ```csharp
@@ -563,7 +563,14 @@ level before drawing, which is what tags the content:
 var pdf = HtmlToPdf.ConvertToBytes(html, new HtmlConverterOptions { PdfAConformance = PdfAConformance.PdfA2A }); // <html lang> and alt text
 ```
 
-Files can be attached (`PdfDocument.Attachments`; PDF/A-3 allows any file, PDF/A-2 none), and
+`PdfA1B` and `PdfA1A` write PDF/A-1 (ISO 19005-1, PDF 1.4) for archives that require it. PDF/A-1 has no
+transparency, so saving throws, naming the page and the feature, when the document uses translucent colors, opacity,
+gradients with translucent colors or images with semi-transparent pixels; images with only fully transparent and fully
+opaque pixels (such as GIFs) become stencil masks. 16-bit images are written with 8 bits, font subsets get a
+`CIDSet`, files cannot be attached, and level A leaves out table row groups (THead, TBody, TFoot), which PDF 1.4 does
+not have.
+
+Files can be attached (`PdfDocument.Attachments`; PDF/A-3 allows any file, PDF/A-1 and PDF/A-2 none), and
 `AttachFacturXInvoice` makes a Factur-X / ZUGFeRD e-invoice: a PDF/A-3b carrying the invoice as CII XML. The XML is
 checked to be well-formed, not validated against the profile's rules:
 

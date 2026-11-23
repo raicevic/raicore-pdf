@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -27,21 +28,34 @@ internal static class CidFontWriter
 
         PdfStreamObject fontFile;
         var subset = !font.NoSubsetting;
+        Func<IEnumerable<int>>? programCids = null; // The CIDs of a subset's program, for the CIDSet of PDF/A-1.
         if (isTrueType)
         {
             var program = TrueTypeSubsetter.Subset(font, glyphIds);
             fontFile = PdfStreamObject.CreateCompressed(program);
             fontFile.Dictionary["Length1"] = new PdfInteger(program.Length);
+
+            // Glyph IDs are CIDs (Identity CIDToGIDMap), and the subset keeps every glyph ID up to the last one kept
+            // (empty where unused), so each is a CID of the program.
+            programCids = () => Enumerable.Range(0, SfntNumGlyphs(program));
         }
         else if (subset && TrySubsetCff(font, glyphIds) is { } cff)
         {
             // A bare CID-keyed CFF whose charset maps the kept glyphs to their original glyph IDs as CIDs.
             fontFile = PdfStreamObject.CreateCompressed(cff);
             fontFile.Dictionary["Subtype"] = new PdfName("CIDFontType0C");
+            programCids = () => CffFont.Parse(cff).Cids ?? throw new InvalidOperationException("The CFF subset is not CID-keyed.");
         }
         else
         {
             // The font asks not to be subset, or its CFF uses features the subsetter does not handle: embed it whole.
+            if (writer.PdfA.Part() == 1)
+            {
+                throw new InvalidOperationException(
+                    $"PDF/A-1 (PDF 1.4) does not allow OpenType font programs, but the CFF font '{font.FullName}' cannot be subset and would be embedded whole as one. "
+                    + "Use a TrueType font, or PDF/A-2 or PDF/A-3.");
+            }
+
             subset = false;
             fontFile = PdfStreamObject.CreateCompressed(ExtractFace(font));
             fontFile.Dictionary["Subtype"] = new PdfName("OpenType");
@@ -52,6 +66,19 @@ internal static class CidFontWriter
 
         var descriptor = Descriptor(font, baseFont, Flags(font, symbolic: true));
         descriptor[isTrueType ? "FontFile2" : "FontFile3"] = writer.Add(fontFile);
+        if (subset && writer.PdfA.Part() == 1)
+        {
+            // PDF/A-1 requires a subset's CIDSet: a bit per CID, most significant first. It lists every CID the
+            // embedded program has, used or not, as PDF/UA (ISO 14289-1, 7.21.4.2) requires of a CIDSet.
+            var cids = programCids!().ToList(); // Set for every subset.
+            var cidSet = new byte[(cids.Max() / 8) + 1];
+            foreach (var cid in cids)
+            {
+                cidSet[cid / 8] |= (byte)(0x80 >> (cid % 8));
+            }
+
+            descriptor["CIDSet"] = writer.Add(PdfStreamObject.CreateCompressed(cidSet));
+        }
 
         var cidFont = new PdfDictionary
         {
@@ -82,6 +109,22 @@ internal static class CidFontWriter
             ["DescendantFonts"] = new PdfArray(writer.Add(cidFont)),
             ["ToUnicode"] = writer.Add(PdfStreamObject.CreateCompressed(ToUnicodeCMap(usage, mapEveryGlyph: writer.PdfA.IsLevelA()))),
         }, reference);
+    }
+
+    /// <summary>The number of glyphs of an SFNT font program, from its <c>maxp</c> table.</summary>
+    internal static int SfntNumGlyphs(byte[] program)
+    {
+        var tables = BinaryPrimitives.ReadUInt16BigEndian(program.AsSpan(4));
+        for (var i = 0; i < tables; i++)
+        {
+            var record = program.AsSpan(12 + (i * 16), 16);
+            if (record[..4].SequenceEqual("maxp"u8))
+            {
+                return BinaryPrimitives.ReadUInt16BigEndian(program.AsSpan((int)BinaryPrimitives.ReadUInt32BigEndian(record[8..]) + 4));
+            }
+        }
+
+        throw new InvalidOperationException("The font program has no maxp table.");
     }
 
     /// <summary>Width array in the compact form <c>[first [w1 w2 ...] first [w ...] ...]</c>.</summary>

@@ -91,6 +91,30 @@ public sealed class PdfPage
         _extGStates.Count > 0 || Canvas.SoftMasks.Count > 0 || _images.Any(entry => entry.Image.UsesTransparency) || _pageForms.Any(entry => entry.Page.UsesTransparency);
 
     /// <summary>
+    /// What the page draws that needs transparency, which PDF/A-1 forbids, described for an error message; or
+    /// <c>null</c>. Images with semi-transparent pixels are checked as they are written (see <see cref="PdfImage"/>).
+    /// </summary>
+    internal string? Transparency()
+    {
+        if (_groups.Count > 0)
+        {
+            return "a transparency group (PdfCanvas.BeginGroup, as for CSS opacity, translucent borders and translucent images)";
+        }
+
+        if (_extGStates.Any(entry => entry.Alpha.Fill < 1 || entry.Alpha.Stroke < 1))
+        {
+            return "a translucent color (an alpha below 1, as for CSS rgba() colors)";
+        }
+
+        if (Canvas.SoftMasks.Count > 0)
+        {
+            return "a gradient with translucent colors (a soft mask)";
+        }
+
+        return _images.Select(entry => entry.Image.SvgTransparency()).FirstOrDefault(what => what is not null);
+    }
+
+    /// <summary>
     /// Makes a rectangle of the page a link that opens <paramref name="uri"/> (a URI action), e.g. a web page or a
     /// <c>mailto:</c> address. Coordinates are PDF points with the origin in the bottom-left corner of the page.
     /// </summary>
