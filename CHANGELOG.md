@@ -44,6 +44,12 @@ and versions follow [Semantic Versioning](https://semver.org/).
   damage and reported; records and points count against `MaxElements`, bitmaps against `MaxImagePixels`.
   `PdfImage.Load` reads WMF and EMF too (new `PdfImageFormat.Wmf` and `PdfImageFormat.Emf`). Fuzz targets `wmf` and
   `emf`.
+- **Sheets: diagnostics** (#256): `SheetOptions.Diagnostics` receives a `SheetDiagnostic` (sheet name,
+  `SheetDiagnosticKind`, message with the count) for each kind of content a sheet has that the conversion leaves out
+  or simplifies, once per kind and sheet: charts and chart sheets, pictures, shapes and form controls, embedded objects
+  and ActiveX controls, comments, conditional formatting rules, sparklines, pivot tables, headers and footers, page
+  breaks set by hand, and cells with rich, rotated or shrunk text, in `.xlsx` and `.xls` alike; and content that does
+  not fit the page (`Layout`, with its page numbers, also for CSV). A workbook with none of these reports nothing.
 
 ### Fixed
 - **A CFF2 font with a huge blend count** in a DICT threw `ArgumentOutOfRangeException` when it was subset (the count times the
@@ -57,6 +63,10 @@ and versions follow [Semantic Versioning](https://semver.org/).
   screen readers give each text. Before, every use extracted as the first text drawn: after an empty paragraph in a
   Word document, which is drawn as U+200B, every space extracted as U+200B. TrueType fonts; CFF fonts keep one text
   per glyph.
+- **Text with a surrogate that lacks its other half** (U+D800-U+DFFF on its own, as damaged files hold) threw
+  `ArgumentException` in layout: `Paragraph` and `TextShaper` now draw each one as U+FFFD. This covers every
+  converter at once; a damaged Word 97-2003 document found by fuzzing still had a way through, and so did `_xD800_`
+  escapes in PowerPoint files (#248).
 
 ### Documentation
 - **Format support**: one page comparing what each converter draws, format by format (DOCX, DOC, RTF, ODT; XLSX, XLS,

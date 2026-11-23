@@ -19,10 +19,10 @@ namespace RaiCore.Pdf.Sheets;
 /// unless the sheet's page setup or <see cref="SheetOptions.FitToWidth"/> shrinks them to fit. Text is never clipped.
 /// </para>
 /// <para>
-/// Not supported: charts, images and other drawings, conditional formatting, comments, headers and footers, pivot
-/// tables, binary workbooks (<c>.xlsb</c>) and password-protected (encrypted) workbooks, which throw
-/// <see cref="NotSupportedException"/>. Excel 97-2003 workbooks (<c>.xls</c>) are converted as <see cref="XlsToPdf"/>
-/// converts them.
+/// Not supported, and reported through <see cref="SheetOptions.Diagnostics"/>: charts, images and other drawings,
+/// conditional formatting, comments, headers and footers, pivot tables. Not supported either: binary workbooks
+/// (<c>.xlsb</c>) and password-protected (encrypted) workbooks, which throw <see cref="NotSupportedException"/>. Excel
+/// 97-2003 workbooks (<c>.xls</c>) are converted as <see cref="XlsToPdf"/> converts them.
 /// </para>
 /// <para>
 /// Workbooks are untrusted input: their parts are read with no DTDs and nothing external resolved, the decompressed

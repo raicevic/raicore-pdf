@@ -16,11 +16,12 @@ namespace RaiCore.Pdf.Sheets;
 /// laid out as <see cref="XlsxToPdf"/> lays them out, with the same options.
 /// </para>
 /// <para>
-/// Not supported: charts, images and other drawings, conditional formatting, comments, headers and footers, Excel
-/// 2.x-4.0 files and password-protected (encrypted) workbooks, which throw <see cref="NotSupportedException"/>; this
-/// includes workbooks protected with Excel's default password, which open without asking for one. Data that is an
-/// XLSX workbook (as <c>.xls</c> files sometimes are) is converted as one, and <see cref="XlsxToPdf"/> likewise
-/// converts Excel 97-2003 workbooks.
+/// Not supported, and reported through <see cref="SheetOptions.Diagnostics"/>: charts, images and other drawings,
+/// conditional formatting, comments, headers and footers. Not supported either: Excel 2.x-4.0 files and
+/// password-protected (encrypted) workbooks, which throw <see cref="NotSupportedException"/>; this includes workbooks
+/// protected with Excel's default password, which open without asking for one. Data that is an XLSX workbook (as
+/// <c>.xls</c> files sometimes are) is converted as one, and <see cref="XlsxToPdf"/> likewise converts Excel 97-2003
+/// workbooks.
 /// </para>
 /// <para>
 /// Workbooks are untrusted input: every length and offset in the file is checked, the size of the workbook stream is

@@ -4,8 +4,11 @@ using RaiCore.Pdf.Layout;
 
 namespace RaiCore.Pdf.Sheets.Xlsx;
 
-/// <summary>A cell style of a workbook (an <c>xf</c> of <c>cellXfs</c>), resolved: its format, number format and alignment.</summary>
-internal sealed record XlsxCellStyle(CellFormat Format, NumberFormat NumberFormat, CellAlignment Alignment);
+/// <summary>
+/// A cell style of a workbook (an <c>xf</c> of <c>cellXfs</c>), resolved: its format, number format and alignment, and
+/// whether it rotates its text or shrinks it to fit (which are not supported, only reported).
+/// </summary>
+internal sealed record XlsxCellStyle(CellFormat Format, NumberFormat NumberFormat, CellAlignment Alignment, bool Rotated = false, bool ShrinkToFit = false);
 
 /// <summary>
 /// The styles part of a workbook (<c>xl/styles.xml</c>): number formats, fonts, fills, borders and the cell styles that
@@ -137,7 +140,7 @@ internal sealed class XlsxStyles
             Wrap = xf.Wrap,
             Indent = xf.Indent,
         };
-        style = new XlsxCellStyle(format, NumberFormatOf(xf.NumberFormatId), xf.Horizontal);
+        style = new XlsxCellStyle(format, NumberFormatOf(xf.NumberFormatId), xf.Horizontal, xf.Rotated, xf.ShrinkToFit);
         _resolved[index] = style;
         return style;
     }
@@ -398,6 +401,8 @@ internal sealed class XlsxStyles
                 },
                 Wrap = child.GetAttribute("wrapText") is "1" or "true",
                 Indent = int.TryParse(child.GetAttribute("indent"), NumberStyles.None, CultureInfo.InvariantCulture, out var indent) ? Math.Min(indent, 250) : 0,
+                Rotated = int.TryParse(child.GetAttribute("textRotation"), NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out var rotation) && rotation != 0,
+                ShrinkToFit = child.GetAttribute("shrinkToFit") is "1" or "true",
             };
         });
         return xf;
@@ -437,5 +442,9 @@ internal sealed class XlsxStyles
         public bool Wrap { get; init; }
 
         public int Indent { get; init; }
+
+        public bool Rotated { get; init; }
+
+        public bool ShrinkToFit { get; init; }
     }
 }

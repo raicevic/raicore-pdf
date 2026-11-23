@@ -62,6 +62,20 @@ internal static class Sheets
         workbook.Save("summary.pdf");
         #endregion
 
+        #region diagnostics
+        var diagnostics = new List<SheetDiagnostic>();
+        var checkedWorkbook = XlsxToPdf.Convert("summary.xlsx", new XlsxConverterOptions
+        {
+            Sheet = new SheetOptions { Diagnostics = diagnostics.Add },
+        });
+        foreach (var diagnostic in diagnostics)
+        {
+            Console.WriteLine($"{diagnostic.SheetName}: {diagnostic.Kind}: {diagnostic.Message}"); // Summary: Comment: 1 comment is left out.
+        }
+
+        checkedWorkbook.Save("summary-checked.pdf");
+        #endregion
+
         #region fonts
         var fonts = BundledFonts.CreateCollection().AddSystemFonts();
         var unicode = CsvToPdf.Convert("orders.csv", new CsvConverterOptions
@@ -72,7 +86,9 @@ internal static class Sheets
         #endregion
     }
 
-    /// <summary>Writes a minimal workbook with one styled sheet (a spreadsheet program would write the same parts).</summary>
+    /// <summary>
+    /// Writes a minimal workbook with one styled sheet and a comment (a spreadsheet program would write the same parts).
+    /// </summary>
     private static void WriteWorkbook(string path)
     {
         const string main = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
@@ -84,6 +100,9 @@ internal static class Sheets
             ["xl/workbook.xml"] = $"<workbook xmlns=\"{main}\" xmlns:r=\"{relationships}\"><sheets><sheet name=\"Summary\" sheetId=\"1\" r:id=\"r1\"/></sheets></workbook>",
             ["xl/_rels/workbook.xml.rels"] = $"<Relationships xmlns=\"{package}\"><Relationship Id=\"r1\" Type=\"{relationships}/worksheet\" Target=\"sheet1.xml\"/>"
                 + $"<Relationship Id=\"r2\" Type=\"{relationships}/styles\" Target=\"styles.xml\"/></Relationships>",
+            ["xl/_rels/sheet1.xml.rels"] = $"<Relationships xmlns=\"{package}\"><Relationship Id=\"r1\" Type=\"{relationships}/comments\" Target=\"comments1.xml\"/></Relationships>",
+            ["xl/comments1.xml"] = $"<comments xmlns=\"{main}\"><authors><author>Alice</author></authors><commentList>"
+                + "<comment ref=\"B2\" authorId=\"0\"><text><t>Includes the delivery.</t></text></comment></commentList></comments>",
             ["xl/styles.xml"] = $"<styleSheet xmlns=\"{main}\"><fonts><font><sz val=\"11\"/><name val=\"Calibri\"/></font><font><b/><sz val=\"11\"/></font></fonts>"
                 + "<cellXfs><xf/><xf fontId=\"1\"/><xf numFmtId=\"4\"/><xf numFmtId=\"15\"/></cellXfs></styleSheet>",
             ["xl/sheet1.xml"] = $"<worksheet xmlns=\"{main}\"><sheetData>"

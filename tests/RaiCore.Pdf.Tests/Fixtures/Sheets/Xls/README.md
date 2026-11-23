@@ -13,6 +13,11 @@ Excel 97-2003 converter (`XlsToPdf`).
     titles and a print area that is `#REF!`), `SimpleWithPrintArea.xls` (a print area; a stale `Book` stream beside
     the `Workbook` stream), `46250.xls` (hidden sheets, rows and columns, a print area), `TwoSheetsOneHidden.xls`,
     `WithChart.xls` (an embedded chart);
+  - content the converter reports as not supported (`SheetOptions.Diagnostics`): `DrawingAndComments.xls` (comments,
+    an oval and a polygon), `44010-SingleChart.xls` (a chart sheet, text boxes), `ole2-embedding.xls` (embedded
+    objects), `WithConditionalFormatting.xls` (conditional formatting rules), `SimpleWithPageBreaks.xls` (page breaks
+    set by hand), `ShrinkToFit.xls` (shrink to fit); `46250.xls`, `12561-1.xls` and `46368.xls` above also have a
+    picture, text boxes, a comment, rich text and headers and footers;
   - `testEXCEL_95.xls` (Excel 95, BIFF5, in a `Book` stream), `testEXCEL_4.xls` (Excel 4.0, BIFF4: not supported);
   - `password.xls` (RC4 encrypted), `xor-encryption-abc.xls` (XOR obfuscated): encrypted, not supported;
   - `clusterfuzz-testcase-minimized-POIHSSFFuzzer-6537773940867072.xls`: a damaged compound file.
@@ -26,4 +31,7 @@ unchanged.
 `expected.json` records what [xlrd](https://pypi.org/project/xlrd/) 2.0, an independent reader, finds in them
 (`make-expected.py`): the BIFF version, the date system, the number formats of the FORMAT records, and for each sheet
 its name, visibility, merged ranges, hidden rows and columns, column widths and its cells (up to 400 a sheet) with
-their type, value and XF index; for the files xlrd cannot read, its error.
+their type, value and XF index; for the files xlrd cannot read, its error. Under `content`, for each sheet, the
+content the converter does not support by kind (the names of `SheetDiagnosticKind`), counted from the sheet's records
+by the script's own BIFF walk (drawing objects, embedded charts, comments, conditional formatting, headers and footers,
+page breaks, pivot tables, chart sheets; with `olefile`) and from xlrd (cells with rich, rotated or shrunk text).

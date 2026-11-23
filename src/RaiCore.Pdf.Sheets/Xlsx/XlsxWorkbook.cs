@@ -4,8 +4,10 @@ using System.Xml;
 
 namespace RaiCore.Pdf.Sheets.Xlsx;
 
-/// <summary>A sheet of a workbook: its name, part, position, whether it is hidden and whether it is a worksheet.</summary>
-internal sealed record XlsxSheetEntry(string Name, string? Path, int Index, bool Hidden, bool IsWorksheet);
+/// <summary>
+/// A sheet of a workbook: its name, part, position, whether it is hidden, and whether it is a worksheet or a chart sheet.
+/// </summary>
+internal sealed record XlsxSheetEntry(string Name, string? Path, int Index, bool Hidden, bool IsWorksheet, bool IsChartSheet = false);
 
 /// <summary>A range of cells in a sheet, from 0; -1 where it is open (whole columns have no rows, whole rows no columns).</summary>
 internal readonly record struct CellRange(int Row1, int Column1, int Row2, int Column2);
@@ -34,6 +36,9 @@ internal sealed class XlsxWorkbook
     public XlsxStyles Styles { get; private set; } = null!;
 
     public List<string> SharedStrings { get; private set; } = [];
+
+    /// <summary>The indexes of the shared strings with formatted runs (rich text, which is shown in the cell's font).</summary>
+    public HashSet<int> RichStrings { get; } = [];
 
     /// <summary>The title of the document properties, or <c>null</c>.</summary>
     public string? Title { get; private set; }
@@ -68,7 +73,7 @@ internal sealed class XlsxWorkbook
         workbook.Styles = Part("styles") is { } stylesPath
             ? package.Parse(stylesPath, reader => XlsxStyles.Read(reader, workbook.Settings, theme), XlsxStyles.Empty(workbook.Settings))
             : XlsxStyles.Empty(workbook.Settings);
-        workbook.SharedStrings = Part("sharedStrings") is { } stringsPath ? package.Parse(stringsPath, ReadSharedStrings, []) : [];
+        workbook.SharedStrings = Part("sharedStrings") is { } stringsPath ? package.Parse(stringsPath, workbook.ReadSharedStrings, []) : [];
         return workbook;
     }
 
@@ -96,7 +101,8 @@ internal sealed class XlsxWorkbook
                         relationship.Target,
                         Sheets.Count,
                         reader.GetAttribute("state") is "hidden" or "veryHidden",
-                        relationship.Type == "worksheet"));
+                        relationship.Type == "worksheet",
+                        relationship.Type == "chartsheet"));
                     break;
                 case "definedName" when reader.Depth == 2:
                     var name = reader.GetAttribute("name") ?? string.Empty;
@@ -181,14 +187,18 @@ internal sealed class XlsxWorkbook
         return colors.Take(4).All(c => c is not null) ? [.. colors.Select(c => c ?? 0)] : null;
     }
 
-    private static List<string> ReadSharedStrings(XmlReader reader)
+    private List<string> ReadSharedStrings(XmlReader reader)
     {
         var strings = new List<string>();
         while (reader.Read())
         {
             if (reader.NodeType == XmlNodeType.Element && reader.LocalName == "si")
             {
-                strings.Add(ReadRichText(reader));
+                strings.Add(ReadRichText(reader, out var rich));
+                if (rich)
+                {
+                    RichStrings.Add(strings.Count - 1);
+                }
             }
         }
 
@@ -199,8 +209,14 @@ internal sealed class XlsxWorkbook
     /// The text of a string item (<c>si</c>, <c>is</c>): its <c>t</c> elements, of rich text runs too, without the
     /// phonetic runs (<c>rPh</c>), with <c>_xHHHH_</c> escapes decoded. Leaves the reader on the item's end.
     /// </summary>
-    internal static string ReadRichText(XmlReader reader)
+    internal static string ReadRichText(XmlReader reader) => ReadRichText(reader, out _);
+
+    /// <inheritdoc cref="ReadRichText(XmlReader)"/>
+    /// <param name="reader">The reader, on the item's start.</param>
+    /// <param name="rich">Whether a run of the item has its own font properties (<c>r/rPr</c>).</param>
+    internal static string ReadRichText(XmlReader reader, out bool rich)
     {
+        rich = false;
         if (reader.IsEmptyElement)
         {
             return string.Empty;
@@ -221,6 +237,10 @@ internal sealed class XlsxWorkbook
                     else if (reader.LocalName == "t")
                     {
                         textDepth = reader.Depth;
+                    }
+                    else if (reader.LocalName == "rPr" && reader.Depth == depth + 2)
+                    {
+                        rich = true;
                     }
 
                     break;

@@ -83,6 +83,7 @@ at the top of every page (unless `HasHeaderRow` is `false`).
 | `Title` | The document's title. |
 | `Tagged` | A tagged (accessible) PDF: the table with header (`TH`) and data (`TD`) cells (default `false`). |
 | `Limits` | The `ResourceLimits` of the conversion, below. |
+| `Diagnostics` | Receives what was left out or simplified ([Diagnostics](#diagnostics) below). |
 
 The returned `PdfDocument` can be changed before it is saved: metadata, `Language`, `PdfUA`, `PdfAConformance`,
 encryption, attachments.
@@ -190,10 +191,11 @@ workbooks throw `NotSupportedException`. Excel 97-2003 `.xls` files are converte
 External workbook links, data connections, query tables, web queries and DDE or OLE links are never followed or
 refreshed: formulas show the values stored with them (see [Untrusted input](untrusted-input.md)).
 
-Not supported in workbooks: charts and chart sheets (the chart engine that draws the charts of presentations and
-documents is ready for them; they come with support for a sheet's drawings), images and other drawings, conditional formatting, data bars,
-comments, headers and footers, page breaks set by hand, pivot tables, rich text formatting within a cell, rotated
-text, and shrink to fit.
+Not supported in workbooks, and reported through `Diagnostics` ([below](#diagnostics)): charts and chart sheets (the
+chart engine that draws the charts of presentations and documents is ready for them; they come with support for a
+sheet's drawings), pictures, shapes and other drawings, embedded objects, comments, conditional formatting (also data
+bars, color scales and icon sets), sparklines, pivot tables (their cells are shown), headers and footers, page breaks
+set by hand, rich text formatting within a cell, rotated text, and shrink to fit.
 
 ### Excel 97-2003 workbooks
 
@@ -218,3 +220,39 @@ without asking for one) and Excel 2.x-4.0 files throw `NotSupportedException`.
 
 The format is told from the data, not the file name: `XlsxToPdf` converts `.xls` workbooks too, and `XlsToPdf`
 converts a `.xlsx` workbook (a ZIP package) named `.xls`, as some programs save them.
+
+## Diagnostics
+
+A conversion never leaves content out silently. `SheetOptions.Diagnostics` receives a `SheetDiagnostic` for each kind
+of content a sheet has that is left out or simplified, with the sheet's name, the `SheetDiagnosticKind` and a message
+that says how many there are (`2 pictures are left out.`). Each kind is reported at most once per sheet, in the order
+the sheets are converted, while the conversion runs, so a caller can flag the document, or convert it another way.
+
+[!code-csharp[](../snippets/Sheets.cs#diagnostics)]
+
+| `SheetDiagnosticKind` | What is reported | In `.xlsx` | In `.xls` |
+|---|---|---|---|
+| `Chart` | Charts in a sheet: left out. | Chart frames in the drawing | Embedded chart objects |
+| `ChartSheet` | A chart sheet that would be converted (visible, or named in the options): left out. | Chart sheets | Chart sheets |
+| `Picture` | Pictures: left out. | Pictures in the drawing | Picture objects |
+| `Shape` | Shapes, text boxes, WordArt, SmartArt, ink and form controls: left out. | Shapes, connectors, other frames; form controls | Shape, text box and control objects |
+| `OleObject` | Embedded and linked objects, ActiveX controls: left out. | `oleObjects`; ActiveX controls | Picture objects of embedded objects |
+| `Comment` | Comments (notes and threaded comments): left out. | Comments part, threaded comments | `NOTE` records |
+| `ConditionalFormatting` | Conditional formatting rules: not applied. | `cfRule`s, also of the extension list | `CF`, `CF12` records |
+| `Sparkline` | Sparklines: left out. | Sparklines of the extension list | |
+| `PivotTable` | Pivot tables: their cells are shown as stored, without the pivot table style. | Pivot table parts | `SXVIEW` records |
+| `HeaderFooter` | Each header and footer text (odd, even, first page): left out. | `headerFooter` | `HEADER`, `FOOTER`, `HEADERFOOTER` |
+| `PageBreak` | Page breaks set by hand: not applied. | `rowBreaks`, `colBreaks` (manual) | `HORIZONTALPAGEBREAKS`, `VERTICALPAGEBREAKS` |
+| `RichText` | Cells with runs of text in other fonts: shown in the cell's font. | Shared and inline strings with run properties | Rich shared strings, `RSTRING` |
+| `RotatedText` | Cells with rotated or stacked text: shown horizontally. | `textRotation` | The XF's rotation |
+| `ShrinkToFit` | Cells set to shrink to fit: shown at their size. | `shrinkToFit` | The XF's shrink to fit |
+| `Layout` | Content that does not fit the page: drawn past its edge, or cut off, with the page numbers. | | |
+
+Counts are for the whole sheet, also outside the print area. Drawing objects that do not print (hidden, or set not
+to print with the sheet, such as the drop-down arrows of filters) and the cells that show no text are not counted. CSV
+has no sheets: only `Layout` applies, with no sheet name. Layout problems are rare, since columns are printed in bands
+and text wraps; text too big for the page, such as a very large font on a small page, is one.
+
+With a callback, the parts a workbook keeps this content in (drawings, comments and their relationships) are read
+too, within `MaxDecompressedBytes`; a part that cannot be read counts nothing and does not fail the conversion.
+Without one (the default), nothing more is read.

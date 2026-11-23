@@ -93,4 +93,20 @@ public sealed class SheetOptions
     /// <see cref="ResourceLimits.Default"/>.
     /// </summary>
     public ResourceLimits Limits { get; init; } = ResourceLimits.Default;
+
+    /// <summary>
+    /// Receives what the conversion left out or could not show as a spreadsheet program prints it
+    /// (<see cref="SheetDiagnostic"/>): for workbooks, charts and chart sheets, pictures, shapes, embedded objects,
+    /// comments, conditional formatting, sparklines, pivot tables, headers and footers, page breaks set by hand, and
+    /// cells with rich, rotated or shrunk text; for every conversion, content that does not fit the page. Each kind is
+    /// reported at most once per sheet, with how many there are, on the conversion's thread while it runs. A workbook
+    /// with nothing of these reports nothing. <c>null</c> (the default) collects nothing; with a callback, the parts a
+    /// workbook keeps them in (drawings, comments) are read too, within <see cref="ResourceLimits.MaxDecompressedBytes"/>.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var options = new SheetOptions { Diagnostics = d => logger.LogWarning("{Sheet}: {Kind}: {Message}", d.SheetName, d.Kind, d.Message) };
+    /// </code>
+    /// </example>
+    public Action<SheetDiagnostic>? Diagnostics { get; init; }
 }

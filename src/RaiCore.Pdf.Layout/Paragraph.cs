@@ -156,7 +156,7 @@ internal sealed record ParagraphSpan(string Text, TextStyle Style, InlineImage? 
 /// <summary>
 /// A paragraph of styled text, laid out into lines with <see cref="Layout(double)"/>.
 /// The text is used as given: collapsing white space (as HTML does) is up to the caller.
-/// Line feeds and other hard breaks start a new line.
+/// Line feeds and other hard breaks start a new line. A surrogate without its other half is drawn as U+FFFD.
 /// </summary>
 /// <example>
 /// <code>
@@ -398,7 +398,7 @@ public sealed class Paragraph
         ArgumentNullException.ThrowIfNull(style);
         if (text.Length > 0)
         {
-            _spans.Add(new ParagraphSpan(text, style));
+            _spans.Add(new ParagraphSpan(LoneSurrogates.Replace(text), style));
             _length += text.Length;
         }
 
@@ -447,7 +447,7 @@ public sealed class Paragraph
     public Paragraph AddLeader(string pattern, TextStyle? style = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(pattern);
-        _spans.Add(new ParagraphSpan(pattern, style ?? Style) { IsLeader = true });
+        _spans.Add(new ParagraphSpan(LoneSurrogates.Replace(pattern), style ?? Style) { IsLeader = true });
         _length += pattern.Length;
         Version++;
         return this;

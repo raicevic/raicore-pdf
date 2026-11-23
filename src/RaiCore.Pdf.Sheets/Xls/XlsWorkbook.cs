@@ -53,6 +53,9 @@ internal sealed class XlsWorkbook
 
     public List<string> SharedStrings { get; } = [];
 
+    /// <summary>The indexes of the shared strings with formatting runs (rich text, which is shown in the cell's font).</summary>
+    public HashSet<int> RichStrings { get; } = [];
+
     public XlsStyles Styles { get; } = new();
 
     public FormatSettings Settings => Styles.Settings;
@@ -227,6 +230,8 @@ internal sealed class XlsWorkbook
             Wrap = (data[6] & 0x08) != 0,
             Vertical = (data[6] >> 4) & 0x07,
             Indent = data[8] & 0x0F,
+            Rotated = data[7] != 0,
+            ShrinkToFit = (data[8] & 0x10) != 0,
             Lines = ((int)(borders & 0x0F), (int)((borders >> 4) & 0x0F), (int)((borders >> 8) & 0x0F), (int)((borders >> 12) & 0x0F)),
             LineColors = ((int)((borders >> 16) & 0x7F), (int)((borders >> 23) & 0x7F), (int)(more & 0x7F), (int)((more >> 7) & 0x7F)),
             Pattern = (int)(more >> 26),
@@ -252,6 +257,7 @@ internal sealed class XlsWorkbook
             Horizontal = data[6] & 0x07,
             Wrap = (data[6] & 0x08) != 0,
             Vertical = (data[6] >> 4) & 0x07,
+            Rotated = (data[7] & 0x03) != 0,
             Lines = ((int)((borders >> 3) & 0x07), (int)((borders >> 6) & 0x07), (int)(borders & 0x07), (int)((fill >> 22) & 0x07)),
             LineColors = ((int)((borders >> 16) & 0x7F), (int)((borders >> 23) & 0x7F), (int)((borders >> 9) & 0x7F), (int)((fill >> 25) & 0x7F)),
             Pattern = (int)((fill >> 16) & 0x3F),
@@ -275,7 +281,8 @@ internal sealed class XlsWorkbook
             null,
             Sheets.Count,
             (data[4] & 0x03) != 0,
-            data[5] == 0));
+            data[5] == 0,
+            data[5] == 2));
         SheetOffsets.Add((int)Math.Min(BiffReader.U32(data, 0), int.MaxValue));
     }
 
@@ -285,6 +292,11 @@ internal sealed class XlsWorkbook
         var position = 8;
         while (position < data.Length)
         {
+            if (position + 5 <= data.Length && (data[position + 2] & 0x08) != 0 && BiffReader.U16(data, position + 3) > 0)
+            {
+                RichStrings.Add(SharedStrings.Count);
+            }
+
             SharedStrings.Add(BiffReader.ReadString(data, breaks, ref position, 2, null, extended: true));
             if (SharedStrings.Count % 4096 == 0)
             {
