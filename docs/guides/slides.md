@@ -71,12 +71,45 @@ belongs to.
 
 Charts, SmartArt without a stored drawing, EMF and WMF pictures, embedded objects without a picture, animations and
 transitions, 3D effects, shadows, glow, reflections and soft edges, WordArt transforms, multiple text columns, tab
-stops (a tab is a few spaces), notes pages and comments. Password-protected (encrypted) presentations and PowerPoint
-97-2003 (`.ppt`) files throw `NotSupportedException`.
+stops (a tab is a few spaces), notes pages and comments. Password-protected (encrypted) presentations throw
+`NotSupportedException`, and so do PowerPoint 97-2003 (`.ppt`) files given to `PptxToPdf`: convert those with
+`PptToPdf`, below.
 
 What is not drawn is reported to `Diagnostics`, once per slide and issue:
 
 [!code-csharp[](../snippets/Slides.cs#diagnostics)]
+
+## PowerPoint 97-2003 (.ppt)
+
+`PptToPdf` converts presentations in the binary format of PowerPoint 97 to 2003 (`.ppt`, `.pps`, `.pot`), which
+PowerPoint still opens and writes. It has the same overloads as `PptxToPdf` and takes the same `PptxConverterOptions`.
+
+```csharp
+var pdf = PptToPdf.Convert("old-deck.ppt", new PptxConverterOptions { IncludeHiddenSlides = true });
+pdf.Save("old-deck.pdf");
+```
+
+- **The file:** the current edit and its history (a file saved many times with "fast save" keeps its old versions;
+  the newest wins), recovered from what remains when the history is damaged.
+- **Masters:** the slide's master (and title master) with its shapes, background and color scheme, unless the slide
+  has its own; the master's text styles by text type (title, body, other) and indent level, under the document's
+  defaults. The master's date, footer and slide number placeholders show as the presentation's header and footer
+  settings say (an automatic date is not drawn, and reported).
+- **Shapes:** the common preset shapes (rectangles, rounded rectangles, ellipses, triangles, arrows, stars, flowchart
+  shapes, lines and connectors) with their adjust values, free forms from their vertices, groups (tables are groups of
+  shapes in this format, and are drawn as such), rotation and flips; solid, gradient, pattern (as an average color),
+  picture and texture fills; lines with dashes and arrowheads. Other shapes are drawn as rectangles, and reported.
+- **Text:** insets, anchoring, wrapping and vertical text; paragraphs with alignment, indents and rulers, spacing, line
+  spacing and bullets (symbol fonts' bullets as Unicode); runs with font, size, bold, italic, underline, color,
+  superscript and subscript and links. WordArt is drawn as plain text, and reported.
+- **Pictures:** PNG, JPEG, TIFF and device-independent bitmaps, cropped; embedded objects (charts, workbooks) as the
+  picture PowerPoint stores with them. EMF, WMF and PICT pictures are not drawn, and reported.
+
+Not supported: automatic numbering, automatic dates, shadows, 3D effects, animations and transitions, sounds and
+movies, notes pages and comments. Password-protected (encrypted) presentations, and PowerPoint 95 and older files,
+throw `NotSupportedException`; data that is not a PowerPoint 97-2003 presentation (or whose document cannot be found)
+throws `PresentationFormatException`. Every length, offset and count in the file is checked; `MaxElements` counts its
+records, `MaxNestingDepth` bounds the nesting of groups and `MaxDecompressedBytes` the streams and pictures read.
 
 ## Accessibility
 

@@ -21,7 +21,7 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf.Editing` | Edit existing PDFs: delete, insert, move and rotate pages, save repeatedly | 🚧 Unreleased |
 | `RaiCore.Pdf.Email` | Email (.eml, Outlook .msg) and web archives (.mht) → PDF: header block, inline images, attachments embedded or appended | 🚧 Unreleased |
 | `RaiCore.Pdf.Sheets` | CSV and Excel (.xlsx) → PDF: paginated tables with repeated header rows, number formats, styles, merged cells, print areas | 🚧 Unreleased |
-| `RaiCore.Pdf.Slides` | PowerPoint (.pptx) → PDF: one page per slide with masters, layouts, themes, shapes, text, pictures, tables | 🚧 Unreleased |
+| `RaiCore.Pdf.Slides` | PowerPoint (.pptx, .ppt) → PDF: one page per slide with masters, layouts, themes, shapes, text, pictures, tables | 🚧 Unreleased |
 | `RaiCore.Pdf.Documents` | Word (.docx), OpenDocument text (.odt) and RTF → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | 🚧 Unreleased |
 | `RaiCore.Pdf.XslFo` | XSL-FO → PDF | ⚪ After 1.0 |
 
@@ -662,8 +662,9 @@ report.Save("report.pdf");
 The `RaiCore.Pdf.Slides` package converts PowerPoint presentations (`.pptx`) to PDF, one page per slide at the slide's
 size: the master's and layout's shapes and backgrounds, placeholders with their inherited positions and text styles,
 theme colors and fonts, preset and free-form shapes with gradient and picture fills, lines and arrowheads, text with
-bullets, numbering and autofit, cropped pictures, tables with their styles, groups and SmartArt drawings. See the
-[PPTX guide](https://raicevic.github.io/raicore-pdf/guides/slides.html).
+bullets, numbering and autofit, cropped pictures, tables with their styles, groups and SmartArt drawings. `PptToPdf`
+converts PowerPoint 97-2003 presentations (`.ppt`) the same way: masters, color schemes, shapes, text, pictures and
+groups. See the [PPTX guide](https://raicevic.github.io/raicore-pdf/guides/slides.html).
 
 ```csharp
 var deck = PptxToPdf.Convert("deck.pptx", new PptxConverterOptions { Tagged = true });

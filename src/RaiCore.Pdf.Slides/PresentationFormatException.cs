@@ -2,7 +2,8 @@ namespace RaiCore.Pdf.Slides;
 
 /// <summary>
 /// Thrown when presentation data is malformed: a PPTX presentation that is not a valid ZIP package, whose parts are
-/// not well-formed XML, or that has no presentation part.
+/// not well-formed XML, or that has no presentation part; a PowerPoint 97-2003 presentation that is not a compound
+/// file or whose document cannot be found.
 /// </summary>
 public sealed class PresentationFormatException : PdfException
 {

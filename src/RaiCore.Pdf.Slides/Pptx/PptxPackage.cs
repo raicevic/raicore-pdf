@@ -53,6 +53,19 @@ internal sealed class PptxPackage : IDisposable
         }
     }
 
+    /// <summary>Whether a compound file holds a PowerPoint 97-2003 presentation (its PowerPoint Document stream).</summary>
+    private static bool IsPowerPoint97(byte[] data)
+    {
+        try
+        {
+            return CompoundFile.Open(data).Root["PowerPoint Document"] is not null;
+        }
+        catch (Exception ex) when (ex is PdfFormatException or ResourceLimitExceededException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>Opens a package.</summary>
     /// <exception cref="NotSupportedException">The data is an encrypted presentation or a PowerPoint 97-2003 file.</exception>
     /// <exception cref="PresentationFormatException">The data is not a ZIP package.</exception>
@@ -60,8 +73,9 @@ internal sealed class PptxPackage : IDisposable
     {
         if (CompoundFile.IsCompoundFile(data))
         {
-            throw new NotSupportedException(
-                "The data is a Compound File: a password-protected (encrypted) presentation or a PowerPoint 97-2003 (.ppt) file, which are not supported.");
+            throw new NotSupportedException(IsPowerPoint97(data)
+                ? "The data is a PowerPoint 97-2003 (.ppt) presentation, not a PPTX one: convert it with PptToPdf."
+                : "The data is a Compound File: a password-protected (encrypted) presentation, or a PowerPoint 97-2003 (.ppt) file (convert those with PptToPdf).");
         }
 
         if (!data.AsSpan().StartsWith("PK"u8))

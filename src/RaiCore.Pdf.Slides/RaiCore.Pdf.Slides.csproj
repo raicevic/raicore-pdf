@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Convert presentations to PDF with RaiCore.Pdf: PowerPoint slides (.pptx) one per page at the slide size, with masters and layouts, theme colors and fonts, shapes, text frames with bullets and autofit, pictures, tables and groups.</Description>
-    <PackageTags>$(PackageTags);pptx;powerpoint;pptx-to-pdf;powerpoint-to-pdf;presentation;slides</PackageTags>
+    <Description>Convert presentations to PDF with RaiCore.Pdf: PowerPoint slides (.pptx, and PowerPoint 97-2003 .ppt) one per page at the slide size, with masters and layouts, theme colors and fonts, shapes, text frames with bullets and autofit, pictures, tables and groups.</Description>
+    <PackageTags>$(PackageTags);pptx;ppt;powerpoint;pptx-to-pdf;ppt-to-pdf;powerpoint-to-pdf;presentation;slides</PackageTags>
     <!--
       A core package, released with the core at the same version. It uses only the public API of RaiCore.Pdf.Layout
       and RaiCore.Pdf.Fonts. It has no released version to validate against yet: set the baseline to the first release

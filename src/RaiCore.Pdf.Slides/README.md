@@ -1,8 +1,9 @@
 # RaiCore.Pdf.Slides
 
-Converts PowerPoint presentations (`.pptx`) to PDF with [RaiCore.Pdf](https://www.nuget.org/packages/RaiCore.Pdf): one
-page per slide at the slide's size, drawn with the master's and layout's shapes, theme colors and fonts, shapes, text,
-pictures, tables and groups. No presentation program, no browser, no native dependencies.
+Converts PowerPoint presentations (`.pptx`, and PowerPoint 97-2003 `.ppt`) to PDF with
+[RaiCore.Pdf](https://www.nuget.org/packages/RaiCore.Pdf): one page per slide at the slide's size, drawn with the
+master's and layout's shapes, theme colors and fonts, shapes, text, pictures, tables and groups. No presentation
+program, no browser, no native dependencies.
 
 ```csharp
 using RaiCore.Pdf.Slides;
@@ -12,6 +13,9 @@ pdf.Save("deck.pdf");
 
 var some = PptxToPdf.Convert("deck.pptx", new PptxConverterOptions { SlideNumbers = [1, 3], Tagged = true });
 some.Save("some.pdf");
+
+var legacy = PptToPdf.Convert("old-deck.ppt"); // PowerPoint 97-2003, same options
+legacy.Save("old-deck.pdf");
 ```
 
 - **Masters, layouts and themes:** placeholders inherit their position, shape and text styles from the layout and
@@ -30,8 +34,13 @@ some.Save("some.pdf");
   `PresentationFormatException`; decompressed bytes, XML elements and nesting, slides, table cells and time are bounded
   by `ResourceLimits`.
 
-Not supported: charts, EMF and WMF pictures, animations, 3D effects, shadows, WordArt transforms, notes and comments
-(reported to `Diagnostics`), and encrypted or PowerPoint 97-2003 (`.ppt`) files.
+- **PowerPoint 97-2003:** `PptToPdf` reads the binary `.ppt` format (also `.pps` and `.pot`): the edit history of
+  the file (damaged ones recovered), masters and title masters with their text styles, color schemes and backgrounds,
+  OfficeArt shapes and groups (tables are groups), free forms, pictures (PNG, JPEG, TIFF, bitmaps), text with its
+  runs, bullets and links, and the footers the presentation sets.
+
+Not supported: charts, EMF, WMF and PICT pictures, animations, 3D effects, shadows, WordArt transforms, notes and
+comments (reported to `Diagnostics`), encrypted presentations, and PowerPoint 95 and older files.
 
 More: the [PPTX guide](https://raicevic.github.io/raicore-pdf/guides/slides.html).
 

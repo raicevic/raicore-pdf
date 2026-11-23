@@ -45,3 +45,11 @@ static RaiCore.Pdf.Slides.PptxToPdf.ConvertToBytes(System.IO.Stream! pptx, RaiCo
 static RaiCore.Pdf.Slides.PptxToPdf.ConvertToBytes(byte[]! pptx, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> byte[]!
 static RaiCore.Pdf.Slides.SlideDiagnostic.operator !=(RaiCore.Pdf.Slides.SlideDiagnostic? left, RaiCore.Pdf.Slides.SlideDiagnostic? right) -> bool
 static RaiCore.Pdf.Slides.SlideDiagnostic.operator ==(RaiCore.Pdf.Slides.SlideDiagnostic? left, RaiCore.Pdf.Slides.SlideDiagnostic? right) -> bool
+RaiCore.Pdf.Slides.PptToPdf
+static RaiCore.Pdf.Slides.PptToPdf.Convert(System.IO.Stream! ppt, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Slides.PptToPdf.Convert(byte[]! ppt, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Slides.PptToPdf.Convert(string! path, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Slides.PptToPdf.ConvertAsync(System.IO.Stream! ppt, RaiCore.Pdf.Slides.PptxConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Slides.PptToPdf.ConvertAsync(byte[]! ppt, RaiCore.Pdf.Slides.PptxConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Slides.PptToPdf.ConvertToBytes(System.IO.Stream! ppt, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Slides.PptToPdf.ConvertToBytes(byte[]! ppt, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> byte[]!
