@@ -18,13 +18,13 @@ internal static class CompressedRtf
         "{\\rtf1\\ansi\\mac\\deff0\\deftab720{\\fonttbl;}{\\f0\\fnil \\froman \\fswiss \\fmodern \\fscript \\fdecor MS Sans SerifSymbolArialTimes New RomanCourier{\\colortbl\\red0\\green0\\blue0\r\n\\par \\pard\\plain\\f0\\fs20\\b\\i\\u\\tab\\tx");
 
     /// <summary>Decompresses; at most <paramref name="maxBytes"/> bytes come out.</summary>
-    /// <exception cref="PdfFormatException">The data is not compressed RTF.</exception>
+    /// <exception cref="MessageFormatException">The data is not compressed RTF.</exception>
     /// <exception cref="ResourceLimitExceededException">It would decompress to more than <paramref name="maxBytes"/>.</exception>
     public static byte[] Decompress(ReadOnlySpan<byte> data, long maxBytes)
     {
         if (data.Length < 16)
         {
-            throw new PdfFormatException("The compressed RTF is shorter than its header.");
+            throw new MessageFormatException("The compressed RTF is shorter than its header.");
         }
 
         var compressedSize = BinaryPrimitives.ReadUInt32LittleEndian(data);
@@ -39,7 +39,7 @@ internal static class CompressedRtf
 
         if (type != Compressed)
         {
-            throw new PdfFormatException("The data is not compressed RTF (no LZFu or MELA signature).");
+            throw new MessageFormatException("The data is not compressed RTF (no LZFu or MELA signature).");
         }
 
         if (rawSize > maxBytes)

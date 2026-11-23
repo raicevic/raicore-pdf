@@ -142,12 +142,12 @@ internal sealed partial class RtfReader
     }
 
     /// <summary>Reads an RTF document.</summary>
-    /// <exception cref="PdfFormatException">The data is not RTF (it does not start with <c>{\rtf</c>).</exception>
+    /// <exception cref="DocumentFormatException">The data is not RTF (it does not start with <c>{\rtf</c>).</exception>
     public static WordDocument Read(byte[] data, ConversionContext context)
     {
         if (!IsRtf(data))
         {
-            throw new PdfFormatException(data.AsSpan().StartsWith("PK\u0003\u0004"u8)
+            throw new DocumentFormatException(data.AsSpan().StartsWith("PK\u0003\u0004"u8)
                 ? "The data is a ZIP package (such as a Word document), not an RTF document."
                 : "The data is not an RTF document: it does not start with {\\rtf.");
         }

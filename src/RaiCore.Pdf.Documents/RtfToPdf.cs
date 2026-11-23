@@ -57,7 +57,7 @@ public static class RtfToPdf
     /// <summary>Converts an RTF document to a PDF document.</summary>
     /// <param name="rtf">The document's bytes.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
-    /// <exception cref="PdfFormatException">The data is not an RTF document (it does not start with <c>{\rtf</c>).</exception>
+    /// <exception cref="DocumentFormatException">The data is not an RTF document (it does not start with <c>{\rtf</c>).</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     public static PdfDocument Convert(byte[] rtf, RtfConverterOptions? options = null)
     {
@@ -78,7 +78,7 @@ public static class RtfToPdf
     /// <summary>Converts an RTF file to a PDF document.</summary>
     /// <param name="path">The file's path.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
-    /// <exception cref="PdfFormatException">The file is not an RTF document (it does not start with <c>{\rtf</c>).</exception>
+    /// <exception cref="DocumentFormatException">The file is not an RTF document (it does not start with <c>{\rtf</c>).</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     public static PdfDocument Convert(string path, RtfConverterOptions? options = null)
     {
@@ -98,7 +98,7 @@ public static class RtfToPdf
     /// <param name="rtf">The document's bytes.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
     /// <param name="cancellationToken">Cancels the conversion.</param>
-    /// <exception cref="PdfFormatException">The data is not an RTF document (it does not start with <c>{\rtf</c>).</exception>
+    /// <exception cref="DocumentFormatException">The data is not an RTF document (it does not start with <c>{\rtf</c>).</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
     public static Task<PdfDocument> ConvertAsync(byte[] rtf, RtfConverterOptions? options = null, CancellationToken cancellationToken = default)

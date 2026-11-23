@@ -54,7 +54,7 @@ public static class DocxToPdf
     /// <summary>Converts a Word document to a PDF document.</summary>
     /// <param name="docx">The document's bytes.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
-    /// <exception cref="PdfFormatException">The data is not a valid Word document (a ZIP package with a main document part).</exception>
+    /// <exception cref="DocumentFormatException">The data is not a valid Word document (a ZIP package with a main document part).</exception>
     /// <exception cref="NotSupportedException">The data is an encrypted document (or an unsupported Word 6/95 document).</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     public static PdfDocument Convert(byte[] docx, DocxConverterOptions? options = null)
@@ -76,7 +76,7 @@ public static class DocxToPdf
     /// <summary>Converts a Word document file to a PDF document.</summary>
     /// <param name="path">The file's path.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
-    /// <exception cref="PdfFormatException">The file is not a valid Word document (a ZIP package with a main document part).</exception>
+    /// <exception cref="DocumentFormatException">The file is not a valid Word document (a ZIP package with a main document part).</exception>
     /// <exception cref="NotSupportedException">The file is an encrypted document (or an unsupported Word 6/95 document).</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     public static PdfDocument Convert(string path, DocxConverterOptions? options = null)
@@ -97,7 +97,7 @@ public static class DocxToPdf
     /// <param name="docx">The document's bytes.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
     /// <param name="cancellationToken">Cancels the conversion.</param>
-    /// <exception cref="PdfFormatException">The data is not a valid Word document (a ZIP package with a main document part).</exception>
+    /// <exception cref="DocumentFormatException">The data is not a valid Word document (a ZIP package with a main document part).</exception>
     /// <exception cref="NotSupportedException">The data is an encrypted document (or an unsupported Word 6/95 document).</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>

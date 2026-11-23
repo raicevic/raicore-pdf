@@ -60,10 +60,10 @@ internal sealed class DocFile
     {
         _context = context;
         var wordEntry = compound.Root["WordDocument"]
-            ?? throw new PdfFormatException("The compound file has no WordDocument stream: it is not a Word 97-2003 document.");
+            ?? throw new DocumentFormatException("The compound file has no WordDocument stream: it is not a Word 97-2003 document.");
         if (wordEntry.Kind != CfbEntryKind.Stream)
         {
-            throw new PdfFormatException("The WordDocument entry is not a stream.");
+            throw new DocumentFormatException("The WordDocument entry is not a stream.");
         }
 
         Word = compound.Read(wordEntry);
@@ -77,7 +77,7 @@ internal sealed class DocFile
 
         if (fib.Length < 154 || ident != WordIdent)
         {
-            throw new PdfFormatException("The WordDocument stream does not start with a Word file information block.");
+            throw new DocumentFormatException("The WordDocument stream does not start with a Word file information block.");
         }
 
         Nfib = BinaryPrimitives.ReadUInt16LittleEndian(fib[2..]);
@@ -98,14 +98,14 @@ internal sealed class DocFile
         var lwStart = 34 + (2 * csw);
         if (lwStart + 2 > fib.Length)
         {
-            throw new PdfFormatException("The file information block is truncated.");
+            throw new DocumentFormatException("The file information block is truncated.");
         }
 
         var cslw = BinaryPrimitives.ReadUInt16LittleEndian(fib[lwStart..]);
         var lw = lwStart + 2;
         if (cslw < 11 || lw + (4 * cslw) + 2 > fib.Length)
         {
-            throw new PdfFormatException("The file information block is truncated.");
+            throw new DocumentFormatException("The file information block is truncated.");
         }
 
         for (var i = 0; i < _ccp.Length; i++)
@@ -127,7 +127,7 @@ internal sealed class DocFile
         var tableEntry = compound.Root[tableName];
         if (tableEntry is not { Kind: CfbEntryKind.Stream })
         {
-            throw new PdfFormatException($"The Word document has no {tableName} stream.");
+            throw new DocumentFormatException($"The Word document has no {tableName} stream.");
         }
 
         Table = compound.Read(tableEntry);
@@ -183,7 +183,7 @@ internal sealed class DocFile
     public DocFkpRun[] ParagraphRuns { get; }
 
     /// <summary>Opens a Word 97-2003 document.</summary>
-    /// <exception cref="PdfFormatException">The data is not a Word 97-2003 document or is damaged beyond reading.</exception>
+    /// <exception cref="DocumentFormatException">The data is not a Word 97-2003 document or is damaged beyond reading.</exception>
     /// <exception cref="NotSupportedException">The document is encrypted or in the Word 6/95 format.</exception>
     public static DocFile Open(byte[] data, ConversionContext context)
     {
@@ -194,12 +194,20 @@ internal sealed class DocFile
                 throw new NotSupportedException("The document is in the Word for Windows 1 or 2 format, which is not supported; only Word 97-2003 documents are.");
             }
 
-            throw new PdfFormatException(data.AsSpan().StartsWith(@"{\rtf"u8)
+            throw new DocumentFormatException(data.AsSpan().StartsWith(@"{\rtf"u8)
                 ? "The data is an RTF document, not a Word 97-2003 document; use RtfToPdf."
                 : "The data is not a Word 97-2003 document (a compound file).");
         }
 
-        return new DocFile(CompoundFile.Open(data, context.Limits), context);
+        try
+        {
+            return new DocFile(CompoundFile.Open(data, context.Limits), context);
+        }
+        catch (PdfFormatException ex)
+        {
+            // The compound file reader's own errors (it is shared with the other formats).
+            throw new DocumentFormatException("The document's compound file is damaged: " + ex.Message, ex);
+        }
     }
 
     /// <summary>Whether data is a compound file with a WordDocument stream (rather than, say, an encrypted package).</summary>
@@ -325,13 +333,13 @@ internal sealed class DocFile
         {
             if (position + 3 > clx.Length)
             {
-                throw new PdfFormatException("The piece table is truncated.");
+                throw new DocumentFormatException("The piece table is truncated.");
             }
 
             var size = BinaryPrimitives.ReadInt16LittleEndian(clx[(position + 1)..]);
             if (size < 0 || position + 3 + size > clx.Length)
             {
-                throw new PdfFormatException("A property modifier list of the piece table is outside the table stream.");
+                throw new DocumentFormatException("A property modifier list of the piece table is outside the table stream.");
             }
 
             _prcs.Add(clx.Slice(position + 3, size).ToArray());
@@ -340,7 +348,7 @@ internal sealed class DocFile
 
         if (position + 5 > clx.Length || clx[position] != 0x02)
         {
-            throw new PdfFormatException("The Word document has no piece table (CLX).");
+            throw new DocumentFormatException("The Word document has no piece table (CLX).");
         }
 
         var length = BinaryPrimitives.ReadUInt32LittleEndian(clx[(position + 1)..]);
@@ -354,7 +362,7 @@ internal sealed class DocFile
         var count = (plc.Length - 4) / 12;
         if (count <= 0)
         {
-            throw new PdfFormatException("The piece table is empty.");
+            throw new DocumentFormatException("The piece table is empty.");
         }
 
         var total = 0L;
@@ -388,7 +396,7 @@ internal sealed class DocFile
 
         if (pieces.Count == 0)
         {
-            throw new PdfFormatException("The piece table has no text.");
+            throw new DocumentFormatException("The piece table has no text.");
         }
 
         return [.. pieces];

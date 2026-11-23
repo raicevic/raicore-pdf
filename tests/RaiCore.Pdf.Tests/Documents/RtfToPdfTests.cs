@@ -356,8 +356,8 @@ public class RtfToPdfTests
     [Fact]
     public void Not_an_rtf_document_throws_a_format_exception()
     {
-        Assert.Throws<PdfFormatException>(() => RtfToPdf.Convert("hello"u8.ToArray()));
-        Assert.Contains("ZIP package", Assert.Throws<PdfFormatException>(() => RtfToPdf.Convert(Fixtures.Read(Path.Combine("Documents", "minimal.docx")))).Message, StringComparison.Ordinal);
+        Assert.Throws<DocumentFormatException>(() => RtfToPdf.Convert("hello"u8.ToArray()));
+        Assert.Contains("ZIP package", Assert.Throws<DocumentFormatException>(() => RtfToPdf.Convert(Fixtures.Read(Path.Combine("Documents", "minimal.docx")))).Message, StringComparison.Ordinal);
     }
 
     [Fact]

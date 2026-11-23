@@ -6,6 +6,13 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **One format exception per kind of input**: the converters report data they cannot read with their own
+  `PdfException`: `DocumentFormatException` (new, `RaiCore.Pdf.Documents`: DOCX, DOC, RTF, ODT),
+  `SpreadsheetFormatException` (`RaiCore.Pdf.Sheets`), `PresentationFormatException` (`RaiCore.Pdf.Slides`) and
+  `MessageFormatException` (new, `RaiCore.Pdf.Email`: `.msg`), next to the core's `PdfFormatException`,
+  `FontFormatException` and `ImageFormatException`. Catch `PdfException` for all of them. Errors of the shared compound
+  file reader (`.doc`, `.xls`, `.ppt`, `.msg`) come out as the package's own exception, with the reader's as
+  `InnerException`.
 - **PDF/A-1b and PDF/A-1a** (#195): `PdfAConformance.PdfA1B` and `PdfA1A` write PDF/A-1 (ISO 19005-1) for archives
   that do not accept PDF/A-2 or 3. The file is PDF 1.4 (`%PDF-1.4`, a cross-reference table), and XMP says
   `pdfaid:part` 1. PDF/A-1 has no transparency: saving throws `InvalidOperationException` naming the page and the
@@ -80,7 +87,7 @@ and versions follow [Semantic Versioning](https://semver.org/).
   formats; text boxes after their paragraph; bookmarks, footnotes and endnotes; title and author from the summary
   information. EMF/WMF/PICT pictures, other shapes, comments and several columns are reported to `Diagnostics`.
   Encrypted documents and Word 6/95 (and Word 1/2) files throw `NotSupportedException`, damaged ones
-  `PdfFormatException`; every offset is checked against its stream, within `ResourceLimits` (`MaxElements`,
+  `DocumentFormatException`; every offset is checked against its stream, within `ResourceLimits` (`MaxElements`,
   `MaxNestingDepth`, `MaxTableCells`, `MaxResourceBytes`, `MaxDecompressedBytes`, `MaxPages`, `Timeout`). `DocxToPdf`
   given a `.doc` file and `DocToPdf` given a `.docx` file convert it as what it is (no longer `NotSupportedException`);
   `OdtToPdf` names `DocToPdf` in its error. A new `doc` fuzz target; Apache POI and Tika
@@ -106,7 +113,7 @@ and versions follow [Semantic Versioning](https://semver.org/).
   boxes and shape text after their paragraph; links, bookmarks, footnotes and endnotes with custom citations, page
   numbers, page counts and page references computed, other fields as their text; tracked changes accepted; title and
   author from the metadata. `OdtConverterOptions` has the options of `DocumentConverterOptions`. Encrypted documents
-  throw `NotSupportedException`, malformed ones `PdfFormatException`; repeated table rows and cells count against
+  throw `NotSupportedException`, malformed ones `DocumentFormatException`; repeated table rows and cells count against
   `MaxElements` and `MaxTableCells`. A new `odt` fuzz target with uncompressed seeds; fixtures from a committed script,
   checked against odfpy, and Apache Tika samples (#203).
 - **RTF to PDF** (`RaiCore.Pdf.Documents`): `RtfToPdf.Convert` (also `ConvertToBytes` and `ConvertAsync`, over bytes,
@@ -127,7 +134,7 @@ and versions follow [Semantic Versioning](https://semver.org/).
   objects' results); bookmarks, footnotes and endnotes; revisions accepted; title and author from `\info`. EMF/WMF/PICT pictures, drawing objects,
   comments and several columns are reported to `Diagnostics`. Untrusted input is read in one pass without recursion,
   within `ResourceLimits` (`MaxElements` for the tokens, `MaxNestingDepth` for groups and tables, `MaxTableCells`,
-  `MaxResourceBytes` per picture, `MaxPages`, `Timeout`); data that is not RTF throws `PdfFormatException`. A new
+  `MaxResourceBytes` per picture, `MaxPages`, `Timeout`); data that is not RTF throws `DocumentFormatException`. A new
   `rtf` fuzz target; hand-made fixtures from a committed script and Apache Tika samples, checked against striprtf
   (#202).
 - **PPTX to PDF** (`RaiCore.Pdf.Slides`, new package): `PptxToPdf.Convert` converts PowerPoint presentations (`.pptx`,
@@ -169,7 +176,7 @@ and versions follow [Semantic Versioning](https://semver.org/).
   `Fonts`, `FontFamily`, `FallbackFontFamilies`, `HeadingBookmarks`, `Title`, `Tagged`, `Diagnostics` (unsupported
   content such as charts and text boxes, images that cannot be drawn, layout overflow) and `Limits`
   (`MaxDecompressedBytes`, `MaxElements` for the XML elements, `MaxNestingDepth`, `MaxTableCells`, `MaxPages`,
-  `Timeout`). Malformed packages throw `PdfFormatException`; encrypted documents and `.doc` files
+  `Timeout`). Malformed packages throw `DocumentFormatException`; encrypted documents and `.doc` files
   `NotSupportedException`. A shared word-processing model and renderer for the RTF, ODT and `.doc` converters to come.
   A new `docx` fuzz target with uncompressed seeds; fixtures from a committed python-docx script and Apache POI
   samples. See the [Word documents guide](https://raicevic.github.io/raicore-pdf/guides/documents.html) (#67).
@@ -222,6 +229,7 @@ and versions follow [Semantic Versioning](https://semver.org/).
   attachments with images shown by `cid:` in place, and attached messages read recursively and embedded or appended as
   `.eml`. `EmbedOriginal` embeds the `.msg` itself. They are read by a new internal Compound File Binary reader
   ([MS-CFB], with property sets [MS-OLEPS]), hardened with `ResourceLimits` and the new `cfb` fuzz target (#199, #200).
+  A `.msg` that is not a message or is damaged throws the new `MessageFormatException`.
 - **Email to PDF** (`RaiCore.Pdf.Email`, new package): `EmailToPdf.Convert` converts email messages (`.eml`) and web
   archives (`.mht`, `.mhtml`) through the HTML engine: a header block (from, to, cc, date, subject; fields and labels
   configurable, styleable with CSS), the HTML body (or the plain text one, wrapped, with `format=flowed` and links)

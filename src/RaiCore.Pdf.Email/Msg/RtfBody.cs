@@ -51,7 +51,7 @@ internal static class RtfBody
                     groups.Push((skip, unicodeSkip, htmlRtf));
                     if (groups.Count > 4096)
                     {
-                        throw new PdfFormatException("The RTF nests groups more than 4096 deep.");
+                        throw new MessageFormatException("The RTF nests groups more than 4096 deep.");
                     }
 
                     i++;

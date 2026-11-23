@@ -36,7 +36,7 @@ DocToPdf.Convert("minutes.doc").Save("minutes.pdf");
   font, color and style tables, lists (`\listtable`, old-style `\pn`), tables (merged and nested), sections, headers
   and footers, fields (links, page numbers, page references), PNG and JPEG pictures, bookmarks and notes; groups,
   tokens, nesting, table cells and pictures bounded by `ResourceLimits`, and data that is not RTF throws
-  `PdfFormatException`.
+  `DocumentFormatException`.
 - **Word 97-2003:** the binary `.doc` format ([MS-DOC]) of Word 97 to 2003: the piece table (8-bit and UTF-16 text,
   fast-saved documents), the style sheet and font table, character, paragraph, table and section properties, lists
   with their overrides, tables (merged and nested), headers and footers, fields (links, page numbers, page
@@ -45,7 +45,7 @@ DocToPdf.Convert("minutes.doc").Save("minutes.pdf");
   Encrypted documents and Word 6/95 files throw `NotSupportedException`.
 - **Untrusted input:** no DTDs, nothing external; decompressed bytes, XML elements (and repeated table rows and cells),
   nesting, table cells, pages and time are bounded by `ResourceLimits`. Malformed documents throw
-  `PdfFormatException`; encrypted documents `NotSupportedException`. `DocxToPdf` and `DocToPdf` each convert the
+  `DocumentFormatException`; encrypted documents `NotSupportedException`. `DocxToPdf` and `DocToPdf` each convert the
   other's format too.
 
 Not supported: text boxes and shapes as floating frames (their text follows their paragraph), charts (an OpenDocument

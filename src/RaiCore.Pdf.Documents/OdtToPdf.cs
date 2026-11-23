@@ -57,7 +57,7 @@ public static class OdtToPdf
     /// <summary>Converts an OpenDocument text document to a PDF document.</summary>
     /// <param name="odt">The document's bytes (a ZIP package, or a flat XML document).</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
-    /// <exception cref="PdfFormatException">The data is not a valid OpenDocument text document.</exception>
+    /// <exception cref="DocumentFormatException">The data is not a valid OpenDocument text document.</exception>
     /// <exception cref="NotSupportedException">The document is encrypted.</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     public static PdfDocument Convert(byte[] odt, OdtConverterOptions? options = null)
@@ -79,7 +79,7 @@ public static class OdtToPdf
     /// <summary>Converts an OpenDocument text document file to a PDF document.</summary>
     /// <param name="path">The file's path.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
-    /// <exception cref="PdfFormatException">The file is not a valid OpenDocument text document.</exception>
+    /// <exception cref="DocumentFormatException">The file is not a valid OpenDocument text document.</exception>
     /// <exception cref="NotSupportedException">The document is encrypted.</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     public static PdfDocument Convert(string path, OdtConverterOptions? options = null)
@@ -100,7 +100,7 @@ public static class OdtToPdf
     /// <param name="odt">The document's bytes (a ZIP package, or a flat XML document).</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
     /// <param name="cancellationToken">Cancels the conversion.</param>
-    /// <exception cref="PdfFormatException">The data is not a valid OpenDocument text document.</exception>
+    /// <exception cref="DocumentFormatException">The data is not a valid OpenDocument text document.</exception>
     /// <exception cref="NotSupportedException">The document is encrypted.</exception>
     /// <exception cref="ResourceLimitExceededException">The document exceeds one of the options' limits.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>

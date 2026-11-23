@@ -3,7 +3,9 @@ namespace RaiCore.Pdf;
 /// <summary>
 /// The base class of the exceptions RaiCore.Pdf throws when it rejects its input: <see cref="PdfFormatException"/>,
 /// <see cref="PdfPasswordException"/>, <see cref="Fonts.FontFormatException"/>, <see cref="ImageFormatException"/> and
-/// <see cref="ResourceLimitExceededException"/>. Catch it to handle all of them at once.
+/// <see cref="ResourceLimitExceededException"/>, and in the converter packages <c>DocumentFormatException</c>,
+/// <c>SpreadsheetFormatException</c>, <c>PresentationFormatException</c> and <c>MessageFormatException</c> (one per
+/// kind of input). Catch it to handle all of them at once.
 /// </summary>
 public class PdfException : Exception
 {

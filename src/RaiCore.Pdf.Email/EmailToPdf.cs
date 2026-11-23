@@ -40,6 +40,7 @@ public static class EmailToPdf
     /// <summary>Converts a message to a PDF document.</summary>
     /// <param name="message">The message's bytes: an <c>.eml</c>, <c>.msg</c> or <c>.mht</c> file.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
+    /// <exception cref="MessageFormatException">The message is an Outlook message (<c>.msg</c>) that is damaged beyond reading.</exception>
     /// <exception cref="ResourceLimitExceededException">The message exceeds one of the options' limits.</exception>
     public static PdfDocument Convert(byte[] message, EmailConverterOptions? options = null) =>
         ConvertAsync(message, options).GetAwaiter().GetResult();
@@ -76,6 +77,7 @@ public static class EmailToPdf
     /// <param name="message">The message's bytes: an <c>.eml</c>, <c>.msg</c> or <c>.mht</c> file.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
     /// <param name="cancellationToken">Cancels the conversion.</param>
+    /// <exception cref="MessageFormatException">The message is an Outlook message (<c>.msg</c>) that is damaged beyond reading.</exception>
     /// <exception cref="ResourceLimitExceededException">The message exceeds one of the options' limits.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
     public static Task<PdfDocument> ConvertAsync(byte[] message, EmailConverterOptions? options = null, CancellationToken cancellationToken = default)

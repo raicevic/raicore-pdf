@@ -490,14 +490,14 @@ public class DocxToPdfTests
     [Fact]
     public void Not_a_word_document_throws_a_format_exception()
     {
-        Assert.Throws<PdfFormatException>(() => DocxToPdf.Convert(Encoding.ASCII.GetBytes("hello")));
-        Assert.Contains("RTF", Assert.Throws<PdfFormatException>(() => DocxToPdf.Convert(Encoding.ASCII.GetBytes(@"{\rtf1 x}"))).Message, StringComparison.Ordinal);
-        Assert.Throws<PdfFormatException>(() => DocxToPdf.Convert("PK\u0003\u0004 broken"u8.ToArray()));
-        Assert.Throws<PdfFormatException>(() => DocxToPdf.Convert(Package(("word/other.xml", "<x/>"))));
+        Assert.Throws<DocumentFormatException>(() => DocxToPdf.Convert(Encoding.ASCII.GetBytes("hello")));
+        Assert.Contains("RTF", Assert.Throws<DocumentFormatException>(() => DocxToPdf.Convert(Encoding.ASCII.GetBytes(@"{\rtf1 x}"))).Message, StringComparison.Ordinal);
+        Assert.Throws<DocumentFormatException>(() => DocxToPdf.Convert("PK\u0003\u0004 broken"u8.ToArray()));
+        Assert.Throws<DocumentFormatException>(() => DocxToPdf.Convert(Package(("word/other.xml", "<x/>"))));
         var workbook = Package(
             ("_rels/.rels", $"<Relationships xmlns=\"{PackageRelationships}\"><Relationship Id=\"a\" Type=\"{R}/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>"),
             ("xl/workbook.xml", "<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"/>"));
-        Assert.Contains("not a WordprocessingML document", Assert.Throws<PdfFormatException>(() => DocxToPdf.Convert(workbook)).Message, StringComparison.Ordinal);
+        Assert.Contains("not a WordprocessingML document", Assert.Throws<DocumentFormatException>(() => DocxToPdf.Convert(workbook)).Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -510,7 +510,7 @@ public class DocxToPdfTests
     [Fact]
     public void Dtds_and_external_entities_are_refused()
     {
-        var exception = Assert.Throws<PdfFormatException>(() => DocxToPdf.Convert(Fixtures.Read(Path.Combine("Poi", "ExternalEntityInText.docx"))));
+        var exception = Assert.Throws<DocumentFormatException>(() => DocxToPdf.Convert(Fixtures.Read(Path.Combine("Poi", "ExternalEntityInText.docx"))));
         Assert.Contains("DTD", exception.Message, StringComparison.Ordinal);
     }
 

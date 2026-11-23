@@ -657,7 +657,7 @@ public class DocxReaderTests
             ("word/_rels/document.xml.rels", $"<Relationships xmlns=\"{PackageRelationships}\"><Relationship Id=\"s\" Type=\"{R}/styles\" Target=\"styles.xml\"/></Relationships>"),
             ("word/document.xml", part == "word/document.xml" ? xml : $"<w:document xmlns:w=\"{W}\"/>"),
             ("word/styles.xml", part == "word/styles.xml" ? xml : $"<w:styles xmlns:w=\"{W}\"/>"));
-        var exception = Assert.Throws<PdfFormatException>(() => Read(docx));
+        var exception = Assert.Throws<DocumentFormatException>(() => Read(docx));
         Assert.Contains(part, exception.Message, StringComparison.Ordinal);
     }
 

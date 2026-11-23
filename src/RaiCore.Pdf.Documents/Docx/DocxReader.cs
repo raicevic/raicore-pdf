@@ -41,7 +41,7 @@ internal sealed partial class DocxReader
     }
 
     /// <summary>Reads a document.</summary>
-    /// <exception cref="PdfFormatException">The package has no main document part, or it is not a Word document.</exception>
+    /// <exception cref="DocumentFormatException">The package has no main document part, or it is not a Word document.</exception>
     public static WordDocument Read(DocxPackage package, ConversionContext context) => new DocxReader(package, context).ReadDocument();
 
     private WordDocument ReadDocument()
@@ -50,7 +50,7 @@ internal sealed partial class DocxReader
         var main = packageRelationships.Values.FirstOrDefault(r => r.Type == "officeDocument" && !r.External).Target ?? "word/document.xml";
         if (!_package.Contains(main))
         {
-            throw new PdfFormatException("The package has no main document part: it is not a Word document.");
+            throw new DocumentFormatException("The package has no main document part: it is not a Word document.");
         }
 
         if (packageRelationships.Values.FirstOrDefault(r => r.Type == "core-properties" && !r.External).Target is { } core
@@ -70,7 +70,7 @@ internal sealed partial class DocxReader
         var root = _package.Load(main);
         if (root is null || root.Name.LocalName != "document" || !Ooxml.IsW(root))
         {
-            throw new PdfFormatException($"The main document part '{main}' is not a WordprocessingML document.");
+            throw new DocumentFormatException($"The main document part '{main}' is not a WordprocessingML document.");
         }
 
         ReadNotes(RelatedPath("footnotes"), "footnote", _document.Footnotes);

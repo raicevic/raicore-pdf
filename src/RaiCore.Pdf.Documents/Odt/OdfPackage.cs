@@ -9,7 +9,7 @@ namespace RaiCore.Pdf.Documents.Odt;
 /// An OpenDocument text document: a ZIP package (<c>mimetype</c>, <c>META-INF/manifest.xml</c>, <c>content.xml</c>,
 /// <c>styles.xml</c>, <c>meta.xml</c>, <c>settings.xml</c> and the files they refer to), or a flat XML document
 /// (<c>.fodt</c>, one <c>office:document</c> with everything in it). Parts are read within the limits of
-/// <see cref="DocxPackage"/>; malformed data throws <see cref="PdfFormatException"/>, encrypted documents
+/// <see cref="DocxPackage"/>; malformed data throws <see cref="DocumentFormatException"/>, encrypted documents
 /// <see cref="NotSupportedException"/>.
 /// </summary>
 internal sealed class OdfPackage : IDisposable
@@ -45,7 +45,7 @@ internal sealed class OdfPackage : IDisposable
     public bool HasScripts { get; }
 
     /// <summary>Opens a document.</summary>
-    /// <exception cref="PdfFormatException">The data is not an OpenDocument text document.</exception>
+    /// <exception cref="DocumentFormatException">The data is not an OpenDocument text document.</exception>
     /// <exception cref="NotSupportedException">The document is encrypted.</exception>
     public static OdfPackage Open(byte[] data, ConversionContext context)
     {
@@ -56,24 +56,24 @@ internal sealed class OdfPackage : IDisposable
 
         if (CompoundFile.IsCompoundFile(data))
         {
-            throw new PdfFormatException("The data is a Compound File (a Word 97-2003 document, which DocToPdf converts, or an encrypted Office document), not an OpenDocument text document.");
+            throw new DocumentFormatException("The data is a Compound File (a Word 97-2003 document, which DocToPdf converts, or an encrypted Office document), not an OpenDocument text document.");
         }
 
         if (data.AsSpan().StartsWith(@"{\rtf"u8))
         {
-            throw new PdfFormatException("The data is an RTF document, not an OpenDocument text document.");
+            throw new DocumentFormatException("The data is an RTF document, not an OpenDocument text document.");
         }
 
         if (!LooksLikeXml(data))
         {
-            throw new PdfFormatException("The data is not an OpenDocument text document (a ZIP package or a flat XML document).");
+            throw new DocumentFormatException("The data is not an OpenDocument text document (a ZIP package or a flat XML document).");
         }
 
         var package = DocxPackage.ForXml(context);
         var root = package.Parse(data, "document");
         if (root is null || !Odf.Is(root, Odf.Office, "document"))
         {
-            throw new PdfFormatException("The XML document is not a flat OpenDocument document (office:document).");
+            throw new DocumentFormatException("The XML document is not a flat OpenDocument document (office:document).");
         }
 
         CheckText(root, Odf.Attr(root, Odf.Office, "mimetype"));
@@ -89,12 +89,12 @@ internal sealed class OdfPackage : IDisposable
             var mimetype = package.Read("mimetype") is { } bytes ? Encoding.ASCII.GetString(bytes, 0, Math.Min(bytes.Length, 200)).Trim() : null;
             if (mimetype is not null && !mimetype.StartsWith("application/vnd.oasis.opendocument.", StringComparison.Ordinal))
             {
-                throw new PdfFormatException($"The package is not an OpenDocument document (its media type is '{mimetype}').");
+                throw new DocumentFormatException($"The package is not an OpenDocument document (its media type is '{mimetype}').");
             }
 
             if (!package.Contains("content.xml"))
             {
-                throw new PdfFormatException(package.Contains("[Content_Types].xml")
+                throw new DocumentFormatException(package.Contains("[Content_Types].xml")
                     ? "The package is an Office Open XML document (such as DOCX), not an OpenDocument text document."
                     : "The package has no content.xml: it is not an OpenDocument document.");
             }
@@ -108,7 +108,7 @@ internal sealed class OdfPackage : IDisposable
             var content = package.Load("content.xml");
             if (!Odf.Is(content, Odf.Office, "document-content"))
             {
-                throw new PdfFormatException("The part 'content.xml' is not OpenDocument content (office:document-content).");
+                throw new DocumentFormatException("The part 'content.xml' is not OpenDocument content (office:document-content).");
             }
 
             CheckText(content!, mimetype);
@@ -133,13 +133,13 @@ internal sealed class OdfPackage : IDisposable
         var body = Odf.Child(root, Odf.Office, "body");
         if (mimetype is not null && mimetype.StartsWith(prefix, StringComparison.Ordinal) && !mimetype.StartsWith(prefix + "text", StringComparison.Ordinal))
         {
-            throw new PdfFormatException($"The document is an OpenDocument {mimetype[prefix.Length..]}, not a text document.");
+            throw new DocumentFormatException($"The document is an OpenDocument {mimetype[prefix.Length..]}, not a text document.");
         }
 
         if (Odf.Child(body, Odf.Office, "text") is null)
         {
             var kind = body?.Elements().FirstOrDefault()?.Name.LocalName;
-            throw new PdfFormatException(kind is null
+            throw new DocumentFormatException(kind is null
                 ? "The document has no text body (office:text): it is not an OpenDocument text document."
                 : $"The document's body is office:{kind}, not office:text: it is not an OpenDocument text document.");
         }
