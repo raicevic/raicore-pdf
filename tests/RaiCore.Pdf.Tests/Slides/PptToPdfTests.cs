@@ -328,6 +328,12 @@ public partial class PptToPdfTests
         Assert.Equal("This is the title on page 2", string.Concat(title.Text!.Paragraphs[0].Runs.Select(r => r.Text)));
         Assert.Equal(44, title.Text.Paragraphs[0].Runs[0].Style.Size);
         Assert.Equal(ParagraphAlignment.Center, title.Text.Paragraphs[0].Alignment);
+
+        // A center title and a subtitle: the title's and the body's styles under their own.
+        var centered = basic.Slides[0].Shapes.OfType<AutoShape>().Where(s => s.Text is not null).ToList();
+        Assert.Equal(PlaceholderKind.Title, centered[0].Placeholder);
+        Assert.Equal(44, centered[0].Text!.Paragraphs[0].Runs[0].Style.Size);
+        Assert.All(centered[1].Text!.Paragraphs, p => Assert.Equal((ParagraphAlignment.Center, 32d, true), (p.Alignment, p.Runs[0].Style.Size, p.Bullet is null)));
         var body = basic.Slides[1].Shapes.OfType<AutoShape>().Single(s => s.Placeholder == PlaceholderKind.Other);
         Assert.All(body.Text!.Paragraphs, p => Assert.Equal("\u2022", p.Bullet!.Text));
         Assert.All(body.Text.Paragraphs, p => Assert.Equal(32, p.Runs[0].Style.Size));
@@ -351,6 +357,53 @@ public partial class PptToPdfTests
         Assert.True(underlined.Underline);
         Assert.Equal("Times New Roman", underlined.Font);
         Assert.Equal(24, underlined.Size);
+    }
+
+    [Fact]
+    public void Slides_follow_their_master_objects_scheme_background_and_text_styles()
+    {
+        // The master: a logo text box, a blue fill color in its scheme, a red background, and text styles for "other"
+        // text: 40 points at the first level, bold (and so still 40 points) at the second.
+        const int Blue = 0x0000FF;
+        const int Green = 0x00FF00;
+        var styles = Atom(0x0FA3, [.. Shorts(2), .. Ints(0, 0x20000), .. Shorts(40), .. Ints(0, 0x1), .. Shorts(1)], 4);
+        var logo = Shape(202, 3001, (0, 0, 800, 800), Properties((0x1BF, 0x100000, null)), false, 0xA00, TextBox("Logo"));
+        var master = Master([logo], Background(0x0000FF), Scheme(0xFFFFFF, 0, 0x808080, 0, Blue, 0, 0, 0), styles);
+        var filled = Shape(1, 1025, (900, 900, 1800, 1800), Properties((0x181, 0x08000004, null)));
+        var leveled = new List<byte>();
+        leveled.AddRange(Ints(6));
+        leveled.AddRange(Shorts(1));
+        leveled.AddRange(Ints(0));
+        leveled.AddRange(Ints(6, 0));
+        var text = Shape(202, 1026, (2000, 900, 4000, 1800), Properties((0x1BF, 0x100000, null)), false, 0xA00, TextBox("Level", 4, [.. leveled]));
+        var following = Slide([filled, text], Background(0x00FFFF), unchecked((int)0x80000000), 7, Scheme(0xFFFFFF, 0, 0, 0, Green, 0, 0, 0));
+        var own = Slide([filled, text], Background(0x00FF00), unchecked((int)0x80000000), 2);
+        var deck = Read(Presentation([following, own], masters: [master]));
+
+        var first = deck.Slides[0];
+        Assert.Equal(new SolidFill(PdfColor.FromRgb(255, 0, 0)), first.Background);
+        Assert.Contains(Texts(first.Shapes, true), t => t == "Logo");
+        Assert.Equal(new SolidFill(PdfColor.FromRgb(0, 0, 255)), first.Shapes.OfType<AutoShape>().Single(s => s.Text is null).Fill);
+        var run = first.Shapes.OfType<AutoShape>().Single(s => !s.Background && s.Text is not null).Text!.Paragraphs[0].Runs[0];
+        Assert.Equal(1, first.Shapes.OfType<AutoShape>().Single(s => !s.Background && s.Text is not null).Text!.Paragraphs[0].Level);
+        Assert.Equal((40d, true), (run.Style.Size, run.Style.Bold));
+
+        var second = deck.Slides[1];
+        Assert.Equal(new SolidFill(PdfColor.FromRgb(0, 255, 0)), second.Background);
+        Assert.DoesNotContain(Texts(second.Shapes, true), t => t == "Logo");
+        Assert.Equal(new SolidFill(PdfColor.FromRgb(0, 0, 255)), second.Shapes.OfType<AutoShape>().Single(s => s.Text is null).Fill);
+
+        // The drawing group's defaults: shapes are not filled unless they say so.
+        var defaults = Container(0x040B, Container(0xF000, Properties((0x1BF, 0x100000, null))));
+        var plain = Shape(1, 1025, (0, 0, 800, 800));
+        Assert.Null(Assert.IsType<AutoShape>(Read(Presentation([Slide([plain])], documentMore: [defaults])).Slides[0].Shapes[0]).Fill);
+        Assert.NotNull(Assert.IsType<AutoShape>(Read(Presentation([Slide([plain])])).Slides[0].Shapes[0]).Fill);
+
+        // A ruler sets where a level's text and bullet start.
+        var ruler = Atom(0x0FA6, [.. Ints(0x8 | 0x100), .. Shorts(144, 0)]);
+        var ruled = Shape(202, 1025, (0, 0, 3000, 800), null, false, 0xA00, TextBox("Ruled", 4, null, ruler));
+        var paragraph = Assert.IsType<AutoShape>(Read(Presentation([Slide([ruled])])).Slides[0].Shapes[0]).Text!.Paragraphs[0];
+        Assert.Equal((18d, -18d), (paragraph.MarginLeft, paragraph.Indent));
     }
 
     [Fact]
@@ -429,6 +482,21 @@ public partial class PptToPdfTests
         Assert.Equal((byte)'B', bmp[0]);
         Assert.Equal(54, BitConverter.ToInt32(bmp, 10));
         Assert.Contains(" Do", PptxToPdfTests.Content(PptToPdf.ConvertToBytes(Presentation([Slide([picture])], documentMore: [store], extraStreams: ("Pictures", blip)))), StringComparison.Ordinal);
+
+        // A palette before the bits; a PNG whose record has two ids.
+        var paletted = new byte[40 + 8 + 4];
+        Ints(40, 1, 1).CopyTo(paletted, 0);
+        Shorts(1, 8).CopyTo(paletted, 12);
+        Ints(2).CopyTo(paletted, 32);
+        var png = Atom(0xF01E, [.. new byte[32], 0xFF, 0x89, (byte)'P', (byte)'N', (byte)'G'], 0x6E1);
+        var blips = (byte[])[.. Atom(0xF01F, [.. new byte[16], 0xFF, .. paletted], 0x7A8), .. png];
+        var twoEntries = Container(0x040B, Container(0xF000, Container(0xF001, 2,
+            Atom(0xF007, [5, 5, .. new byte[16], 0, 0, .. Ints(0, 1, 0), 0, 0, 0, 0], 5, 2),
+            Atom(0xF007, [6, 6, .. new byte[16], 0, 0, .. Ints(0, 1, blips.Length - png.Length), 0, 0, 0, 0], 6, 2))));
+        var both = Read(Presentation([Slide([picture, Shape(75, 1026, (0, 0, 800, 800), Properties((0x0104, 2, null)))])],
+            documentMore: [twoEntries], extraStreams: ("Pictures", blips))).Slides[0].Shapes.OfType<PictureShape>().ToList();
+        Assert.Equal(62, BitConverter.ToInt32(both[0].Data!, 10));
+        Assert.Equal([0x89, (byte)'P', (byte)'N', (byte)'G'], both[1].Data);
     }
 
     [Fact]
@@ -458,6 +526,26 @@ public partial class PptToPdfTests
             false, 0xA00, TextBox("Hostile", 4, style), Atom(0x0FA6, [], 0, 0, 1 << 30));
         var pdf = PptToPdf.ConvertToBytes(Presentation([Slide([shape])]));
         Assert.Contains("Hostile", Pages(pdf)[0], StringComparison.Ordinal);
+
+        // A surrogate pair that the style runs split stays whole; a bullet character that is half of one is a bullet.
+        var split = new List<byte>();
+        split.AddRange(Ints(4));
+        split.AddRange(Shorts(0));
+        split.AddRange(Ints(0x0F | 0x80));
+        split.AddRange(Shorts(0x0F, 0xD83D));
+        split.AddRange(Ints(2, 0x1));
+        split.AddRange(Shorts(1));
+        split.AddRange(Ints(2, 0));
+        var pair = Shape(202, 1026, (0, 0, 3000, 800), null, false, 0xA00, TextBox("A\uD83D\uDE00", 4, [.. split]));
+        var paired = Read(Presentation([Slide([pair])])).Slides[0];
+        var pairedParagraph = Assert.IsType<AutoShape>(paired.Shapes[0]).Text!.Paragraphs[0];
+        Assert.Equal(["A\uD83D\uDE00"], pairedParagraph.Runs.Select(r => r.Text));
+        Assert.Equal("\u2022", pairedParagraph.Bullet!.Text);
+        Assert.Single(PdfReader.Open(PptToPdf.ConvertToBytes(Presentation([Slide([pair])]))).Pages);
+
+        // Only version 0xF records are containers: a text box of another version holds no text.
+        var notContainer = Atom(0xF00D, [.. Atom(0x0F9F, Ints(4)), .. Atom(0x0FA0, Encoding.Unicode.GetBytes("Hidden"))], 0, 0xE);
+        Assert.Null(Assert.IsType<AutoShape>(Read(Presentation([Slide([Shape(1, 1025, (0, 0, 800, 800), null, false, 0xA00, notContainer)])])).Slides[0].Shapes[0]).Text);
 
         // Groups nested deeper than the limit.
         var nested = Shape(1, 1, (0, 0, 10, 10), null, true);

@@ -93,12 +93,26 @@ internal static class PptBuilder
         Container(0xF00D, [Atom(0x0F9F, Ints(textType)), Atom(0x0FA0, Encoding.Unicode.GetBytes(text)), .. style is null ? Array.Empty<byte[]>() : [Atom(0x0FA1, style)], .. more]);
 
     /// <summary>A slide container with shapes (and more records), following its master or not.</summary>
-    public static byte[] Slide(byte[][] shapes, int masterId = 0, int flags = 0, params byte[][] more)
+    public static byte[] Slide(byte[][] shapes, int masterId = 0, int flags = 0, params byte[][] more) => Sheet(0x03EE, shapes, masterId, flags, null, more);
+
+    /// <summary>A slide container with shapes and a background shape, following its master or not.</summary>
+    public static byte[] Slide(byte[][] shapes, byte[] background, int masterId, int flags, params byte[][] more) => Sheet(0x03EE, shapes, masterId, flags, background, more);
+
+    /// <summary>A background shape filled with a color (an <c>OfficeArtCOLORREF</c>).</summary>
+    public static byte[] Background(int color) => Container(0xF004, Atom(0xF00A, Ints(1030, 0xC00), 1, 2), Properties((0x181, color, null)));
+
+    /// <summary>A main master container with shapes and more records (color scheme, text styles).</summary>
+    public static byte[] Master(byte[][] shapes, byte[]? background, params byte[][] more) => Sheet(0x03F8, shapes, 0, 0, background, more);
+
+    /// <summary>A color scheme atom (instance 1, the sheet's own) of eight RGB colors.</summary>
+    public static byte[] Scheme(params int[] colors) => Atom(0x07F0, [.. colors.SelectMany(c => new[] { (byte)(c >> 16), (byte)(c >> 8), (byte)c, (byte)0 })], 1);
+
+    private static byte[] Sheet(int type, byte[][] shapes, int masterId, int flags, byte[]? background, byte[][] more)
     {
         var patriarch = Container(0xF004, Atom(0xF009, new byte[16], 0, 1), Atom(0xF00A, Ints(1024, 0x5), 0, 2));
-        var drawing = Container(0x040C, Container(0xF002, Atom(0xF008, Ints(shapes.Length, 1024), 1), Container(0xF003, [patriarch, .. shapes])));
+        var drawing = Container(0x040C, Container(0xF002, Atom(0xF008, Ints(shapes.Length, 1024), 1), Container(0xF003, [patriarch, .. shapes]), background ?? []));
         var atom = Atom(0x03EF, [.. Ints(0), .. new byte[8], .. Ints(masterId, 0), .. Shorts(flags, 0)], 0, 2);
-        return Container(0x03EE, [atom, drawing, .. more]);
+        return Container(type, [atom, drawing, .. more]);
     }
 
     /// <summary>
@@ -112,16 +126,19 @@ internal static class PptBuilder
     /// <param name="selfLoop">Whether the user edit's previous edit is itself (a broken chain).</param>
     /// <param name="token">The current user atom's header token.</param>
     /// <param name="extraStreams">More streams of the compound file.</param>
+    /// <param name="masters">The masters, with ids 0x80000000 and up.</param>
     public static byte[] Presentation(byte[][] slides, string[]? fonts = null, byte[][]? documentMore = null, byte[][][]? slideText = null,
-        bool selfLoop = false, uint token = 0xE391C05F, params (string Name, byte[] Data)[] extraStreams)
+        bool selfLoop = false, uint token = 0xE391C05F, byte[][]? masters = null, params (string Name, byte[] Data)[] extraStreams)
     {
-        var (stream, offset) = Document(slides, fonts, documentMore, slideText, selfLoop);
+        var (stream, offset) = Document(slides, fonts, documentMore, slideText, selfLoop, masters);
         return Compound([("Current User", CurrentUser(offset, token)), ("PowerPoint Document", stream), .. extraStreams]);
     }
 
     /// <summary>The PowerPoint Document stream of a presentation, and the offset of its user edit.</summary>
-    public static (byte[] Stream, int Edit) Document(byte[][] slides, string[]? fonts = null, byte[][]? documentMore = null, byte[][][]? slideText = null, bool selfLoop = false)
+    public static (byte[] Stream, int Edit) Document(byte[][] slides, string[]? fonts = null, byte[][]? documentMore = null, byte[][][]? slideText = null, bool selfLoop = false,
+        byte[][]? masters = null)
     {
+        masters ??= [];
         var fontRecords = (fonts ?? ["Arial"]).Select((name, i) =>
         {
             var body = new byte[68];
@@ -138,14 +155,15 @@ internal static class PptBuilder
         var document = Container(0x03E8, [
             Atom(0x03E9, [.. Ints(5760, 4320, 4320, 5760), .. new byte[24]], 0, 1),
             Container(0x03F2, Container(0x07D5, fontRecords)),
+            Container(0x0FF0, 1, [.. masters.Select((_, i) => Atom(0x03F3, Ints(2 + slides.Length + i, 0, 0, unchecked((int)0x80000000) + i, 0)))]),
             Container(0x0FF0, 0, [.. list]),
             .. documentMore ?? []]);
         var stream = new List<byte>(document);
         var offsets = new List<int> { 0 };
-        foreach (var slide in slides)
+        foreach (var sheet in slides.Concat(masters))
         {
             offsets.Add(stream.Count);
-            stream.AddRange(slide);
+            stream.AddRange(sheet);
         }
 
         var directoryOffset = stream.Count;
