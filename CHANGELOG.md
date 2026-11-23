@@ -19,8 +19,25 @@ and versions follow [Semantic Versioning](https://semver.org/).
   `DocumentTextOptions` set the paragraph separator, list labels, table cell and row separators, and whether headers
   and footers, footnotes and endnotes, comments, text boxes, hidden text and deleted text of tracked changes are
   included, and fields as their codes or results. The same `Limits` and exceptions as the converters.
+- **Workbook API** (#260, `RaiCore.Pdf.Sheets`): `Workbook.Open` opens an Excel workbook (`.xlsx`, `.xlsm`, strict
+  Office Open XML), such as a template, and `Workbook.Create` a new one, to read typed cell values (text, numbers,
+  booleans, dates by their number formats in either date system, errors, formulas with their cached values) by
+  address or row and column, write text, numbers, booleans, dates and formulas (keeping the cell's style), set number
+  formats, find cells (contains, whole cell, case, regular expressions; displayed values or formulas), hide rows,
+  columns and sheets and group rows and columns. `InsertRows`, `DeleteRows`, `InsertColumns` and `DeleteColumns` move
+  every reference as Excel does: formulas on every sheet (shared and array formulas too), defined names with print
+  areas and titles, merged cells, conditional formatting, data validation, hyperlinks, the autofilter, tables, page
+  breaks, drawing anchors, comments, chart series and pivot sources; deleted references become `#REF!`. `Save` writes
+  only the parts that change and every other part byte for byte (a workbook saved unchanged is the same file), drops
+  the calculation chain and asks Excel to recalculate when cells change. `SaveAsCsv` writes a sheet as delimited text
+  with any separator, UTF-8 (with or without a byte order mark), UTF-16 or Windows-1252, RFC 4180 quoting, a line
+  ending, hidden rows and columns or not, and values as displayed in a culture or as stored. Excel 97-2003 workbooks
+  and CSV files open read only. `XlsxToPdf.Convert(Workbook)` converts a workbook with its changes. Opening is bounded
+  by `WorkbookOptions.Limits`; a new fuzz target, `workbook`, opens, edits and saves.
 
 ### Fixed
+- **A CFF2 font with a huge blend count** in a DICT threw `ArgumentOutOfRangeException` when it was subset (the count times the
+  number of regions overflowed); it now throws `FontFormatException`, and the font is embedded whole. Found by fuzzing.
 - **Deeply nested layout content no longer overflows the stack** when `MaxNestingDepth` is raised: finding the forced
   break and the page name a block starts with walked its chain of first children recursively, without the stack check
   every other recursion has. A test that depended on how far the JIT had optimized the layout code is now stable.

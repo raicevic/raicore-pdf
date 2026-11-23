@@ -679,6 +679,19 @@ var report = XlsxToPdf.Convert("report.xlsx", new XlsxConverterOptions { SheetNa
 report.Save("report.pdf");
 ```
 
+`Workbook` opens a workbook (a template, for example) to read and change its cells, find them by their text, insert
+and delete rows and columns with every reference moved, and save it as `.xlsx` (every part it does not change written
+back byte for byte) or a sheet as delimited text. See the [workbooks guide](https://raicevic.github.io/raicore-pdf/guides/workbooks.html).
+
+```csharp
+var workbook = Workbook.Open("template.xlsx");
+var sheet = workbook.Worksheets["Invoice"];
+sheet["B3"].SetValue("Alice Example");
+sheet.InsertRows(10, 2);
+workbook.Save("invoice.xlsx");
+workbook.SaveAsCsv("invoice.csv", new CsvSaveOptions { Separator = ';' });
+```
+
 The `RaiCore.Pdf.Slides` package converts PowerPoint presentations (`.pptx`, and `.ppt` with `PptToPdf`) to PDF, one page per slide at the slide's
 size: the master's and layout's shapes and backgrounds, placeholders with their inherited positions and text styles,
 theme colors and fonts, preset and free-form shapes with gradient and picture fills, lines and arrowheads, text with

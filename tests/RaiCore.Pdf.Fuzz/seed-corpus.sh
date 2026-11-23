@@ -24,6 +24,8 @@ case "$target" in
   email) files=("$fixtures"/Email/* "$fixtures"/Msg/*.msg "$fixtures"/Poi/*.msg) ;;
   ppt) while IFS= read -r file; do files+=("$file"); done < <(find "$fixtures"/Slides/Ppt "$fixtures"/Poi -name '*.ppt' -size -200k | sort) ;;
   xls) while IFS= read -r file; do files+=("$file"); done < <(find "$fixtures"/Sheets/Xls -name '*.xls' -size -40k | sort) ;;
+  workbook) files=("$fixtures"/Sheets/*.xlsx "$fixtures"/Workbooks/template.xlsx)
+    while IFS= read -r file; do files+=("$file"); done < <(find "$fixtures"/Workbooks/Poi -name '*.xls?' -size -12k | sort) ;;
   rtf) while IFS= read -r file; do files+=("$file"); done < <(find "$fixtures"/Tika -name '*.rtf' -size -40k | sort) ;;
   doc) while IFS= read -r file; do files+=("$file"); done < <(find "$fixtures"/Documents/Doc -name '*.doc' -size -40k | sort) ;;
   doctext) files=("$fixtures"/Fuzz/Seeds/docx/* "$fixtures"/Fuzz/Seeds/odt/* "$fixtures"/Fuzz/Seeds/rtf/*)

@@ -2,11 +2,11 @@
 
   <!-- Central package versions. Only permissively licensed dependencies (MIT/BSD/Apache-2.0) may be shipped. -->
   <ItemGroup Label="Runtime">
-    <PackageVersion Include="AngleSharp" Version="1.10.3" />
-    <PackageVersion Include="AngleSharp.Css" Version="1.4.2" />
-    <PackageVersion Include="HarfBuzzSharp" Version="14.4.0.101" />
+    <PackageVersion Include="AngleSharp" Version="1.10.5" />
+    <PackageVersion Include="AngleSharp.Css" Version="1.5.0" />
+    <PackageVersion Include="HarfBuzzSharp" Version="14.4.0.200" />
     <!-- HarfBuzzSharp only brings Windows/macOS/mobile natives; Linux needs this package explicitly. -->
-    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.4.0.101" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.4.0.200" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.15" />
   </ItemGroup>
 
@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup Label="Samples only (never shipped)">
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.15" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="11.0.0" />
   </ItemGroup>
 
   <ItemGroup Label="Tests only (never shipped)">

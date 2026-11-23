@@ -15,7 +15,7 @@ job, all built on one layout engine (no browser, no Office):
 | Aspose.Slides: to PDF | `RaiCore.Pdf.Slides` | `PptxToPdf`, `PptToPdf` |
 | Aspose.Email: to PDF | `RaiCore.Pdf.Email` | `EmailToPdf` (`.eml`, `.msg`, `.mht`) |
 
-What RaiCore.Pdf does not do: edit Word documents, workbooks or presentations, or save to formats other than PDF. The
+What RaiCore.Pdf does not do: edit Word documents or presentations, or save to formats other than PDF (workbooks are the exception: `Workbook` edits `.xlsx` files and saves them as `.xlsx` or delimited text). The
 [format support](../guides/format-support.md) page lists what each converter draws, and
 [untrusted input](../guides/untrusted-input.md) what each one may load.
 
@@ -156,7 +156,7 @@ XlsxToPdf.Convert("figures.xlsx").Save("figures.pdf");
 | `PdfSaveOptions.SheetSet` | `SheetNames`, `SheetIndexes` |
 | `TxtLoadOptions.Separator`, `Encoding` | `CsvConverterOptions.Delimiter`, `Encoding` |
 | `PdfSaveOptions.Compliance` | `PdfAConformance` on the returned `PdfDocument` |
-| `Cells["A1"].PutValue`, `Cells.Find`, `InsertRows`, `DeleteRows`, `Row.IsHidden`, `Save(SaveFormat.Csv)` | planned as a workbook API ([#260](https://github.com/raicevic/raicore-pdf/issues/260)) |
+| `new Workbook(path)`, `Cells["A1"].PutValue`, `Cells.Find`, `InsertRows`, `DeleteRows`, `Row.IsHidden`, `Save(SaveFormat.Csv)` | `Workbook.Open(path)`, `worksheet["A1"].SetValue`, `Workbook.Find`, `InsertRows`, `DeleteRows`, `Row(n).IsHidden`, `SaveAsCsv` ([workbooks](../guides/workbooks.md)) |
 | Charts, pictures, conditional formatting, comments, headers and footers in the PDF | planned ([#258](https://github.com/raicevic/raicore-pdf/issues/258), [#257](https://github.com/raicevic/raicore-pdf/issues/257), [#259](https://github.com/raicevic/raicore-pdf/issues/259)) |
 
 ## Presentations (Aspose.Slides)
