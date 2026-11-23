@@ -359,6 +359,11 @@ internal sealed partial class DocumentRenderer
     /// <summary>Loads an image once (shared by its uses), or <c>null</c> with a diagnostic if it cannot be drawn.</summary>
     private PdfImage? Image(ImageInline image)
     {
+        if (image.Chart is { } chart)
+        {
+            return ChartImage(image, chart);
+        }
+
         if (_images.TryGetValue(image.Data, out var loaded))
         {
             return loaded;

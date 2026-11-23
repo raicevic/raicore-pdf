@@ -6,6 +6,13 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Charts** in presentations and Word documents: one chart engine for DrawingML charts, drawn as vector graphics
+  from the data cached in the file, with text that can be extracted. Columns and bars (clustered, stacked, 100%,
+  horizontal), lines (markers, smoothed), pies (exploded) and doughnuts, areas, scatter, bubble, radar and stock
+  charts, combinations with secondary axes; Excel's automatic axis scaling, number formats, logarithmic and reversed
+  axes, gridlines, titles, legends, data labels, markers, manual layouts, theme colors and the chart style's automatic
+  colors. 3-D charts are drawn flat. Newer chart types (waterfall, treemap, sunburst...) in Word documents show their
+  stored picture, as they already did in presentations; what can't be drawn is reported to `Diagnostics`.
 - **`ResourceLoaders.None`** (`RaiCore.Pdf.Html`): a resource loader that loads nothing, so untrusted HTML can embed
   images as `data:` URIs (which never reach a loader) but can't reach local files or the network. Use it with
   `HtmlConverterOptions`, `HtmlFragmentOptions` and `EmailConverterOptions.Html`.
@@ -48,6 +55,10 @@ and versions follow [Semantic Versioning](https://semver.org/).
   Word document, which is drawn as U+200B, every space extracted as U+200B. TrueType fonts; CFF fonts keep one text
   per glyph.
 - **Hidden text in Word 97-2003 documents** is no longer drawn by `DocToPdf` (#261).
+- **Text with a surrogate that lacks its other half** (U+D800-U+DFFF on its own, as damaged files hold) threw
+  `ArgumentException` in layout: `Paragraph` and `TextShaper` now draw each one as U+FFFD. This covers every
+  converter at once; a damaged Word 97-2003 document found by fuzzing still had a way through, and so did `_xD800_`
+  escapes in PowerPoint files (#248).
 
 ### Documentation
 - **Format support**: one page comparing what each converter draws, format by format (DOCX, DOC, RTF, ODT; XLSX, XLS,

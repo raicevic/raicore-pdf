@@ -511,7 +511,8 @@ public class PptxToPdfTests
         var chart = "<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id=\"3\" name=\"C\"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr>"
             + $"<p:xfrm><a:off x=\"0\" y=\"0\"/><a:ext cx=\"{Emu(10)}\" cy=\"{Emu(10)}\"/></p:xfrm><a:graphic><a:graphicData uri=\"http://schemas.openxmlformats.org/drawingml/2006/chart\"/></a:graphic></p:graphicFrame>";
         PptxToPdf.Convert(Deck.Of(chart + chart, chart).Build(), new PptxConverterOptions { Diagnostics = reports.Add });
-        Assert.Equal([new SlideDiagnostic(1, "chart", "Charts are not drawn."), new SlideDiagnostic(2, "chart", "Charts are not drawn.")], reports);
+        const string Missing = "A chart without its chart part is not drawn.";
+        Assert.Equal([new SlideDiagnostic(1, "chart", Missing), new SlideDiagnostic(2, "chart", Missing)], reports);
     }
 
     [Fact]

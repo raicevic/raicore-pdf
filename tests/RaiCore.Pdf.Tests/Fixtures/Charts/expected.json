@@ -1,0 +1,525 @@
+{
+ "pptx": [
+  {
+   "name": "column-clustered",
+   "type": "COLUMN_CLUSTERED",
+   "title": "Column Clustered",
+   "categories": [
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4"
+   ],
+   "series": [
+    {
+     "name": "North",
+     "values": [
+      10,
+      20,
+      30,
+      40
+     ]
+    },
+    {
+     "name": "South",
+     "values": [
+      15,
+      25,
+      5,
+      35
+     ]
+    }
+   ]
+  },
+  {
+   "name": "column-stacked",
+   "type": "COLUMN_STACKED",
+   "title": "Column Stacked",
+   "categories": [
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4"
+   ],
+   "series": [
+    {
+     "name": "North",
+     "values": [
+      10,
+      20,
+      30,
+      40
+     ]
+    },
+    {
+     "name": "South",
+     "values": [
+      15,
+      25,
+      5,
+      35
+     ]
+    }
+   ]
+  },
+  {
+   "name": "column-percent",
+   "type": "COLUMN_STACKED_100",
+   "title": "Column Percent",
+   "categories": [
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4"
+   ],
+   "series": [
+    {
+     "name": "North",
+     "values": [
+      10,
+      20,
+      30,
+      40
+     ]
+    },
+    {
+     "name": "South",
+     "values": [
+      30,
+      20,
+      10,
+      40
+     ]
+    }
+   ]
+  },
+  {
+   "name": "bar-clustered",
+   "type": "BAR_CLUSTERED",
+   "title": "Bar Clustered",
+   "categories": [
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4"
+   ],
+   "series": [
+    {
+     "name": "Sales",
+     "values": [
+      8.2,
+      3.2,
+      1.4,
+      1.2
+     ]
+    }
+   ]
+  },
+  {
+   "name": "line-markers",
+   "type": "LINE_MARKERS",
+   "title": "Line Markers",
+   "categories": [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May"
+   ],
+   "series": [
+    {
+     "name": "Visitors",
+     "values": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ]
+    },
+    {
+     "name": "Members",
+     "values": [
+      2,
+      1,
+      4,
+      3,
+      5
+     ]
+    }
+   ]
+  },
+  {
+   "name": "line-smooth",
+   "type": "LINE",
+   "title": "Line Smooth",
+   "categories": [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May"
+   ],
+   "series": [
+    {
+     "name": "Trend",
+     "values": [
+      3,
+      7,
+      2,
+      8,
+      4
+     ]
+    }
+   ]
+  },
+  {
+   "name": "pie",
+   "type": "PIE",
+   "title": "Pie",
+   "categories": [
+    "Apples",
+    "Pears",
+    "Plums",
+    "Figs"
+   ],
+   "series": [
+    {
+     "name": "Fruit",
+     "values": [
+      50,
+      25,
+      15,
+      10
+     ]
+    }
+   ]
+  },
+  {
+   "name": "pie-exploded",
+   "type": "PIE_EXPLODED",
+   "title": "Pie Exploded",
+   "categories": [
+    "Apples",
+    "Pears",
+    "Plums"
+   ],
+   "series": [
+    {
+     "name": "Fruit",
+     "values": [
+      1,
+      1,
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "name": "doughnut",
+   "type": "DOUGHNUT",
+   "title": "Doughnut",
+   "categories": [
+    "Apples",
+    "Pears",
+    "Plums",
+    "Figs"
+   ],
+   "series": [
+    {
+     "name": "2025",
+     "values": [
+      40,
+      30,
+      20,
+      10
+     ]
+    },
+    {
+     "name": "2026",
+     "values": [
+      25,
+      25,
+      25,
+      25
+     ]
+    }
+   ]
+  },
+  {
+   "name": "area",
+   "type": "AREA",
+   "title": "Area",
+   "categories": [
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4"
+   ],
+   "series": [
+    {
+     "name": "North",
+     "values": [
+      4,
+      6,
+      5,
+      8
+     ]
+    }
+   ]
+  },
+  {
+   "name": "area-stacked",
+   "type": "AREA_STACKED",
+   "title": "Area Stacked",
+   "categories": [
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4"
+   ],
+   "series": [
+    {
+     "name": "North",
+     "values": [
+      4,
+      6,
+      5,
+      8
+     ]
+    },
+    {
+     "name": "South",
+     "values": [
+      2,
+      3,
+      4,
+      1
+     ]
+    }
+   ]
+  },
+  {
+   "name": "radar",
+   "type": "RADAR_MARKERS",
+   "title": "Radar",
+   "categories": [
+    "Speed",
+    "Power",
+    "Range",
+    "Comfort",
+    "Price"
+   ],
+   "series": [
+    {
+     "name": "Model A",
+     "values": [
+      4,
+      3,
+      5,
+      2,
+      4
+     ]
+    },
+    {
+     "name": "Model B",
+     "values": [
+      2,
+      5,
+      3,
+      4,
+      3
+     ]
+    }
+   ]
+  },
+  {
+   "name": "scatter",
+   "type": "XY_SCATTER_LINES",
+   "title": "Scatter",
+   "categories": [],
+   "series": [
+    {
+     "name": "Measured",
+     "x": [
+      1,
+      2,
+      4,
+      8
+     ],
+     "values": [
+      2.5,
+      3.5,
+      4.0,
+      6.5
+     ]
+    }
+   ]
+  },
+  {
+   "name": "bubble",
+   "type": "BUBBLE",
+   "title": "Bubbles",
+   "categories": [],
+   "series": [
+    {
+     "name": "Markets",
+     "x": [
+      1,
+      2,
+      3
+     ],
+     "values": [
+      4,
+      2,
+      5
+     ],
+     "sizes": [
+      10,
+      40,
+      20
+     ]
+    }
+   ]
+  }
+ ],
+ "docx": [
+  {
+   "title": "Quarterly sales",
+   "type": "COLUMN_CLUSTERED",
+   "categories": [
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4"
+   ],
+   "series": [
+    {
+     "name": "North",
+     "values": [
+      10,
+      20,
+      30,
+      40
+     ]
+    },
+    {
+     "name": "South",
+     "values": [
+      15,
+      25,
+      5,
+      35
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Share of fruit",
+   "type": "PIE",
+   "categories": [
+    "Apples",
+    "Pears",
+    "Plums",
+    "Figs"
+   ],
+   "series": [
+    {
+     "name": "Fruit",
+     "values": [
+      50,
+      25,
+      15,
+      10
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Monthly visitors",
+   "type": "LINE_MARKERS",
+   "categories": [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May"
+   ],
+   "series": [
+    {
+     "name": "Visitors",
+     "values": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ]
+    }
+   ]
+  }
+ ],
+ "xlsx": [
+  {
+   "name": "bar",
+   "title": "Bar",
+   "anchor": "E1"
+  },
+  {
+   "name": "line",
+   "title": "Line",
+   "anchor": "E17"
+  },
+  {
+   "name": "area",
+   "title": "Area",
+   "anchor": "E33"
+  },
+  {
+   "name": "radar",
+   "title": "Radar",
+   "anchor": "E49"
+  },
+  {
+   "name": "pie",
+   "title": "Pie",
+   "anchor": "E65"
+  },
+  {
+   "name": "scatter",
+   "title": "Scatter",
+   "anchor": "E81"
+  },
+  {
+   "name": "bubble",
+   "title": "Bubble",
+   "anchor": "E97"
+  }
+ ],
+ "cells": {
+  "Data!A2:A5": [
+   "Q1",
+   "Q2",
+   "Q3",
+   "Q4"
+  ],
+  "Data!B1": [
+   "North"
+  ],
+  "Data!C1": [
+   "South"
+  ],
+  "Data!B2:B5": [
+   10,
+   20,
+   30,
+   40
+  ],
+  "Data!C2:C5": [
+   15,
+   25,
+   5,
+   35
+  ]
+ }
+}

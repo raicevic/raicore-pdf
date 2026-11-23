@@ -9,7 +9,8 @@ internal sealed partial class DocxReader
 {
     /// <summary>
     /// Reads a <c>w:drawing</c>: a picture (inline, or anchored as a floating or block image), the text of the text
-    /// boxes in a shape or group (laid out after the paragraph), and diagnostics for charts, SmartArt and other shapes.
+    /// boxes in a shape or group (laid out after the paragraph), a chart (drawn by the chart engine), and diagnostics
+    /// for SmartArt and other shapes.
     /// </summary>
     private void ReadDrawing(XElement drawing, RunFormat format, List<WordInline> target)
     {
@@ -21,9 +22,9 @@ internal sealed partial class DocxReader
 
         var graphicData = container.Descendants().FirstOrDefault(e => e.Name.LocalName == "graphicData");
         var uri = Ooxml.Attr(graphicData, "uri") ?? string.Empty;
-        if (uri.EndsWith("/chart", StringComparison.Ordinal) || uri.Contains("chartex", StringComparison.OrdinalIgnoreCase))
+        if (uri.Contains("chartex", StringComparison.OrdinalIgnoreCase))
         {
-            _context.Report(DocumentDiagnosticKind.UnsupportedContent, "A chart is left out.");
+            _context.Report(DocumentDiagnosticKind.UnsupportedContent, "A chart of a newer type (such as a waterfall or treemap chart) without a stored picture is left out.");
             return;
         }
 
@@ -40,6 +41,16 @@ internal sealed partial class DocxReader
         var alternative = Ooxml.Attr(properties, "descr") is { Length: > 0 } description ? description : Ooxml.Attr(properties, "title");
         var anchored = container.Name.LocalName == "anchor";
         var (placement, alignment, offset) = anchored ? Placement(container) : (ImagePlacement.Inline, WordAlignment.Start, null);
+
+        if (uri.EndsWith("/chart", StringComparison.Ordinal))
+        {
+            if (Chart(graphicData, width, height, placement, alignment, offset, alternative) is { } chart)
+            {
+                Emit(chart, target);
+            }
+
+            return;
+        }
 
         var pictures = graphicData?.Descendants().Where(e => e.Name.LocalName == "pic").ToList() ?? [];
         var textBoxes = graphicData?.Descendants().Where(e => e.Name.LocalName == "txbxContent" && Ooxml.IsW(e)).ToList() ?? [];

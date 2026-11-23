@@ -33,6 +33,31 @@ public class ParagraphLayoutTests
         }
     }
 
+    [Theory]
+    [InlineData(ParagraphDirection.LeftToRight)]
+    [InlineData(ParagraphDirection.RightToLeft)]
+    public void Lone_surrogates_are_laid_out_and_drawn_as_replacement_characters(ParagraphDirection direction)
+    {
+        // A lone surrogate in a span, at its edges, and a valid pair cut in two by a span boundary.
+        var paragraph = new Paragraph(Body) { Direction = direction }
+            .Add("one \uD800 two\uDC00 ")
+            .Add("three \uD83D", Body with { Fonts = [SansBold] })
+            .Add("\uDE00 four ")
+            .AddLeader("\uDBFF.")
+            .Add(" \uD83D\uDE00");
+
+        var layout = paragraph.Layout(60);
+        AssertLinesCoverText(layout, "one \uD800 two\uDC00 three \uD83D\uDE00 four \uDBFF. \uD83D\uDE00".Length);
+
+        var doc = new PdfDocument();
+        layout.Draw(doc.AddPage().Canvas, 72, 770);
+        var pdf = doc.ToArray();
+
+        ExternalTools.AssertQpdfClean(pdf);
+        using var bitmap = Conversion.ToImage(pdf, page: 0, options: new RenderOptions(Dpi: 72));
+        Assert.True(bitmap.Width > 0);
+    }
+
     [Fact]
     public void Lines_are_as_full_as_possible()
     {

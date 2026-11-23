@@ -77,6 +77,7 @@ public static class FuzzTargets
         ["rtf"] = Rtf,
         ["doc"] = Doc,
         ["doctext"] = DocumentText,
+        ["chart"] = Chart,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -494,6 +495,61 @@ public static class FuzzTargets
         HeadingBookmarks = input.Length % 2 == 0,
         Diagnostics = _ => { },
     });
+
+    /// <summary>
+    /// A chart part (<c>c:chartSpace</c> XML, as in XLSX, DOCX and PPTX packages): parsed as the packages parse parts
+    /// (no DTDs, elements bounded), read by the chart engine (every other input with a theme and cell values for
+    /// references without caches), drawn on a page and as an image (every third input in a tagged document, with the
+    /// bundled fonts for even lengths) and written.
+    /// </summary>
+    public static void Chart(byte[] input)
+    {
+        System.Xml.Linq.XElement root;
+        try
+        {
+            var settings = new System.Xml.XmlReaderSettings
+            {
+                DtdProcessing = System.Xml.DtdProcessing.Prohibit,
+                XmlResolver = null,
+                MaxCharactersInDocument = 4 * 1024 * 1024,
+                MaxCharactersFromEntities = 1024,
+            };
+            using var reader = System.Xml.XmlReader.Create(new MemoryStream(input), settings);
+            root = System.Xml.Linq.XElement.Load(reader);
+        }
+        catch (System.Xml.XmlException)
+        {
+            return;
+        }
+
+        if (root.DescendantsAndSelf().Take(Limits.MaxElements + 1).Count() > Limits.MaxElements)
+        {
+            return;
+        }
+
+        var odd = input.Length % 2 == 1;
+        var chart = RaiCore.Pdf.Charts.ChartReader.Read(root, odd ? name => name == "accent1" ? PdfColor.FromRgb(200, 30, 30) : null : null, Limits, [],
+            odd ? formula => new RaiCore.Pdf.Charts.ChartReference([1.0, "two", 3.0, null, -5.0], formula.Length % 2 == 0 ? "0.0%" : null) : null);
+        if (chart is null)
+        {
+            return;
+        }
+
+        var bundled = input.Length % 2 == 0 ? BundledFonts.CreateCollection() : null;
+        var options = new RaiCore.Pdf.Charts.ChartRenderOptions
+        {
+            Fonts = (typeface, bold, italic) => bundled?.Find(typeface ?? "sans-serif", bold ? 700 : 400, italic) is { } found
+                ? [found]
+                : [PdfFont.Standard(bold ? StandardFont.HelveticaBold : StandardFont.Helvetica)],
+            DefaultFontSize = input.Length % 5 == 0 ? 18 : 10,
+            OpaqueChartArea = input.Length % 3 != 0,
+        };
+        var document = new PdfDocument { Tagged = input.Length % 3 == 0 };
+        var page = document.AddPage(PdfPageSize.A4);
+        RaiCore.Pdf.Charts.ChartRenderer.Draw(page.Canvas, chart, 40, 300, 480, 300, options);
+        page.Canvas.DrawImage(RaiCore.Pdf.Charts.ChartRenderer.ToImage(chart, 200, 120, options), 40, 100, 200, 120);
+        document.ToArray();
+    }
 
     /// <summary>
     /// An OpenDocument text document: its package (or flat XML document) and parts read (content, styles, meta,

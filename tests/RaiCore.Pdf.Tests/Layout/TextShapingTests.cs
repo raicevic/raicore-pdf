@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using PDFtoImage;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
@@ -35,6 +36,26 @@ public class TextShapingTests
         Assert.Equal(2, plain.Runs[0].Glyphs.Count);
         var glyph = Assert.Single(ligature.Runs[0].Glyphs);
         Assert.Equal(alefLamed, glyph.Text);
+    }
+
+    [Theory]
+    [InlineData(@"a\uD800b", @"a\uFFFDb")]
+    [InlineData(@"\uDC00ab", @"\uFFFDab")]
+    [InlineData(@"ab\uD83D", @"ab\uFFFD")]
+    [InlineData(@"\uDE00\uD83D", @"\uFFFD\uFFFD")]
+    [InlineData(@"a\uD83D\uDE00b", @"a\uD83D\uDE00b")]
+    public void Shapes_lone_surrogates_as_replacement_characters(string escapedText, string escapedExpected)
+    {
+        // Escaped: xUnit's test case serialization would mangle lone surrogates.
+        var text = Regex.Unescape(escapedText);
+        var expected = Regex.Unescape(escapedExpected);
+        var shaped = TextShaper.Shape(text, Sans);
+        var replaced = TextShaper.Shape(expected, Sans);
+
+        Assert.Equal(expected, shaped.Text);
+        Assert.Equal(replaced.Advance, shaped.Advance, 6);
+        Assert.Equal(text.Length, shaped.Runs.Sum(run => run.Length));
+        Assert.Equal(expected, string.Concat(TextShaper.Shape(text, [Sans], null, TextDirection.RightToLeft).Runs.Select(run => run.Text)));
     }
 
     [Fact]

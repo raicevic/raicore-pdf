@@ -9,7 +9,9 @@ message converter, the PPTX converter and the Word document converter.
   `document/documentProperties.doc`, `spreadsheet/chinese-provinces.xls` and `slideshow/Single_Coloured_Page.ppt`,
   and the presentations `slideshow/54542_cropped_bitmap.pptx`, `SmartArt.pptx`, `backgrounds.pptx`, `bar-chart.pptx`,
   `bug58144-headers-footers-2007.pptx`, `crop-to-0.pptx`, `layouts.pptx`, `missing-blip-fill.pptx`,
-  `picture-transparency.pptx`, `sample.pptx`, `shapes.pptx`, `table_test.pptx` and `themes.pptx`, unchanged.
+  `picture-transparency.pptx`, `sample.pptx`, `shapes.pptx`, `table_test.pptx` and `themes.pptx`, and the charts
+  `slideshow/line-chart.pptx`, `pie-chart.pptx`, `radar-chart.pptx`, `scatter-chart.pptx` and
+  `document/chartex.docx` (four DrawingML charts and two newer chart types with their stored pictures), unchanged.
 - Source of the Word documents: the same commit, files `document/ComplexNumberedLists.docx`,
   `document/ThreeColHeadFoot.docx`, `document/DiffFirstPageHeadFoot.docx`, `document/footnotes.docx`,
   `document/table-alignment.docx`, `document/IllustrativeCases.docx`, `document/bug53475-password-is-pass.docx`
