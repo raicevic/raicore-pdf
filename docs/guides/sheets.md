@@ -13,6 +13,8 @@ dotnet add package RaiCore.Pdf.Sheets
 `CsvToPdf.Convert` takes a path, a stream or bytes; `ConvertAsync` (on the thread pool, with a cancellation token)
 and `ConvertToBytes` do the same.
 
+The [format support](format-support.md) page compares all formats side by side.
+
 ## Reading CSV
 
 The data is read as RFC 4180 describes it, and as spreadsheet programs read what does not follow it:

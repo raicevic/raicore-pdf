@@ -17,6 +17,8 @@ dotnet add package RaiCore.Pdf.Documents
 and `ConvertToBytes` do the same. `.docx`, `.docm` (its macros are ignored), `.dotx` and strict Office Open XML
 documents are read.
 
+The [format support](format-support.md) page compares all formats side by side.
+
 ## What is converted
 
 - **Styles:** paragraph, character and table styles with their `basedOn` chains, the document defaults and the theme's
