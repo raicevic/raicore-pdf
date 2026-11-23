@@ -110,6 +110,11 @@ together (a ZIP bomb stops there), `MaxElements` the XML elements of all parts t
 each image, and `MaxPages` and `Timeout` the pages and the time. Exceeding one throws `ResourceLimitExceededException`
 naming it.
 
+Nothing outside the document is loaded, in any of the formats: linked images (external relationships, ODT links
+outside the package, linked pictures in `.doc` and RTF) are left out and reported as `ImageNotLoaded`,
+`INCLUDEPICTURE`, `INCLUDETEXT` and `LINK` fields show the result stored with them, and `altChunk` parts are left out
+and reported. The converters take no resource loader. See [Untrusted input](untrusted-input.md) for all converters.
+
 Malformed packages (not a ZIP file, no main document part, XML that is not well-formed) throw `DocumentFormatException`.
 Password-protected (encrypted) documents, which are Compound Files, throw `NotSupportedException`. A Word 97-2003
 `.doc` file (also a Compound File) is converted as one, as [`DocToPdf`](#word-97-2003-documents) does; `DocToPdf` in

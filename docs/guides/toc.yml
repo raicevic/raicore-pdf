@@ -18,6 +18,8 @@
   href: layout-api.md
 - name: PDF/A, accessibility and security
   href: standards.md
+- name: Untrusted input
+  href: untrusted-input.md
 - name: Text extraction
   href: text-extraction.md
 - name: Image extraction

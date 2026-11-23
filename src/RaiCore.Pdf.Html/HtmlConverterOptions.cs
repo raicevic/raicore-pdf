@@ -30,8 +30,10 @@ public sealed class HtmlConverterOptions
     public Uri? BaseUri { get; init; }
 
     /// <summary>
-    /// Loads images and stylesheets. The default allows only <c>data:</c> URIs and <c>file:</c> URIs; network access
-    /// is off unless you supply a loader that performs it.
+    /// Loads images, stylesheets and web fonts. The default (<see cref="ResourceLoaders.Default"/>) reads
+    /// <c>file:</c> URIs; network access is off unless you supply a loader that performs it. <c>data:</c> URIs never
+    /// reach the loader. For untrusted HTML use <see cref="ResourceLoaders.None"/>, which loads nothing (so only
+    /// <c>data:</c> URIs work), or a loader that allows only what the document should reach.
     /// </summary>
     public ResourceLoader ResourceLoader { get; init; } = ResourceLoaders.Default;
 

@@ -120,9 +120,10 @@ and `Language` on the returned document.
 
 ## Untrusted data
 
-Presentations are read with no DTDs and nothing external resolved (linked pictures are not loaded). `Limits` bounds
-the conversion: `MaxDecompressedBytes` the bytes of all the package's parts together, `MaxElements` their XML
-elements, `MaxNestingDepth` the nesting of their XML (and so of groups), `MaxPages` the slides converted,
-`MaxTableCells` the cells of each table, and `Timeout` the time. Exceeding one throws `ResourceLimitExceededException`
-naming it; a picture larger than `MaxImagePixels` is left out and reported. A malformed package (not a ZIP file, parts
-that are not well-formed XML, no presentation part) throws `PresentationFormatException`.
+Presentations are read with no DTDs and nothing external resolved: linked pictures, media and OLE objects are not
+loaded, and linked pictures are reported (see [Untrusted input](untrusted-input.md)). `Limits` bounds the conversion:
+`MaxDecompressedBytes` the bytes of all the package's parts together, `MaxElements` their XML elements,
+`MaxNestingDepth` the nesting of their XML (and so of groups), `MaxPages` the slides converted, `MaxTableCells` the
+cells of each table, and `Timeout` the time. Exceeding one throws `ResourceLimitExceededException` naming it; a
+picture larger than `MaxImagePixels` is left out and reported. A malformed package (not a ZIP file, parts that are not
+well-formed XML, no presentation part) throws `PresentationFormatException`.
