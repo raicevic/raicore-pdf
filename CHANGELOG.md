@@ -48,6 +48,10 @@ and versions follow [Semantic Versioning](https://semver.org/).
   screen readers give each text. Before, every use extracted as the first text drawn: after an empty paragraph in a
   Word document, which is drawn as U+200B, every space extracted as U+200B. TrueType fonts; CFF fonts keep one text
   per glyph.
+- **Text with a surrogate that lacks its other half** (U+D800-U+DFFF on its own, as damaged files hold) threw
+  `ArgumentException` in layout: `Paragraph` and `TextShaper` now draw each one as U+FFFD. This covers every
+  converter at once; a damaged Word 97-2003 document found by fuzzing still had a way through, and so did `_xD800_`
+  escapes in PowerPoint files (#248).
 
 ### Documentation
 - **Format support**: one page comparing what each converter draws, format by format (DOCX, DOC, RTF, ODT; XLSX, XLS,
