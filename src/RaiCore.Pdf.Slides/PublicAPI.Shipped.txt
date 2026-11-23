@@ -1,1 +1,55 @@
 #nullable enable
+override RaiCore.Pdf.Slides.SlideDiagnostic.Equals(object? obj) -> bool
+override RaiCore.Pdf.Slides.SlideDiagnostic.GetHashCode() -> int
+override RaiCore.Pdf.Slides.SlideDiagnostic.ToString() -> string!
+RaiCore.Pdf.Slides.PptToPdf
+RaiCore.Pdf.Slides.PptxConverterOptions
+RaiCore.Pdf.Slides.PptxConverterOptions.Diagnostics.get -> System.Action<RaiCore.Pdf.Slides.SlideDiagnostic!>?
+RaiCore.Pdf.Slides.PptxConverterOptions.Diagnostics.init -> void
+RaiCore.Pdf.Slides.PptxConverterOptions.FallbackFontFamilies.get -> System.Collections.Generic.IReadOnlyList<string!>!
+RaiCore.Pdf.Slides.PptxConverterOptions.FallbackFontFamilies.init -> void
+RaiCore.Pdf.Slides.PptxConverterOptions.Fonts.get -> RaiCore.Pdf.Fonts.FontCollection?
+RaiCore.Pdf.Slides.PptxConverterOptions.Fonts.init -> void
+RaiCore.Pdf.Slides.PptxConverterOptions.IncludeHiddenSlides.get -> bool
+RaiCore.Pdf.Slides.PptxConverterOptions.IncludeHiddenSlides.init -> void
+RaiCore.Pdf.Slides.PptxConverterOptions.Limits.get -> RaiCore.Pdf.ResourceLimits!
+RaiCore.Pdf.Slides.PptxConverterOptions.Limits.init -> void
+RaiCore.Pdf.Slides.PptxConverterOptions.PptxConverterOptions() -> void
+RaiCore.Pdf.Slides.PptxConverterOptions.SlideNumbers.get -> System.Collections.Generic.IReadOnlyList<int>?
+RaiCore.Pdf.Slides.PptxConverterOptions.SlideNumbers.init -> void
+RaiCore.Pdf.Slides.PptxConverterOptions.Tagged.get -> bool
+RaiCore.Pdf.Slides.PptxConverterOptions.Tagged.init -> void
+RaiCore.Pdf.Slides.PptxConverterOptions.Title.get -> string?
+RaiCore.Pdf.Slides.PptxConverterOptions.Title.init -> void
+RaiCore.Pdf.Slides.PptxToPdf
+RaiCore.Pdf.Slides.PresentationFormatException
+RaiCore.Pdf.Slides.PresentationFormatException.PresentationFormatException() -> void
+RaiCore.Pdf.Slides.PresentationFormatException.PresentationFormatException(string! message) -> void
+RaiCore.Pdf.Slides.PresentationFormatException.PresentationFormatException(string! message, System.Exception! innerException) -> void
+RaiCore.Pdf.Slides.SlideDiagnostic
+RaiCore.Pdf.Slides.SlideDiagnostic.<Clone>$() -> RaiCore.Pdf.Slides.SlideDiagnostic!
+RaiCore.Pdf.Slides.SlideDiagnostic.Deconstruct(out int SlideNumber, out string! Subject, out string! Message) -> void
+RaiCore.Pdf.Slides.SlideDiagnostic.Equals(RaiCore.Pdf.Slides.SlideDiagnostic? other) -> bool
+RaiCore.Pdf.Slides.SlideDiagnostic.Message.get -> string!
+RaiCore.Pdf.Slides.SlideDiagnostic.Message.init -> void
+RaiCore.Pdf.Slides.SlideDiagnostic.SlideDiagnostic(int SlideNumber, string! Subject, string! Message) -> void
+RaiCore.Pdf.Slides.SlideDiagnostic.SlideNumber.get -> int
+RaiCore.Pdf.Slides.SlideDiagnostic.SlideNumber.init -> void
+RaiCore.Pdf.Slides.SlideDiagnostic.Subject.get -> string!
+RaiCore.Pdf.Slides.SlideDiagnostic.Subject.init -> void
+static RaiCore.Pdf.Slides.PptToPdf.Convert(byte[]! ppt, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Slides.PptToPdf.Convert(string! path, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Slides.PptToPdf.Convert(System.IO.Stream! ppt, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Slides.PptToPdf.ConvertAsync(byte[]! ppt, RaiCore.Pdf.Slides.PptxConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Slides.PptToPdf.ConvertAsync(System.IO.Stream! ppt, RaiCore.Pdf.Slides.PptxConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Slides.PptToPdf.ConvertToBytes(byte[]! ppt, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Slides.PptToPdf.ConvertToBytes(System.IO.Stream! ppt, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Slides.PptxToPdf.Convert(byte[]! pptx, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Slides.PptxToPdf.Convert(string! path, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Slides.PptxToPdf.Convert(System.IO.Stream! pptx, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Slides.PptxToPdf.ConvertAsync(byte[]! pptx, RaiCore.Pdf.Slides.PptxConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Slides.PptxToPdf.ConvertAsync(System.IO.Stream! pptx, RaiCore.Pdf.Slides.PptxConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Slides.PptxToPdf.ConvertToBytes(byte[]! pptx, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Slides.PptxToPdf.ConvertToBytes(System.IO.Stream! pptx, RaiCore.Pdf.Slides.PptxConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Slides.SlideDiagnostic.operator !=(RaiCore.Pdf.Slides.SlideDiagnostic? left, RaiCore.Pdf.Slides.SlideDiagnostic? right) -> bool
+static RaiCore.Pdf.Slides.SlideDiagnostic.operator ==(RaiCore.Pdf.Slides.SlideDiagnostic? left, RaiCore.Pdf.Slides.SlideDiagnostic? right) -> bool

@@ -1,10 +1,1 @@
 #nullable enable
-RaiCore.Pdf.PdfImageFormat.Tiff = 6 -> RaiCore.Pdf.PdfImageFormat
-static RaiCore.Pdf.PdfImage.GetPageCount(byte[]! data) -> int
-static RaiCore.Pdf.PdfImage.GetPageCount(string! path) -> int
-static RaiCore.Pdf.PdfImage.Load(byte[]! data, int pageIndex) -> RaiCore.Pdf.PdfImage!
-static RaiCore.Pdf.PdfImage.Load(string! path, int pageIndex) -> RaiCore.Pdf.PdfImage!
-RaiCore.Pdf.PdfAConformance.PdfA2A = 3 -> RaiCore.Pdf.PdfAConformance
-RaiCore.Pdf.PdfAConformance.PdfA3A = 4 -> RaiCore.Pdf.PdfAConformance
-RaiCore.Pdf.PdfAConformance.PdfA1B = 5 -> RaiCore.Pdf.PdfAConformance
-RaiCore.Pdf.PdfAConformance.PdfA1A = 6 -> RaiCore.Pdf.PdfAConformance

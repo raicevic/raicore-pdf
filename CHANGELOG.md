@@ -5,6 +5,21 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-23
+
+Reading, editing and converting: text and images out of PDFs, editing existing files, and Office documents, email
+and spreadsheets to PDF, in new packages released with the core.
+
+### Highlights
+- **Extraction** (`RaiCore.Pdf.Extraction`, new): text in reading or layout order, search with positions, and images.
+- **Editing** (`RaiCore.Pdf.Editing`, new): delete, insert, move and rotate pages, split by size, optimize, read and
+  flatten forms, flatten annotations.
+- **Word documents** (`RaiCore.Pdf.Documents`, new): DOCX, Word 97-2003 (`.doc`), RTF and ODT to PDF.
+- **Spreadsheets** (`RaiCore.Pdf.Sheets`, new): CSV, XLSX and Excel 97-2003 (`.xls`) to PDF.
+- **Presentations** (`RaiCore.Pdf.Slides`, new): PPTX and PowerPoint 97-2003 (`.ppt`) to PDF.
+- **Email** (`RaiCore.Pdf.Email`, new): `.eml`, Outlook `.msg` and `.mht` to PDF, with attachments.
+- **HTML fragments** in the layout API, **TIFF** images, and **PDF/A-1b/1a, PDF/A-2a/3a**.
+
 ### Added
 - **One format exception per kind of input**: the converters report data they cannot read with their own
   `PdfException`: `DocumentFormatException` (new, `RaiCore.Pdf.Documents`: DOCX, DOC, RTF, ODT),
@@ -964,5 +979,6 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   drawing the first (page counts, `target-counter()`), so their peak memory is the layout's and hardly changes.
   Pages imported from other PDFs keep what they copy until `EndSave`.
 
-[Unreleased]: https://github.com/raicevic/raicore-pdf/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/raicevic/raicore-pdf/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/raicevic/raicore-pdf/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/raicevic/raicore-pdf/releases/tag/v1.0.0
