@@ -50,6 +50,10 @@ output is identical on every machine. Brand fonts come from `@font-face` rules (
 `unicode-range`) or from your own `FontCollection`. Network access is off unless you supply a `ResourceLoader`, so
 fonts from a CDN such as Google Fonts need a loader that downloads them.
 
+HTML fragments in documents built with the layout API: `HtmlFragment.Parse(html, new HtmlFragmentOptions { BaseStyle = body })`
+converts HTML (rich text from a database, say) into blocks for a `FlowDocument` or a table cell, inheriting a base
+text style.
+
 For Razor components, see [RaiCore.Pdf.Razor](https://www.nuget.org/packages/RaiCore.Pdf.Razor).
 
 ## More

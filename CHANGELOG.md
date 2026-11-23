@@ -18,6 +18,16 @@ and versions follow [Semantic Versioning](https://semver.org/).
   TBody, TFoot) are left out, their rows going to the table, other PDF 1.5 types are rejected, and languages must be
   RFC 1766 tags (letters only). veraPDF (CI) validates canvas, HTML and layout documents for 1b and 1a, also combined
   with PDF/UA-1.
+- **HTML fragments in the layout API** (`RaiCore.Pdf.Html`): `HtmlFragment.Parse` and `ParseAsync` convert HTML with
+  optional CSS (`HtmlFragmentOptions.Css`) into layout blocks for a `FlowDocument`, a `ContainerBlock` or a table cell
+  (`AddTo`, `Blocks`), with the engine and the options of the HTML converter (`BaseUri`, `ResourceLoader`, `Fonts`,
+  `FallbackFontFamilies`, `Hyphenators`, `Limits`), e.g. rich text from a database inside a code-built report. The
+  fragment starts from a base `TextStyle` (`BaseStyle`: font families, size, color, line height, spacing, language
+  and hyphenation of its root, inherited unless its CSS says otherwise); `Width` is what `vw` and build-time
+  percentages resolve against. It renders as in a converted document (same word positions, same structure tags in a
+  tagged document). What only pages have (`@page`, running elements, `string-set`, named pages, page numbers of
+  `target-counter()`) is left out and reported in `HtmlFragment.Diagnostics` with the converter's usual diagnostics;
+  headings become bookmarks only with `CreateBookmarks`. A new `htmlfragment` fuzz target (#197).
 - **ODT to PDF** (`RaiCore.Pdf.Documents`): `OdtToPdf.Convert` converts OpenDocument text documents (`.odt`, `.ott`
   templates and flat `.fodt` XML documents, ODF 1.0 to 1.3) with the shared word-processing model and renderer of
   DOCX. Common, automatic and default styles with `style:parent-style-name` chains and font face declarations;

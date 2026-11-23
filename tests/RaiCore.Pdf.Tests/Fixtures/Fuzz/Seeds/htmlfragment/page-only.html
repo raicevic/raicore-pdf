@@ -1,0 +1,14 @@
+<style>
+  @page { size: A5; margin: 1cm; @top-center { content: element(header) } @bottom-right { content: counter(page) } }
+  .header { position: running(header) }
+  h1 { string-set: chapter content(); bookmark-level: 1 }
+  .wide { page: wide; break-before: page }
+  a::after { content: " (page " target-counter(attr(href), page) ")" }
+  ol { counter-reset: item } li::before { content: counters(item, ".") " "; counter-increment: item }
+</style>
+<div class="header">Running header</div>
+<h1>Chapter</h1>
+<div class="wide">Wide content</div>
+<p><a href="#target">see</a></p>
+<ol><li>one<ol><li>two</li></ol></li></ol>
+<p id="target" style="position: absolute; top: 10px">Target</p>

@@ -846,6 +846,17 @@ flow.Render().Save("report.pdf");
   rowspans join may also break between them with the spanning cell continuing alongside, and borders can be separate
   or collapsed (conflicts resolved by width and style as in CSS 2.1).
 
+HTML fragments go in such documents too: `HtmlFragment.Parse` (in `RaiCore.Pdf.Html`) converts HTML with optional
+CSS into blocks for a `FlowDocument`, a `ContainerBlock` or a table cell, starting from a base `TextStyle`, e.g. rich
+text from a database inside a code-built report. It renders as in a converted document; what only pages have
+(`@page`, running elements, `string-set`, named pages) is left out and reported in `Diagnostics`:
+
+```csharp
+var notes = HtmlFragment.Parse(notesHtml, new HtmlFragmentOptions { BaseStyle = body, Width = flow.Setup.ContentWidth });
+notes.AddTo(flow);                                  // Between code-built paragraphs.
+var cell = new TableCell(HtmlFragment.Parse(cellHtml, new HtmlFragmentOptions { BaseStyle = body, Width = 200 }).Blocks);
+```
+
 ### Thread safety
 
 Fonts, images, hyphenation patterns and the converters are thread-safe and meant to be shared: create one
