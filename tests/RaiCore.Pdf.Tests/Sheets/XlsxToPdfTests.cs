@@ -477,6 +477,16 @@ public class XlsxToPdfTests
     }
 
     [Fact]
+    public void Escaped_halves_of_surrogate_pairs_are_replaced()
+    {
+        // Found by fuzzing the binary reader: text layout cannot shape a lone surrogate, which an escape can give.
+        var sheet = Single(Workbook("<row r=\"1\"><c r=\"A1\" t=\"inlineStr\"><is><t>a_xD800_b_xD83D__xDE00_</t></is></c></row>"));
+        Assert.Equal("a\uFFFDb\U0001F600", sheet[0, 0].Text);
+        Assert.Equal("\uFFFD\uFFFDx", XlsxWorkbook.WithoutLoneSurrogates("\uDC00\uD800x"));
+        AssertValid(XlsxToPdf.ConvertToBytes(Workbook("<row r=\"1\"><c r=\"A1\" t=\"str\"><v>_xDBFF_</v></c></row>")));
+    }
+
+    [Fact]
     public void Malformed_packages_throw_documented_exceptions()
     {
         Assert.Throws<SpreadsheetFormatException>(() => XlsxToPdf.Convert("not a workbook"u8.ToArray()));
@@ -484,9 +494,10 @@ public class XlsxToPdfTests
         Assert.Throws<SpreadsheetFormatException>(() => XlsxToPdf.Convert([]));
         Assert.Throws<SpreadsheetFormatException>(() => XlsxToPdf.Convert(Package(("readme.txt", "no workbook"))));
 
-        // Encrypted workbooks and Excel 97-2003 files are Compound Files.
+        // Encrypted workbooks and Excel 97-2003 files are Compound Files: read as Excel 97-2003 workbooks (XlsToPdfTests).
         byte[] compound = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1, 0, 0, 0, 0];
-        Assert.Contains("encrypted", Assert.Throws<NotSupportedException>(() => XlsxToPdf.Convert(compound)).Message, StringComparison.Ordinal);
+        Assert.Contains("damaged", Assert.Throws<SpreadsheetFormatException>(() => XlsxToPdf.Convert(compound)).Message, StringComparison.Ordinal);
+        Assert.Contains("encrypted", Assert.Throws<NotSupportedException>(() => XlsxToPdf.Convert(Fixtures.Read("Poi/bug53475-password-is-pass.docx"))).Message, StringComparison.Ordinal);
 
         // Binary workbooks.
         var xlsb = Package(("_rels/.rels", $"<Relationships xmlns=\"{PackageRelationships}\"><Relationship Id=\"rId1\" Type=\"{Relationships}/officeDocument\" Target=\"xl/workbook.bin\"/></Relationships>"), ("xl/workbook.bin", "binary"));

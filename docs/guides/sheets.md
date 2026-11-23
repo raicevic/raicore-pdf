@@ -1,4 +1,4 @@
-# CSV and XLSX to PDF
+# CSV, XLSX and XLS to PDF
 
 `RaiCore.Pdf.Sheets` converts CSV files and Excel workbooks to PDF: tables laid out by the layout engine, with header
 rows repeated on every page, column widths fitted to the content within the page width, and numbers right-aligned.
@@ -183,9 +183,33 @@ Workbooks are ZIP packages of XML parts. They are read with no DTDs and nothing 
 `Sheet.Limits`: `MaxDecompressedBytes` bounds the decompressed size of all parts together (a ZIP bomb stops there),
 `MaxTableCells` the cells of each sheet (the cells it stores while it is read, and the rows times columns it prints,
 checked before they take up memory), and `MaxPages` and `Timeout` the pages of all sheets and the time. Malformed
-packages and XML throw `SpreadsheetFormatException`; password-protected (encrypted) workbooks, Excel 97-2003 `.xls`
-files and binary `.xlsb` workbooks throw `NotSupportedException`.
+packages and XML throw `SpreadsheetFormatException`; password-protected (encrypted) workbooks and binary `.xlsb`
+workbooks throw `NotSupportedException`. Excel 97-2003 `.xls` files are converted as `XlsToPdf` converts them (below).
 
 Not supported in workbooks: charts and chart sheets, images and other drawings, conditional formatting, data bars,
 comments, headers and footers, page breaks set by hand, pivot tables, rich text formatting within a cell, rotated
 text, and shrink to fit.
+
+### Excel 97-2003 workbooks
+
+`XlsToPdf` converts Excel 97-2003 workbooks (`.xls`, the binary BIFF8 format; also Excel 5.0 and 95 workbooks) with
+the same options, model and layout as `.xlsx` workbooks, so everything above applies to them too: number formats and
+the 1904 date system, fonts, the workbook's palette, fills and borders, alignment, merged cells, column widths and row
+heights, hidden rows, columns and sheets, print areas and titles, orientation, scale and fit to width.
+
+```csharp
+var pdf = XlsToPdf.Convert("archive.xls", new XlsxConverterOptions { ShowSheetNames = true });
+pdf.Save("archive.pdf");
+```
+
+Text comes from the shared strings (also when a string runs on into a CONTINUE record), and from cells of every kind
+(`LABEL`, `RSTRING`, `NUMBER`, `RK`, `MULRK`, `BOOLERR`, blank cells with a format); formulas show their last
+calculated values (numbers, the text of the `STRING` record after them, booleans and errors). Excel 5.0 and 95
+workbooks are read in their code page (`CODEPAGE`). The data is checked, not trusted: every length and offset is
+bounded by its record, records that cannot be read are skipped, sheets whose offsets are wrong are found by reading
+the stream in order, and the workbook stream is read within `MaxDecompressedBytes`. Damaged compound files throw
+`SpreadsheetFormatException`; encrypted workbooks (also those protected with Excel's default password, which open
+without asking for one) and Excel 2.x-4.0 files throw `NotSupportedException`.
+
+The format is told from the data, not the file name: `XlsxToPdf` converts `.xls` workbooks too, and `XlsToPdf`
+converts a `.xlsx` workbook (a ZIP package) named `.xls`, as some programs save them.

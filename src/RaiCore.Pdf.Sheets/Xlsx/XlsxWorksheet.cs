@@ -32,27 +32,27 @@ internal sealed class XlsxWorksheet
 
     public List<CellRange> Merges { get; } = [];
 
-    public bool Landscape { get; private set; }
+    public bool Landscape { get; set; }
 
     /// <summary>The print scale in percent, or <c>null</c>.</summary>
-    public int? Scale { get; private set; }
+    public int? Scale { get; set; }
 
     /// <summary>Whether the sheet is shrunk to fit pages (<c>sheetPr/pageSetUpPr/@fitToPage</c>).</summary>
-    public bool FitToPage { get; private set; }
+    public bool FitToPage { get; set; }
 
     /// <summary>The number of pages the width is fitted to (0 for no limit).</summary>
-    public int FitToWidth { get; private set; } = 1;
+    public int FitToWidth { get; set; } = 1;
 
     /// <summary>The width of columns without one, in characters, or <c>null</c>.</summary>
-    public double? DefaultColumnWidth { get; private set; }
+    public double? DefaultColumnWidth { get; set; }
 
     /// <summary>The width of columns without one in characters without the padding, or <c>null</c>.</summary>
-    public double? BaseColumnWidth { get; private set; }
+    public double? BaseColumnWidth { get; set; }
 
     /// <summary>Whether rows are hidden unless the sheet lists them.</summary>
-    public bool ZeroHeight { get; private set; }
+    public bool ZeroHeight { get; set; }
 
-    public bool RightToLeft { get; private set; }
+    public bool RightToLeft { get; set; }
 
     /// <summary>The key of a cell in <see cref="Cells"/>.</summary>
     public static long Key(int row, int column) => ((long)row << 16) | (uint)column;
@@ -185,7 +185,15 @@ internal sealed class XlsxWorksheet
             return;
         }
 
-        var cell = workbook.Cell(type, value, inline, style);
+        Add(row, column, workbook.Cell(type, value, inline, style), maxCells);
+    }
+
+    /// <summary>
+    /// Sets a cell (in range) if it shows something (a value, a fill or a border), and removes it otherwise.
+    /// </summary>
+    /// <exception cref="ResourceLimitExceededException">The sheet has more such cells than <paramref name="maxCells"/>.</exception>
+    internal void Add(int row, int column, SheetCell cell, long maxCells)
+    {
         if (cell.Kind == CellKind.Empty && !(cell.Format?.IsVisible ?? false))
         {
             Cells.Remove(Key(row, column));

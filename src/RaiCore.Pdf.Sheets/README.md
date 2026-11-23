@@ -1,6 +1,6 @@
 # RaiCore.Pdf.Sheets
 
-Converts CSV files and Excel workbooks (`.xlsx`) to PDF with [RaiCore.Pdf](https://www.nuget.org/packages/RaiCore.Pdf)'s
+Converts CSV files and Excel workbooks (`.xlsx`, and Excel 97-2003 `.xls`) to PDF with [RaiCore.Pdf](https://www.nuget.org/packages/RaiCore.Pdf)'s
 layout engine: tables with header rows repeated on every page, columns fitted to the content and the page, numbers
 right-aligned, and for workbooks their own formats and styles. No spreadsheet program, no browser, no native
 dependencies.
@@ -13,6 +13,9 @@ pdf.Save("orders.pdf");
 
 var report = XlsxToPdf.Convert("report.xlsx");
 report.Save("report.pdf");
+
+var archive = XlsToPdf.Convert("archive.xls");
+archive.Save("archive.pdf");
 ```
 
 - **CSV done properly:** RFC 4180 quoting (delimiters, line breaks and doubled quotes in fields), CRLF, LF or CR line
@@ -31,12 +34,16 @@ report.Save("report.pdf");
   wrapping and indents; merged cells; the sheet's column widths and row heights; hidden rows, columns and sheets left
   out; text running on over empty cells as in a spreadsheet; the print area, rows repeated on every page, landscape,
   print scale and fit to width from the page setup.
+- **Excel 97-2003 workbooks** (`.xls`, BIFF8, also Excel 5.0/95) with the same model and layout as `.xlsx`: shared
+  strings across CONTINUE records, every kind of cell record, formulas' last values, fonts, the workbook's palette,
+  number formats, XF styles, merged cells, sizes, hidden rows, columns and sheets, print areas and titles, page setup.
 - **Untrusted input:** malformed CSV is read the way spreadsheet programs read it (stray quotes, ragged rows, invalid
-  bytes); workbooks are read with no DTDs and nothing external, malformed ones throw `SpreadsheetFormatException`;
+  bytes); workbooks are read with no DTDs and nothing external, binary ones with every length and offset checked, and
+malformed ones throw `SpreadsheetFormatException`;
   cells, decompressed bytes, pages and time are bounded by `ResourceLimits`.
 
 Not supported in workbooks: charts, images, conditional formatting, comments, headers and footers, pivot tables,
-formula calculation, `.xlsb`, `.xls` and password-protected files.
+formula calculation, `.xlsb`, Excel 2.x-4.0 and password-protected files.
 
 Fonts, gridlines, tagging (accessible tables) and the page are set in `SheetOptions`.
 

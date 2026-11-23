@@ -266,6 +266,40 @@ internal sealed class XlsxWorkbook
         return text.ToString();
     }
 
+    /// <summary>
+    /// The text with every surrogate that is not half of a pair (which escapes and binary strings can hold, but text
+    /// layout cannot shape) replaced by U+FFFD, the replacement character.
+    /// </summary>
+    internal static string WithoutLoneSurrogates(string text)
+    {
+        var i = 0;
+        while (i < text.Length && !char.IsSurrogate(text[i]))
+        {
+            i++;
+        }
+
+        if (i == text.Length)
+        {
+            return text;
+        }
+
+        var result = new StringBuilder(text.Length).Append(text, 0, i);
+        for (; i < text.Length; i++)
+        {
+            var c = text[i];
+            if (char.IsHighSurrogate(c) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
+            {
+                result.Append(c).Append(text[++i]);
+            }
+            else
+            {
+                result.Append(char.IsSurrogate(c) ? '\uFFFD' : c);
+            }
+        }
+
+        return result.ToString();
+    }
+
     /// <summary>Decodes the <c>_xHHHH_</c> escapes of Office Open XML strings (control characters, <c>_x005F_</c> for an underscore).</summary>
     internal static string Unescape(string text)
     {
@@ -289,7 +323,7 @@ internal sealed class XlsxWorkbook
             }
         }
 
-        return result.ToString();
+        return WithoutLoneSurrogates(result.ToString());
     }
 
     /// <summary>The cell for a value of a type (<c>t</c>) in a cell style, formatted for display.</summary>
@@ -339,16 +373,24 @@ internal sealed class XlsxWorkbook
                 break;
         }
 
-        var cellFormat = style.Format;
+        return ToCell(formatted, style.Format, alignment, _colored);
+    }
+
+    /// <summary>
+    /// The cell for a formatted value in a cell format: in the format's color where the number format gives one (the
+    /// colored formats are kept in <paramref name="colored"/>, so that equal cells share them), empty without text.
+    /// </summary>
+    internal static SheetCell ToCell(FormattedValue formatted, CellFormat cellFormat, CellAlignment alignment, Dictionary<(CellFormat, PdfColor), CellFormat> colored)
+    {
         if (formatted.Color is { } color)
         {
-            if (!_colored.TryGetValue((cellFormat, color), out var colored))
+            if (!colored.TryGetValue((cellFormat, color), out var withColor))
             {
-                colored = cellFormat with { Color = color };
-                _colored[(cellFormat, color)] = colored;
+                withColor = cellFormat with { Color = color };
+                colored[(cellFormat, color)] = withColor;
             }
 
-            cellFormat = colored;
+            cellFormat = withColor;
         }
 
         var kind = formatted.Text.Length == 0 ? CellKind.Empty : formatted.Kind;

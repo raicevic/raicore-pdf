@@ -7,7 +7,7 @@ using SharpFuzz;
 //   local <target> <iterations> <seed> <out> <corpus>... a managed mutation loop, no native tools needed
 //   replay <target> <file or folder>...                  run inputs once, e.g. a crash libFuzzer found
 //   minimize <target> <file> <out>                      shrink a failing input while it fails the same way
-// Targets: see FuzzTargets.All (html, css, htmlfragment, png, jpeg, gif, bmp, webp, svg, font, woff, woff2, pdf, extract, email, tiff, csv, edit, cfb, xlsx, pptx, ppt, docx, odt, rtf); seed-corpus.sh
+// Targets: see FuzzTargets.All (html, css, htmlfragment, png, jpeg, gif, bmp, webp, svg, font, woff, woff2, pdf, extract, email, tiff, csv, edit, cfb, xlsx, xls, pptx, ppt, docx, odt, rtf); seed-corpus.sh
 // collects the seeds of one. Locally, e.g.:
 //   tests/RaiCore.Pdf.Fuzz/seed-corpus.sh png /tmp/png
 //   dotnet run -c Release --project tests/RaiCore.Pdf.Fuzz -- local png 100000 1 /tmp/png-out /tmp/png

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using RaiCore.Pdf.Sheets.Csv;
+using RaiCore.Pdf.Sheets.Xls;
 
 namespace RaiCore.Pdf.Sheets.Xlsx;
 
@@ -16,6 +17,12 @@ internal static class XlsxConverter
     /// <summary>Converts a workbook within the options' limits.</summary>
     public static PdfDocument Convert(byte[] data, XlsxConverterOptions options, CancellationToken cancellationToken)
     {
+        if (XlsConverter.IsBinary(data))
+        {
+            // An Excel 97-2003 workbook (or an encrypted one, which the binary converter tells apart).
+            return XlsConverter.Convert(data, options, cancellationToken);
+        }
+
         ArgumentNullException.ThrowIfNull(options.Sheet, nameof(options));
         var limits = options.Sheet.Limits ?? throw new ArgumentException("The resource limits must not be null.", nameof(options));
         cancellationToken.ThrowIfCancellationRequested();
@@ -57,50 +64,61 @@ internal static class XlsxConverter
     /// The worksheets to convert, in the workbook's order: those the options name or number (hidden ones too), else the
     /// visible ones. Chart sheets and other sheets that are not worksheets are left out.
     /// </summary>
-    internal static List<XlsxSheetEntry> Select(XlsxWorkbook workbook, XlsxConverterOptions options)
+    internal static List<XlsxSheetEntry> Select(XlsxWorkbook workbook, XlsxConverterOptions options) => Select(workbook.Sheets, options);
+
+    /// <inheritdoc cref="Select(XlsxWorkbook, XlsxConverterOptions)"/>
+    internal static List<XlsxSheetEntry> Select(IReadOnlyList<XlsxSheetEntry> sheets, XlsxConverterOptions options)
     {
         if (options.SheetNames is null && options.SheetIndexes is null)
         {
-            return [.. workbook.Sheets.Where(s => s.IsWorksheet && !s.Hidden)];
+            return [.. sheets.Where(s => s.IsWorksheet && !s.Hidden)];
         }
 
         var chosen = new HashSet<int>();
         foreach (var name in options.SheetNames ?? [])
         {
             ArgumentNullException.ThrowIfNull(name, nameof(options));
-            var sheet = workbook.Sheets.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase))
+            var sheet = sheets.FirstOrDefault(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase))
                 ?? throw new ArgumentException($"The workbook has no sheet named '{name}'.", nameof(options));
             chosen.Add(sheet.Index);
         }
 
         foreach (var index in options.SheetIndexes ?? [])
         {
-            if (index < 0 || index >= workbook.Sheets.Count)
+            if (index < 0 || index >= sheets.Count)
             {
-                throw new ArgumentException($"The workbook has no sheet at index {index} (it has {workbook.Sheets.Count}).", nameof(options));
+                throw new ArgumentException($"The workbook has no sheet at index {index} (it has {sheets.Count}).", nameof(options));
             }
 
             chosen.Add(index);
         }
 
-        return [.. workbook.Sheets.Where(s => s.IsWorksheet && chosen.Contains(s.Index))];
+        return [.. sheets.Where(s => s.IsWorksheet && chosen.Contains(s.Index))];
     }
 
     /// <summary>
     /// Builds the sheet to print: the print area (or the used range from A1), without hidden rows and columns, with the
     /// print titles (rows repeated on every page) as header rows, merged ranges, sizes and page settings.
     /// </summary>
-    internal static Sheet Build(XlsxWorksheet worksheet, XlsxSheetEntry entry, XlsxWorkbook workbook, XlsxConverterOptions options, long maxCells, bool bookmark)
+    internal static Sheet Build(XlsxWorksheet worksheet, XlsxSheetEntry entry, XlsxWorkbook workbook, XlsxConverterOptions options, long maxCells, bool bookmark) =>
+        Build(worksheet, entry, workbook.PrintArea(entry), workbook.PrintTitleRows(entry), workbook.Styles.DefaultFontSize, workbook.Styles.DefaultFontName, options, maxCells, bookmark);
+
+    /// <summary>
+    /// Builds the sheet to print from a worksheet of any workbook format, with its print area and print titles (the
+    /// rows repeated on every page) and the workbook's default font.
+    /// </summary>
+    internal static Sheet Build(XlsxWorksheet worksheet, XlsxSheetEntry entry, CellRange? printArea, (int First, int Last)? printTitleRows,
+        double defaultFontSize, string? defaultFontName, XlsxConverterOptions options, long maxCells, bool bookmark)
     {
         var usePageSetup = options.UsePageSetup;
         int firstRow = 0, firstColumn = 0, lastRow = worksheet.LastRow, lastColumn = worksheet.LastColumn;
-        if (usePageSetup && workbook.PrintArea(entry) is { } area)
+        if (usePageSetup && printArea is { } area)
         {
             (firstRow, lastRow) = area.Row1 < 0 ? (0, worksheet.LastRow) : (area.Row1, area.Row2);
             (firstColumn, lastColumn) = area.Column1 < 0 ? (0, worksheet.LastColumn) : (area.Column1, area.Column2);
         }
 
-        var titles = usePageSetup ? workbook.PrintTitleRows(entry) : null;
+        var titles = usePageSetup ? printTitleRows : null;
         var columnInfo = new XlsxColumns?[Math.Max(lastColumn + 1, 0)];
         foreach (var info in worksheet.Columns)
         {
@@ -166,7 +184,6 @@ internal static class XlsxConverter
         var merges = Merges(worksheet, rowArray, columnArray, grid);
         var designed = worksheet.DefaultColumnWidth is not null || worksheet.Columns.Any(c => c.Width is not null);
         var defaultWidth = worksheet.DefaultColumnWidth ?? ((worksheet.BaseColumnWidth ?? 8) + ColumnPadding);
-        var styles = workbook.Styles;
         return new Sheet(grid, headerRows, columnArray.Length)
         {
             Formatting = new SheetFormatting
@@ -175,8 +192,8 @@ internal static class XlsxConverter
                 RowHeights = options.AutoFit ? [] : [.. rowArray.Select(r => worksheet.Rows.TryGetValue(r, out var info) ? info.Height : null)],
                 Merges = merges,
                 LeadRows = leadRows,
-                DefaultFontSize = styles.DefaultFontSize,
-                DefaultFontName = styles.DefaultFontName,
+                DefaultFontSize = defaultFontSize,
+                DefaultFontName = defaultFontName,
                 Scale = usePageSetup && !worksheet.FitToPage && worksheet.Scale is { } scale ? Math.Clamp(scale, 10, 400) / 100.0 : 1,
                 Landscape = usePageSetup && worksheet.Landscape,
                 FitToWidth = usePageSetup && worksheet.FitToPage && worksheet.FitToWidth > 0,

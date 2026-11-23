@@ -20,7 +20,7 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf.Extraction` | Read existing PDFs: text by page in reading order, text search with positions, images with their placement and data | 🚧 Unreleased |
 | `RaiCore.Pdf.Editing` | Edit existing PDFs: delete, insert, move and rotate pages, save repeatedly | 🚧 Unreleased |
 | `RaiCore.Pdf.Email` | Email (.eml, Outlook .msg) and web archives (.mht) → PDF: header block, inline images, attachments embedded or appended | 🚧 Unreleased |
-| `RaiCore.Pdf.Sheets` | CSV and Excel (.xlsx) → PDF: paginated tables with repeated header rows, number formats, styles, merged cells, print areas | 🚧 Unreleased |
+| `RaiCore.Pdf.Sheets` | CSV and Excel (.xlsx, .xls) → PDF: paginated tables with repeated header rows, number formats, styles, merged cells, print areas | 🚧 Unreleased |
 | `RaiCore.Pdf.Slides` | PowerPoint (.pptx, .ppt) → PDF: one page per slide with masters, layouts, themes, shapes, text, pictures, tables | 🚧 Unreleased |
 | `RaiCore.Pdf.Documents` | Word (.docx), OpenDocument text (.odt) and RTF → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | 🚧 Unreleased |
 | `RaiCore.Pdf.XslFo` | XSL-FO → PDF | ⚪ After 1.0 |
@@ -654,7 +654,7 @@ pdf.Save("message.pdf");
 The `RaiCore.Pdf.Sheets` package converts CSV files and Excel workbooks to PDF. CSV becomes a table with the header
 row repeated on every page, column widths fitted to the content within the page width (wrapping, never clipping), and
 numbers and dates right-aligned; the delimiter, the encoding and the decimal separator (`1,234.56` or `1.234,56`) are
-detected. Workbooks (`.xlsx`) keep their number formats, fonts, fills, borders, merged cells, column widths and row
+detected. Workbooks (`.xlsx`, and Excel 97-2003 `.xls` with `XlsToPdf`) keep their number formats, fonts, fills, borders, merged cells, column widths and row
 heights, print areas and repeated rows, each sheet from a new page; formulas show their last calculated values. See
 the [spreadsheet guide](https://raicevic.github.io/raicore-pdf/guides/sheets.html).
 

@@ -46,6 +46,19 @@ and versions follow [Semantic Versioning](https://semver.org/).
   Encrypted presentations, PowerPoint 95 and 4.0 files throw `NotSupportedException`; `PptxToPdf` given a `.ppt` file
   now points at `PptToPdf`. A new `ppt` fuzz target; a corpus of Apache POI and Apache Tika samples checked against an
   independent record reader and against POI's and Tika's own test expectations (#206).
+- **Excel 97-2003 to PDF** (`RaiCore.Pdf.Sheets`): `XlsToPdf.Convert` (also `ConvertToBytes` and `ConvertAsync`, over
+  bytes, streams and paths, with `XlsxConverterOptions`) converts binary workbooks (`.xls`, BIFF8 of Excel 97-2003,
+  also BIFF5/7 of Excel 5.0 and 95 in their code page) into the same sheet model as XLSX workbooks, laid out the same
+  way. The record reader joins CONTINUE records, and shared strings split across them re-read their flags; workbook
+  globals (date system, fonts, number formats, XF styles with alignment, wrapping, indents, borders and fills, the
+  workbook's palette, sheets and their visibility, print areas and titles from built-in names) and worksheets (every
+  cell record, formulas' cached numbers, strings, booleans and errors, merged cells, column widths, row heights,
+  hidden rows and columns, page setup, right-to-left sheets; embedded chart substreams skipped). Lengths, offsets and
+  counts are checked against their records, sheets with wrong offsets are found in order, NUL characters and lone
+  surrogates are cleaned out of strings; damaged compound files throw `SpreadsheetFormatException`, encrypted
+  workbooks (also with Excel's default password) and Excel 2.x-4.0 files `NotSupportedException`. `XlsxToPdf` now
+  converts `.xls` workbooks too (it threw `NotSupportedException`), and `XlsToPdf` converts `.xlsx` workbooks named
+  `.xls`. A new `xls` fuzz target with raw BIFF seeds; a corpus of Apache POI workbooks checked against xlrd (#205).
 - **ODT to PDF** (`RaiCore.Pdf.Documents`): `OdtToPdf.Convert` converts OpenDocument text documents (`.odt`, `.ott`
   templates and flat `.fodt` XML documents, ODF 1.0 to 1.3) with the shared word-processing model and renderer of
   DOCX. Common, automatic and default styles with `style:parent-style-name` chains and font face declarations;

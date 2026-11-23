@@ -170,7 +170,9 @@ internal static partial class SheetRenderer
                 var style = context.Style(format, 1);
                 var widths = context.Measure(DisplayText(cell.Text), style);
 
-                var indent = format.Indent * IndentEms * style.FontSize;
+                // The column's padding is at the default size: a cell in a larger font needs its own, wider one.
+                var padding = Math.Max(0, 2 * FormattedPaddingX * (style.FontSize - context.Format.DefaultFontSize));
+                var indent = (format.Indent * IndentEms * style.FontSize) + padding;
                 min = Math.Max(min, widths.Min + indent);
                 max = Math.Max(max, widths.Max + indent);
                 total += widths.Max + indent;

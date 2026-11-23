@@ -21,7 +21,8 @@ namespace RaiCore.Pdf.Sheets;
 /// <para>
 /// Not supported: charts, images and other drawings, conditional formatting, comments, headers and footers, pivot
 /// tables, binary workbooks (<c>.xlsb</c>) and password-protected (encrypted) workbooks, which throw
-/// <see cref="NotSupportedException"/>, as do Excel 97-2003 (<c>.xls</c>) files.
+/// <see cref="NotSupportedException"/>. Excel 97-2003 workbooks (<c>.xls</c>) are converted as <see cref="XlsToPdf"/>
+/// converts them.
 /// </para>
 /// <para>
 /// Workbooks are untrusted input: their parts are read with no DTDs and nothing external resolved, the decompressed
@@ -44,7 +45,7 @@ public static class XlsxToPdf
     /// <param name="xlsx">The workbook's bytes.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
     /// <exception cref="SpreadsheetFormatException">The data is not a valid workbook.</exception>
-    /// <exception cref="NotSupportedException">The data is an encrypted or binary workbook, or an Excel 97-2003 file.</exception>
+    /// <exception cref="NotSupportedException">The data is an encrypted or binary (<c>.xlsb</c>) workbook, or an Excel 2.x-4.0 file.</exception>
     /// <exception cref="ArgumentException">The options name a sheet the workbook does not have.</exception>
     /// <exception cref="ResourceLimitExceededException">The workbook exceeds one of the options' limits.</exception>
     public static PdfDocument Convert(byte[] xlsx, XlsxConverterOptions? options = null)
@@ -67,7 +68,7 @@ public static class XlsxToPdf
     /// <param name="path">The file's path.</param>
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
     /// <exception cref="SpreadsheetFormatException">The file is not a valid workbook.</exception>
-    /// <exception cref="NotSupportedException">The file is an encrypted or binary workbook, or an Excel 97-2003 file.</exception>
+    /// <exception cref="NotSupportedException">The file is an encrypted or binary (<c>.xlsb</c>) workbook, or an Excel 2.x-4.0 file.</exception>
     /// <exception cref="ArgumentException">The options name a sheet the workbook does not have.</exception>
     /// <exception cref="ResourceLimitExceededException">The workbook exceeds one of the options' limits.</exception>
     public static PdfDocument Convert(string path, XlsxConverterOptions? options = null)
@@ -89,7 +90,7 @@ public static class XlsxToPdf
     /// <param name="options">The options, or <c>null</c> for the defaults.</param>
     /// <param name="cancellationToken">Cancels the conversion.</param>
     /// <exception cref="SpreadsheetFormatException">The data is not a valid workbook.</exception>
-    /// <exception cref="NotSupportedException">The data is an encrypted or binary workbook, or an Excel 97-2003 file.</exception>
+    /// <exception cref="NotSupportedException">The data is an encrypted or binary (<c>.xlsb</c>) workbook, or an Excel 2.x-4.0 file.</exception>
     /// <exception cref="ArgumentException">The options name a sheet the workbook does not have.</exception>
     /// <exception cref="ResourceLimitExceededException">The workbook exceeds one of the options' limits.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>

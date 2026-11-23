@@ -47,7 +47,7 @@ internal sealed class XlsxPackage : IDisposable
         if (CompoundFile.IsCompoundFile(data))
         {
             throw new NotSupportedException(
-                "The data is a Compound File: a password-protected (encrypted) workbook or an Excel 97-2003 (.xls) file, which are not supported.");
+                "The data is a Compound File, not a ZIP package: an Excel 97-2003 (.xls) workbook, which XlsToPdf converts, or a password-protected (encrypted) workbook, which is not supported.");
         }
 
         if (!data.AsSpan().StartsWith("PK"u8))
