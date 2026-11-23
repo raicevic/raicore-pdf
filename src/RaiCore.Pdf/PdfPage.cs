@@ -432,7 +432,7 @@ public sealed class PdfPage
         }
 
         var name = string.Create(CultureInfo.InvariantCulture, $"F{_fonts.Count + 1}");
-        var usage = new FontUsage();
+        var usage = new FontUsage(Document?.CodesFor(font));
         _fonts.Add((font, name, usage));
         return (name, usage);
     }

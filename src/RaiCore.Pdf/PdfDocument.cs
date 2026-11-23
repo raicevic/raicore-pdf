@@ -1,3 +1,4 @@
+using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Security;
 
 namespace RaiCore.Pdf;
@@ -22,6 +23,7 @@ namespace RaiCore.Pdf;
 public sealed partial class PdfDocument
 {
     private readonly List<PdfPage> _pages = [];
+    private readonly Dictionary<PdfFont, FontCodes> _fontCodes = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>The writer while the document is written page by page (<see cref="BeginSave"/>).</summary>
     private DocumentWriter? _saving;
@@ -303,5 +305,26 @@ public sealed partial class PdfDocument
         using var buffer = new MemoryStream();
         Save(buffer);
         return buffer.ToArray();
+    }
+
+    /// <summary>
+    /// The character codes this document uses for an embedded TrueType font, shared by its pages, or <c>null</c> for
+    /// fonts whose codes are always glyph IDs (CFF fonts, whose programs map each glyph to one CID, and the standard
+    /// fonts).
+    /// </summary>
+    internal FontCodes? CodesFor(PdfFont font)
+    {
+        if (font is not OpenTypePdfFont { Font.Outlines: Fonts.OpenType.OutlineFormat.TrueType } trueType)
+        {
+            return null;
+        }
+
+        if (!_fontCodes.TryGetValue(font, out var codes))
+        {
+            codes = new FontCodes(trueType.Font.NumGlyphs);
+            _fontCodes[font] = codes;
+        }
+
+        return codes;
     }
 }

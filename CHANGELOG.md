@@ -18,6 +18,12 @@ and versions follow [Semantic Versioning](https://semver.org/).
 - **Deeply nested layout content no longer overflows the stack** when `MaxNestingDepth` is raised: finding the forced
   break and the page name a block starts with walked its chain of first children recursively, without the stack check
   every other recursion has. A test that depended on how far the JIT had optimized the layout code is now stable.
+- **Text drawn with a glyph that stands for two characters extracts as each**: when one glyph is drawn for different
+  texts (HarfBuzz draws U+200B with the space glyph; fonts share glyphs between look-alike characters), the second text
+  gets a character code of its own, mapped to the glyph through a `/CIDToGIDMap` stream, so copying, searching and
+  screen readers give each text. Before, every use extracted as the first text drawn: after an empty paragraph in a
+  Word document, which is drawn as U+200B, every space extracted as U+200B. TrueType fonts; CFF fonts keep one text
+  per glyph.
 
 ### Documentation
 - **Format support**: one page comparing what each converter draws, format by format (DOCX, DOC, RTF, ODT; XLSX, XLS,

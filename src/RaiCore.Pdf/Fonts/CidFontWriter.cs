@@ -24,7 +24,7 @@ internal static class CidFontWriter
         }
 
         var isTrueType = font.Outlines == OutlineFormat.TrueType;
-        var glyphIds = font.NoSubsetting ? Enumerable.Range(0, font.NumGlyphs) : usage.Glyphs.Keys;
+        var glyphIds = font.NoSubsetting ? Enumerable.Range(0, font.NumGlyphs) : usage.GlyphIds;
 
         PdfStreamObject fontFile;
         var subset = !font.NoSubsetting;
@@ -36,8 +36,8 @@ internal static class CidFontWriter
             fontFile.Dictionary["Length1"] = new PdfInteger(program.Length);
 
             // Glyph IDs are CIDs (Identity CIDToGIDMap), and the subset keeps every glyph ID up to the last one kept
-            // (empty where unused), so each is a CID of the program.
-            programCids = () => Enumerable.Range(0, SfntNumGlyphs(program));
+            // (empty where unused), so each is a CID of the program; so are the codes that alias a glyph.
+            programCids = () => Enumerable.Range(0, SfntNumGlyphs(program)).Concat(usage.Aliases.Keys);
         }
         else if (subset && TrySubsetCff(font, glyphIds) is { } cff)
         {
@@ -97,7 +97,7 @@ internal static class CidFontWriter
         };
         if (isTrueType)
         {
-            cidFont["CIDToGIDMap"] = new PdfName("Identity");
+            cidFont["CIDToGIDMap"] = usage.Aliases.Count == 0 ? new PdfName("Identity") : writer.Add(PdfStreamObject.CreateCompressed(CidToGidMap(usage)));
         }
 
         return writer.Add(new PdfDictionary
@@ -127,23 +127,39 @@ internal static class CidFontWriter
         throw new InvalidOperationException("The font program has no maxp table.");
     }
 
-    /// <summary>Width array in the compact form <c>[first [w1 w2 ...] first [w ...] ...]</c>.</summary>
+    /// <summary>
+    /// The CIDToGIDMap stream of a font with codes that alias glyphs: two bytes per CID up to the highest, the glyph ID
+    /// of each (the CID itself below the aliases, 0 for codes not used).
+    /// </summary>
+    private static byte[] CidToGidMap(FontUsage usage)
+    {
+        var last = usage.Glyphs.Keys.Max();
+        var map = new byte[2 * (last + 1)];
+        foreach (var code in usage.Glyphs.Keys)
+        {
+            BinaryPrimitives.WriteUInt16BigEndian(map.AsSpan(2 * code), (ushort)usage.GlyphOf(code));
+        }
+
+        return map;
+    }
+
+    /// <summary>Width array in the compact form <c>[first [w1 w2 ...] first [w ...] ...]</c>, by code.</summary>
     private static PdfArray Widths(OpenTypeFont font, FontUsage usage, double scale)
     {
         var result = new PdfArray();
         PdfArray? run = null;
         var previous = -2;
-        foreach (var gid in usage.Glyphs.Keys)
+        foreach (var code in usage.Glyphs.Keys)
         {
-            if (gid != previous + 1 || run is null)
+            if (code != previous + 1 || run is null)
             {
                 run = new PdfArray();
-                result.Items.Add(new PdfInteger(gid));
+                result.Items.Add(new PdfInteger(code));
                 result.Items.Add(run);
             }
 
-            run.Items.Add(new PdfReal(Math.Round(font.GetAdvanceWidth(gid) * scale, 2)));
-            previous = gid;
+            run.Items.Add(new PdfReal(Math.Round(font.GetAdvanceWidth(usage.GlyphOf(code)) * scale, 2)));
+            previous = code;
         }
 
         return result;
@@ -205,9 +221,13 @@ internal static class CidFontWriter
     internal static string SubsetTag(OpenTypeFont font, FontUsage usage)
     {
         var input = new StringBuilder(font.PostScriptName);
-        foreach (var gid in usage.Glyphs.Keys)
+        foreach (var code in usage.Glyphs.Keys)
         {
-            input.Append(',').Append(gid);
+            input.Append(',').Append(code);
+            if (usage.Aliases.TryGetValue(code, out var gid))
+            {
+                input.Append('=').Append(gid);
+            }
         }
 
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(input.ToString()));
