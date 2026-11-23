@@ -199,7 +199,11 @@ RaiCore.Pdf.LineJoin.Miter = 0 -> RaiCore.Pdf.LineJoin
 RaiCore.Pdf.LineJoin.Round = 1 -> RaiCore.Pdf.LineJoin
 RaiCore.Pdf.PdfAConformance
 RaiCore.Pdf.PdfAConformance.None = 0 -> RaiCore.Pdf.PdfAConformance
+RaiCore.Pdf.PdfAConformance.PdfA1A = 6 -> RaiCore.Pdf.PdfAConformance
+RaiCore.Pdf.PdfAConformance.PdfA1B = 5 -> RaiCore.Pdf.PdfAConformance
+RaiCore.Pdf.PdfAConformance.PdfA2A = 3 -> RaiCore.Pdf.PdfAConformance
 RaiCore.Pdf.PdfAConformance.PdfA2B = 1 -> RaiCore.Pdf.PdfAConformance
+RaiCore.Pdf.PdfAConformance.PdfA3A = 4 -> RaiCore.Pdf.PdfAConformance
 RaiCore.Pdf.PdfAConformance.PdfA3B = 2 -> RaiCore.Pdf.PdfAConformance
 RaiCore.Pdf.PdfArtifactKind
 RaiCore.Pdf.PdfArtifactKind.Background = 3 -> RaiCore.Pdf.PdfArtifactKind
@@ -380,6 +384,7 @@ RaiCore.Pdf.PdfImageFormat.Gif = 2 -> RaiCore.Pdf.PdfImageFormat
 RaiCore.Pdf.PdfImageFormat.Jpeg = 0 -> RaiCore.Pdf.PdfImageFormat
 RaiCore.Pdf.PdfImageFormat.Png = 1 -> RaiCore.Pdf.PdfImageFormat
 RaiCore.Pdf.PdfImageFormat.Svg = 3 -> RaiCore.Pdf.PdfImageFormat
+RaiCore.Pdf.PdfImageFormat.Tiff = 6 -> RaiCore.Pdf.PdfImageFormat
 RaiCore.Pdf.PdfImageFormat.WebP = 5 -> RaiCore.Pdf.PdfImageFormat
 RaiCore.Pdf.PdfImportOptions
 RaiCore.Pdf.PdfImportOptions.KeepAnnotations.get -> bool
@@ -560,8 +565,12 @@ static RaiCore.Pdf.PdfColor.FromRgba(byte red, byte green, byte blue, double alp
 static RaiCore.Pdf.PdfColor.operator !=(RaiCore.Pdf.PdfColor left, RaiCore.Pdf.PdfColor right) -> bool
 static RaiCore.Pdf.PdfColor.operator ==(RaiCore.Pdf.PdfColor left, RaiCore.Pdf.PdfColor right) -> bool
 static RaiCore.Pdf.PdfColor.White.get -> RaiCore.Pdf.PdfColor
+static RaiCore.Pdf.PdfImage.GetPageCount(byte[]! data) -> int
+static RaiCore.Pdf.PdfImage.GetPageCount(string! path) -> int
 static RaiCore.Pdf.PdfImage.Load(byte[]! data) -> RaiCore.Pdf.PdfImage!
+static RaiCore.Pdf.PdfImage.Load(byte[]! data, int pageIndex) -> RaiCore.Pdf.PdfImage!
 static RaiCore.Pdf.PdfImage.Load(string! path) -> RaiCore.Pdf.PdfImage!
+static RaiCore.Pdf.PdfImage.Load(string! path, int pageIndex) -> RaiCore.Pdf.PdfImage!
 static RaiCore.Pdf.PdfImage.Load(System.IO.Stream! stream) -> RaiCore.Pdf.PdfImage!
 static RaiCore.Pdf.PdfImage.LoadSvg(string! markup) -> RaiCore.Pdf.PdfImage!
 static RaiCore.Pdf.PdfImportOptions.Default.get -> RaiCore.Pdf.PdfImportOptions!

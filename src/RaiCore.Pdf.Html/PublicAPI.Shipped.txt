@@ -81,6 +81,33 @@ RaiCore.Pdf.Html.HtmlDiagnosticKind.UnsupportedValue = 5 -> RaiCore.Pdf.Html.Htm
 RaiCore.Pdf.Html.HtmlDiagnosticSeverity
 RaiCore.Pdf.Html.HtmlDiagnosticSeverity.Info = 0 -> RaiCore.Pdf.Html.HtmlDiagnosticSeverity
 RaiCore.Pdf.Html.HtmlDiagnosticSeverity.Warning = 1 -> RaiCore.Pdf.Html.HtmlDiagnosticSeverity
+RaiCore.Pdf.Html.HtmlFragment
+RaiCore.Pdf.Html.HtmlFragment.AddTo(RaiCore.Pdf.Layout.ContainerBlock! container) -> RaiCore.Pdf.Layout.ContainerBlock!
+RaiCore.Pdf.Html.HtmlFragment.AddTo(RaiCore.Pdf.Layout.FlowDocument! flow) -> RaiCore.Pdf.Layout.FlowDocument!
+RaiCore.Pdf.Html.HtmlFragment.Blocks.get -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.Layout.Block!>!
+RaiCore.Pdf.Html.HtmlFragment.Diagnostics.get -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.Html.HtmlDiagnostic!>!
+RaiCore.Pdf.Html.HtmlFragmentOptions
+RaiCore.Pdf.Html.HtmlFragmentOptions.BaseStyle.get -> RaiCore.Pdf.Layout.TextStyle?
+RaiCore.Pdf.Html.HtmlFragmentOptions.BaseStyle.init -> void
+RaiCore.Pdf.Html.HtmlFragmentOptions.BaseUri.get -> System.Uri?
+RaiCore.Pdf.Html.HtmlFragmentOptions.BaseUri.init -> void
+RaiCore.Pdf.Html.HtmlFragmentOptions.CreateBookmarks.get -> bool
+RaiCore.Pdf.Html.HtmlFragmentOptions.CreateBookmarks.init -> void
+RaiCore.Pdf.Html.HtmlFragmentOptions.Css.get -> string?
+RaiCore.Pdf.Html.HtmlFragmentOptions.Css.init -> void
+RaiCore.Pdf.Html.HtmlFragmentOptions.FallbackFontFamilies.get -> System.Collections.Generic.IReadOnlyList<string!>!
+RaiCore.Pdf.Html.HtmlFragmentOptions.FallbackFontFamilies.init -> void
+RaiCore.Pdf.Html.HtmlFragmentOptions.Fonts.get -> RaiCore.Pdf.Fonts.FontCollection?
+RaiCore.Pdf.Html.HtmlFragmentOptions.Fonts.init -> void
+RaiCore.Pdf.Html.HtmlFragmentOptions.HtmlFragmentOptions() -> void
+RaiCore.Pdf.Html.HtmlFragmentOptions.Hyphenators.get -> System.Collections.Generic.IReadOnlyDictionary<string!, RaiCore.Pdf.Layout.Text.Hyphenator!>?
+RaiCore.Pdf.Html.HtmlFragmentOptions.Hyphenators.init -> void
+RaiCore.Pdf.Html.HtmlFragmentOptions.Limits.get -> RaiCore.Pdf.ResourceLimits!
+RaiCore.Pdf.Html.HtmlFragmentOptions.Limits.init -> void
+RaiCore.Pdf.Html.HtmlFragmentOptions.ResourceLoader.get -> RaiCore.Pdf.Html.ResourceLoader!
+RaiCore.Pdf.Html.HtmlFragmentOptions.ResourceLoader.init -> void
+RaiCore.Pdf.Html.HtmlFragmentOptions.Width.get -> double
+RaiCore.Pdf.Html.HtmlFragmentOptions.Width.init -> void
 RaiCore.Pdf.Html.HtmlToPdf
 RaiCore.Pdf.Html.ResourceKind
 RaiCore.Pdf.Html.ResourceKind.Font = 2 -> RaiCore.Pdf.Html.ResourceKind
@@ -101,6 +128,8 @@ RaiCore.Pdf.Html.ResourceRequest.Uri.get -> System.Uri!
 RaiCore.Pdf.Html.ResourceRequest.Uri.init -> void
 static RaiCore.Pdf.Html.HtmlDiagnostic.operator !=(RaiCore.Pdf.Html.HtmlDiagnostic? left, RaiCore.Pdf.Html.HtmlDiagnostic? right) -> bool
 static RaiCore.Pdf.Html.HtmlDiagnostic.operator ==(RaiCore.Pdf.Html.HtmlDiagnostic? left, RaiCore.Pdf.Html.HtmlDiagnostic? right) -> bool
+static RaiCore.Pdf.Html.HtmlFragment.Parse(string! html, RaiCore.Pdf.Html.HtmlFragmentOptions? options = null) -> RaiCore.Pdf.Html.HtmlFragment!
+static RaiCore.Pdf.Html.HtmlFragment.ParseAsync(string! html, RaiCore.Pdf.Html.HtmlFragmentOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.Html.HtmlFragment!>!
 static RaiCore.Pdf.Html.HtmlToPdf.Convert(string! html, RaiCore.Pdf.Html.HtmlConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
 static RaiCore.Pdf.Html.HtmlToPdf.ConvertAsync(string! html, RaiCore.Pdf.Html.HtmlConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
 static RaiCore.Pdf.Html.HtmlToPdf.ConvertToBytes(string! html, RaiCore.Pdf.Html.HtmlConverterOptions? options = null) -> byte[]!
