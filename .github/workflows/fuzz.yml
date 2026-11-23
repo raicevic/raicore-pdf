@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [html, css, htmlfragment, png, jpeg, gif, bmp, webp, svg, font, woff, woff2, pdf, extract, email, tiff, csv, edit, cfb, xlsx, xls, pptx, ppt, docx, odt, rtf, doc]
+        target: [html, css, htmlfragment, png, jpeg, gif, bmp, webp, svg, font, woff, woff2, pdf, extract, email, tiff, csv, edit, cfb, xlsx, xls, workbook, pptx, ppt, docx, odt, rtf, doc]
     steps:
       - uses: actions/checkout@v5
 
