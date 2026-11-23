@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using System.Xml;
+using RaiCore.Pdf.Cfb;
 
 namespace RaiCore.Pdf.Sheets.Xlsx;
 
@@ -38,15 +39,12 @@ internal sealed class XlsxPackage : IDisposable
         }
     }
 
-    /// <summary>The bytes of a Compound File (OLE2): encrypted workbooks and Excel 97-2003 files.</summary>
-    private static ReadOnlySpan<byte> CompoundFileSignature => [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
-
     /// <summary>Opens a package.</summary>
     /// <exception cref="NotSupportedException">The data is an encrypted workbook or an Excel 97-2003 file.</exception>
     /// <exception cref="SpreadsheetFormatException">The data is not a ZIP package.</exception>
     public static XlsxPackage Open(byte[] data, ResourceLimits limits, Action? checkpoint = null)
     {
-        if (data.AsSpan().StartsWith(CompoundFileSignature))
+        if (CompoundFile.IsCompoundFile(data))
         {
             throw new NotSupportedException(
                 "The data is a Compound File: a password-protected (encrypted) workbook or an Excel 97-2003 (.xls) file, which are not supported.");

@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 
-namespace RaiCore.Pdf.Email.Cfb;
+namespace RaiCore.Pdf.Cfb;
 
 /// <summary>
 /// A Compound File Binary file ([MS-CFB], the OLE structured storage of <c>.msg</c>, <c>.doc</c>, <c>.xls</c> and

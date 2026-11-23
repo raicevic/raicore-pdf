@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using RaiCore.Pdf.Cfb;
 
 namespace RaiCore.Pdf.Slides.Pptx;
 
@@ -52,15 +53,12 @@ internal sealed class PptxPackage : IDisposable
         }
     }
 
-    /// <summary>The bytes of a Compound File (OLE2): encrypted presentations and PowerPoint 97-2003 files.</summary>
-    private static ReadOnlySpan<byte> CompoundFileSignature => [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
-
     /// <summary>Opens a package.</summary>
     /// <exception cref="NotSupportedException">The data is an encrypted presentation or a PowerPoint 97-2003 file.</exception>
     /// <exception cref="PresentationFormatException">The data is not a ZIP package.</exception>
     public static PptxPackage Open(byte[] data, ResourceLimits limits, Action? checkpoint = null)
     {
-        if (data.AsSpan().StartsWith(CompoundFileSignature))
+        if (CompoundFile.IsCompoundFile(data))
         {
             throw new NotSupportedException(
                 "The data is a Compound File: a password-protected (encrypted) presentation or a PowerPoint 97-2003 (.ppt) file, which are not supported.");

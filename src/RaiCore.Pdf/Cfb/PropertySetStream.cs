@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 
-namespace RaiCore.Pdf.Email.Cfb;
+namespace RaiCore.Pdf.Cfb;
 
 /// <summary>
 /// A property set stream ([MS-OLEPS]), such as <c>\u0005SummaryInformation</c> (title, author, dates) and

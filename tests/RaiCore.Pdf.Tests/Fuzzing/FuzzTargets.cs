@@ -280,14 +280,14 @@ public static class FuzzTargets
     /// </summary>
     public static void Cfb(byte[] input)
     {
-        var file = RaiCore.Pdf.Email.Cfb.CompoundFile.Open(input, Limits);
-        var storages = new Stack<RaiCore.Pdf.Email.Cfb.CfbEntry>([file.Root]);
+        var file = RaiCore.Pdf.Cfb.CompoundFile.Open(input, Limits);
+        var storages = new Stack<RaiCore.Pdf.Cfb.CfbEntry>([file.Root]);
         var read = 0;
         while (storages.TryPop(out var storage) && read < 64)
         {
             foreach (var entry in storage.Children)
             {
-                if (entry.Kind != RaiCore.Pdf.Email.Cfb.CfbEntryKind.Stream)
+                if (entry.Kind != RaiCore.Pdf.Cfb.CfbEntryKind.Stream)
                 {
                     storages.Push(entry);
                 }
@@ -296,7 +296,7 @@ public static class FuzzTargets
                     var data = file.Read(entry);
                     if (entry.Name.StartsWith('\u0005'))
                     {
-                        _ = RaiCore.Pdf.Email.Cfb.PropertySetStream.Read(data);
+                        _ = RaiCore.Pdf.Cfb.PropertySetStream.Read(data);
                     }
                 }
             }
