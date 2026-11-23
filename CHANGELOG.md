@@ -30,6 +30,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
   by `WorkbookOptions.Limits`; a new fuzz target, `workbook`, opens, edits and saves.
 
 ### Fixed
+- **A CFF2 font with a huge blend count** in a DICT threw `ArgumentOutOfRangeException` when it was subset (the count times the
+  number of regions overflowed); it now throws `FontFormatException`, and the font is embedded whole. Found by fuzzing.
 - **Deeply nested layout content no longer overflows the stack** when `MaxNestingDepth` is raised: finding the forced
   break and the page name a block starts with walked its chain of first children recursively, without the stack check
   every other recursion has. A test that depended on how far the JIT had optimized the layout code is now stable.

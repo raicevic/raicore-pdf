@@ -91,14 +91,15 @@ internal sealed class CffDict
                     }
 
                     // n default values, n * k deltas, n: keep the defaults.
-                    var n = (int)operands[^1].Value;
+                    // In 64 bits: a huge n times the region count must not wrap around to a count that passes.
+                    var n = operands[^1].Value;
                     var deltas = n * regionCounts[vsIndex];
-                    if (n < 0 || operands.Count < 1 + n + deltas)
+                    if (!(n >= 0) || n != Math.Floor(n) || regionCounts[vsIndex] < 0 || operands.Count < 1 + n + deltas)
                     {
                         throw new FontFormatException("Invalid blend in a CFF2 DICT.");
                     }
 
-                    operands.RemoveRange(operands.Count - 1 - deltas, deltas + 1);
+                    operands.RemoveRange(operands.Count - 1 - (int)deltas, (int)deltas + 1);
                 }
                 else
                 {
