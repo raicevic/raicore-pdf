@@ -186,7 +186,16 @@ internal sealed class ImageInline(byte[] data, double width, double height) : Wo
 
     /// <summary>A name for diagnostics (its part name).</summary>
     public string? Name { get; init; }
+
+    /// <summary>The chart drawn instead of image data, or <c>null</c> for a picture.</summary>
+    public EmbeddedChart? Chart { get; init; }
 }
+
+/// <summary>A chart in a document: the chart, and the theme fonts its text may refer to.</summary>
+/// <param name="Chart">The chart, its colors resolved through the document's theme.</param>
+/// <param name="MinorFont">The theme's body font, for chart text that names no font or <c>+mn-lt</c>.</param>
+/// <param name="MajorFont">The theme's heading font, for <c>+mj-lt</c>.</param>
+internal sealed record EmbeddedChart(Charts.Chart Chart, string? MinorFont, string? MajorFont);
 
 /// <summary>Fields whose value depends on the layout.</summary>
 internal enum FieldKind

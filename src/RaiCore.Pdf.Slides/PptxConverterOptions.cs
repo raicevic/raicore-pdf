@@ -61,9 +61,9 @@ public sealed class PptxConverterOptions
     public ResourceLimits Limits { get; init; } = ResourceLimits.Default;
 
     /// <summary>
-    /// Receives what the converter did not draw as a presentation program would: charts, SmartArt without a stored
-    /// drawing, pictures in formats it cannot read (such as EMF and WMF), preset shapes drawn as rectangles, and so
-    /// on. Each distinct issue is reported once per slide, on the conversion's thread, while the conversion runs.
+    /// Receives what the converter did not draw as a presentation program would: charts it cannot draw, SmartArt
+    /// without a stored drawing, pictures in formats it cannot read (such as EMF and WMF), preset shapes drawn as
+    /// rectangles, and so on. Each distinct issue is reported once per slide, on the conversion's thread, while the conversion runs.
     /// <c>null</c> (the default) collects nothing.
     /// </summary>
     /// <example>

@@ -60,7 +60,7 @@ public abstract class DocumentConverterOptions
 
     /// <summary>
     /// Receives what the conversion could not show as the document does (<see cref="DocumentDiagnostic"/>): unsupported
-    /// content such as charts or text boxes, images in formats that cannot be drawn, and content that does not fit where
+    /// content such as charts that cannot be drawn or text boxes, images in formats that cannot be drawn, and content that does not fit where
     /// it is laid out. Each distinct issue is reported once per conversion. <c>null</c> (the default) collects nothing.
     /// </summary>
     /// <example>

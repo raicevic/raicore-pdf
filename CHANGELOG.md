@@ -6,6 +6,13 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Charts** in presentations and Word documents: one chart engine for DrawingML charts, drawn as vector graphics
+  from the data cached in the file, with text that can be extracted. Columns and bars (clustered, stacked, 100%,
+  horizontal), lines (markers, smoothed), pies (exploded) and doughnuts, areas, scatter, bubble, radar and stock
+  charts, combinations with secondary axes; Excel's automatic axis scaling, number formats, logarithmic and reversed
+  axes, gridlines, titles, legends, data labels, markers, manual layouts, theme colors and the chart style's automatic
+  colors. 3-D charts are drawn flat. Newer chart types (waterfall, treemap, sunburst...) in Word documents show their
+  stored picture, as they already did in presentations; what can't be drawn is reported to `Diagnostics`.
 - **`ResourceLoaders.None`** (`RaiCore.Pdf.Html`): a resource loader that loads nothing, so untrusted HTML can embed
   images as `data:` URIs (which never reach a loader) but can't reach local files or the network. Use it with
   `HtmlConverterOptions`, `HtmlFragmentOptions` and `EmailConverterOptions.Html`.
