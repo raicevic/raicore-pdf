@@ -39,7 +39,7 @@ namespace RaiCore.Pdf.Sheets;
 /// pdf.Save("report.pdf");
 /// </code>
 /// </example>
-public static class XlsxToPdf
+public static partial class XlsxToPdf
 {
     /// <summary>Converts a workbook to a PDF document.</summary>
     /// <param name="xlsx">The workbook's bytes.</param>

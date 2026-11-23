@@ -30,6 +30,8 @@
   href: email.md
 - name: CSV, XLSX and XLS to PDF
   href: sheets.md
+- name: "Workbooks: open, edit and save"
+  href: workbooks.md
 - name: PowerPoint (PPTX, PPT) to PDF
   href: slides.md
 - name: Word, ODT and RTF to PDF

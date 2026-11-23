@@ -69,6 +69,7 @@ public static class FuzzTargets
         ["cfb"] = Cfb,
         ["xlsx"] = Xlsx,
         ["xls"] = Xls,
+        ["workbook"] = WorkbookEdit,
         ["pptx"] = Pptx,
         ["ppt"] = Ppt,
         ["docx"] = Docx,
@@ -389,6 +390,71 @@ public static class FuzzTargets
         ShowSheetNames = input.Length % 2 == 0,
         AutoFit = input.Length % 5 == 0,
     });
+
+    /// <summary>
+    /// The Workbook API: a workbook opened (XLSX, XLS or delimited text, told apart by the content), every worksheet's
+    /// values read, displayed and searched; an XLSX one edited (values written, rows and columns inserted and deleted,
+    /// where by the input's length), saved and opened again, which must work: a workbook the API writes that it cannot
+    /// read is a bug. Every input is saved as delimited text. Splitting an array formula or a table header is the
+    /// documented <see cref="InvalidOperationException"/>.
+    /// </summary>
+    public static void WorkbookEdit(byte[] input)
+    {
+        var options = new WorkbookOptions { Limits = Limits };
+        var workbook = Workbook.Open(input, options);
+        foreach (var sheet in workbook.Worksheets.Take(4))
+        {
+            foreach (var cell in sheet.Cells.Take(2000))
+            {
+                _ = (cell.Value, cell.Formula, cell.NumberFormat, cell.GetDisplayText());
+            }
+
+            _ = (sheet.Find("a").Count, sheet.Row(1).IsHidden, sheet.Column(1).IsHidden, sheet.MergedRanges.Count);
+        }
+
+        if (!workbook.IsReadOnly && workbook.Worksheets.Count > 0)
+        {
+            var sheet = workbook.Worksheets[input.Length % workbook.Worksheets.Count];
+            var at = 1 + (input.Length % 7);
+            Action[] edits =
+            [
+                () => sheet["B2"].SetValue("fuzz"),
+                () => sheet["C3"].SetValue(new DateTime(2026, 11, 23)),
+                () => sheet.InsertRows(at, 1 + (input.Length % 3)),
+                () => sheet.DeleteRows(at + 1),
+                () => sheet.InsertColumns(at),
+                () => sheet.DeleteColumns(at, 2),
+                () => sheet.Row(at).IsHidden = true,
+            ];
+            foreach (var edit in edits)
+            {
+                try
+                {
+                    edit();
+                }
+                catch (InvalidOperationException)
+                {
+                }
+            }
+
+            var saved = workbook.ToArray();
+            try
+            {
+                var reopened = Workbook.Open(saved, options);
+                foreach (var cell in reopened.Worksheets.SelectMany(s => s.Cells).Take(2000))
+                {
+                    _ = cell.Value;
+                }
+            }
+            catch (SpreadsheetFormatException ex)
+            {
+                throw new InvalidOperationException("The Workbook API saved a workbook it cannot open: " + ex.Message, ex);
+            }
+        }
+
+        using var csv = new MemoryStream();
+        workbook.SaveAsCsv(csv, new CsvSaveOptions { Separator = input.Length % 2 == 0 ? ';' : ',', FormattedValues = input.Length % 3 != 0 });
+    }
 
     /// <summary>
     /// A PPTX presentation: its package and parts read (presentation, slides, layouts, masters, themes, table styles,

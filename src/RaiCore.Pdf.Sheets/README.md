@@ -42,12 +42,26 @@ archive.Save("archive.pdf");
 malformed ones throw `SpreadsheetFormatException`;
   cells, decompressed bytes, pages and time are bounded by `ResourceLimits`.
 
-Not supported in workbooks: charts, images, conditional formatting, comments, headers and footers, pivot tables,
+- **Open, edit and save workbooks:** `Workbook.Open("template.xlsx")` reads and writes cells by address (text,
+  numbers, booleans, dates, formulas), finds cells by their text, inserts and deletes rows and columns with every
+  reference moved (formulas, names, merged cells, conditional formatting, tables, charts, comments), hides rows and
+  columns, and saves as `.xlsx` with every part it does not change kept byte for byte, or a sheet as CSV with any
+  separator and encoding. `.xls` and CSV files open read only.
+
+```csharp
+var workbook = Workbook.Open("template.xlsx");
+workbook.Worksheets[0]["B3"].SetValue("Alice Example");
+workbook.Worksheets[0].InsertRows(10, 2);
+workbook.Save("invoice.xlsx");
+```
+
+Not supported in conversion to PDF: charts, images, conditional formatting, comments, headers and footers, pivot tables,
 formula calculation, `.xlsb`, Excel 2.x-4.0 and password-protected files.
 
 Fonts, gridlines, tagging (accessible tables) and the page are set in `SheetOptions`.
 
-More: the [spreadsheet guide](https://raicevic.github.io/raicore-pdf/guides/sheets.html).
+More: the [spreadsheet guide](https://raicevic.github.io/raicore-pdf/guides/sheets.html) and the
+[workbooks guide](https://raicevic.github.io/raicore-pdf/guides/workbooks.html).
 
 ## More
 

@@ -23,6 +23,7 @@ var samples = new (string Name, Func<Task> Run)[]
     ("editing", Editing.RunAsync),
     ("email", Email.RunAsync),
     ("CSV", Sheets.RunAsync),
+    ("workbooks", Workbooks.RunAsync),
     ("PPTX", Slides.RunAsync),
     ("Word documents", WordDocuments.RunAsync),
 };
