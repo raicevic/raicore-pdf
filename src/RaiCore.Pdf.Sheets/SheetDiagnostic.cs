@@ -43,7 +43,11 @@ public enum SheetDiagnosticKind
     /// <summary>Comments (notes and threaded comments); they are left out.</summary>
     Comment,
 
-    /// <summary>Conditional formatting rules (also data bars, color scales and icon sets); cells keep their own format.</summary>
+    /// <summary>
+    /// Conditional formatting rules that are not applied: rules with formulas, data bars, icon sets, dates, and all the
+    /// rules of Excel 97-2003 workbooks; cells keep their own format. (Rules comparing values, color scales, top and
+    /// bottom, average, duplicate, text, blank and error rules of .xlsx workbooks are applied.)
+    /// </summary>
     ConditionalFormatting,
 
     /// <summary>Sparklines (the small charts in cells); they are left out.</summary>
@@ -52,19 +56,22 @@ public enum SheetDiagnosticKind
     /// <summary>Pivot tables; their cells are shown as they are stored, without the pivot table's style.</summary>
     PivotTable,
 
-    /// <summary>Headers and footers (each text: odd, even and first page, header and footer); they are left out.</summary>
+    /// <summary>Headers and footers. No longer reported: they are printed.</summary>
     HeaderFooter,
 
-    /// <summary>Page breaks set by hand (between rows or columns); the pages break where the content fills them.</summary>
+    /// <summary>Page breaks set by hand. No longer reported: they start pages (between rows) and bands (between columns).</summary>
     PageBreak,
 
-    /// <summary>Cells with rich text (runs of text in different fonts); their text is shown in the cell's font.</summary>
+    /// <summary>
+    /// Cells of Excel 97-2003 workbooks with rich text (runs of text in different fonts); their text is shown in the
+    /// cell's font. (Rich text of .xlsx workbooks is shown.)
+    /// </summary>
     RichText,
 
-    /// <summary>Cells with rotated or vertically stacked text; their text is shown horizontally.</summary>
+    /// <summary>Cells with rotated text; their text is shown horizontally. (Vertically stacked text is shown.)</summary>
     RotatedText,
 
-    /// <summary>Cells set to shrink their text to fit; their text is shown at its size, and wraps or runs on instead.</summary>
+    /// <summary>Cells set to shrink their text to fit. No longer reported: such text is shown smaller to fit its column.</summary>
     ShrinkToFit,
 
     /// <summary>

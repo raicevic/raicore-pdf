@@ -36,7 +36,8 @@ internal enum CellAlignment
 /// A cell of a sheet: its text as shown, what it is, its alignment, and its format (font, fill, borders) where the
 /// source has one (a worksheet; CSV cells have none).
 /// </summary>
-internal readonly record struct SheetCell(string Text, CellKind Kind, CellAlignment Alignment = CellAlignment.General, CellFormat? Format = null)
+internal readonly record struct SheetCell(string Text, CellKind Kind, CellAlignment Alignment = CellAlignment.General, CellFormat? Format = null,
+    IReadOnlyList<CellRun>? Runs = null)
 {
     /// <summary>An empty cell.</summary>
     public static SheetCell Empty { get; } = new(string.Empty, CellKind.Empty);
@@ -44,6 +45,25 @@ internal readonly record struct SheetCell(string Text, CellKind Kind, CellAlignm
     /// <summary>Whether the cell is shown to the right (numbers and dates, unless aligned otherwise).</summary>
     public bool IsRightAligned => Alignment == CellAlignment.Right
         || (Alignment == CellAlignment.General && Kind is CellKind.Number or CellKind.Date);
+}
+
+/// <summary>A run of a cell's rich text: its text, and its font (<c>null</c> for the cell's).</summary>
+internal sealed record CellRun(string Text, CellFont? Font);
+
+/// <summary>The font of a run of rich text: what it does not give (family, size, color) is the cell's.</summary>
+internal sealed record CellFont(string? Name, double? Size, bool Bold, bool Italic, CellUnderline Underline, bool Strikethrough, PdfColor? Color)
+{
+    /// <summary>The cell's format with this font.</summary>
+    public CellFormat Apply(CellFormat format) => format with
+    {
+        FontName = Name ?? format.FontName,
+        FontSize = Size ?? format.FontSize,
+        Bold = Bold,
+        Italic = Italic,
+        Underline = Underline,
+        Strikethrough = Strikethrough,
+        Color = Color ?? format.Color,
+    };
 }
 
 /// <summary>

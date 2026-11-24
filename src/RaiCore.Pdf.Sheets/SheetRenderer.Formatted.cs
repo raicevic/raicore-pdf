@@ -112,6 +112,11 @@ internal static partial class SheetRenderer
         }
 
         var flow = new FlowDocument(page);
+        if (format.HeaderFooter is { IsEmpty: false } headerFooter)
+        {
+            flow.PageDecorator = (canvas, info) => DrawHeaderFooter(canvas, info, headerFooter, context);
+        }
+
         var bookmark = format.Bookmark is { } name ? new Bookmark(name) : null;
         if (format.Heading is { } heading)
         {
@@ -127,7 +132,18 @@ internal static partial class SheetRenderer
             bookmark = null;
         }
 
-        var bands = ColumnFitter.Fit(needs, available);
+        // Page breaks set by hand between columns start a band: the columns between them are fitted on their own.
+        var bands = new List<ColumnBand>();
+        var groupStart = 0;
+        foreach (var end in format.ColumnBreaks.Where(b => b > 0 && b < needs.Length).Append(needs.Length))
+        {
+            if (end > groupStart)
+            {
+                bands.AddRange(ColumnFitter.Fit(needs[groupStart..end], available).Select(b => b with { Start = b.Start + groupStart }));
+                groupStart = end;
+            }
+        }
+
         context.ColumnSizes = [.. bands.SelectMany(b => b.Widths)];
         context.NaturalWidths = natural;
         foreach (var band in bands)
@@ -142,8 +158,23 @@ internal static partial class SheetRenderer
 
             if (format.LeadRows < sheet.Rows.Count)
             {
-                flow.Add(FormattedTable(context, band, format.LeadRows, sheet.Rows.Count, sheet.HeaderRows, breakBefore, bookmark));
-                bookmark = null;
+                // Page breaks set by hand between rows end a table; the next starts a page, with the header rows again.
+                var start = format.LeadRows;
+                var headerRows = sheet.HeaderRows;
+                foreach (var end in format.RowBreaks.Where(b => b > start + headerRows && b < sheet.Rows.Count).Append(sheet.Rows.Count))
+                {
+                    if (start == format.LeadRows)
+                    {
+                        flow.Add(FormattedTable(context, band, start, end, headerRows, breakBefore, bookmark));
+                    }
+                    else
+                    {
+                        flow.Add(FormattedTable(context, band, start, end, headerRows, true, null, headerFrom: format.LeadRows));
+                    }
+
+                    bookmark = null;
+                    start = end;
+                }
             }
         }
 
@@ -153,6 +184,37 @@ internal static partial class SheetRenderer
         }
 
         return flow;
+    }
+
+    /// <summary>
+    /// Draws a page's header and footer: each section (left, center, right) across the page between the margins, the
+    /// header from its distance below the page's top, the footer ending at its distance above the bottom, in the sheet's
+    /// fonts at its scale (unless they do not scale with it).
+    /// </summary>
+    private static void DrawHeaderFooter(PdfCanvas canvas, PageInfo info, SheetHeaderFooter headerFooter, FormattedContext context)
+    {
+        var (header, footer) = headerFooter.For(info.Number);
+        var (date, culture, file) = context.Format.PrintContext;
+        var fields = new HeaderFooterContext(info.Number + headerFooter.FirstPageNumber - 1, info.Count, context.Sheet.Name, file, date, culture);
+        var setup = info.Setup;
+        var margins = setup.UsedMargins;
+        var width = Math.Max(1, setup.Size.Width - margins.Left - margins.Right);
+        var scale = headerFooter.ScaleWithDocument ? context.Scale : 1;
+        foreach (var (text, isHeader) in new[] { (header, true), (footer, false) })
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                continue;
+            }
+
+            var sections = HeaderFooterText.Paragraphs(HeaderFooterText.Parse(text, fields), context.Fonts, context.Format.DefaultFontSize, scale);
+            foreach (var paragraph in sections.OfType<Paragraph>())
+            {
+                Block[] blocks = [new ParagraphBlock(paragraph)];
+                var top = isHeader ? setup.Size.Height - headerFooter.HeaderMargin : headerFooter.FooterMargin + FlowDocument.MeasureBlocks(blocks, width);
+                FlowDocument.DrawBlocks(canvas, blocks, margins.Left, top, width);
+            }
+        }
     }
 
     private static List<ColumnMeasure> MeasureFormatted(FormattedContext context, Action? checkpoint)
@@ -174,7 +236,7 @@ internal static partial class SheetRenderer
 
                 var format = cell.Format ?? CellFormat.Default;
                 var style = context.Style(format, 1);
-                var widths = context.Measure(DisplayText(cell.Text), style);
+                var widths = context.MeasureCell(cell, format, style, 1);
 
                 // The column's padding is at the default size: a cell in a larger font needs its own, wider one.
                 var padding = Math.Max(0, 2 * FormattedPaddingX * (style.FontSize - context.Format.DefaultFontSize));
@@ -204,10 +266,16 @@ internal static partial class SheetRenderer
     /// <summary>
     /// One table of a band of columns: rows <paramref name="start"/> to <paramref name="end"/>, the first
     /// <paramref name="headerRows"/> of which repeat on every page. Merged cells are cut at the band's and the header's
-    /// edges; text that does not wrap runs on over empty cells beside it, as in a spreadsheet.
+    /// edges; text that does not wrap runs on over empty cells beside it, as in a spreadsheet. With
+    /// <paramref name="headerFrom"/>, the header rows are those from there, repeated above rows [<paramref name="start"/>,
+    /// <paramref name="end"/>) (after a page break set by hand).
     /// </summary>
-    private static TableBlock FormattedTable(FormattedContext context, ColumnBand band, int start, int end, int headerRows, bool breakBefore, Bookmark? bookmark)
+    private static TableBlock FormattedTable(FormattedContext context, ColumnBand band, int start, int end, int headerRows, bool breakBefore, Bookmark? bookmark, int? headerFrom = null)
     {
+        // The table's rows: the header rows and the body, each a group that merged cells are cut at.
+        var header = headerFrom is { } from ? (Start: from, End: from + headerRows) : (Start: start, End: start + Math.Min(headerRows, end - start));
+        var body = headerFrom is null ? (Start: header.End, End: end) : (Start: start, End: end);
+        int[] rows = [.. Enumerable.Range(header.Start, header.End - header.Start), .. Enumerable.Range(body.Start, Math.Max(0, body.End - body.Start))];
         var sheet = context.Sheet;
         var table = new TableBlock(new BoxStyle
         {
@@ -220,16 +288,16 @@ internal static partial class SheetRenderer
             ColumnWidths = [.. band.Widths.Select(w => (Length?)w)],
             Direction = context.Format.RightToLeft ? TextDirection.RightToLeft : TextDirection.LeftToRight,
             Bookmark = bookmark,
-            Overlay = DrawingOverlay(context, band, start, end),
+            // Header rows repeated after a page break set by hand show no drawings, as on the pages a table continues on.
+            Overlay = DrawingOverlay(context, band, headerFrom is null ? rows : [.. rows.Select((r, i) => i < header.End - header.Start ? -1 : r)]),
         };
 
-        headerRows = Math.Min(headerRows, end - start);
         var spans = new int[band.Count];
-        for (var row = start; row < end; row++)
+        for (var index = 0; index < rows.Length; index++)
         {
-            var isHeader = row - start < headerRows;
-            var groupStart = isHeader ? start : start + headerRows;
-            var groupEnd = isHeader ? start + headerRows : end;
+            var row = rows[index];
+            var isHeader = index < header.End - header.Start;
+            var (groupStart, groupEnd) = isHeader ? header : body;
             PlanRow(context, band, row, groupStart, spans);
             var cells = new List<TableCell>(band.Count);
             for (var i = 0; i < band.Count; i++)
@@ -293,7 +361,7 @@ internal static partial class SheetRenderer
             var cell = sheet[row, band.Start + i];
             // Text that wraps stays in its column, and so does text with a fill or borders, which would move with it.
             var format = cell.Format ?? CellFormat.Default;
-            if (spans[i] != 1 || cell.Kind != CellKind.Text || context.MergeAt(row, band.Start + i) is not null || format.Wrap || format.IsVisible)
+            if (spans[i] != 1 || cell.Kind != CellKind.Text || context.MergeAt(row, band.Start + i) is not null || format.Wrap || format.IsVisible || format.ShrinkToFit)
             {
                 continue;
             }
@@ -375,18 +443,18 @@ internal static partial class SheetRenderer
         }
 
         var format = cell.Format ?? CellFormat.Default;
-        var style = context.Style(format, context.Scale);
         var box = context.Box(format, cell.Alignment);
-        var text = DisplayText(cell.Text);
-        var paragraph = text.Length == 0 || cell.Kind == CellKind.Empty ? null : new Paragraph(style)
+
+        // Text set to shrink to fit (and not to wrap) that is wider than its columns is shown smaller, to fit them.
+        var factor = 1.0;
+        if (format.ShrinkToFit && !format.Wrap && cell.Kind != CellKind.Empty && context.TextWidth(cell) is var needed and > 0)
         {
-            Alignment = cell.IsRightAligned ? TextAlignment.Right
-                : cell.Alignment == CellAlignment.Center ? TextAlignment.Center
-                : cell.Alignment == CellAlignment.Left ? TextAlignment.Left
-                : TextAlignment.Start,
-            Direction = cell.IsRightAligned ? ParagraphDirection.LeftToRight : ParagraphDirection.Auto,
-            BreakLongWords = true,
-        }.Add(text);
+            var room = band.Widths.Skip(index).Take(columnSpan).Sum();
+            factor = needed > room ? Math.Max(0.05, room / needed) : 1;
+        }
+
+        var style = context.Style(format, context.Scale * factor);
+        var paragraph = DisplayText(cell.Text).Length == 0 || cell.Kind == CellKind.Empty ? null : context.CellParagraph(cell, format, style, context.Scale * factor);
         return paragraph is null
             ? new TableCell() { Style = box, ColumnSpan = columnSpan, RowSpan = rowSpan, VerticalAlignment = format.Vertical }
             : new TableCell(paragraph) { Style = box, ColumnSpan = columnSpan, RowSpan = rowSpan, VerticalAlignment = format.Vertical };
@@ -508,12 +576,65 @@ internal static partial class SheetRenderer
             return style.LineHeight.Resolve(style.Fonts[0], style.FontSize) + (2 * FormattedPaddingY * style.FontSize);
         }
 
+        /// <summary>
+        /// The paragraph of a cell's text in a style at a scale: its runs of rich text each in its own font, stacked
+        /// text one character a line.
+        /// </summary>
+        public Paragraph CellParagraph(SheetCell cell, CellFormat format, TextStyle style, double scale)
+        {
+            var paragraph = new Paragraph(style)
+            {
+                Alignment = cell.IsRightAligned ? TextAlignment.Right
+                    : cell.Alignment == CellAlignment.Center ? TextAlignment.Center
+                    : cell.Alignment == CellAlignment.Left ? TextAlignment.Left
+                    : TextAlignment.Start,
+                Direction = cell.IsRightAligned ? ParagraphDirection.LeftToRight : ParagraphDirection.Auto,
+                BreakLongWords = true,
+            };
+            if (cell.Runs is { Count: > 0 } runs)
+            {
+                foreach (var run in runs)
+                {
+                    paragraph.Add(Shown(run.Text, format), run.Font is { } font ? Style(font.Apply(format), scale) : style);
+                }
+            }
+            else
+            {
+                paragraph.Add(Shown(cell.Text, format));
+            }
+
+            return paragraph;
+        }
+
+        /// <summary>A text as a cell shows it: control characters cleaned out, stacked one character a line.</summary>
+        private static string Shown(string text, CellFormat format)
+        {
+            text = DisplayText(text);
+            if (!format.Stacked)
+            {
+                return text;
+            }
+
+            var characters = new List<string>();
+            var elements = System.Globalization.StringInfo.GetTextElementEnumerator(text.Replace("\n", string.Empty, StringComparison.Ordinal));
+            while (elements.MoveNext())
+            {
+                characters.Add(elements.GetTextElement());
+            }
+
+            return string.Join('\n', characters);
+        }
+
+        /// <summary>The widest word and line of a cell's text at a scale (its rich text and stacking taken into account).</summary>
+        public (double Min, double Max) MeasureCell(SheetCell cell, CellFormat format, TextStyle style, double scale) =>
+            cell.Runs is null && !format.Stacked ? Measure(DisplayText(cell.Text), style) : CellParagraph(cell, format, style, scale).MeasureIntrinsicWidths();
+
         /// <summary>The width a cell's text needs on one line at the scale, with its padding and indent.</summary>
         public double TextWidth(SheetCell cell)
         {
             var format = cell.Format ?? CellFormat.Default;
             var style = Style(format, Scale);
-            var width = Measure(DisplayText(cell.Text), style).Max;
+            var width = MeasureCell(cell, format, style, Scale).Max;
             return width + (((2 * FormattedPaddingX) + (format.Indent * IndentEms)) * style.FontSize) + _grid + Tolerance;
         }
 

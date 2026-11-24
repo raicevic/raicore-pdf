@@ -96,26 +96,18 @@ public class SheetDiagnosticsTests
         Assert.Equal(
         [
             ("Notes", SheetDiagnosticKind.Comment, 2),
-            ("Notes", SheetDiagnosticKind.ConditionalFormatting, 3), // The data bar is in the extension list too.
+            ("Notes", SheetDiagnosticKind.ConditionalFormatting, 1), // The data bar (also in the extension list); not the cell rule and color scale.
             ("Notes", SheetDiagnosticKind.Sparkline, 1),
-            ("Print", SheetDiagnosticKind.HeaderFooter, 2),
-            ("Print", SheetDiagnosticKind.PageBreak, 3),
-            ("Formats", SheetDiagnosticKind.RichText, 2),
-            ("Formats", SheetDiagnosticKind.RotatedText, 2), // Not the empty cell with a rotation.
-            ("Formats", SheetDiagnosticKind.ShrinkToFit, 1),
+            ("Formats", SheetDiagnosticKind.RotatedText, 1), // Not the stacked text, nor the empty cell with a rotation.
             ("Chart1", SheetDiagnosticKind.ChartSheet, 1),
         ], Content(diagnostics));
-        Assert.DoesNotContain(diagnostics, d => d.SheetName is "Plain" or "Drawings"); // Its pictures, shape and chart are drawn.
+        Assert.DoesNotContain(diagnostics, d => d.SheetName is "Plain" or "Drawings" or "Print"); // Drawings, headers, footers, page breaks are printed.
         Assert.Equal(
         [
             "2 comments are left out.",
-            "3 conditional formatting rules are not applied.",
+            "1 conditional formatting rule is not applied.",
             "1 sparkline is left out.",
-            "2 headers and footers are left out.",
-            "3 page breaks set by hand are not applied.",
-            "2 cells with rich text are shown in the cell's font only.",
-            "2 cells with rotated text are shown horizontally.",
-            "1 cell set to shrink to fit is shown at the full font size.",
+            "1 cell with rotated text is shown horizontally.",
             "The chart sheet is left out.",
         ], diagnostics.Select(d => d.Message));
     }
@@ -123,9 +115,7 @@ public class SheetDiagnosticsTests
     [Fact]
     public void Only_the_chosen_sheets_are_reported()
     {
-        var diagnostics = Xlsx(Fixtures.Read("Sheets/content.xlsx"), ["Plain", "Print"]);
-        Assert.All(diagnostics, d => Assert.Equal("Print", d.SheetName));
-        Assert.Equal(2, diagnostics.Count);
+        Assert.Single(Xlsx(Fixtures.Read("Sheets/content.xlsx"), ["Plain", "Notes"]).Select(d => d.SheetName).Distinct(), "Notes");
 
         // A chart sheet named by the options is reported, not converted.
         Assert.Equal([("Chart1", SheetDiagnosticKind.ChartSheet, 1)], Content(Xlsx(Fixtures.Read("Sheets/content.xlsx"), ["Chart1"])));
@@ -253,10 +243,8 @@ public class SheetDiagnosticsTests
             + "<x14:conditionalFormattings><x14:conditionalFormatting><x14:cfRule type=\"iconSet\" id=\"{X}\"/></x14:conditionalFormatting></x14:conditionalFormattings></ext></extLst>");
         Assert.Equal(
         [
-            ("Sheet1", SheetDiagnosticKind.ConditionalFormatting, 2), // The icon set has no rule in the main list.
-            ("Sheet1", SheetDiagnosticKind.HeaderFooter, 2),
-            ("Sheet1", SheetDiagnosticKind.PageBreak, 2),
-        ], Content(Xlsx(xlsx)));
+            ("Sheet1", SheetDiagnosticKind.ConditionalFormatting, 2), // The formula, and the icon set, which has no rule in the main list.
+        ], Content(Xlsx(xlsx))); // Headers, footers and page breaks are printed.
     }
 
     [Fact]
@@ -269,12 +257,8 @@ public class SheetDiagnosticsTests
             + "<c r=\"E1\" s=\"1\"/><c r=\"F1\" t=\"inlineStr\"><is><r><rPr><i/></rPr><t>inline</t></r></is></c><c r=\"G1\" t=\"inlineStr\"><is><r><t>plain runs</t></r></is></c></row>",
             styles: styles,
             sharedStrings: "<si><r><rPr><b/></rPr><t>bold</t></r><r><t> plain</t></r></si><si><t>plain</t></si><si><r><rPr><b/></rPr><t>unused</t></r></si>");
-        Assert.Equal(
-        [
-            ("Sheet1", SheetDiagnosticKind.RichText, 2),
-            ("Sheet1", SheetDiagnosticKind.RotatedText, 2),
-            ("Sheet1", SheetDiagnosticKind.ShrinkToFit, 2),
-        ], Content(Xlsx(xlsx)));
+        // Rich text, stacked text and shrink to fit are shown: only the text turned by 90 degrees is not.
+        Assert.Equal([("Sheet1", SheetDiagnosticKind.RotatedText, 1)], Content(Xlsx(xlsx)));
     }
 
     [Fact]
@@ -368,9 +352,7 @@ public class SheetDiagnosticsTests
             ("Sheet1", SheetDiagnosticKind.Comment, 1),
             ("Sheet1", SheetDiagnosticKind.ConditionalFormatting, 3),
             ("Sheet1", SheetDiagnosticKind.PivotTable, 1),
-            ("Sheet1", SheetDiagnosticKind.HeaderFooter, 3),
-            ("Sheet1", SheetDiagnosticKind.PageBreak, 3),
-        ], Content(Xls(xls)));
+        ], Content(Xls(xls))); // Headers, footers and page breaks are printed.
     }
 
     [Fact]
@@ -406,8 +388,7 @@ public class SheetDiagnosticsTests
         Assert.Equal(
         [
             ("Sheet1", SheetDiagnosticKind.RichText, 2),
-            ("Sheet1", SheetDiagnosticKind.RotatedText, 2),
-            ("Sheet1", SheetDiagnosticKind.ShrinkToFit, 2),
+            ("Sheet1", SheetDiagnosticKind.RotatedText, 1), // Not the stacked text; shrink to fit is shown.
         ], Content(Xls(xls)));
     }
 
@@ -434,7 +415,6 @@ public class SheetDiagnosticsTests
         [
             ("Sheet", SheetDiagnosticKind.Picture, 1),
             ("Sheet", SheetDiagnosticKind.Comment, 1),
-            ("Sheet", SheetDiagnosticKind.HeaderFooter, 1),
             ("Sheet", SheetDiagnosticKind.RotatedText, 1),
         ], Content(Xls(Join(Globals(Globals(0).Length), sheet))));
     }
@@ -493,7 +473,6 @@ public class SheetDiagnosticsTests
         Assert.Equal(
         [
             new SheetDiagnostic("Sheet1", SheetDiagnosticKind.Picture, "1 picture is left out."),
-            new SheetDiagnostic("Huge", SheetDiagnosticKind.HeaderFooter, "1 header or footer is left out."),
             new SheetDiagnostic("Huge", SheetDiagnosticKind.Layout,
                 "Content too wide for the page or its cell is drawn past the edge on page 2. Content taller than a page is cut off on page 3."),
         ], diagnostics);

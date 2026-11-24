@@ -58,4 +58,11 @@ public sealed class XlsxConverterOptions
     /// for the built-in currency formats, so that output is the same on every machine.
     /// </summary>
     public CultureInfo? Culture { get; init; }
+
+    /// <summary>
+    /// The date and time the sheets' headers and footers print for <c>&amp;D</c> and <c>&amp;T</c>, in
+    /// <see cref="Culture"/>'s short formats; <c>null</c> (the default) for the time of the conversion. Set it for
+    /// output that is the same every time.
+    /// </summary>
+    public DateTime? PrintDate { get; init; }
 }

@@ -191,3 +191,5 @@ static RaiCore.Pdf.Sheets.Workbook.Open(string! path, RaiCore.Pdf.Sheets.Workboo
 static RaiCore.Pdf.Sheets.Workbook.Open(System.IO.Stream! stream, RaiCore.Pdf.Sheets.WorkbookOptions? options = null) -> RaiCore.Pdf.Sheets.Workbook!
 static RaiCore.Pdf.Sheets.XlsxToPdf.Convert(RaiCore.Pdf.Sheets.Workbook! workbook, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
 static RaiCore.Pdf.Sheets.XlsxToPdf.ConvertToBytes(RaiCore.Pdf.Sheets.Workbook! workbook, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> byte[]!
+RaiCore.Pdf.Sheets.XlsxConverterOptions.PrintDate.get -> System.DateTime?
+RaiCore.Pdf.Sheets.XlsxConverterOptions.PrintDate.init -> void

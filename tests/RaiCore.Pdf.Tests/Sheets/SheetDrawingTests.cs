@@ -114,7 +114,7 @@ public class SheetDrawingTests
         [
             new(0, 0, 100, 15, false), new(1, 0, 115, 40, false), new(1, 1, 50, 10, false), new(0, 1, 30, 15, true), new(2, 1, 60, 20, false),
         ];
-        var heights = DrawingLayout.RowHeights(placed, 2, 6, row => 100 + row);
+        var heights = DrawingLayout.RowHeights(placed, [2, 3, 4], 6, row => 100 + row);
         Assert.Equal([100, 101, 15, 50, 20, 105], heights);
     }
 
@@ -127,8 +127,8 @@ public class SheetDrawingTests
             new(3, 2, 80, 5, false), // Not right below the previous row on its page.
             new(5, 2, 85, 5, false), // Right below it on the page, but not on the row axis (row 4 is not in the table).
         ];
-        var rows = new SheetAxis(DrawingLayout.RowHeights(placed, 0, 6, _ => 7));
-        var segments = DrawingLayout.Segments(placed, 0, rows);
+        var rows = new SheetAxis(DrawingLayout.RowHeights(placed, [0, 1, 2, 3, 4, 5], 6, _ => 7));
+        var segments = DrawingLayout.Segments(placed, [0, 1, 2, 3, 4, 5], rows);
         Assert.Equal(
         [
             new RowSegment(0, 100, 0, 55),

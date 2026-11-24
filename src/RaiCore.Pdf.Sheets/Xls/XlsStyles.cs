@@ -30,6 +30,9 @@ internal sealed record XlsXf
     /// <summary>Whether the text is shrunk to fit its cell (not supported, only reported).</summary>
     public bool ShrinkToFit { get; init; }
 
+    /// <summary>Whether the text is stacked vertically, one character under the other.</summary>
+    public bool Stacked { get; init; }
+
     /// <summary>The line styles of the left, right, top and bottom borders ([MS-XLS] 2.5.4: 0 none, 1 thin...).</summary>
     public (int Left, int Right, int Top, int Bottom) Lines { get; init; }
 
@@ -162,6 +165,8 @@ internal sealed class XlsStyles
             },
             Wrap = xf.Wrap,
             Indent = xf.Indent,
+            ShrinkToFit = xf.ShrinkToFit,
+            Stacked = xf.Stacked,
         };
         var alignment = xf.Horizontal switch
         {
@@ -170,7 +175,7 @@ internal sealed class XlsStyles
             3 => CellAlignment.Right,
             _ => CellAlignment.General,
         };
-        style = new XlsxCellStyle(format, NumberFormatOf(xf.NumberFormat), alignment, xf.Rotated, xf.ShrinkToFit);
+        style = new XlsxCellStyle(format, NumberFormatOf(xf.NumberFormat), alignment, xf.Rotated);
         _resolved[index] = style;
         return style;
     }

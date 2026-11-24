@@ -55,6 +55,21 @@ internal sealed class XlsxWorksheet
     /// <summary>The height of rows without one, in points, or <c>null</c>.</summary>
     public double? DefaultRowHeight { get; set; }
 
+    /// <summary>The numbers of the cells that store one (for conditional formatting), by <see cref="Key"/>.</summary>
+    public Dictionary<long, double> Numbers { get; } = [];
+
+    /// <summary>The <c>conditionalFormatting</c> elements, applied once the cells are read.</summary>
+    public List<System.Xml.Linq.XElement> ConditionalFormats { get; } = [];
+
+    /// <summary>The headers and footers, and where they go.</summary>
+    public SheetHeaderFooter HeaderFooter { get; set; } = new();
+
+    /// <summary>The rows that start a page by a page break set by hand (from 0), in the sheet's rows.</summary>
+    public List<int> RowBreaks { get; } = [];
+
+    /// <summary>The columns that start a page by a page break set by hand (from 0), in the sheet's columns.</summary>
+    public List<int> ColumnBreaks { get; } = [];
+
     /// <summary>The drawings (pictures, shapes, charts), anchored to the sheet's own rows and columns, in z-order.</summary>
     public List<Drawings.SheetDrawing> Drawings { get; } = [];
 
@@ -118,6 +133,42 @@ internal sealed class XlsxWorksheet
                         sheet.Landscape = reader.GetAttribute("orientation") == "landscape";
                         sheet.Scale = Integer(reader.GetAttribute("scale"));
                         sheet.FitToWidth = Integer(reader.GetAttribute("fitToWidth")) ?? 1;
+                        if (reader.GetAttribute("useFirstPageNumber") is "1" or "true" && Integer(reader.GetAttribute("firstPageNumber")) is { } first)
+                        {
+                            sheet.HeaderFooter = sheet.HeaderFooter with { FirstPageNumber = Math.Clamp(first, -10_000_000, 10_000_000) };
+                        }
+
+                        break;
+                    case "pageMargins":
+                        sheet.HeaderFooter = sheet.HeaderFooter with
+                        {
+                            HeaderMargin = Inches(reader.GetAttribute("header")) ?? sheet.HeaderFooter.HeaderMargin,
+                            FooterMargin = Inches(reader.GetAttribute("footer")) ?? sheet.HeaderFooter.FooterMargin,
+                        };
+                        break;
+                    case "conditionalFormatting" when !reader.IsEmptyElement && sheet.ConditionalFormats.Count < 10_000:
+                    {
+                        using (var subtree = reader.ReadSubtree())
+                        {
+                            sheet.ConditionalFormats.Add(System.Xml.Linq.XElement.Load(subtree));
+                        }
+
+                        // The extension list's rules that add to these (data bars of Excel 2010) are not counted again.
+                        foreach (var id in sheet.ConditionalFormats[^1].Descendants().Where(e => e.Name.LocalName == "id"))
+                        {
+                            (extendedRules ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase)).Add(id.Value.Trim());
+                        }
+
+                        break;
+                    }
+
+                    case "headerFooter":
+                        sheet.HeaderFooter = sheet.HeaderFooter with
+                        {
+                            DifferentOddEven = reader.GetAttribute("differentOddEven") is "1" or "true",
+                            DifferentFirst = reader.GetAttribute("differentFirst") is "1" or "true",
+                            ScaleWithDocument = reader.GetAttribute("scaleWithDoc") is not ("0" or "false"),
+                        };
                         break;
                 }
 
@@ -204,16 +255,25 @@ internal sealed class XlsxWorksheet
                 Unsupported.Add(SheetDiagnosticKind.Sparkline);
                 break;
             case ("headerFooter", "oddHeader" or "oddFooter" or "evenHeader" or "evenFooter" or "firstHeader" or "firstFooter"):
-                if (!string.IsNullOrWhiteSpace(XlsxWorkbook.ReadText(reader)))
+                var name = reader.LocalName;
+                var text = XlsxWorkbook.ReadText(reader);
+                text = string.IsNullOrWhiteSpace(text) ? null : text;
+                HeaderFooter = name switch
                 {
-                    Unsupported.Add(SheetDiagnosticKind.HeaderFooter);
-                }
-
+                    "oddHeader" => HeaderFooter with { OddHeader = text },
+                    "oddFooter" => HeaderFooter with { OddFooter = text },
+                    "evenHeader" => HeaderFooter with { EvenHeader = text },
+                    "evenFooter" => HeaderFooter with { EvenFooter = text },
+                    "firstHeader" => HeaderFooter with { FirstHeader = text },
+                    _ => HeaderFooter with { FirstFooter = text },
+                };
                 break;
             case ("rowBreaks" or "colBreaks", "brk"):
-                if (reader.GetAttribute("man") is "1" or "true")
+                // A break after the row or column of the id (from 1): the next one, from 0, starts a page.
+                if (reader.GetAttribute("man") is "1" or "true" && Integer(reader.GetAttribute("id")) is { } after and > 0
+                    && after < (section == "rowBreaks" ? XlsxWorkbook.MaxRows : XlsxWorkbook.MaxColumns) && RowBreaks.Count + ColumnBreaks.Count < 100_000)
                 {
-                    Unsupported.Add(SheetDiagnosticKind.PageBreak);
+                    (section == "rowBreaks" ? RowBreaks : ColumnBreaks).Add(after);
                 }
 
                 break;
@@ -237,7 +297,7 @@ internal sealed class XlsxWorksheet
         var type = reader.GetAttribute("t");
         var style = Integer(reader.GetAttribute("s")) ?? 0;
         string? value = null, inline = null;
-        var rich = false;
+        IReadOnlyList<CellRun>? runs = null;
         if (!reader.IsEmptyElement)
         {
             var depth = reader.Depth;
@@ -251,7 +311,7 @@ internal sealed class XlsxWorksheet
                             value = XlsxWorkbook.ReadText(reader);
                             break;
                         case "is":
-                            inline = XlsxWorkbook.ReadRichText(reader, out rich);
+                            inline = workbook.ReadRuns(reader, out runs);
                             break;
                     }
                 }
@@ -263,16 +323,19 @@ internal sealed class XlsxWorksheet
             return;
         }
 
-        var cell = workbook.Cell(type, value, inline, style);
+        var cell = workbook.Cell(type, value, inline, style, runs);
         Add(row, column, cell, maxCells);
+        if (type is null or "n" && cell.Kind != CellKind.Empty && double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) && double.IsFinite(number))
+        {
+            Numbers[Key(row, column)] = number;
+        }
         if (cell.Kind != CellKind.Empty)
         {
-            rich = type == "s" ? workbook.RichStrings.Count > 0 && Integer(value) is { } index && workbook.RichStrings.Contains(index) : rich && type == "inlineStr";
-            CountFormatting(workbook.Styles.CellStyle(style), rich);
+            CountFormatting(workbook.Styles.CellStyle(style), false);
         }
     }
 
-    /// <summary>Counts a cell that shows text with formatting that is not supported: rich text, rotation, shrinking to fit.</summary>
+    /// <summary>Counts a cell that shows text with formatting that is not supported: rich text (of .xls workbooks), rotation.</summary>
     internal void CountFormatting(XlsxCellStyle style, bool rich)
     {
         if (rich)
@@ -285,10 +348,6 @@ internal sealed class XlsxWorksheet
             Unsupported.Add(SheetDiagnosticKind.RotatedText);
         }
 
-        if (style.ShrinkToFit)
-        {
-            Unsupported.Add(SheetDiagnosticKind.ShrinkToFit);
-        }
     }
 
     /// <summary>
@@ -316,6 +375,10 @@ internal sealed class XlsxWorksheet
 
     private static int? Integer(string? value) =>
         int.TryParse(value, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out var result) ? result : null;
+
+    /// <summary>A length in inches as points, or <c>null</c>.</summary>
+    private static double? Inches(string? value) =>
+        double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var inches) && double.IsFinite(inches) ? Math.Clamp(inches, 0, 50) * 72 : null;
 
     private static double? Width(string? value) =>
         double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) && double.IsFinite(result) && result >= 0

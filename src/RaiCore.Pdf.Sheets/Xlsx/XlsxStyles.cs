@@ -8,7 +8,7 @@ namespace RaiCore.Pdf.Sheets.Xlsx;
 /// A cell style of a workbook (an <c>xf</c> of <c>cellXfs</c>), resolved: its format, number format and alignment, and
 /// whether it rotates its text or shrinks it to fit (which are not supported, only reported).
 /// </summary>
-internal sealed record XlsxCellStyle(CellFormat Format, NumberFormat NumberFormat, CellAlignment Alignment, bool Rotated = false, bool ShrinkToFit = false);
+internal sealed record XlsxCellStyle(CellFormat Format, NumberFormat NumberFormat, CellAlignment Alignment, bool Rotated = false);
 
 /// <summary>
 /// The styles part of a workbook (<c>xl/styles.xml</c>): number formats, fonts, fills, borders and the cell styles that
@@ -36,6 +36,14 @@ internal sealed class XlsxStyles
     /// <summary>Styles of a workbook without a styles part: General everywhere, in the default font.</summary>
     public static XlsxStyles Empty(FormatSettings settings) => new(settings);
 
+    private System.Xml.Linq.XElement? _dxfs;
+
+    /// <summary>The formats conditional formatting rules apply (<c>dxf</c>), by index.</summary>
+    public IReadOnlyList<DifferentialFormat> ConditionalFormats { get; private set; } = [];
+
+    /// <summary>The workbook's colors (its palette and theme).</summary>
+    public XlsxColors Colors { get; private set; } = new();
+
     /// <summary>Reads the styles part.</summary>
     public static XlsxStyles Read(XmlReader reader, FormatSettings settings, IReadOnlyList<uint>? theme)
     {
@@ -59,6 +67,13 @@ internal sealed class XlsxStyles
             {
                 section = reader.LocalName;
                 depth = reader.Depth;
+                if (section == "dxfs" && !reader.IsEmptyElement)
+                {
+                    // The formats of conditional formatting: read whole, resolved with the colors at the end.
+                    using var subtree = reader.ReadSubtree();
+                    styles._dxfs = System.Xml.Linq.XElement.Load(subtree);
+                }
+
                 continue;
             }
 
@@ -98,6 +113,8 @@ internal sealed class XlsxStyles
         }
 
         var colors = new XlsxColors(palette, theme);
+        styles.Colors = colors;
+        styles.ConditionalFormats = styles._dxfs?.Elements().Where(e => e.Name.LocalName == "dxf").Take(100_000).Select(e => DifferentialFormat.Read(e, colors)).ToList() ?? [];
         foreach (var resolve in fonts.Concat(fills).Concat(borders))
         {
             resolve(colors);
@@ -139,8 +156,10 @@ internal sealed class XlsxStyles
             Vertical = xf.Vertical,
             Wrap = xf.Wrap,
             Indent = xf.Indent,
+            ShrinkToFit = xf.ShrinkToFit,
+            Stacked = xf.Stacked,
         };
-        style = new XlsxCellStyle(format, NumberFormatOf(xf.NumberFormatId), xf.Horizontal, xf.Rotated, xf.ShrinkToFit);
+        style = new XlsxCellStyle(format, NumberFormatOf(xf.NumberFormatId), xf.Horizontal, xf.Rotated);
         _resolved[index] = style;
         return style;
     }
@@ -401,7 +420,8 @@ internal sealed class XlsxStyles
                 },
                 Wrap = child.GetAttribute("wrapText") is "1" or "true",
                 Indent = int.TryParse(child.GetAttribute("indent"), NumberStyles.None, CultureInfo.InvariantCulture, out var indent) ? Math.Min(indent, 250) : 0,
-                Rotated = int.TryParse(child.GetAttribute("textRotation"), NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out var rotation) && rotation != 0,
+                Rotated = int.TryParse(child.GetAttribute("textRotation"), NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out var rotation) && rotation is not (0 or 255),
+                Stacked = rotation == 255,
                 ShrinkToFit = child.GetAttribute("shrinkToFit") is "1" or "true",
             };
         });
@@ -446,5 +466,8 @@ internal sealed class XlsxStyles
         public bool Rotated { get; init; }
 
         public bool ShrinkToFit { get; init; }
+
+        /// <summary>Whether the text is stacked vertically, one character under the other.</summary>
+        public bool Stacked { get; init; }
     }
 }

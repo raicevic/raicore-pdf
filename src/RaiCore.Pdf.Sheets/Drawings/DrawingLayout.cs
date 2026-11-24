@@ -85,16 +85,17 @@ internal static class DrawingLayout
     private const double Epsilon = 0.01;
 
     /// <summary>
-    /// The heights of a sheet's rows as laid out: the rows of the table (<paramref name="first"/> onwards) from their
-    /// pieces on the pages (header rows repeated on later pages left out), the others at their nominal heights.
+    /// The heights of a sheet's rows as laid out: the rows of the table (the sheet's <paramref name="rows"/>, in the
+    /// table's order) from their pieces on the pages (header rows repeated on later pages left out), the others at their
+    /// nominal heights.
     /// </summary>
-    public static double[] RowHeights(IReadOnlyList<PlacedRow> placed, int first, int rowCount, Func<int, double> nominal)
+    public static double[] RowHeights(IReadOnlyList<PlacedRow> placed, IReadOnlyList<int> rows, int rowCount, Func<int, double> nominal)
     {
         var heights = new double[rowCount];
         var seen = new bool[rowCount];
         foreach (var piece in placed)
         {
-            var row = first + piece.Row;
+            var row = piece.Row >= 0 && piece.Row < rows.Count ? rows[piece.Row] : -1; // -1: a row that shows no drawings.
             if (!piece.Repeated && row >= 0 && row < rowCount)
             {
                 heights[row] += piece.Height;
@@ -117,13 +118,13 @@ internal static class DrawingLayout
     /// The runs of rows on each page (repeated header rows left out): pieces that follow one another both on the page
     /// and on the row axis are joined.
     /// </summary>
-    public static List<RowSegment> Segments(IReadOnlyList<PlacedRow> placed, int first, SheetAxis rows)
+    public static List<RowSegment> Segments(IReadOnlyList<PlacedRow> placed, IReadOnlyList<int> tableRows, SheetAxis rows)
     {
         var used = new Dictionary<int, double>();
         var segments = new List<RowSegment>();
-        foreach (var piece in placed.Where(p => !p.Repeated).OrderBy(p => p.Page).ThenBy(p => p.Top))
+        foreach (var piece in placed.Where(p => !p.Repeated && p.Row >= 0 && p.Row < tableRows.Count && tableRows[p.Row] >= 0).OrderBy(p => p.Page).ThenBy(p => p.Top))
         {
-            var row = first + piece.Row;
+            var row = tableRows[piece.Row];
             used.TryGetValue(row, out var before);
             used[row] = before + piece.Height;
             var top = rows.Start(row) + before;

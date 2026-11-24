@@ -65,7 +65,7 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Numbers, dates and times in their number formats | ✓ | ✓ | ◐ recognized and aligned |
 | Formulas | ◐ saved values | ◐ saved values | - |
 | Text, booleans, errors | ✓ | ✓ | ✓ |
-| Rich text within a cell | ◐ in the cell's font, R | ◐ in the cell's font, R | - |
+| Rich text within a cell | ✓ | ◐ in the cell's font, R | - |
 | Fonts, fills, borders, alignment, wrapping, indents | ✓ | ✓ | - |
 | Merged cells | ✓ | ✓ | - |
 | Column widths and row heights | ✓ | ✓ | ◐ fitted to the content |
@@ -79,10 +79,12 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Pictures: PNG, JPEG, GIF, BMP, TIFF, EMF, WMF | ✓ cropped, turned | ✓ bitmaps, metafiles | - |
 | Shapes and text boxes | ✓ preset and free-form geometry | ◐ common shape types, R | - |
 | SmartArt, ink, form controls | R | R | - |
-| Conditional formatting, data bars, color scales | R | R | - |
+| Conditional formatting: value, rank, average, duplicate and text rules, color scales | ✓ over stored values | R | - |
+| Conditional formatting: formulas, data bars, icon sets | R | R | - |
 | Comments and notes | R | R | - |
-| Headers and footers, page breaks set by hand | R | R | - |
-| Rotated text, shrink to fit | R | R | - |
+| Headers and footers, page breaks set by hand | ✓ | ✓ | - |
+| Stacked text, shrink to fit | ✓ | ✓ | - |
+| Rotated text | R | R | - |
 | External links, data connections | ◐ saved values, never refreshed | ◐ saved values, never refreshed | - |
 | Tagged PDF (`Tagged`): tables with header cells | ✓ | ✓ | ✓ |
 | Binary `.xlsb` | ✗ `NotSupportedException` | - | - |
