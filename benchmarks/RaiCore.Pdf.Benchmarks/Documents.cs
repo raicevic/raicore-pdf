@@ -102,6 +102,21 @@ public static class Documents
     }
 
     /// <summary>A 10,000-row table with a repeated header row (about 250 pages).</summary>
+    /// <summary>A CSV file of <paramref name="rows"/> rows and <paramref name="columns"/> columns: a header row, then text and numbers.</summary>
+    public static byte[] Csv(int rows = 10_000, int columns = 20)
+    {
+        var csv = new StringBuilder(rows * columns * 8);
+        csv.AppendJoin(',', Enumerable.Range(1, columns).Select(c => $"Column {c}")).Append('\n');
+        for (var i = 1; i <= rows; i++)
+        {
+            csv.AppendJoin(',', Enumerable.Range(0, columns).Select(c => c % 3 == 0
+                ? $"{Words[(i + c) % Words.Length]} {i}"
+                : (i * 13.37 + c).ToString("0.00", CultureInfo.InvariantCulture))).Append('\n');
+        }
+
+        return Encoding.UTF8.GetBytes(csv.ToString());
+    }
+
     public static string TableHtml(int rows = 10_000)
     {
         var body = new StringBuilder(rows * 120);

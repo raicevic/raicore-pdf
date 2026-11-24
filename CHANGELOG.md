@@ -5,6 +5,12 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **Large tables and spreadsheets render in linear time** (#250): drawing and splitting table rows looked up their
+  cells by scanning every cell of the table for each row group placed, so a table's time grew with the square of its
+  rows. A 16,000-row CSV file took 69 s and now takes about 11 s; 5,000 rows by 108 columns went from 27 s to 17 s.
+  This helps CSV, XLSX and XLS sheets and long HTML tables alike. A new `Sheet10000Rows` benchmark tracks it.
+
 ## [1.2.0] - 2026-11-24
 
 Closing migration gaps: dynamic XFA forms, charts, pictures and print formatting in spreadsheets, WMF and EMF

@@ -265,6 +265,44 @@ public class TableLayoutTests
 
     private static Paragraph Para(string text) => new Paragraph(Text).Add(text);
 
+    [Fact]
+    public void Cells_are_found_by_their_first_and_last_row_in_table_order()
+    {
+        // Row spans of 1, 2 and 3 (the last one running past the table's end), so each row has a different mix (#250).
+        var names = new Dictionary<TableCell, string>();
+        TableCell Named(string name, int rowSpan = 1)
+        {
+            var cell = new TableCell(Para(name)) { RowSpan = rowSpan };
+            names[cell] = name;
+            return cell;
+        }
+
+        var table = Table(
+            new TableRow(Named("a", 2), Named("b"), Named("c")),
+            new TableRow(Named("d"), Named("e", 3)),
+            new TableRow(Named("f"), Named("g")),
+            new TableRow(Named("h"), Named("i"), Named("j", 5)));
+        var layout = TableLayouter.Layout(table, 0, 260);
+        string Names(IEnumerable<CellLayout> cells) => string.Join(",", cells.Select(c => names[c.Grid.Cell]));
+
+        var rows = layout.RowHeights.Length;
+        Assert.Equal(4, rows);
+        for (var row = -1; row <= rows; row++)
+        {
+            Assert.Equal(Names(layout.Cells.Where(c => c.Grid.Row == row)), Names(layout.CellsStartingIn(row)));
+            Assert.Equal(Names(layout.Cells.Where(c => c.Grid.Row + c.Grid.RowSpan - 1 == row)), Names(layout.CellsEndingIn(row)));
+            for (var end = row; end <= rows + 1; end++)
+            {
+                var (from, to) = (row, end);
+                Assert.Equal(Names(layout.Cells.Where(c => c.Grid.Row >= from && c.Grid.Row < to)), Names(layout.CellsStartingIn(from, to)));
+            }
+        }
+
+        Assert.Equal("a,b,c", Names(layout.CellsStartingIn(0)));
+        Assert.Equal("a,d", Names(layout.CellsEndingIn(1)));
+        Assert.Equal("d,e,f,g", Names(layout.CellsStartingIn(1, 3)));
+    }
+
     private static TableCell Cell(string text) => new(Para(text));
 
     private static TableBlock Table(params TableRow[] rows) => StyledTable(null, rows);
