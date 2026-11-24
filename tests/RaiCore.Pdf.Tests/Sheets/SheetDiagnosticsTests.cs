@@ -93,17 +93,10 @@ public class SheetDiagnosticsTests
     public void Xlsx_fixture_reports_each_kind_once_per_sheet_with_its_count()
     {
         var diagnostics = Xlsx(Fixtures.Read("Sheets/content.xlsx"));
-        Assert.Equal(
-        [
-            ("Notes", SheetDiagnosticKind.Sparkline, 1),
-            ("Chart1", SheetDiagnosticKind.ChartSheet, 1),
-        ], Content(diagnostics));
-        Assert.DoesNotContain(diagnostics, d => d.SheetName is "Plain" or "Drawings" or "Print"); // Drawings, headers, footers, page breaks are printed.
-        Assert.Equal(
-        [
-            "1 sparkline is left out.",
-            "The chart sheet is left out.",
-        ], diagnostics.Select(d => d.Message));
+        Assert.Equal([("Notes", SheetDiagnosticKind.Sparkline, 1)], Content(diagnostics));
+        // Drawings, headers, footers, page breaks and the chart sheet's chart are printed.
+        Assert.DoesNotContain(diagnostics, d => d.SheetName is "Plain" or "Drawings" or "Print" or "Chart1");
+        Assert.Equal(["1 sparkline is left out."], diagnostics.Select(d => d.Message));
     }
 
     [Fact]
@@ -111,8 +104,8 @@ public class SheetDiagnosticsTests
     {
         Assert.Single(Xlsx(Fixtures.Read("Sheets/content.xlsx"), ["Plain", "Notes"]).Select(d => d.SheetName).Distinct(), "Notes");
 
-        // A chart sheet named by the options is reported, not converted.
-        Assert.Equal([("Chart1", SheetDiagnosticKind.ChartSheet, 1)], Content(Xlsx(Fixtures.Read("Sheets/content.xlsx"), ["Chart1"])));
+        // A chart sheet named by the options is converted: its chart is drawn.
+        Assert.Empty(Content(Xlsx(Fixtures.Read("Sheets/content.xlsx"), ["Chart1"])));
     }
 
     [Theory]
@@ -257,7 +250,7 @@ public class SheetDiagnosticsTests
     }
 
     [Fact]
-    public void Chart_sheets_are_reported_when_they_would_be_converted()
+    public void Chart_sheets_without_a_drawing_are_reported_when_they_would_be_converted()
     {
         var xlsx = Workbook(string.Empty,
             workbookSheets: "<sheet name=\"Chart\" sheetId=\"2\" r:id=\"rId2\"/><sheet name=\"Hidden chart\" sheetId=\"3\" r:id=\"rId3\" state=\"hidden\"/>",

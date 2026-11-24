@@ -1,13 +1,13 @@
 """Records in expected.json the drawings of the workbooks with pictures, shapes and charts, as read here independently
 of the converter, for SheetDrawingTests.
 
-For each Excel workbook (.xlsx), each worksheet part with a drawing: its anchors in order, as this script parses the
+For each Excel workbook (.xlsx), each worksheet and chart sheet part with a drawing: its anchors in order, as this script parses the
 drawing part (zipfile and ElementTree): the anchor's kind, its object (pic, sp, cxnSp, grpSp, graphicFrame,
 contentPart), the from and to markers (column, column offset, row, row offset in EMUs), the extent and position (EMUs),
 and whether the converter is expected to draw it (it prints, is not hidden, and is a picture of an embedded image in a
 format that can be read, a shape, a connector, a group or a chart). openpyxl, an independent reader, reads the same
 workbook: the anchors of the pictures and charts it finds must be among them (checked here), and their numbers are
-recorded.
+recorded, with the workbook's visible sheets in order and which of them are chart sheets.
 
 For each Excel 97-2003 workbook (.xls), each worksheet with a drawing: its shapes in order, as this script walks the
 OfficeArt data of the sheet's MSODRAWING records (with olefile): the OBJ record's type that follows each shape's client
@@ -28,7 +28,7 @@ import openpyxl
 
 FILES = [
     'picture-and-shape-same-size.xlsx', 'absolute-anchor-over-empty-sheet.xlsx', 'WithTextBox.xlsx', 'WithThreeCharts.xlsx',
-    '../../Workbooks/Poi/WithDrawing.xlsx', '../content.xlsx',
+    '../../Workbooks/Poi/WithDrawing.xlsx', '../content.xlsx', 'WithChartSheet.xlsx', '../../Workbooks/Poi/chart_sheet.xlsx',
     'SimpleWithImages.xls', 'SheetWithDrawing.xls', '../Xls/DrawingAndComments.xls', '../Xls/46250.xls', '../Xls/44010-SingleChart.xls',
 ]
 IMAGE_TYPES = ('.png', '.jpeg', '.jpg', '.gif', '.bmp', '.tif', '.tiff', '.wmf', '.emf')
@@ -93,7 +93,7 @@ def drawn(obj, rels):
 def xlsx(path):
     result = {}
     with zipfile.ZipFile(path) as z:
-        for part in sorted(n for n in z.namelist() if n.startswith('xl/worksheets/sheet') and n.endswith('.xml')):
+        for part in sorted(n for n in z.namelist() if n.startswith(('xl/worksheets/sheet', 'xl/chartsheets/sheet')) and n.endswith('.xml')):
             for kind, target in relationships(z, part).values():
                 if kind != 'drawing':
                     continue
@@ -126,10 +126,12 @@ def openpyxl_check(path, sheets):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         book = openpyxl.load_workbook(path)
-    found = {'images': 0, 'charts': 0}
+    found = {'images': 0, 'charts': 0,
+             'visible': [ws.title for ws in book._sheets if ws.sheet_state == 'visible'],
+             'chartsheets': [cs.title for cs in book.chartsheets]}
     parsed = [a for anchors in sheets.values() for a in anchors]
-    for ws in book.worksheets:
-        for key, items in (('images', ws._images), ('charts', ws._charts)):
+    for ws in book.worksheets + book.chartsheets:
+        for key, items in (('images', getattr(ws, '_images', [])), ('charts', ws._charts)):
             for item in items:
                 found[key] += 1
                 a = item.anchor

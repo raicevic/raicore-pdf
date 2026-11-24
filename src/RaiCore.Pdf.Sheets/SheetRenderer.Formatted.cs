@@ -62,6 +62,11 @@ internal static partial class SheetRenderer
     private static FlowDocument LayoutFormatted(Sheet sheet, SheetFormatting format, SheetOptions options, Action? checkpoint)
     {
         var page = options.Landscape || format.Landscape ? options.Page with { Size = options.Page.Size.Landscape } : options.Page;
+        if (format.ChartSheet)
+        {
+            return LayoutChartSheet(sheet, format, options, page);
+        }
+
         var available = Math.Max(1, page.ContentWidth - Slack);
         var grid = options.Gridlines ? GridWidth : 0;
         var context = new FormattedContext(sheet, format, options, grid);
