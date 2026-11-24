@@ -22,12 +22,6 @@ internal sealed partial class DocxReader
 
         var graphicData = container.Descendants().FirstOrDefault(e => e.Name.LocalName == "graphicData");
         var uri = Ooxml.Attr(graphicData, "uri") ?? string.Empty;
-        if (uri.Contains("chartex", StringComparison.OrdinalIgnoreCase))
-        {
-            _context.Report(DocumentDiagnosticKind.UnsupportedContent, "A chart of a newer type (such as a waterfall or treemap chart) without a stored picture is left out.");
-            return;
-        }
-
         if (uri.EndsWith("/diagram", StringComparison.Ordinal))
         {
             _context.Report(DocumentDiagnosticKind.UnsupportedContent, "A SmartArt diagram is left out.");
@@ -42,7 +36,7 @@ internal sealed partial class DocxReader
         var anchored = container.Name.LocalName == "anchor";
         var (placement, alignment, offset) = anchored ? Placement(container) : (ImagePlacement.Inline, WordAlignment.Start, null);
 
-        if (uri.EndsWith("/chart", StringComparison.Ordinal))
+        if (uri.EndsWith("/chart", StringComparison.Ordinal) || uri == ChartExNamespace)
         {
             if (Chart(graphicData, width, height, placement, alignment, offset, alternative) is { } chart)
             {

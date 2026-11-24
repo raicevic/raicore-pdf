@@ -233,8 +233,9 @@ internal sealed partial class PptxReader
             var chosen = element;
             if (element.Name.LocalName == "AlternateContent")
             {
-                // The fallback is what an application that knows none of the choices' extensions shows.
-                chosen = element.El("Fallback") ?? element.El("Choice");
+                // The fallback is what an application that knows none of the choices' extensions shows; a newer
+                // chart (chartex) the chart engine draws is the exception.
+                chosen = DrawableChartEx(element, sheet) ?? element.El("Fallback") ?? element.El("Choice");
                 if (chosen is null)
                 {
                     continue;
@@ -573,7 +574,7 @@ internal sealed partial class PptxReader
             case TableUri when data.El("tbl") is { } tbl:
                 shapes.Add(Table(tbl, box, cNvPr, sheet));
                 break;
-            case ChartUri:
+            case ChartUri or ChartExUri:
                 if (ChartOf(data, box, cNvPr, sheet) is { } chart)
                 {
                     shapes.Add(chart);

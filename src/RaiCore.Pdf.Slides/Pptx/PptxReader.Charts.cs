@@ -7,8 +7,32 @@ namespace RaiCore.Pdf.Slides.Pptx;
 /// <summary>Charts: a graphic frame's chart part read by the core's chart engine.</summary>
 internal sealed partial class PptxReader
 {
-    /// <summary>The namespace of the chart types of Office 2016 (waterfall, treemap, sunburst...), which the engine does not draw.</summary>
+    /// <summary>The namespace of the chart types of Office 2016 (waterfall, treemap, sunburst...).</summary>
     private const string ChartExUri = "http://schemas.microsoft.com/office/drawing/2014/chartex";
+
+    /// <summary>
+    /// The choice of markup compatibility content that holds a newer chart (chartex) the chart engine draws: its part is
+    /// there, sound, and of a type it draws (not a region map); else <c>null</c>.
+    /// </summary>
+    private XElement? DrawableChartEx(XElement alternate, Sheet sheet)
+    {
+        var choice = alternate.El("Choice");
+        var data = choice?.Descendants().FirstOrDefault(e => e.Name.LocalName == "graphicData" && e.Attr("uri") == ChartExUri);
+        if (data is null || _package.Relationship(sheet.Path, data.El("chart").RelId("id")) is not { External: false } relationship)
+        {
+            return null;
+        }
+
+        try
+        {
+            return _package.Xml(relationship.Target) is { } root && root.Name.NamespaceName == ChartExUri
+                && ChartReader.Read(root, sheet.Colors.Color, _limits) is { PlotArea.Groups.Count: > 0 } ? choice : null;
+        }
+        catch (PresentationFormatException)
+        {
+            return null;
+        }
+    }
 
     /// <summary>Reports a newer chart type whose stored picture (the markup compatibility fallback) is drawn instead.</summary>
     private void ReportChartEx(XElement alternate, XElement chosen)

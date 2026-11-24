@@ -7,7 +7,12 @@ internal sealed partial class ChartRenderer
     private sealed record PlacedTitle(TextBlock Block, Box Box, ChartTitle Title);
 
     /// <summary>A legend entry: what it stands for and its text.</summary>
-    private sealed record LegendEntry(ChartGroup Group, ChartSeries Series, int Point, TextBlock Block);
+    /// <param name="Group">The group.</param>
+    /// <param name="Series">The series.</param>
+    /// <param name="Point">The point of a pie (or of a series of varied colors), or -1 for the series.</param>
+    /// <param name="Block">The text.</param>
+    /// <param name="Key">The color of a key of the series' own (<see cref="ChartSeries.LegendKeys"/>), or <c>null</c>.</param>
+    private sealed record LegendEntry(ChartGroup Group, ChartSeries Series, int Point, TextBlock Block, PdfColor? Key = null);
 
     /// <summary>A legend as placed: its box and its entries' positions (the top-left corner of each).</summary>
     private sealed record PlacedLegend(Box Box, List<(LegendEntry Entry, double X, double Y)> Items, double KeyWidth, double ItemHeight);
@@ -48,6 +53,22 @@ internal sealed partial class ChartRenderer
         var seriesCount = _chart.PlotArea.Groups.Sum(g => g.Series.Count);
         foreach (var group in _chart.PlotArea.Groups)
         {
+            if (group.Series.Any(s => s.LegendKeys is not null))
+            {
+                foreach (var series in group.Series)
+                {
+                    foreach (var (text, color) in series.LegendKeys ?? [])
+                    {
+                        if (entries.Count < 1000)
+                        {
+                            entries.Add(new LegendEntry(group, series, -1, Text(text, format), color));
+                        }
+                    }
+                }
+
+                continue;
+            }
+
             var points = group.Kind is ChartKind.Pie or ChartKind.Doughnut || (group.VaryColors && seriesCount == 1);
             if (points && group.Series.Count > 0)
             {
@@ -197,7 +218,7 @@ internal sealed partial class ChartRenderer
 
     /// <summary>Whether an entry's key is a line (lines, scatter, unfilled radar) rather than a filled square.</summary>
     private static bool IsLineKey(LegendEntry entry) =>
-        entry.Point < 0 && entry.Group.Kind switch
+        entry.Point < 0 && entry.Key is null && entry.Group.Kind switch
         {
             ChartKind.Line or ChartKind.Scatter or ChartKind.Stock => true,
             ChartKind.Radar => !entry.Group.RadarFilled,
@@ -238,6 +259,12 @@ internal sealed partial class ChartRenderer
                 {
                     DrawMarker(symbol, keyCenterX, centerY, Math.Min(series.Marker?.Size ?? DefaultMarkerSize, size), series.Marker?.Shape, series.AutoColor);
                 }
+            }
+            else if (entry.Key is { } own)
+            {
+                var key = size * 0.75;
+                var box = new Box(keyCenterX - (key / 2), centerY - (key / 2), key, key);
+                PaintPath(own, null, ThinLine, null, () => Rect(box));
             }
             else
             {
