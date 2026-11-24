@@ -309,6 +309,12 @@ public class ChartExTests
         Assert.Equal(total.Y + total.Height, down.Y, 3); // The decrease ends at the total.
         Assert.Equal(up.Y + up.Height, down.Y + down.Height, 3); // It starts where the increase ends.
 
+        // The scale reaches the highest running total: two increases of 10 are two whole bars, the second up to 20.
+        var steps = ChartXml.Draw(Part($"<cx:data id=\"0\">{Numbers(10, 10)}</cx:data>", "<cx:series layoutId=\"waterfall\"><cx:dataId val=\"0\"/></cx:series>")).Rects()
+            .Where(r => r.Color == ChartXml.Rgb(0x44, 0x72, 0xC4)).OrderBy(r => r.X).ToList();
+        Assert.Equal(steps[0].Height, steps[1].Height, 3);
+        Assert.Equal(steps[0].Y + steps[0].Height, steps[1].Y, 3);
+
         var funnel = ChartXml.Draw(Part($"<cx:data id=\"0\">{Numbers(8, 4, 2)}</cx:data>", "<cx:series layoutId=\"funnel\"><cx:dataId val=\"0\"/></cx:series>")).Rects()
             .Where(r => r.Color == ChartXml.Rgb(0x44, 0x72, 0xC4)).OrderByDescending(r => r.Width).ToList();
         Assert.Equal(3, funnel.Count);
