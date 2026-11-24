@@ -81,6 +81,19 @@ and versions follow [Semantic Versioning](https://semver.org/).
   what still can't be drawn (newer chart types, SmartArt, ink, form controls, BIFF charts, free forms in `.xls`), are
   reported to `SheetOptions.Diagnostics`. The preset and free-form geometry that presentations draw moved to the
   core, shared by both packages.
+- **Dynamic XFA forms to PDF** (#263): the new package `RaiCore.Pdf.Xfa` renders XFA forms (from LiveCycle and AEM
+  Forms Designer), whose PDF pages are often only a "Please wait..." placeholder, to ordinary flattened PDF pages.
+  `XfaToPdf.Convert`, `ConvertToBytes` and `ConvertAsync` take a PDF file with an XFA form (its packets as one stream
+  or an array) or an XDP file. The form's data (or `XfaConverterOptions.Data`) is merged into the template with
+  normal, global, data reference and no bindings and repeated subforms; subforms are laid out by position and in flows
+  (`tb`, `lr-tb`, `rl-tb`, tables with column widths and spans), growing to fit their content, and paginated into the
+  page areas and content areas with breaks, overflow leaders and trailers and keep rules (long text goes on between
+  its lines); draws and fields are drawn with captions, borders, fills, plain and rich text, images, shapes, check
+  boxes, radio buttons, choice lists and comb fields, their values formatted by picture clauses (numbers, dates,
+  times, text) in the form's locales. Scripts are not run; they, and whatever else is left out, are reported to
+  `Diagnostics` (`XfaDiagnostic`). Malformed forms throw `XfaFormatException`; the work is bounded by `Limits`,
+  including the objects repetition creates. Tested against public U.S. government forms with generated data and an
+  independent Python oracle of their XFA.
 
 ### Fixed
 - **A CFF2 font with a huge blend count** in a DICT threw `ArgumentOutOfRangeException` when it was subset (the count times the

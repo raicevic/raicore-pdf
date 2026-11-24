@@ -45,3 +45,8 @@ tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.xls -text
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.ppt -text
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.pptx -text
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.docx -text
+
+# XFA forms (PDFs and XDP fuzzing inputs) are byte-exact.
+tests/RaiCore.Pdf.Tests/Fixtures/Xfa/*.pdf -text
+tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Seeds/xfa/** -text
+tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Crashes/xfa/** -text

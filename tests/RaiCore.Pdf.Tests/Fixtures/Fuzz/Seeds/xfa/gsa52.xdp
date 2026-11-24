@@ -1,0 +1,892 @@
+<xdp:xdp xmlns:xdp="http://ns.adobe.com/xdp/"><config xmlns="http://www.xfa.org/schema/xci/3.0/"
+><agent name="designer"
+><!--  [0..n]  --><destination
+>pdf</destination
+><pdf
+><!--  [0..n]  --><fontInfo
+/></pdf
+></agent
+><present
+><!--  [0..n]  --><pdf
+><!--  [0..n]  --><fontInfo
+><embed
+>1</embed
+></fontInfo
+><version
+>1.7</version
+><adobeExtensionLevel
+>8</adobeExtensionLevel
+><renderPolicy
+>client</renderPolicy
+><creator
+>Adobe LiveCycle Designer 11.0</creator
+><producer
+>Adobe LiveCycle Designer 11.0</producer
+><scriptModel
+>XFA</scriptModel
+><interactive
+>1</interactive
+><tagged
+>1</tagged
+><compression
+><level
+>6</level
+><compressLogicalStructure
+>1</compressLogicalStructure
+><compressObjectStream
+>1</compressObjectStream
+></compression
+><linearized
+>1</linearized
+><silentPrint
+><addSilentPrint
+>0</addSilentPrint
+><printerName
+/></silentPrint
+><viewerPreferences
+><duplexOption
+>simplex</duplexOption
+><numberOfCopies
+>0</numberOfCopies
+><printScaling
+>appDefault</printScaling
+><pickTrayByPDFSize
+>0</pickTrayByPDFSize
+><enforce
+/><ADBE_JSDebugger
+>delegate</ADBE_JSDebugger
+><ADBE_JSConsole
+>delegate</ADBE_JSConsole
+><addViewerPreferences
+>0</addViewerPreferences
+></viewerPreferences
+></pdf
+><xdp
+><packets
+>*</packets
+></xdp
+><common
+><log
+><to
+>memory</to
+><mode
+>overwrite</mode
+></log
+><template
+><base
+>C:\Users\rezamotamedamin\Desktop\OAS 2016 Stuff\</base
+></template
+></common
+><destination
+>pdf</destination
+><script
+><runScripts
+>server</runScripts
+></script
+><output
+><to
+>uri</to
+><uri
+>C:\Users\rezamotamedamin\Desktop\OAS 2016 Stuff\GSA 52 85 draft.pdf</uri
+></output
+></present
+><acrobat
+><acrobat7
+><dynamicRender
+>required</dynamicRender
+></acrobat7
+><common
+><versionControl sourceBelow="maintain"
+/><data
+><xsl
+><uri
+/></xsl
+><outputXSL
+><uri
+/></outputXSL
+></data
+><template
+><base
+>C:\Users\rezamotamedamin\Desktop\OAS 2016 Stuff\</base
+><relevant
+/><uri
+/></template
+></common
+><autoSave
+/><validate
+>preSubmit</validate
+></acrobat
+></config
+>
+<template xmlns="http://www.xfa.org/schema/xfa-template/3.3/"
+><?formServer defaultPDFRenderFormat acrobat10.0dynamic?><subform name="form1" layout="tb" locale="en_US" restoreState="auto"
+><pageSet
+><pageArea name="Page1" id="Page1"
+><contentArea x="0.25in" y="0.25in" w="8in" h="10.5in"
+/><medium stock="letter" short="8.5in" long="11in"
+/><?templateDesigner expand 1?></pageArea
+><?templateDesigner expand 1?></pageSet
+><subform w="8in" h="10.5in"
+><draw name="Text2" y="136.525mm" x="95.25mm" w="98.425mm" h="19.05mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>IN TESTIMONY WHEREOF I, the Administrator of General      Services, have hereunto caused the seal of the General       Services Administration to be affixed and my name to be      subscribed by the </text
+></value
+><font typeface="Arial"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><traversal
+><traverse ref="TextField1[1]"
+/></traversal
+><para vAlign="middle"
+/><?renderCache.bounds 276166 51166 0 0 1417 1417 0 0?><?renderCache.textRun 53 IN TESTIMONY WHEREOF I, the Administrator of General  0 1417 11896 0 0 0 "Arial" 0 0 10000 ISO-8859-1?><?renderCache.textRun 61      Services, have hereunto caused the seal of the General   0 1417 23896 0 0 0 "Arial" 0 0 10000 ISO-8859-1?><?renderCache.textRun 61      Services Administration to be affixed and my name to be  0 1417 35896 0 0 0 "Arial" 0 0 10000 ISO-8859-1?><?renderCache.textRun 23      subscribed by the  0 1417 47896 0 0 0 "Arial" 0 0 10000 ISO-8859-1?></draw
+><draw name="Text2" y="161.925mm" x="139.7mm" w="53.975mm" h="6.35mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>of the said Administration, at the</text
+></value
+><font typeface="Arial"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><para vAlign="bottom"
+/><traversal
+><traverse ref="Text2[6]"
+/></traversal
+><?renderCache.bounds 150166 15166 0 0 1417 1417 0 0?><?renderCache.textRun 34 of the said Administration, at the 0 1417 14479 0 0 0 "Arial" 0 0 10000 ISO-8859-1?></draw
+><draw name="Text2" y="193.675mm" x="123.825mm" w="53.975mm" h="6.35mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>Administrator of General Services</text
+></value
+><font typeface="Arial"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><traversal
+><traverse ref="Text2[8]"
+/></traversal
+><?renderCache.bounds 150166 15166 0 0 1417 1417 0 0?><?renderCache.textRun 33 Administrator of General Services 0 1417 9313 0 0 0 "Arial" 0 0 10000 ISO-8859-1?></draw
+><draw name="Text2" y="219.075mm" x="123.825mm" w="53.975mm" h="6.35mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>Title</text
+></value
+><font typeface="Arial"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><para hAlign="center"
+/><traversal
+><traverse ref="Text2[4]"
+/></traversal
+><?renderCache.bounds 150166 15166 0 0 1417 1417 0 0?><?renderCache.textRun 5 Title 0 67054 9313 0 0 0 "Arial" 0 0 10000 ISO-8859-1?></draw
+><draw name="Text2" y="257.435mm" x="8.485mm" w="2.701583in" h="6.35mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>GENERAL SERVICES ADMINISTRATION</text
+></value
+><font typeface="Arial" weight="bold"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><para vAlign="middle"
+/><traversal
+><traverse ref="Text2[5]"
+/></traversal
+><?renderCache.bounds 191680 15166 0 0 1417 1417 0 0?><?renderCache.textRun 31 GENERAL SERVICES ADMINISTRATION 0 1417 11896 0 0 0 "Arial" 1 0 10000 ISO-8859-1?></draw
+><draw name="Text2" y="257.435mm" x="158.446mm" w="37.174mm" h="6.35mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>GSA 52 (REV. 5/1985)</text
+></value
+><font typeface="Arial" weight="bold"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><para vAlign="middle"
+/><?renderCache.bounds 102541 15166 0 0 1417 1417 0 0?><?renderCache.textRun 20 GSA 52 (REV. 5/1985) 0 1417 11896 0 0 0 "Arial" 1 0 10000 ISO-8859-1?></draw
+><draw name="Text2" y="168.275mm" x="101.63mm" w="12.67mm" h="6.375mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>City of</text
+></value
+><font typeface="Arial"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><traversal
+><traverse ref="TextField1[3]"
+/></traversal
+><para vAlign="bottom"
+/><?renderCache.bounds 33081 15237 0 0 1417 1417 0 0?><?renderCache.textRun 7 City of 0 1417 14550 0 0 0 "Arial" 0 0 10000 ISO-8859-1?></draw
+><draw name="Text2" y="174.625mm" x="101.63mm" w="12.67mm" h="6.375mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>day of</text
+></value
+><font typeface="Arial"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><traversal
+><traverse ref="TextField1[4]"
+/></traversal
+><para vAlign="bottom"
+/><?renderCache.bounds 33081 15237 0 0 1417 1417 0 0?><?renderCache.textRun 6 day of 0 1417 14550 0 0 0 "Arial" 0 0 10000 ISO-8859-1?></draw
+><draw name="Text2" y="206.375mm" x="101.63mm" w="6.32mm" h="6.375mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>By</text
+></value
+><font typeface="Arial"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><traversal
+><traverse ref="TextField1[8]"
+/></traversal
+><para vAlign="bottom"
+/><?renderCache.bounds 15081 15237 0 0 1417 1417 0 0?><?renderCache.textRun 2 By 0 1417 14550 0 0 0 "Arial" 0 0 10000 ISO-8859-1?></draw
+><draw name="Text2" y="168.275mm" x="168.275mm" w="9.495mm" h="6.375mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>this</text
+></value
+><font typeface="Arial"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><para vAlign="bottom" hAlign="center"
+/><traversal
+><traverse ref="TextField1[5]"
+/></traversal
+><?renderCache.bounds 24081 15237 0 0 1417 1417 0 0?><?renderCache.textRun 4 this 0 5677 14550 0 0 0 "Arial" 0 0 10000 ISO-8859-1?></draw
+><draw name="Text1" y="28.575mm" x="9.525mm" w="184.15mm" h="6.35mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>GENERAL SERVICES ADMINISTRATION</text
+></value
+><font size="12pt" typeface="Arial" weight="bold"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><para hAlign="center" vAlign="middle"
+/><traversal
+><traverse ref="TextField1[0]"
+/></traversal
+><?renderCache.bounds 519166 15166 0 0 1417 1417 0 0?><?renderCache.textRun 31 GENERAL SERVICES ADMINISTRATION 0 145992 12475 0 0 0 "Arial" 1 0 12000 ISO-8859-1?></draw
+><?templateDesigner expand 1?><field name="TextField1" y="38.1mm" x="9.525mm" w="57.15mm" h="9.525mm"
+><ui
+><textEdit hScrollPolicy="off"
+><border
+><edge presence="hidden"
+/><edge presence="hidden"
+/><edge
+/><edge presence="hidden"
+/></border
+><margin
+/></textEdit
+></ui
+><font typeface="Arial"
+/><margin topInset="1mm" bottomInset="1mm" leftInset="1mm" rightInset="1mm"
+/><para vAlign="bottom"
+/><caption reserve="0.01in"
+><para vAlign="bottom"
+/></caption
+><assist
+><toolTip
+>Enter City of certification.</toolTip
+></assist
+><traversal
+><traverse ref="Text2[10]"
+/></traversal
+></field
+><field name="TextField1" y="149.225mm" x="130.793mm" w="58.386mm" h="6.35mm"
+><ui
+><textEdit hScrollPolicy="off"
+><border
+><edge presence="hidden"
+/><edge presence="hidden"
+/><edge
+/><edge presence="hidden"
+/></border
+><margin
+/></textEdit
+></ui
+><font typeface="Arial"
+/><margin topInset="1mm" bottomInset="1mm" leftInset="1mm" rightInset="1mm"
+/><para vAlign="bottom"
+/><caption reserve="0.01in"
+><para vAlign="bottom"
+/></caption
+><assist
+><toolTip
+>Enter the entity authorizing the GSA seal and Administrator's name be affixed on the document (Line 1 of 3)</toolTip
+></assist
+><traversal
+><traverse ref="TextField1[6]"
+/></traversal
+></field
+><field name="TextField1" y="161.925mm" x="101.6mm" w="38.1mm" h="6.35mm"
+><ui
+><textEdit hScrollPolicy="off"
+><border
+><edge presence="hidden"
+/><edge presence="hidden"
+/><edge
+/><edge presence="hidden"
+/></border
+><margin
+/></textEdit
+></ui
+><font typeface="Arial"
+/><margin topInset="1mm" bottomInset="1mm" leftInset="1mm" rightInset="1mm"
+/><para vAlign="bottom"
+/><caption reserve="0.01in"
+><para vAlign="bottom"
+/></caption
+><assist
+><toolTip
+>Enter the entity authorizing the GSA seal and Administrator's name be affixed on the document (Line 3 of 3)</toolTip
+></assist
+><traversal
+><traverse ref="Text2[1]"
+/></traversal
+></field
+><field name="TextField1" y="168.275mm" x="114.3mm" w="53.975mm" h="6.35mm"
+><ui
+><textEdit hScrollPolicy="off"
+><border
+><edge presence="hidden"
+/><edge presence="hidden"
+/><edge
+/><edge presence="hidden"
+/></border
+><margin
+/></textEdit
+></ui
+><font typeface="Arial"
+/><margin topInset="1mm" bottomInset="1mm" leftInset="1mm" rightInset="1mm"
+/><para vAlign="bottom"
+/><caption reserve="0.01in"
+><para vAlign="bottom"
+/></caption
+><assist
+><toolTip
+>Enter the city the seal was affixed.</toolTip
+></assist
+><traversal
+><traverse ref="Text2[9]"
+/></traversal
+></field
+><field name="TextField1" y="174.625mm" x="114.3mm" w="76.2mm" h="6.35mm"
+><ui
+><textEdit hScrollPolicy="off"
+><border
+><edge presence="hidden"
+/><edge presence="hidden"
+/><edge
+/><edge presence="hidden"
+/></border
+><margin
+/></textEdit
+></ui
+><font typeface="Arial"
+/><margin topInset="1mm" bottomInset="1mm" leftInset="1mm" rightInset="1mm"
+/><para vAlign="bottom"
+/><caption reserve="0.01in"
+><para vAlign="bottom"
+/></caption
+><assist
+><toolTip
+>Enter the Month and year the seal was affixed.</toolTip
+></assist
+><traversal
+><traverse ref="TextField1[7]"
+/></traversal
+></field
+><field name="TextField1" y="168.275mm" x="177.8mm" w="12.7mm" h="6.35mm"
+><ui
+><textEdit hScrollPolicy="off"
+><border
+><edge presence="hidden"
+/><edge presence="hidden"
+/><edge
+/><edge presence="hidden"
+/></border
+><margin
+/></textEdit
+></ui
+><font typeface="Arial"
+/><margin topInset="1mm" bottomInset="1mm" leftInset="1mm" rightInset="1mm"
+/><para vAlign="bottom"
+/><caption reserve="0.01in"
+><para vAlign="bottom"
+/></caption
+><assist
+><toolTip
+>Enter the day the seal was affixed.  </toolTip
+></assist
+><traversal
+><traverse ref="Text2[7]"
+/></traversal
+></field
+><field name="TextField1" y="155.575mm" x="101.6mm" w="87.58mm" h="6.35mm"
+><ui
+><textEdit hScrollPolicy="off"
+><border
+><edge presence="hidden"
+/><edge presence="hidden"
+/><edge
+/><edge presence="hidden"
+/></border
+><margin
+/></textEdit
+></ui
+><font typeface="Arial"
+/><margin topInset="1mm" bottomInset="1mm" leftInset="1mm" rightInset="1mm"
+/><para vAlign="bottom"
+/><caption reserve="0.01in"
+><para vAlign="bottom"
+/></caption
+><assist
+><toolTip
+>Enter the entity authorizing the GSA seal and Administrator's name be affixed on the document (Line 2 of 3)</toolTip
+></assist
+><traversal
+><traverse ref="TextField1[2]"
+/></traversal
+></field
+><field name="TextField1" y="187.325mm" x="107.95mm" w="85.725mm" h="6.35mm"
+><ui
+><textEdit hScrollPolicy="off"
+><border
+><edge presence="hidden"
+/><edge presence="hidden"
+/><edge
+/><edge presence="hidden"
+/></border
+><margin
+/></textEdit
+></ui
+><font typeface="Arial"
+/><margin topInset="1mm" bottomInset="1mm" leftInset="1mm" rightInset="1mm"
+/><para vAlign="bottom"
+/><caption reserve="0.01in"
+><para vAlign="bottom"
+/></caption
+><assist
+><toolTip
+>Enter name of the administrator.</toolTip
+></assist
+><traversal
+><traverse ref="Text2[2]"
+/></traversal
+></field
+><field name="TextField1" y="206.375mm" x="107.95mm" w="85.725mm" h="6.35mm"
+><ui
+><textEdit hScrollPolicy="off"
+><border
+><edge presence="hidden"
+/><edge presence="hidden"
+/><edge
+/><edge presence="hidden"
+/></border
+><margin
+/></textEdit
+></ui
+><font typeface="Arial"
+/><margin topInset="1mm" bottomInset="1mm" leftInset="1mm" rightInset="1mm"
+/><para vAlign="bottom"
+/><caption reserve="0.01in"
+><para vAlign="bottom"
+/></caption
+><assist
+><toolTip
+>Enter the name.</toolTip
+></assist
+><traversal
+><traverse ref="TextField1[9]"
+/></traversal
+></field
+><field name="TextField1" y="212.725mm" x="107.95mm" w="85.725mm" h="6.35mm"
+><ui
+><textEdit hScrollPolicy="off"
+><border
+><edge presence="hidden"
+/><edge presence="hidden"
+/><edge
+/><edge presence="hidden"
+/></border
+><margin
+/></textEdit
+></ui
+><font typeface="Arial"
+/><margin topInset="1mm" bottomInset="1mm" leftInset="1mm" rightInset="1mm"
+/><para vAlign="bottom"
+/><caption reserve="0.01in"
+><para vAlign="bottom"
+/></caption
+><assist
+><toolTip
+>Enter the title.  </toolTip
+></assist
+><traversal
+><traverse ref="Text2[3]"
+/></traversal
+></field
+><field name="TextField1" y="69.85mm" x="9.525mm" w="184.15mm" h="34.925mm"
+><ui
+><textEdit hScrollPolicy="off" multiLine="1" vScrollPolicy="off"
+><border presence="hidden"
+/><margin
+/></textEdit
+></ui
+><font typeface="Arial"
+/><margin topInset="1mm" bottomInset="1mm" leftInset="1mm" rightInset="1mm"
+/><caption reserve="0.01in"
+/><assist
+><toolTip
+>Describe the attachment the Administrator is certifying.  </toolTip
+></assist
+><traversal
+><traverse ref="Text2[12]"
+/></traversal
+></field
+><field name="TextField1" y="38.1mm" x="73.025mm" w="57.15mm" h="9.525mm"
+><ui
+><textEdit hScrollPolicy="off"
+><border
+><edge presence="hidden"
+/><edge presence="hidden"
+/><edge
+/><edge presence="hidden"
+/></border
+><margin
+/></textEdit
+></ui
+><font typeface="Arial"
+/><margin topInset="1mm" bottomInset="1mm" leftInset="1mm" rightInset="1mm"
+/><para vAlign="bottom"
+/><caption reserve="0.01in"
+><para vAlign="bottom"
+/></caption
+><assist
+><toolTip
+>Enter State of certification.</toolTip
+></assist
+><traversal
+><traverse ref="Text2[13]"
+/></traversal
+></field
+><field name="DateField1" y="38.1mm" x="136.525mm" w="57.15mm" h="9.525mm"
+><ui
+><dateTimeEdit hScrollPolicy="off"
+><border
+><edge presence="hidden"
+/><edge presence="hidden"
+/><edge
+/><edge presence="hidden"
+/></border
+><margin
+/></dateTimeEdit
+><picture
+>date{MM/DD/YYYY}</picture
+></ui
+><font typeface="Arial"
+/><margin topInset="1mm" bottomInset="1mm" leftInset="1mm" rightInset="1mm"
+/><para vAlign="bottom"
+/><value
+><date
+/></value
+><caption reserve="0.01in"
+><para vAlign="bottom"
+/></caption
+><assist
+><toolTip
+>Enter Date of certification.</toolTip
+></assist
+><traversal
+><traverse ref="Text2[14]"
+/></traversal
+><validate
+><picture
+>date{MM/DD/YYYY}</picture
+></validate
+><format
+><picture
+>date{MM/DD/YYYY}</picture
+></format
+></field
+><draw name="Text2" y="47.625mm" x="19.05mm" w="41.275mm" h="6.35mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>(City)</text
+></value
+><font typeface="Arial"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><para hAlign="center"
+/><traversal
+><traverse ref="TextField1[11]"
+/></traversal
+><?renderCache.bounds 114166 15166 0 0 1417 1417 0 0?><?renderCache.textRun 6 (City) 0 46559 9313 0 0 0 "Arial" 0 0 10000 ISO-8859-1?></draw
+><draw name="Text2" y="63.5mm" x="9.525mm" w="60.802mm" h="6.35mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>I HEREBY CERTIFY that the attached</text
+></value
+><font typeface="Arial"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><traversal
+><traverse ref="TextField1[10]"
+/></traversal
+><?renderCache.bounds 169518 15166 0 0 1417 1417 0 0?><?renderCache.textRun 34 I HEREBY CERTIFY that the attached 0 1417 9313 0 0 0 "Arial" 0 0 10000 ISO-8859-1?></draw
+><draw name="Text2" y="104.775mm" x="9.525mm" w="153.556mm" h="8.761mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>are true and correct copies of the originals thereof in my custody as a part of the official records of General Services Administration.</text
+></value
+><font typeface="Arial"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><traversal
+><traverse ref="Text2[0]"
+/></traversal
+><?renderCache.bounds 432443 22000 0 0 1417 1417 0 0?><?renderCache.textRun 104 are true and correct copies of the originals thereof in my custody as a part of the official records of  0 1417 9313 0 0 0 "Arial" 0 0 10000 ISO-8859-1?><?renderCache.textRun 32 General Services Administration. 0 1417 21313 0 0 0 "Arial" 0 0 10000 ISO-8859-1?></draw
+><draw name="Text2" y="47.625mm" x="82.55mm" w="41.275mm" h="6.35mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>(State)</text
+></value
+><font typeface="Arial"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><para hAlign="center"
+/><traversal
+><traverse ref="DateField1[0]"
+/></traversal
+><?renderCache.bounds 114166 15166 0 0 1417 1417 0 0?><?renderCache.textRun 7 (State) 0 43495 9313 0 0 0 "Arial" 0 0 10000 ISO-8859-1?></draw
+><draw name="Text2" y="47.625mm" x="146.05mm" w="41.275mm" h="6.35mm"
+><ui
+><textEdit
+/></ui
+><value
+><text
+>(Date)</text
+></value
+><font typeface="Arial"
+/><margin topInset="0.5mm" bottomInset="0.5mm" leftInset="0.5mm" rightInset="0.5mm"
+/><para hAlign="center"
+/><traversal
+><traverse ref="Text2[11]"
+/></traversal
+><?renderCache.bounds 114166 15166 0 0 1417 1417 0 0?><?renderCache.textRun 6 (Date) 0 44608 9313 0 0 0 "Arial" 0 0 10000 ISO-8859-1?></draw
+><draw name="Line1" y="257.435mm" x="9.525mm" w="184.177mm" h="0in"
+><value
+><line slope="/"
+><edge thickness="0.635mm"
+/></line
+></value
+></draw
+><traversal
+><traverse operation="first" ref="Text1[0]"
+/></traversal
+></subform
+><proto
+/><desc
+><text name="version"
+>11.0.0.20130303.1.892433.887364</text
+></desc
+><?templateDesigner expand 1?><?renderCache.subset "Arial" 0 0 ISO-8859-1 4 180 45 0003000B000C000F0011002400250026002700280029002A002B002C002F0030003100320035003600370039003A003C004400450046004700480049004A004B004C004F005000510052005300550056005700580059005B005C (),.ABCDEFGHILMNORSTVWYabcdefghilmnoprstuvxy?><?renderCache.subset "Arial" 1 0 ISO-8859-1 4 108 27 0003000B000C00110012001400150018001B001C0024002600270028002A002C002F003000310032003500360037003900480057005B ()./12589ACDEGILMNORSTVetx?><?renderCache.subset "Myriad Pro" 0 0 ISO-8859-1 4 36 9 00010027003500450046004A004D00550059 FTdeiltx?></subform
+><?templateDesigner DefaultPreviewDynamic 1?><?templateDesigner DefaultRunAt client?><?templateDesigner FormTargetVersion 33?><?templateDesigner WidowOrphanControl 0?><?templateDesigner DefaultCaptionFontSettings face:Myriad Pro;size:10;weight:normal;style:normal?><?templateDesigner DefaultValueFontSettings face:Myriad Pro;size:10;weight:normal;style:normal?><?templateDesigner DefaultLanguage JavaScript?><?acrobat JavaScript strictScoping?><?templateDesigner Zoom 142?><?templateDesigner Grid show:1, snap:1, units:0, color:ff8080, origin:(0,0), interval:(125000,125000), objsnap:0, guidesnap:0, pagecentersnap:0?><?templateDesigner Rulers horizontal:1, vertical:1, guidelines:1, crosshairs:0?><?templateDesigner SaveTaggedPDF 1?><?templateDesigner SavePDFWithEmbeddedFonts 1?></template
+>
+<localeSet xmlns="http://www.xfa.org/schema/xfa-locale-set/2.7/"
+><locale name="en_US" desc="English (United States)"
+><calendarSymbols name="gregorian"
+><monthNames
+><month
+>January</month
+><month
+>February</month
+><month
+>March</month
+><month
+>April</month
+><month
+>May</month
+><month
+>June</month
+><month
+>July</month
+><month
+>August</month
+><month
+>September</month
+><month
+>October</month
+><month
+>November</month
+><month
+>December</month
+></monthNames
+><monthNames abbr="1"
+><month
+>Jan</month
+><month
+>Feb</month
+><month
+>Mar</month
+><month
+>Apr</month
+><month
+>May</month
+><month
+>Jun</month
+><month
+>Jul</month
+><month
+>Aug</month
+><month
+>Sep</month
+><month
+>Oct</month
+><month
+>Nov</month
+><month
+>Dec</month
+></monthNames
+><dayNames
+><day
+>Sunday</day
+><day
+>Monday</day
+><day
+>Tuesday</day
+><day
+>Wednesday</day
+><day
+>Thursday</day
+><day
+>Friday</day
+><day
+>Saturday</day
+></dayNames
+><dayNames abbr="1"
+><day
+>Sun</day
+><day
+>Mon</day
+><day
+>Tue</day
+><day
+>Wed</day
+><day
+>Thu</day
+><day
+>Fri</day
+><day
+>Sat</day
+></dayNames
+><meridiemNames
+><meridiem
+>AM</meridiem
+><meridiem
+>PM</meridiem
+></meridiemNames
+><eraNames
+><era
+>BC</era
+><era
+>AD</era
+></eraNames
+></calendarSymbols
+><datePatterns
+><datePattern name="full"
+>EEEE, MMMM D, YYYY</datePattern
+><datePattern name="long"
+>MMMM D, YYYY</datePattern
+><datePattern name="med"
+>MMM D, YYYY</datePattern
+><datePattern name="short"
+>M/D/YY</datePattern
+></datePatterns
+><timePatterns
+><timePattern name="full"
+>h:MM:SS A Z</timePattern
+><timePattern name="long"
+>h:MM:SS A Z</timePattern
+><timePattern name="med"
+>h:MM:SS A</timePattern
+><timePattern name="short"
+>h:MM A</timePattern
+></timePatterns
+><dateTimeSymbols
+>GyMdkHmsSEDFwWahKzZ</dateTimeSymbols
+><numberPatterns
+><numberPattern name="numeric"
+>z,zz9.zzz</numberPattern
+><numberPattern name="currency"
+>$z,zz9.99|($z,zz9.99)</numberPattern
+><numberPattern name="percent"
+>z,zz9%</numberPattern
+></numberPatterns
+><numberSymbols
+><numberSymbol name="decimal"
+>.</numberSymbol
+><numberSymbol name="grouping"
+>,</numberSymbol
+><numberSymbol name="percent"
+>%</numberSymbol
+><numberSymbol name="minus"
+>-</numberSymbol
+><numberSymbol name="zero"
+>0</numberSymbol
+></numberSymbols
+><currencySymbols
+><currencySymbol name="symbol"
+>$</currencySymbol
+><currencySymbol name="isoname"
+>USD</currencySymbol
+><currencySymbol name="decimal"
+>.</currencySymbol
+></currencySymbols
+><typefaces
+><typeface name="Myriad Pro"
+/><typeface name="Minion Pro"
+/><typeface name="Courier Std"
+/><typeface name="Adobe Pi Std"
+/><typeface name="Adobe Hebrew"
+/><typeface name="Adobe Arabic"
+/><typeface name="Adobe Thai"
+/><typeface name="Kozuka Gothic Pro-VI M"
+/><typeface name="Kozuka Mincho Pro-VI R"
+/><typeface name="Adobe Ming Std L"
+/><typeface name="Adobe Song Std L"
+/><typeface name="Adobe Myungjo Std M"
+/></typefaces
+></locale
+></localeSet
+><xfa:datasets xmlns:xfa="http://www.xfa.org/schema/xfa-data/1.0/"><xfa:data><form1><TextField1>V001</TextField1><TextField1>V002</TextField1><TextField1>V003</TextField1><TextField1>V004</TextField1><TextField1>V005</TextField1><TextField1>V006</TextField1><TextField1>V007</TextField1><TextField1>V008</TextField1><TextField1>V009</TextField1><TextField1>V010</TextField1><TextField1>V011</TextField1><TextField1>V012</TextField1></form1></xfa:data></xfa:datasets></xdp:xdp>

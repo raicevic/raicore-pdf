@@ -20,6 +20,8 @@
     <InternalsVisibleTo Include="RaiCore.Pdf.Documents" />
     <InternalsVisibleTo Include="RaiCore.Pdf.Sheets" />
     <InternalsVisibleTo Include="RaiCore.Pdf.Slides" />
+    <!-- Dynamic XFA forms: the XFA packets are read from the PDF file with the reader. -->
+    <InternalsVisibleTo Include="RaiCore.Pdf.Xfa" />
   </ItemGroup>
 
   <ItemGroup>

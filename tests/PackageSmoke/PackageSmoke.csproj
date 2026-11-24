@@ -21,6 +21,7 @@
     <PackageReference Include="RaiCore.Pdf.Sheets" Version="$(RaiCoreVersion)" />
     <PackageReference Include="RaiCore.Pdf.Slides" Version="$(RaiCoreVersion)" />
     <PackageReference Include="RaiCore.Pdf.Documents" Version="$(RaiCoreVersion)" />
+    <PackageReference Include="RaiCore.Pdf.Xfa" Version="$(RaiCoreVersion)" />
   </ItemGroup>
 
   <ItemGroup>

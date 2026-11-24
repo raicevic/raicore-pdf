@@ -10,6 +10,7 @@ using RaiCore.Pdf.Layout;
 using RaiCore.Pdf.Layout.Text;
 using RaiCore.Pdf.Sheets;
 using RaiCore.Pdf.Slides;
+using RaiCore.Pdf.Xfa;
 
 namespace RaiCore.Pdf.Tests.Fuzzing;
 
@@ -82,6 +83,7 @@ public static class FuzzTargets
         ["chart"] = Chart,
         ["sheetdrawing"] = SheetDrawing,
         ["xlsdrawing"] = XlsDrawing,
+        ["xfa"] = Xfa,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -102,7 +104,8 @@ public static class FuzzTargets
     /// <summary>Whether an exception is one a target may document for malformed or hostile input.</summary>
     public static bool IsExpected(Exception exception) => exception is ImageFormatException or FontFormatException
         or PdfFormatException or PdfPasswordException or ResourceLimitExceededException or OperationCanceledException or NotSupportedException
-        or DocumentFormatException or SpreadsheetFormatException or PresentationFormatException or MessageFormatException;
+        or DocumentFormatException or SpreadsheetFormatException or PresentationFormatException or MessageFormatException
+        or XfaFormatException;
 
     /// <summary>HTML conversion, with no resources loaded (data: URIs only).</summary>
     public static void Html(byte[] input) => Html(input, ModeOf(input));
@@ -521,6 +524,18 @@ public static class FuzzTargets
         Limits = Limits,
         Tagged = input.Length % 3 == 0,
         HeadingBookmarks = input.Length % 2 == 0,
+        Diagnostics = _ => { },
+    });
+
+    /// <summary>
+    /// An XFA form: an XDP document or a PDF file with XFA packets, read (no DTDs, elements and nesting bounded),
+    /// prototypes resolved, data merged (repeated subforms bounded by the element limit), laid out, paginated and drawn;
+    /// every other input (by length) without the fonts a PDF embeds for its form.
+    /// </summary>
+    public static void Xfa(byte[] input) => XfaToPdf.ConvertToBytes(input, new XfaConverterOptions
+    {
+        Limits = Limits,
+        UseEmbeddedFonts = input.Length % 2 == 0,
         Diagnostics = _ => { },
     });
 

@@ -18,6 +18,7 @@ using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Layout;
 using RaiCore.Pdf.Layout.Text;
 using RaiCore.Pdf.Razor;
+using RaiCore.Pdf.Xfa;
 
 var output = Directory.CreateDirectory(args.Length > 0 ? args[0] : "smoke-output").FullName;
 var failures = 0;
@@ -353,6 +354,21 @@ var rtf = System.Text.Encoding.Latin1.GetBytes(@"{\rtf1\ansi\ansicpg1251\deff0{\
 var rtfText = new TextExtractor(PdfReader.Open(RtfToPdf.ConvertToBytes(rtf))).ExtractText();
 Check($"rtf: {rtfText.Split('\n')[0].Trim()}", rtfText.Contains("\u041F\u0440\u0438\u0432\u0435\u0442 caf\u00E9", StringComparison.Ordinal)
     && rtfText.Contains("Page 1", StringComparison.Ordinal) && rtfText.Contains('D', StringComparison.Ordinal));
+
+// RaiCore.Pdf.Xfa: a dynamic XFA form (as an XDP document) with a repeated subform over 60 data rows, a formatted number
+// and a page area header: the rows go on to a second page.
+var xfaRows = string.Concat(Enumerable.Range(1, 60).Select(r => $"<Row><Name>Row {r}</Name><Amount>{r * 1000}</Amount></Row>"));
+var xdp = "<xdp:xdp xmlns:xdp=\"http://ns.adobe.com/xdp/\"><template xmlns=\"http://www.xfa.org/schema/xfa-template/3.3/\"><subform name=\"form1\" layout=\"tb\">"
+    + "<pageSet><pageArea name=\"P\"><contentArea x=\"0.5in\" y=\"1in\" w=\"7.5in\" h=\"9in\"/><medium stock=\"letter\" short=\"8.5in\" long=\"11in\"/>"
+    + "<draw x=\"0.5in\" y=\"0.4in\" w=\"4in\" h=\"0.3in\"><value><text>Caf\u00E9 form</text></value></draw></pageArea></pageSet>"
+    + "<subform name=\"Row\" layout=\"lr-tb\" w=\"7.5in\"><occur min=\"0\" max=\"-1\"/><field name=\"Name\" w=\"4in\" h=\"0.25in\"><ui><textEdit/></ui></field>"
+    + "<field name=\"Amount\" w=\"3in\" h=\"0.25in\"><ui><numericEdit/></ui><format><picture>num{$z,zz9.99}</picture></format></field></subform></subform></template>"
+    + $"<xfa:datasets xmlns:xfa=\"http://www.xfa.org/schema/xfa-data/1.0/\"><xfa:data><form1>{xfaRows}</form1></xfa:data></xfa:datasets></xdp:xdp>";
+var xfaPdf = XfaToPdf.Convert(System.Text.Encoding.UTF8.GetBytes(xdp));
+xfaPdf.Save(Path.Combine(output, "xfa.pdf"));
+var xfaPages = new TextExtractor(PdfReader.Open(xfaPdf.ToArray())).ExtractPages().Select(p => p.Text).ToList();
+Check($"xfa: {xfaPages.Count} pages", xfaPages.Count == 2 && xfaPages.All(p => p.Contains("Caf\u00E9 form", StringComparison.Ordinal))
+    && xfaPages[1].Contains("Row 60", StringComparison.Ordinal) && xfaPages[1].Contains("$60,000.00", StringComparison.Ordinal));
 
 Console.WriteLine(failures == 0 ? $"Package smoke test passed. PDFs in {output}" : $"Package smoke test FAILED ({failures} checks).");
 return failures == 0 ? 0 : 1;

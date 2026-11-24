@@ -24,6 +24,7 @@ An open-source .NET library for creating PDF documents and converting HTML, Razo
 | `RaiCore.Pdf.Sheets` | CSV and Excel (.xlsx, .xls) → PDF: paginated tables with repeated header rows, number formats, styles, merged cells, print areas, pictures, shapes and charts | ✅ 1.1 |
 | `RaiCore.Pdf.Slides` | PowerPoint (.pptx, .ppt) → PDF: one page per slide with masters, layouts, themes, shapes, text, pictures, tables | ✅ 1.1 |
 | `RaiCore.Pdf.Documents` | Word (.docx, .doc), OpenDocument text (.odt) and RTF → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | ✅ 1.1 |
+| `RaiCore.Pdf.Xfa` | Dynamic XFA forms (.pdf, .xdp) → flattened PDF: data merged into the template, flowed and repeated subforms, tables, pagination, formatted values | 🟡 Unreleased |
 | `RaiCore.Pdf.XslFo` | XSL-FO → PDF | ⚪ Planned |
 
 What each converter draws, format by format (including the Word 97-2003, Excel 97-2003 and PowerPoint 97-2003 binary
@@ -44,6 +45,7 @@ dotnet add package RaiCore.Pdf.Documents   # Word (.docx, .doc), OpenDocument te
 dotnet add package RaiCore.Pdf.Sheets      # CSV and Excel (.xlsx, .xls)
 dotnet add package RaiCore.Pdf.Slides      # PowerPoint (.pptx, .ppt)
 dotnet add package RaiCore.Pdf.Email       # email (.eml, .msg) and web archives (.mht)
+dotnet add package RaiCore.Pdf.Xfa         # dynamic XFA forms
 dotnet add package RaiCore.Pdf.Extraction  # text and images out of existing PDFs
 dotnet add package RaiCore.Pdf.Editing     # editing existing PDFs
 ```
@@ -723,6 +725,18 @@ OdtToPdf.Convert("report.odt").Save("report.pdf");
 RtfToPdf.Convert("memo.rtf").Save("memo.pdf");
 DocToPdf.Convert("minutes.doc").Save("minutes.pdf");
 string text = DocumentText.Extract("minutes.doc");
+```
+
+The `RaiCore.Pdf.Xfa` package renders dynamic XFA forms (from Adobe LiveCycle and AEM Forms Designer), whose PDF pages
+are often only a "Please wait..." placeholder, to ordinary flattened PDF pages: the form's data is merged into its
+template (normal, global, data reference and no bindings, repeated subforms), the subforms are laid out by position and
+in flows (top to bottom, in lines, tables) and paginated into the page areas with breaks, overflow leaders and
+trailers, and the field values are drawn formatted by their picture clauses and locales. Scripts are not run; what is
+left out is reported. See the [XFA forms guide](https://raicevic.github.io/raicore-pdf/guides/xfa.html).
+
+```csharp
+var pdf = XfaToPdf.Convert("form.pdf");
+pdf.Save("form-flattened.pdf");
 ```
 
 ### Fonts

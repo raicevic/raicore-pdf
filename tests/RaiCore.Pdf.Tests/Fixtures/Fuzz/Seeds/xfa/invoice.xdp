@@ -1,0 +1,52 @@
+<xdp:xdp xmlns:xdp="http://ns.adobe.com/xdp/"><template xmlns="http://www.xfa.org/schema/xfa-template/3.3/">
+<subform name="form1" layout="tb" locale="en_US">
+  <pageSet>
+    <pageArea name="Main" id="Main">
+      <contentArea x="0.5in" y="1in" w="7.5in" h="9in"/>
+      <medium stock="letter" short="8.5in" long="11in"/>
+      <draw name="HeaderText" w="5in" h="0.3in" x="0.5in" y="0.4in"><value><text>Synthetic Invoice Header</text></value><font typeface="Arial" size="9pt"/></draw>
+      <field name="CompanyName" w="2.5in" h="0.3in" x="5.5in" y="0.4in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/><bind match="global"/></field>
+    </pageArea>
+    <pageArea name="Last" id="Last">
+      <contentArea x="0.5in" y="1in" w="7.5in" h="9in"/>
+      <medium stock="letter" short="8.5in" long="11in"/>
+      <draw name="LastHeader" w="5in" h="0.3in" x="0.5in" y="0.4in"><value><text>Final Page Header</text></value><font typeface="Arial" size="9pt"/></draw>
+    </pageArea>
+  </pageSet>
+  <subform name="Header" w="7.5in" h="1in">
+    <field name="CustomerName" w="3.5in" h="0.3in" x="0in" y="0in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/><caption reserve="0.8in"><value><text>Customer</text></value></caption></field>
+    <field name="CustomerCity" w="3.5in" h="0.3in" x="3.8in" y="0in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/><caption reserve="0.8in"><value><text>City</text></value></caption></field>
+    <field name="InvoiceDate" w="3.5in" h="0.3in" x="0in" y="0.5in"><ui><dateTimeEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/><caption reserve="0.8in"><value><text>Date</text></value></caption><format><picture>date{MMMM D, YYYY}</picture></format></field>
+    <field name="CompanyName" w="3.5in" h="0.3in" x="3.8in" y="0.5in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/><bind match="global"/></field>
+  </subform>
+  <subform name="Items" layout="table" columnWidths="1in 4in 2.5in" w="7.5in">
+    <overflow leader="HeaderRow"/>
+    <subform name="HeaderRow" layout="row" h="0.3in">
+      <draw name="QtyHeader" w="1in" h="0.3in"><value><text>Qty</text></value><font typeface="Arial" size="9pt"/><border><edge/></border></draw>
+      <draw name="DescriptionHeader" w="4in" h="0.3in"><value><text>Description</text></value><font typeface="Arial" size="9pt"/><border><edge/></border></draw>
+      <draw name="AmountHeader" w="2.5in" h="0.3in"><value><text>Amount</text></value><font typeface="Arial" size="9pt"/><border><edge/></border></draw>
+    </subform>
+    <subform name="Item" layout="row" h="0.3in">
+      <occur min="0" max="-1"/>
+      <field name="Qty" w="1in" h="0.3in"><ui><numericEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field>
+      <field name="Description" w="4in" h="0.3in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field>
+      <field name="Amount" w="2.5in" h="0.3in"><ui><numericEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/><format><picture>num{$z,zz9.99}</picture></format></field>
+    </subform>
+  </subform>
+  <subform name="Totals" w="7.5in" h="0.5in">
+    <field name="Total" w="3in" h="0.3in" x="4.5in" y="0in"><ui><numericEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/><caption reserve="0.8in"><value><text>Total</text></value></caption><format><picture>num{$zz,zz9.99}</picture></format></field>
+    <field name="Ref" w="3in" h="0.3in" x="0in" y="0in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/><bind match="dataRef" ref="$record.Meta.Reference"/></field>
+  </subform>
+  <subform name="Hidden" w="7.5in" h="0.5in" presence="hidden">
+    <field name="Secret" w="3in" h="0.3in" x="0in" y="0in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field>
+  </subform>
+  <subform name="Notes" w="7.5in" h="2in">
+    <breakBefore targetType="pageArea" target="#Last"/>
+    <draw name="Terms" w="7.5in" h="1.5in" x="0in" y="0in">
+      <value><exData contentType="text/html"><body xmlns="http://www.w3.org/1999/xhtml"><p>Payment is due within <b>30 days</b>.</p><p style="font-style:italic">Thank you for your business.</p></body></exData></value>
+      <font typeface="Arial" size="10pt"/>
+    </draw>
+    <draw name="PrintButton" w="2in" h="0.3in" x="0in" y="1.6in" relevant="-print"><value><text>NOT-PRINTED</text></value></draw>
+  </subform>
+</subform>
+</template><xfa:datasets xmlns:xfa="http://www.xfa.org/schema/xfa-data/1.0/"><xfa:data><form1><CompanyName>Example Supplies Inc</CompanyName><Header><CustomerName>Ada Lovelace</CustomerName><CustomerCity>London</CustomerCity><InvoiceDate>2024-03-05</InvoiceDate></Header><Items><Item><Qty>1</Qty><Description>Item number 01</Description><Amount>12.50</Amount></Item><Item><Qty>2</Qty><Description>Item number 02</Description><Amount>25.00</Amount></Item><Item><Qty>3</Qty><Description>Item number 03</Description><Amount>37.50</Amount></Item><Item><Qty>4</Qty><Description>Item number 04</Description><Amount>50.00</Amount></Item><Item><Qty>5</Qty><Description>Item number 05</Description><Amount>62.50</Amount></Item><Item><Qty>6</Qty><Description>Item number 06</Description><Amount>75.00</Amount></Item><Item><Qty>7</Qty><Description>Item number 07</Description><Amount>87.50</Amount></Item><Item><Qty>8</Qty><Description>Item number 08</Description><Amount>100.00</Amount></Item><Item><Qty>9</Qty><Description>Item number 09</Description><Amount>112.50</Amount></Item><Item><Qty>10</Qty><Description>Item number 10</Description><Amount>125.00</Amount></Item><Item><Qty>11</Qty><Description>Item number 11</Description><Amount>137.50</Amount></Item><Item><Qty>12</Qty><Description>Item number 12</Description><Amount>150.00</Amount></Item><Item><Qty>13</Qty><Description>Item number 13</Description><Amount>162.50</Amount></Item><Item><Qty>14</Qty><Description>Item number 14</Description><Amount>175.00</Amount></Item><Item><Qty>15</Qty><Description>Item number 15</Description><Amount>187.50</Amount></Item><Item><Qty>16</Qty><Description>Item number 16</Description><Amount>200.00</Amount></Item><Item><Qty>17</Qty><Description>Item number 17</Description><Amount>212.50</Amount></Item><Item><Qty>18</Qty><Description>Item number 18</Description><Amount>225.00</Amount></Item><Item><Qty>19</Qty><Description>Item number 19</Description><Amount>237.50</Amount></Item><Item><Qty>20</Qty><Description>Item number 20</Description><Amount>250.00</Amount></Item><Item><Qty>21</Qty><Description>Item number 21</Description><Amount>262.50</Amount></Item><Item><Qty>22</Qty><Description>Item number 22</Description><Amount>275.00</Amount></Item><Item><Qty>23</Qty><Description>Item number 23</Description><Amount>287.50</Amount></Item><Item><Qty>24</Qty><Description>Item number 24</Description><Amount>300.00</Amount></Item><Item><Qty>25</Qty><Description>Item number 25</Description><Amount>312.50</Amount></Item><Item><Qty>26</Qty><Description>Item number 26</Description><Amount>325.00</Amount></Item><Item><Qty>27</Qty><Description>Item number 27</Description><Amount>337.50</Amount></Item><Item><Qty>28</Qty><Description>Item number 28</Description><Amount>350.00</Amount></Item><Item><Qty>29</Qty><Description>Item number 29</Description><Amount>362.50</Amount></Item><Item><Qty>30</Qty><Description>Item number 30</Description><Amount>375.00</Amount></Item><Item><Qty>31</Qty><Description>Item number 31</Description><Amount>387.50</Amount></Item><Item><Qty>32</Qty><Description>Item number 32</Description><Amount>400.00</Amount></Item><Item><Qty>33</Qty><Description>Item number 33</Description><Amount>412.50</Amount></Item><Item><Qty>34</Qty><Description>Item number 34</Description><Amount>425.00</Amount></Item><Item><Qty>35</Qty><Description>Item number 35</Description><Amount>437.50</Amount></Item><Item><Qty>36</Qty><Description>Item number 36</Description><Amount>450.00</Amount></Item><Item><Qty>37</Qty><Description>Item number 37</Description><Amount>462.50</Amount></Item><Item><Qty>38</Qty><Description>Item number 38</Description><Amount>475.00</Amount></Item><Item><Qty>39</Qty><Description>Item number 39</Description><Amount>487.50</Amount></Item><Item><Qty>40</Qty><Description>Item number 40</Description><Amount>500.00</Amount></Item></Items><Totals><Total>10250.00</Total></Totals><Meta><Reference>REF-2024-0042</Reference></Meta><Hidden><Secret>SHOULD-NOT-APPEAR</Secret></Hidden></form1></xfa:data></xfa:datasets></xdp:xdp>

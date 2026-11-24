@@ -175,6 +175,7 @@ public sealed class ExternalResourcesTests : IDisposable
     [InlineData(typeof(XlsxToPdf))]
     [InlineData(typeof(PptxToPdf))]
     [InlineData(typeof(EmailToPdf))]
+    [InlineData(typeof(RaiCore.Pdf.Xfa.XfaToPdf))]
     public void Office_and_email_converters_have_no_file_or_network_access_of_their_own(Type converter)
     {
         Assert.Empty(ForbiddenReferences(converter.Assembly));

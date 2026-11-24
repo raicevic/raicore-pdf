@@ -1,0 +1,52 @@
+#nullable enable
+override RaiCore.Pdf.Xfa.XfaDiagnostic.Equals(object? obj) -> bool
+override RaiCore.Pdf.Xfa.XfaDiagnostic.GetHashCode() -> int
+override RaiCore.Pdf.Xfa.XfaDiagnostic.ToString() -> string!
+RaiCore.Pdf.Xfa.XfaConverterOptions
+RaiCore.Pdf.Xfa.XfaConverterOptions.Data.get -> string?
+RaiCore.Pdf.Xfa.XfaConverterOptions.Data.init -> void
+RaiCore.Pdf.Xfa.XfaConverterOptions.Diagnostics.get -> System.Action<RaiCore.Pdf.Xfa.XfaDiagnostic!>?
+RaiCore.Pdf.Xfa.XfaConverterOptions.Diagnostics.init -> void
+RaiCore.Pdf.Xfa.XfaConverterOptions.FallbackFontFamilies.get -> System.Collections.Generic.IReadOnlyList<string!>!
+RaiCore.Pdf.Xfa.XfaConverterOptions.FallbackFontFamilies.init -> void
+RaiCore.Pdf.Xfa.XfaConverterOptions.Fonts.get -> RaiCore.Pdf.Fonts.FontCollection?
+RaiCore.Pdf.Xfa.XfaConverterOptions.Fonts.init -> void
+RaiCore.Pdf.Xfa.XfaConverterOptions.Limits.get -> RaiCore.Pdf.ResourceLimits!
+RaiCore.Pdf.Xfa.XfaConverterOptions.Limits.init -> void
+RaiCore.Pdf.Xfa.XfaConverterOptions.Password.get -> string?
+RaiCore.Pdf.Xfa.XfaConverterOptions.Password.init -> void
+RaiCore.Pdf.Xfa.XfaConverterOptions.Title.get -> string?
+RaiCore.Pdf.Xfa.XfaConverterOptions.Title.init -> void
+RaiCore.Pdf.Xfa.XfaConverterOptions.UseEmbeddedFonts.get -> bool
+RaiCore.Pdf.Xfa.XfaConverterOptions.UseEmbeddedFonts.init -> void
+RaiCore.Pdf.Xfa.XfaConverterOptions.XfaConverterOptions() -> void
+RaiCore.Pdf.Xfa.XfaDiagnostic
+RaiCore.Pdf.Xfa.XfaDiagnostic.<Clone>$() -> RaiCore.Pdf.Xfa.XfaDiagnostic!
+RaiCore.Pdf.Xfa.XfaDiagnostic.Deconstruct(out RaiCore.Pdf.Xfa.XfaDiagnosticKind Kind, out string! Message) -> void
+RaiCore.Pdf.Xfa.XfaDiagnostic.Equals(RaiCore.Pdf.Xfa.XfaDiagnostic? other) -> bool
+RaiCore.Pdf.Xfa.XfaDiagnostic.Kind.get -> RaiCore.Pdf.Xfa.XfaDiagnosticKind
+RaiCore.Pdf.Xfa.XfaDiagnostic.Kind.init -> void
+RaiCore.Pdf.Xfa.XfaDiagnostic.Message.get -> string!
+RaiCore.Pdf.Xfa.XfaDiagnostic.Message.init -> void
+RaiCore.Pdf.Xfa.XfaDiagnostic.XfaDiagnostic(RaiCore.Pdf.Xfa.XfaDiagnosticKind Kind, string! Message) -> void
+RaiCore.Pdf.Xfa.XfaDiagnosticKind
+RaiCore.Pdf.Xfa.XfaDiagnosticKind.Data = 4 -> RaiCore.Pdf.Xfa.XfaDiagnosticKind
+RaiCore.Pdf.Xfa.XfaDiagnosticKind.FontSubstituted = 5 -> RaiCore.Pdf.Xfa.XfaDiagnosticKind
+RaiCore.Pdf.Xfa.XfaDiagnosticKind.ImageNotLoaded = 2 -> RaiCore.Pdf.Xfa.XfaDiagnosticKind
+RaiCore.Pdf.Xfa.XfaDiagnosticKind.Layout = 3 -> RaiCore.Pdf.Xfa.XfaDiagnosticKind
+RaiCore.Pdf.Xfa.XfaDiagnosticKind.ScriptNotRun = 0 -> RaiCore.Pdf.Xfa.XfaDiagnosticKind
+RaiCore.Pdf.Xfa.XfaDiagnosticKind.UnsupportedContent = 1 -> RaiCore.Pdf.Xfa.XfaDiagnosticKind
+RaiCore.Pdf.Xfa.XfaFormatException
+RaiCore.Pdf.Xfa.XfaFormatException.XfaFormatException() -> void
+RaiCore.Pdf.Xfa.XfaFormatException.XfaFormatException(string! message, System.Exception! innerException) -> void
+RaiCore.Pdf.Xfa.XfaFormatException.XfaFormatException(string! message) -> void
+RaiCore.Pdf.Xfa.XfaToPdf
+static RaiCore.Pdf.Xfa.XfaDiagnostic.operator !=(RaiCore.Pdf.Xfa.XfaDiagnostic? left, RaiCore.Pdf.Xfa.XfaDiagnostic? right) -> bool
+static RaiCore.Pdf.Xfa.XfaDiagnostic.operator ==(RaiCore.Pdf.Xfa.XfaDiagnostic? left, RaiCore.Pdf.Xfa.XfaDiagnostic? right) -> bool
+static RaiCore.Pdf.Xfa.XfaToPdf.Convert(byte[]! data, RaiCore.Pdf.Xfa.XfaConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Xfa.XfaToPdf.Convert(string! path, RaiCore.Pdf.Xfa.XfaConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Xfa.XfaToPdf.Convert(System.IO.Stream! data, RaiCore.Pdf.Xfa.XfaConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
+static RaiCore.Pdf.Xfa.XfaToPdf.ConvertAsync(byte[]! data, RaiCore.Pdf.Xfa.XfaConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Xfa.XfaToPdf.ConvertAsync(System.IO.Stream! data, RaiCore.Pdf.Xfa.XfaConverterOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<RaiCore.Pdf.PdfDocument!>!
+static RaiCore.Pdf.Xfa.XfaToPdf.ConvertToBytes(byte[]! data, RaiCore.Pdf.Xfa.XfaConverterOptions? options = null) -> byte[]!
+static RaiCore.Pdf.Xfa.XfaToPdf.ConvertToBytes(System.IO.Stream! data, RaiCore.Pdf.Xfa.XfaConverterOptions? options = null) -> byte[]!

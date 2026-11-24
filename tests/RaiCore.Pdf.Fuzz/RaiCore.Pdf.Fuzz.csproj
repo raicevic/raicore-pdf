@@ -19,6 +19,7 @@
     <ProjectReference Include="..\..\src\RaiCore.Pdf.Sheets\RaiCore.Pdf.Sheets.csproj" />
     <ProjectReference Include="..\..\src\RaiCore.Pdf.Slides\RaiCore.Pdf.Slides.csproj" />
     <ProjectReference Include="..\..\src\RaiCore.Pdf.Documents\RaiCore.Pdf.Documents.csproj" />
+    <ProjectReference Include="..\..\src\RaiCore.Pdf.Xfa\RaiCore.Pdf.Xfa.csproj" />
   </ItemGroup>
 
   <ItemGroup>

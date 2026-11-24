@@ -36,6 +36,8 @@
   href: slides.md
 - name: Word, ODT and RTF to PDF
   href: documents.md
+- name: Dynamic XFA forms to PDF
+  href: xfa.md
 - name: Format support
   href: format-support.md
 - name: Experimental APIs

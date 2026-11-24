@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [html, css, htmlfragment, png, jpeg, gif, bmp, webp, svg, font, woff, woff2, pdf, extract, email, tiff, csv, edit, cfb, xlsx, xls, workbook, pptx, ppt, docx, odt, rtf, doc, doctext, wmf, emf, chart, sheetdrawing, xlsdrawing]
+        target: [html, css, htmlfragment, png, jpeg, gif, bmp, webp, svg, font, woff, woff2, pdf, extract, email, tiff, csv, edit, cfb, xlsx, xls, workbook, pptx, ppt, docx, odt, rtf, doc, doctext, wmf, emf, chart, sheetdrawing, xlsdrawing, xfa]
     steps:
       - uses: actions/checkout@v5
 
@@ -57,7 +57,7 @@ jobs:
       - name: Build and instrument
         run: |
           dotnet publish tests/RaiCore.Pdf.Fuzz --configuration Release --output fuzz-out
-          for assembly in RaiCore.Pdf RaiCore.Pdf.Layout RaiCore.Pdf.Html RaiCore.Pdf.Extraction RaiCore.Pdf.Editing RaiCore.Pdf.Email RaiCore.Pdf.Sheets RaiCore.Pdf.Slides RaiCore.Pdf.Documents; do
+          for assembly in RaiCore.Pdf RaiCore.Pdf.Layout RaiCore.Pdf.Html RaiCore.Pdf.Extraction RaiCore.Pdf.Editing RaiCore.Pdf.Email RaiCore.Pdf.Sheets RaiCore.Pdf.Slides RaiCore.Pdf.Documents RaiCore.Pdf.Xfa; do
             sharpfuzz "fuzz-out/$assembly.dll"
           done
 
