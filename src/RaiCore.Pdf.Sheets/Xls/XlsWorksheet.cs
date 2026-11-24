@@ -239,7 +239,68 @@ internal static class XlsWorksheet
                     sheet.Landscape = !noPrinterSettings && (options & 0x02) == 0 && (options & 0x40) == 0;
                     sheet.Scale = noPrinterSettings ? null : BiffReader.U16(data, 2);
                     sheet.FitToWidth = BiffReader.U16(data, 6);
+                    if (data.Length >= 32)
+                    {
+                        // The header and footer margins, in inches; the first page number when it is set.
+                        static double Margin(double inches, double fallback) => double.IsFinite(inches) ? Math.Clamp(inches, 0, 50) * 72 : fallback;
+                        sheet.HeaderFooter = sheet.HeaderFooter with
+                        {
+                            HeaderMargin = Margin(BitConverter.ToDouble(data.Slice(16, 8)), sheet.HeaderFooter.HeaderMargin),
+                            FooterMargin = Margin(BitConverter.ToDouble(data.Slice(24, 8)), sheet.HeaderFooter.FooterMargin),
+                            FirstPageNumber = (options & 0x80) != 0 && !noPrinterSettings ? (short)BiffReader.U16(data, 4) : 1,
+                        };
+                    }
+
                     break;
+                case Header or Footer when data.Length > 0:
+                {
+                    var position = 0;
+                    var text = BiffReader.ReadString(data, reader.Breaks, ref position, workbook.Biff == 8 ? 2 : 1, workbook.CodePage);
+                    text = string.IsNullOrWhiteSpace(text) ? null : text;
+                    sheet.HeaderFooter = id == Header ? sheet.HeaderFooter with { OddHeader = text } : sheet.HeaderFooter with { OddFooter = text };
+                    break;
+                }
+
+                case HeaderFooter when data.Length >= 38:
+                {
+                    // Even and first page texts (strings without their lengths, which come before them) and flags.
+                    var hfFlags = BiffReader.U16(data, 28);
+                    var texts = new string?[4];
+                    var position = 38;
+                    for (var i = 0; i < 4; i++)
+                    {
+                        var length = BiffReader.U16(data, 30 + (2 * i));
+                        texts[i] = length == 0 ? null : BiffReader.ReadUnicode(data, reader.Breaks, ref position, length);
+                    }
+
+                    sheet.HeaderFooter = sheet.HeaderFooter with
+                    {
+                        DifferentOddEven = (hfFlags & 0x01) != 0,
+                        DifferentFirst = (hfFlags & 0x02) != 0,
+                        ScaleWithDocument = (hfFlags & 0x04) != 0,
+                        EvenHeader = texts[0],
+                        EvenFooter = texts[1],
+                        FirstHeader = texts[2],
+                        FirstFooter = texts[3],
+                    };
+                    break;
+                }
+
+                case HorizontalPageBreaks or VerticalPageBreaks when data.Length >= 2:
+                {
+                    // Each break: the row (or column) that starts a page, then (in BIFF8) the columns (rows) it spans.
+                    var size = workbook.Biff == 8 ? 6 : 2;
+                    var breaks = id == HorizontalPageBreaks ? sheet.RowBreaks : sheet.ColumnBreaks;
+                    for (var i = 0; i < BiffReader.U16(data, 0) && 2 + (size * (i + 1)) <= data.Length && breaks.Count < 100_000; i++)
+                    {
+                        if (BiffReader.U16(data, 2 + (size * i)) is var at and > 0)
+                        {
+                            breaks.Add(at);
+                        }
+                    }
+
+                    break;
+                }
                 case Window2 when data.Length >= 2:
                     sheet.RightToLeft = (BiffReader.U16(data, 0) & 0x0040) != 0;
                     break;
@@ -350,8 +411,7 @@ internal static class XlsWorksheet
     /// <summary>
     /// Counts a record of content that is not supported: a drawing object (OBJ: chart, picture, embedded object, shape or
     /// control; not those that do not print, nor the shapes of comments and groups), a comment (NOTE), a conditional
-    /// formatting rule (CF, CF12), a header or footer text (HEADER, FOOTER, and the first and even page ones of
-    /// HEADERFOOTER), page breaks set by hand, and a pivot table (SXVIEW).
+    /// formatting rule (CF, CF12), and a pivot table (SXVIEW).
     /// </summary>
     private static void CountUnsupported(ushort id, ReadOnlySpan<byte> data, int biff, UnsupportedContent unsupported)
     {
@@ -374,22 +434,6 @@ internal static class XlsWorksheet
                 break;
             case Cf or Cf12:
                 unsupported.Add(SheetDiagnosticKind.ConditionalFormatting);
-                break;
-            case Header or Footer when (biff == 8 ? BiffReader.U16(data, 0) : data.Length > 0 ? data[0] : 0) > 0:
-                unsupported.Add(SheetDiagnosticKind.HeaderFooter);
-                break;
-            case HeaderFooter when data.Length >= 38:
-                for (var i = 0; i < 4; i++)
-                {
-                    if (BiffReader.U16(data, 30 + (2 * i)) > 0)
-                    {
-                        unsupported.Add(SheetDiagnosticKind.HeaderFooter);
-                    }
-                }
-
-                break;
-            case HorizontalPageBreaks or VerticalPageBreaks:
-                unsupported.Add(SheetDiagnosticKind.PageBreak, BiffReader.U16(data, 0));
                 break;
             case SxView:
                 unsupported.Add(SheetDiagnosticKind.PivotTable);

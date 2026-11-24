@@ -12,29 +12,29 @@ namespace RaiCore.Pdf.Sheets;
 internal static partial class SheetRenderer
 {
     /// <summary>
-    /// The overlay that draws the sheet's drawings over a table of a band of columns and rows [<paramref name="start"/>,
-    /// <paramref name="end"/>), or <c>null</c> when the sheet has none.
+    /// The overlay that draws the sheet's drawings over a table of a band of columns and of the sheet's
+    /// <paramref name="rows"/> (in the table's order), or <c>null</c> when the sheet has none.
     /// </summary>
-    private static Func<TablePlacement, IEnumerable<(int Page, Action<PdfCanvas, double> Draw)>>? DrawingOverlay(FormattedContext context, ColumnBand band, int start, int end)
+    private static Func<TablePlacement, IEnumerable<(int Page, Action<PdfCanvas, double> Draw)>>? DrawingOverlay(FormattedContext context, ColumnBand band, int[] rows)
     {
-        if (context.Format.Drawings.Count == 0 || end <= start)
+        if (context.Format.Drawings.Count == 0 || rows.Length == 0)
         {
             return null;
         }
 
-        return placement => PlaceDrawings(context, band, start, placement);
+        return placement => PlaceDrawings(context, band, rows, placement);
     }
 
-    private static IEnumerable<(int Page, Action<PdfCanvas, double> Draw)> PlaceDrawings(FormattedContext context, ColumnBand band, int start, TablePlacement placement)
+    private static IEnumerable<(int Page, Action<PdfCanvas, double> Draw)> PlaceDrawings(FormattedContext context, ColumnBand band, int[] tableRows, TablePlacement placement)
     {
         var sheet = context.Sheet;
         var scale = context.Scale;
-        var heights = DrawingLayout.RowHeights(placement.Rows, start, sheet.Rows.Count, context.RowHeight);
+        var heights = DrawingLayout.RowHeights(placement.Rows, tableRows, sheet.Rows.Count, context.RowHeight);
         var rows = new SheetAxis(heights);
         var columns = new SheetAxis(context.ColumnSizes);
         var nominalRows = new SheetAxis([.. Enumerable.Range(0, sheet.Rows.Count).Select(r => context.RowHeight(r) / scale)]);
         var nominalColumns = new SheetAxis(context.NaturalWidths);
-        var segments = DrawingLayout.Segments(placement.Rows, start, rows);
+        var segments = DrawingLayout.Segments(placement.Rows, tableRows, rows);
         var edges = placement.ColumnEdges;
         if (edges.Count < 2 || segments.Count == 0)
         {

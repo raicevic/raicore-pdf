@@ -68,6 +68,11 @@ internal static class XlsxConverter
             var worksheet = entry.Path is { } path
                 ? package.Parse(path, reader => XlsxWorksheet.Read(reader, workbook, limits.MaxTableCells, checkpoint), XlsxWorksheet.Empty)
                 : XlsxWorksheet.Empty;
+            if (worksheet.ConditionalFormats.Count > 0)
+            {
+                ConditionalFormatting.Apply(worksheet, worksheet.ConditionalFormats, workbook.Styles, checkpoint);
+            }
+
             if (entry.Path is { } part)
             {
                 worksheet.Drawings.AddRange(new XlsxDrawing(package, workbook, limits, worksheet.Unsupported, images).Read(part));
@@ -245,6 +250,10 @@ internal static class XlsxConverter
                 Drawings = SheetDrawings.Map(worksheet, rowArray, columnArray, defaultWidth),
                 MajorFont = themeFonts.Major,
                 MinorFont = themeFonts.Minor,
+                HeaderFooter = usePageSetup && !worksheet.HeaderFooter.IsEmpty ? worksheet.HeaderFooter : null,
+                PrintContext = (options.PrintDate ?? DateTime.Now, options.Culture ?? CultureInfo.InvariantCulture, null),
+                RowBreaks = usePageSetup ? Breaks(worksheet.RowBreaks, rowArray, headerRows + leadRows) : [],
+                ColumnBreaks = usePageSetup ? Breaks(worksheet.ColumnBreaks, columnArray, 0) : [],
             },
             Name = entry.Name,
         };
@@ -314,6 +323,26 @@ internal static class XlsxConverter
         }
 
         return merges;
+    }
+
+    /// <summary>
+    /// The printed rows or columns that page breaks set by hand start a page at: the first printed one at or after each
+    /// break, after the first <paramref name="after"/> (the rows printed before the body); ascending, once each.
+    /// </summary>
+    internal static List<int> Breaks(IReadOnlyList<int> breaks, int[] printed, int after)
+    {
+        var result = new SortedSet<int>();
+        foreach (var at in breaks)
+        {
+            var index = Array.BinarySearch(printed, at);
+            index = index < 0 ? ~index : index;
+            if (index > after && index < printed.Length)
+            {
+                result.Add(index);
+            }
+        }
+
+        return [.. result];
     }
 
     /// <summary>The first and last index of the sorted values within [low, high] (first &gt; last if none).</summary>

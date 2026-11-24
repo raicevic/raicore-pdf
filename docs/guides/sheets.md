@@ -196,7 +196,26 @@ With `UsePageSetup` (the default), each sheet's page setup is used:
   `SheetOptions.MinimumFontSize`; beyond that, the columns are printed in bands. `SheetOptions.Landscape` and
   `FitToWidth` turn these on for every sheet.
 
-The page size and margins always come from `SheetOptions.Page`.
+The page size and margins always come from `SheetOptions.Page`. Also with `UsePageSetup`:
+
+- **Headers and footers** are printed on every page, between the page's margins, the header at its distance below
+  the top and the footer at its distance above the bottom (`pageMargins` `header` and `footer`). Their left, center
+  and right sections (`&L`, `&C`, `&R`), the fields `&P` (also `&P+n`, `&P-n`, from the sheet's first page number),
+  `&N`, `&D`, `&T`, `&A` (the sheet's name) and `&&`, and the font codes (`&"Family,Bold Italic"`, `&nn` size, `&B`,
+  `&I`, `&U`, `&E`, `&S`, `&X`, `&Y`, `&Krrggbb`) are applied; first-page and even-page texts too. The date and time
+  are `XlsxConverterOptions.PrintDate` (the conversion's time by default) in `Culture`'s short formats. `&F` and `&Z`
+  (file name and folder) print nothing, since a conversion gets data, not a file; pictures (`&G`) are left out. The
+  texts scale with the sheet unless they are set not to.
+- **Page breaks set by hand** start a new page before their row (the header rows are repeated after it), and a new
+  band before their column.
+
+Cells show **rich text** (runs in their own font, size, color, bold, italic, underline and strikethrough),
+**stacked text** (one character under the other) and text set to **shrink to fit**, which is shown smaller until it
+fits its columns. **Conditional formatting** is applied over the stored values (formulas are not calculated): rules
+comparing values with constants (`cellIs`), two- and three-color scales, top and bottom ranks and percents, above and
+below average, duplicate and unique values, text that contains, begins or ends with a text, blanks and errors, in
+their priority with `stopIfTrue`; their formats set the font's bold, italic, underline, strikethrough and color, the
+fill and the borders.
 
 | `XlsxConverterOptions` | What it does |
 |---|---|
@@ -205,6 +224,7 @@ The page size and margins always come from `SheetOptions.Page`.
 | `UsePageSetup` | Use the sheets' print areas, print titles, orientation, scale and fit to width (default `true`). |
 | `AutoFit` | Fit every column and row to its content instead of the sheet's sizes (default `false`). |
 | `Culture` | The culture numbers and dates are shown in (default invariant). |
+| `PrintDate` | The date and time headers and footers print for `&D` and `&T` (default: the time of the conversion). |
 | `Sheet` | The `SheetOptions` above. `FontSize` is not used: cells keep the workbook's sizes. |
 
 ### Untrusted workbooks
@@ -220,8 +240,8 @@ refreshed: formulas show the values stored with them (see [Untrusted input](untr
 
 Not supported in workbooks, and reported through `Diagnostics` ([below](#diagnostics)): chart sheets, the newer chart
 types (waterfall, treemap, sunburst...), SmartArt, ink, form controls, embedded objects, comments, conditional
-formatting (also data bars, color scales and icon sets), sparklines, pivot tables (their cells are shown), headers and
-footers, page breaks set by hand, rich text formatting within a cell, rotated text, and shrink to fit.
+formatting rules with formulas, data bars, icon sets and dates, sparklines, pivot tables (their cells are shown),
+rotated text, and in `.xls` workbooks rich text and conditional formatting.
 
 ### Excel 97-2003 workbooks
 
@@ -264,14 +284,11 @@ the sheets are converted, while the conversion runs, so a caller can flag the do
 | `Shape` | SmartArt, ink and form controls: left out. | Other graphic frames, ink; form controls | Free forms, less common shape types, control objects |
 | `OleObject` | Embedded and linked objects, ActiveX controls: left out. | `oleObjects`; ActiveX controls | Picture objects of embedded objects |
 | `Comment` | Comments (notes and threaded comments): left out. | Comments part, threaded comments | `NOTE` records |
-| `ConditionalFormatting` | Conditional formatting rules: not applied. | `cfRule`s, also of the extension list | `CF`, `CF12` records |
+| `ConditionalFormatting` | Conditional formatting rules that are not applied (formulas, data bars, icon sets, dates). | Those `cfRule`s, also of the extension list | `CF`, `CF12` records |
 | `Sparkline` | Sparklines: left out. | Sparklines of the extension list | |
 | `PivotTable` | Pivot tables: their cells are shown as stored, without the pivot table style. | Pivot table parts | `SXVIEW` records |
-| `HeaderFooter` | Each header and footer text (odd, even, first page): left out. | `headerFooter` | `HEADER`, `FOOTER`, `HEADERFOOTER` |
-| `PageBreak` | Page breaks set by hand: not applied. | `rowBreaks`, `colBreaks` (manual) | `HORIZONTALPAGEBREAKS`, `VERTICALPAGEBREAKS` |
-| `RichText` | Cells with runs of text in other fonts: shown in the cell's font. | Shared and inline strings with run properties | Rich shared strings, `RSTRING` |
-| `RotatedText` | Cells with rotated or stacked text: shown horizontally. | `textRotation` | The XF's rotation |
-| `ShrinkToFit` | Cells set to shrink to fit: shown at their size. | `shrinkToFit` | The XF's shrink to fit |
+| `RichText` | Cells with runs of text in other fonts: shown in the cell's font. | | Rich shared strings, `RSTRING` |
+| `RotatedText` | Cells with rotated text (not stacked): shown horizontally. | `textRotation` | The XF's rotation |
 | `Layout` | Content that does not fit the page: drawn past its edge, or cut off, with the page numbers. | | |
 
 Counts are for the whole sheet, also outside the print area. Drawing objects that do not print (hidden, or set not

@@ -6,6 +6,14 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Sheets: headers and footers, page breaks, rich text and conditional formatting** (#259): worksheets print their
+  headers and footers (left, center and right sections, page number with offsets, pages, date, time, sheet name, font
+  codes; first-page and even-page texts; their margins; the first page number), page breaks set by hand between rows
+  (header rows repeated after them) and columns, rich text runs, stacked text and text shrunk to fit, from `.xlsx` and
+  `.xls` alike. Conditional formatting of `.xlsx` workbooks is applied over the stored values: value comparisons,
+  color scales, top/bottom, above/below average, duplicate/unique, text, blank and error rules, with their font, fill
+  and border formats. `XlsxConverterOptions.PrintDate` sets the date and time headers print. Diagnostics no longer
+  report what is printed now.
 - **Removing XFA forms** (#262, `RaiCore.Pdf.Editing`): `PdfEditor.RemoveXfa()` deletes the XFA form and keeps the
   AcroForm with its fields, values and appearances, so files with static or dynamic XFA can be filled, flattened and
   shown by any viewer. `PdfForm.IsXfaPlaceholder` tells when a dynamic XFA form's PDF pages are only a "Please

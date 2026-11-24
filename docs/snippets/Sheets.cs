@@ -57,6 +57,7 @@ internal static class Sheets
             SheetNames = ["Summary"],    // The sheets to convert; all visible ones by default.
             ShowSheetNames = true,       // Each sheet's name as a heading.
             Culture = CultureInfo.GetCultureInfo("en-US"), // Separators, month names, short dates.
+            PrintDate = new DateTime(2026, 11, 24), // The date headers and footers print (&D); now by default.
             Sheet = new SheetOptions { Page = new PageSetup(PdfPageSize.Letter, Thickness.All(36)), FitToWidth = true },
         });
         workbook.Save("summary.pdf");

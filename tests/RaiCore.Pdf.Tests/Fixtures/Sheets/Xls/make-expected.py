@@ -6,7 +6,8 @@ left out) with their type, value and XF index; for the files xlrd cannot read, i
 Under "content", for each sheet (worksheets and chart sheets, hidden ones too) with content the converter does not
 support, how many of each kind it has, by the names of SheetDiagnosticKind: found by walking the sheet's BIFF8 records
 here (independently of the converter's reader) for drawing objects, embedded charts, comments, conditional formatting,
-headers and footers, page breaks and pivot tables, and with xlrd for the cells with rich, rotated or shrunk text.
+and pivot tables, and with xlrd for the cells with rich or rotated text (not stacked text, which is shown, nor shrunk
+text; headers, footers and page breaks set by hand are printed).
 Drawing objects the converter draws are not counted: each OBJ record is matched to the OfficeArt shape whose client
 data comes before it in the sheet's MSODRAWING data, and pictures whose BLIP (in the drawing group's BLIP store) is
 PNG, JPEG, DIB, TIFF, WMF or EMF, and lines, rectangles, ovals and text boxes of the common shape types without
@@ -101,6 +102,52 @@ def shapes(data, start, end, found):
     return found
 
 
+def biff_print(path):
+    """For each BIFF8 worksheet with any: its header and footer texts (HEADER, FOOTER) and the rows and columns that
+    page breaks set by hand start a page at (HORIZONTALPAGEBREAKS, VERTICALPAGEBREAKS), read here."""
+    ole = olefile.OleFileIO(path)
+    data = ole.openstream('Workbook' if ole.exists('Workbook') else 'Book').read()
+    sheets = []
+    for kind, rec in records(data, 0):
+        if kind == 0x0085:
+            length, flags = rec[6], rec[7]
+            name = rec[8:8 + 2 * length].decode('utf-16-le') if flags & 1 else rec[8:8 + length].decode('latin-1')
+            sheets.append((name, struct.unpack_from('<I', rec, 0)[0], rec[5]))
+        elif kind == 0x000A:
+            break
+
+    def string(rec):
+        count, flags = struct.unpack_from('<HB', rec, 0)
+        return rec[3:3 + 2 * count].decode('utf-16-le') if flags & 1 else rec[3:3 + count].decode('latin-1')
+
+    result = {}
+    for name, offset, sheet_type in sheets:
+        if sheet_type != 0:
+            continue
+        found = {}
+        depth = 0
+        for kind, rec in records(data, offset):
+            if kind == 0x0809:
+                depth += 1
+                continue
+            if kind == 0x000A:
+                depth -= 1
+                if depth == 0:
+                    break
+                continue
+            if depth != 1:
+                continue
+            if kind in (0x0014, 0x0015) and len(rec) >= 3 and string(rec).strip():
+                found['header' if kind == 0x0014 else 'footer'] = string(rec)
+            elif kind in (0x001B, 0x001A) and len(rec) >= 2:
+                count = struct.unpack_from('<H', rec, 0)[0]
+                found['rowBreaks' if kind == 0x001B else 'columnBreaks'] = [
+                    struct.unpack_from('<H', rec, 2 + 6 * i)[0] for i in range(count) if 2 + 6 * (i + 1) <= len(rec)]
+        if found:
+            result[name] = found
+    return result
+
+
 def biff_content(path):
     """For each BIFF8 sheet: its name, whether it is a chart sheet, and the counts of the record kinds it has."""
     ole = olefile.OleFileIO(path)
@@ -158,12 +205,6 @@ def biff_content(path):
                 add('Comment')
             elif kind in (0x01B1, 0x087A):  # CF, CF12
                 add('ConditionalFormatting')
-            elif kind in (0x0014, 0x0015) and len(rec) >= 2 and struct.unpack_from('<H', rec, 0)[0] > 0:
-                add('HeaderFooter')
-            elif kind == 0x089C and len(rec) >= 38:  # HEADERFOOTER: the even and first page texts.
-                add('HeaderFooter', sum(1 for i in range(4) if struct.unpack_from('<H', rec, 30 + 2 * i)[0] > 0))
-            elif kind in (0x001A, 0x001B):
-                add('PageBreak', struct.unpack_from('<H', rec, 0)[0])
             elif kind == 0x00B0:
                 add('PivotTable')
         # Each shape's OBJ is the first after its client data; the objects not drawn are counted by their kind.
@@ -196,7 +237,7 @@ def biff_content(path):
 
 
 def cell_content(book, content):
-    """Adds to the content the cells (that show a value) with rich text, rotated text and shrink to fit, as xlrd reads them."""
+    """Adds to the content the cells (that show a value) with rich text and rotated text, as xlrd reads them."""
     for sheet in book.sheets():
         counts = content.setdefault(sheet.name, {})
         for r in range(sheet.nrows):
@@ -205,8 +246,9 @@ def cell_content(book, content):
                 if cell.ctype in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) or (cell.ctype == xlrd.XL_CELL_TEXT and cell.value == ''):
                     continue
                 alignment = book.xf_list[cell.xf_index].alignment
+                # Stacked text (rotation 255) and shrink to fit are shown; headers, footers and page breaks are printed.
                 for key, present in (('RichText', cell.ctype == xlrd.XL_CELL_TEXT and (r, c) in sheet.rich_text_runlist_map),
-                                     ('RotatedText', alignment.rotation != 0), ('ShrinkToFit', alignment.shrink_to_fit)):
+                                     ('RotatedText', alignment.rotation not in (0, 255))):
                     if present:
                         counts[key] = counts.get(key, 0) + 1
         if not counts:
@@ -255,6 +297,8 @@ for name in sorted(glob.glob('*.xls')):
     content = biff_content(name) if book.biff_version >= 80 else {}
     cell_content(book, content)
     file['content'] = content
+    if book.biff_version >= 80:
+        file['print'] = biff_print(name)
     expected[name] = file
 with open('expected.json', 'w') as f:
     json.dump(expected, f, indent=1, sort_keys=True, ensure_ascii=True)

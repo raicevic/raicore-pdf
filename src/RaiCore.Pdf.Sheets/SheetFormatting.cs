@@ -1,3 +1,4 @@
+using System.Globalization;
 using RaiCore.Pdf.Layout;
 using RaiCore.Pdf.Sheets.Drawings;
 
@@ -72,6 +73,12 @@ internal sealed record CellFormat
     /// <summary>The indent from the aligned side, in levels (each about three characters).</summary>
     public int Indent { get; init; }
 
+    /// <summary>Whether text too wide for its column is shown smaller, to fit (unless it wraps).</summary>
+    public bool ShrinkToFit { get; init; }
+
+    /// <summary>Whether the text is stacked vertically, one character under the other.</summary>
+    public bool Stacked { get; init; }
+
     /// <summary>Whether the cell shows anything without text: a fill or a border.</summary>
     public bool IsVisible => Fill is not null || Top.IsVisible || Right.IsVisible || Bottom.IsVisible || Left.IsVisible;
 }
@@ -135,4 +142,16 @@ internal sealed class SheetFormatting
 
     /// <summary>The theme's font for body text (<c>+mn-lt</c>), or <c>null</c>.</summary>
     public string? MinorFont { get; init; }
+
+    /// <summary>The headers and footers, or <c>null</c> for none.</summary>
+    public SheetHeaderFooter? HeaderFooter { get; init; }
+
+    /// <summary>The date, time and culture headers and footers print, and the file name (<c>&amp;F</c>), if known.</summary>
+    public (DateTime Date, CultureInfo Culture, string? File) PrintContext { get; init; } = (DateTime.MinValue, CultureInfo.InvariantCulture, null);
+
+    /// <summary>The printed rows (after the header rows) that start a page, ascending, by page breaks set by hand.</summary>
+    public IReadOnlyList<int> RowBreaks { get; init; } = [];
+
+    /// <summary>The printed columns (not the first) that start a page, ascending, by page breaks set by hand.</summary>
+    public IReadOnlyList<int> ColumnBreaks { get; init; } = [];
 }

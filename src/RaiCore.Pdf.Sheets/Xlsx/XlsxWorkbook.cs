@@ -40,6 +40,9 @@ internal sealed class XlsxWorkbook
     /// <summary>The indexes of the shared strings with formatted runs (rich text, which is shown in the cell's font).</summary>
     public HashSet<int> RichStrings { get; } = [];
 
+    /// <summary>The runs of the shared strings with rich text, by index.</summary>
+    public Dictionary<int, IReadOnlyList<CellRun>> SharedRuns { get; } = [];
+
     /// <summary>The title of the document properties, or <c>null</c>.</summary>
     public string? Title { get; private set; }
 
@@ -219,15 +222,77 @@ internal sealed class XlsxWorkbook
         {
             if (reader.NodeType == XmlNodeType.Element && reader.LocalName == "si")
             {
-                strings.Add(ReadRichText(reader, out var rich));
-                if (rich)
+                strings.Add(ReadRuns(reader, out var runs));
+                if (runs is not null)
                 {
                     RichStrings.Add(strings.Count - 1);
+                    SharedRuns[strings.Count - 1] = runs;
                 }
             }
         }
 
         return strings;
+    }
+
+    /// <summary>
+    /// The text of a string item (<c>si</c>, <c>is</c>) and, when a run has font properties of its own (rich text), its
+    /// runs (<c>null</c> otherwise): <c>r</c> elements with their <c>rPr</c> (family, size, bold, italic, underline,
+    /// strikethrough, color), and text outside them in the cell's font. Phonetic runs are left out. Leaves the reader on
+    /// the item's end.
+    /// </summary>
+    internal string ReadRuns(XmlReader reader, out IReadOnlyList<CellRun>? runs)
+    {
+        runs = null;
+        if (reader.IsEmptyElement)
+        {
+            return string.Empty;
+        }
+
+        System.Xml.Linq.XElement item;
+        using (var subtree = reader.ReadSubtree())
+        {
+            item = System.Xml.Linq.XElement.Load(subtree);
+        }
+
+        static string Text(System.Xml.Linq.XElement e) =>
+            Unescape(string.Concat(e.Elements().Where(c => c.Name.LocalName == "t").Select(t => t.Value)));
+        var list = new List<CellRun>();
+        var rich = false;
+        foreach (var child in item.Elements())
+        {
+            switch (child.Name.LocalName)
+            {
+                case "t":
+                    list.Add(new CellRun(Unescape(child.Value), null));
+                    break;
+                case "r":
+                    var properties = child.Elements().FirstOrDefault(e => e.Name.LocalName == "rPr");
+                    rich |= properties is not null;
+                    list.Add(new CellRun(Text(child), properties is null ? null : RunFont(properties)));
+                    break;
+            }
+        }
+
+        runs = rich ? list : null;
+        return string.Concat(list.Select(r => r.Text));
+    }
+
+    /// <summary>The font of a run's properties (<c>rPr</c>); a property without a value is on.</summary>
+    private CellFont RunFont(System.Xml.Linq.XElement properties)
+    {
+        string? Value(string name) => properties.Elements().FirstOrDefault(e => e.Name.LocalName == name) is { } e ? (string?)e.Attribute("val") ?? "1" : null;
+        bool On(string name) => Value(name) is { } v && v is not ("0" or "false");
+        var color = properties.Elements().FirstOrDefault(e => e.Name.LocalName == "color") is { } c
+            ? Styles.Colors.Resolve((string?)c.Attribute("rgb"), (string?)c.Attribute("indexed"), (string?)c.Attribute("theme"), (string?)c.Attribute("tint"), (string?)c.Attribute("auto"))
+            : null;
+        var size = double.TryParse(Value("sz"), NumberStyles.Float, CultureInfo.InvariantCulture, out var points) && double.IsFinite(points) ? Math.Clamp(points, 1, 409) : (double?)null;
+        var underline = Value("u") switch
+        {
+            null or "none" => CellUnderline.None,
+            "double" or "doubleAccounting" => CellUnderline.Double,
+            _ => CellUnderline.Single,
+        };
+        return new CellFont(Value("rFont"), size, On("b"), On("i"), underline, On("strike"), color);
     }
 
     /// <summary>
@@ -372,8 +437,9 @@ internal sealed class XlsxWorkbook
     }
 
     /// <summary>The cell for a value of a type (<c>t</c>) in a cell style, formatted for display.</summary>
-    public SheetCell Cell(string? type, string? value, string? inline, int styleIndex)
+    public SheetCell Cell(string? type, string? value, string? inline, int styleIndex, IReadOnlyList<CellRun>? inlineRuns = null)
     {
+        IReadOnlyList<CellRun>? runs = null;
         var style = Styles.CellStyle(styleIndex);
         var format = style.NumberFormat;
         var alignment = style.Alignment;
@@ -382,10 +448,17 @@ internal sealed class XlsxWorkbook
         {
             case "s":
                 var index = int.TryParse(value, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out var i) ? i : -1;
-                formatted = format.FormatText(index >= 0 && index < SharedStrings.Count ? SharedStrings[index] : string.Empty);
+                var text = index >= 0 && index < SharedStrings.Count ? SharedStrings[index] : string.Empty;
+                formatted = format.FormatText(text);
+                if (SharedRuns.Count > 0 && SharedRuns.TryGetValue(index, out var shared) && formatted.Text == text)
+                {
+                    runs = shared;
+                }
+
                 break;
             case "inlineStr":
                 formatted = format.FormatText(inline ?? value ?? string.Empty);
+                runs = formatted.Text == inline ? inlineRuns : null;
                 break;
             case "str":
                 formatted = format.FormatText(Unescape(value ?? string.Empty));
@@ -418,7 +491,8 @@ internal sealed class XlsxWorkbook
                 break;
         }
 
-        return ToCell(formatted, style.Format, alignment, _colored);
+        var cell = ToCell(formatted, style.Format, alignment, _colored);
+        return runs is null || cell.Kind == CellKind.Empty ? cell : cell with { Runs = runs };
     }
 
     /// <summary>
