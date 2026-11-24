@@ -51,7 +51,7 @@ public class SheetDiagnosticsTests
         [.. diagnostics.Where(d => d.Kind != SheetDiagnosticKind.Layout).Select(d => (d.SheetName, d.Kind, Count(d)))];
 
     /// <summary>A workbook of one worksheet with the given content after its cells, and other parts it refers to.</summary>
-    private static byte[] Workbook(string sheetExtra, string sheetRelationships = "", string sheetData = "<row r=\"1\"><c r=\"A1\"><v>1</v></c></row>",
+    internal static byte[] Workbook(string sheetExtra, string sheetRelationships = "", string sheetData = "<row r=\"1\"><c r=\"A1\"><v>1</v></c></row>",
         string workbookSheets = "", string workbookRelationships = "", params (string Name, string Content)[] parts)
     {
         var all = new List<(string, string)>
@@ -66,7 +66,7 @@ public class SheetDiagnosticsTests
         return XlsxToPdfTests.Package([.. all]);
     }
 
-    private static string Relationship(string id, string type, string target) =>
+    internal static string Relationship(string id, string type, string target) =>
         $"<Relationship Id=\"{id}\" Type=\"{Relationships}/{type}\" Target=\"{target}\"/>";
 
     /// <summary>A drawing part with the given anchors.</summary>
@@ -95,19 +95,13 @@ public class SheetDiagnosticsTests
         var diagnostics = Xlsx(Fixtures.Read("Sheets/content.xlsx"));
         Assert.Equal(
         [
-            ("Notes", SheetDiagnosticKind.Comment, 2),
-            ("Notes", SheetDiagnosticKind.ConditionalFormatting, 1), // The data bar (also in the extension list); not the cell rule and color scale.
             ("Notes", SheetDiagnosticKind.Sparkline, 1),
-            ("Formats", SheetDiagnosticKind.RotatedText, 1), // Not the stacked text, nor the empty cell with a rotation.
             ("Chart1", SheetDiagnosticKind.ChartSheet, 1),
         ], Content(diagnostics));
         Assert.DoesNotContain(diagnostics, d => d.SheetName is "Plain" or "Drawings" or "Print"); // Drawings, headers, footers, page breaks are printed.
         Assert.Equal(
         [
-            "2 comments are left out.",
-            "1 conditional formatting rule is not applied.",
             "1 sparkline is left out.",
-            "1 cell with rotated text is shown horizontally.",
             "The chart sheet is left out.",
         ], diagnostics.Select(d => d.Message));
     }
@@ -130,18 +124,20 @@ public class SheetDiagnosticsTests
     public void Workbooks_with_nothing_unsupported_report_nothing(string name) => Assert.Empty(Xlsx(Fixtures.Read("Sheets/" + name)));
 
     [Fact]
-    public void Without_a_callback_nothing_is_collected_and_the_referenced_parts_are_not_read()
+    public void A_comments_part_is_read_only_when_its_comments_are_printed()
     {
-        // The comments part decompresses to more than the limit allows: read only for diagnostics.
+        // The comments part decompresses to more than the limit allows: read only when comments are printed (here, not by
+        // the page setup), whether diagnostics are wanted or not; comments are not reported.
         var comments = string.Concat(Enumerable.Range(0, 2000).Select(i => $"<comment ref=\"A{i + 1}\" authorId=\"0\"><text><t>Comment {i}</t></text></comment>"));
         var big = Workbook(string.Empty, Relationship("rId1", "comments", "../comments1.xml"),
             parts: ("xl/comments1.xml", $"<comments xmlns=\"{Main}\"><authors><author>A</author></authors><commentList>{comments}</commentList></comments>"));
         var limits = new ResourceLimits { MaxDecompressedBytes = 64 * 1024 };
         Assert.NotEmpty(XlsxToPdf.ConvertToBytes(big, new XlsxConverterOptions { Sheet = new SheetOptions { Limits = limits } }));
+        Assert.NotEmpty(XlsxToPdf.ConvertToBytes(big, new XlsxConverterOptions { Sheet = new SheetOptions { Limits = limits, Diagnostics = _ => { } } }));
         var exception = Assert.Throws<ResourceLimitExceededException>(() =>
-            XlsxToPdf.ConvertToBytes(big, new XlsxConverterOptions { Sheet = new SheetOptions { Limits = limits, Diagnostics = _ => { } } }));
+            XlsxToPdf.ConvertToBytes(big, new XlsxConverterOptions { Comments = SheetComments.AtEnd, Sheet = new SheetOptions { Limits = limits } }));
         Assert.Equal(nameof(ResourceLimits.MaxDecompressedBytes), exception.LimitName);
-        Assert.Equal([("Sheet1", SheetDiagnosticKind.Comment, 2000)], Content(Xlsx(big)));
+        Assert.Empty(Content(Xlsx(big)));
     }
 
     [Fact]
@@ -220,8 +216,7 @@ public class SheetDiagnosticsTests
         [
             ("Sheet1", SheetDiagnosticKind.Shape, 1),
             ("Sheet1", SheetDiagnosticKind.OleObject, 3),
-            ("Sheet1", SheetDiagnosticKind.Comment, 2),
-            ("Sheet1", SheetDiagnosticKind.PivotTable, 1),
+            ("Sheet1", SheetDiagnosticKind.PivotTable, 1), // Comments are printed (or left out by choice).
         ], Content(Xlsx(xlsx)));
 
         // Threaded comments without notes beside them.
@@ -229,14 +224,14 @@ public class SheetDiagnosticsTests
             $"<Relationship Id=\"rId2\" Type=\"http://schemas.microsoft.com/office/2017/10/relationships/threadedComment\" Target=\"../threadedComments/threadedComment1.xml\"/>",
             parts: ("xl/threadedComments/threadedComment1.xml", $"<ThreadedComments xmlns=\"{threaded}\"><threadedComment ref=\"A1\" id=\"{{1}}\"/><threadedComment ref=\"B1\" id=\"{{2}}\"/>"
                 + "<threadedComment ref=\"B1\" id=\"{3}\" parentId=\"{2}\"/><threadedComment ref=\"C1\" id=\"{4}\"/></ThreadedComments>"));
-        Assert.Equal([("Sheet1", SheetDiagnosticKind.Comment, 3)], Content(Xlsx(threads)));
+        Assert.Empty(Content(Xlsx(threads)));
     }
 
     [Fact]
     public void Sheet_settings_are_counted_and_empty_or_automatic_ones_are_not()
     {
         var xlsx = Workbook(
-            "<conditionalFormatting sqref=\"A1\"><cfRule type=\"expression\" priority=\"1\"><formula>TRUE</formula></cfRule></conditionalFormatting>"
+            "<conditionalFormatting sqref=\"A1\"><cfRule type=\"expression\" priority=\"1\"><formula>INDIRECT(\"A1\")</formula></cfRule></conditionalFormatting>"
             + "<headerFooter><oddHeader>&amp;CTitle</oddHeader><oddFooter></oddFooter><evenHeader> </evenHeader><firstFooter>Page &amp;P</firstFooter></headerFooter>"
             + "<rowBreaks count=\"3\"><brk id=\"5\" man=\"1\"/><brk id=\"9\"/><brk id=\"12\" man=\"true\"/></rowBreaks><colBreaks><brk id=\"2\" man=\"0\"/></colBreaks>"
             + "<extLst><ext uri=\"{78C0D931-6437-407d-A8EE-F0AAD7539E65}\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\">"
@@ -257,8 +252,8 @@ public class SheetDiagnosticsTests
             + "<c r=\"E1\" s=\"1\"/><c r=\"F1\" t=\"inlineStr\"><is><r><rPr><i/></rPr><t>inline</t></r></is></c><c r=\"G1\" t=\"inlineStr\"><is><r><t>plain runs</t></r></is></c></row>",
             styles: styles,
             sharedStrings: "<si><r><rPr><b/></rPr><t>bold</t></r><r><t> plain</t></r></si><si><t>plain</t></si><si><r><rPr><b/></rPr><t>unused</t></r></si>");
-        // Rich text, stacked text and shrink to fit are shown: only the text turned by 90 degrees is not.
-        Assert.Equal([("Sheet1", SheetDiagnosticKind.RotatedText, 1)], Content(Xlsx(xlsx)));
+        // Rich text, rotated and stacked text and shrink to fit are all shown.
+        Assert.Empty(Content(Xlsx(xlsx)));
     }
 
     [Fact]
@@ -305,7 +300,7 @@ public class SheetDiagnosticsTests
     {
         // By default, the visible sheets: not the hidden ones with a footer and with rich text. The picture and the text
         // boxes are drawn; the embedded chart (a BIFF chart, not DrawingML) is not.
-        Assert.Equal([("Template", SheetDiagnosticKind.Comment, 1)], Content(Xls(Fixtures.Read("Sheets/Xls/46250.xls"))));
+        Assert.Empty(Content(Xls(Fixtures.Read("Sheets/Xls/46250.xls")))); // Its comment is printed as the page setup asks (not).
         Assert.Equal([("Sheet2", SheetDiagnosticKind.Chart, 1)], Content(Xls(Fixtures.Read("Sheets/Xls/WithChart.xls"))));
         Assert.Equal([("Graph2", SheetDiagnosticKind.ChartSheet, 1)], Content(Xls(Fixtures.Read("Sheets/Xls/44010-SingleChart.xls"))));
         Assert.Empty(Xls(Fixtures.Read("Sheets/Xls/SampleSS.xls")));
@@ -349,7 +344,6 @@ public class SheetDiagnosticsTests
             ("Sheet1", SheetDiagnosticKind.Picture, 1),
             ("Sheet1", SheetDiagnosticKind.Shape, 2),
             ("Sheet1", SheetDiagnosticKind.OleObject, 1),
-            ("Sheet1", SheetDiagnosticKind.Comment, 1),
             ("Sheet1", SheetDiagnosticKind.ConditionalFormatting, 3),
             ("Sheet1", SheetDiagnosticKind.PivotTable, 1),
         ], Content(Xls(xls))); // Headers, footers and page breaks are printed.
@@ -385,11 +379,7 @@ public class SheetDiagnosticsTests
                 .Record(0x00E0, U16(0), U16(0), U16(1), U8(0x20), U8(255), U8(0x10), U8(0), U32(0), U32(0), U16(64 | (65 << 7)))
                 .Record(0x00E0, U16(0), U16(0), U16(1), U8(0x20), U8(0), U8(0x10), U8(0), U32(0), U32(0), U16(64 | (65 << 7)))
                 .Record(0x00FC, Sst(("bold", true), ("plain", false))));
-        Assert.Equal(
-        [
-            ("Sheet1", SheetDiagnosticKind.RichText, 2),
-            ("Sheet1", SheetDiagnosticKind.RotatedText, 1), // Not the stacked text; shrink to fit is shown.
-        ], Content(Xls(xls)));
+        Assert.Empty(Content(Xls(xls))); // Rotated and stacked text, shrink to fit and rich text are shown.
     }
 
     [Fact]
@@ -413,9 +403,7 @@ public class SheetDiagnosticsTests
             .Eof().ToArray();
         Assert.Equal(
         [
-            ("Sheet", SheetDiagnosticKind.Picture, 1),
-            ("Sheet", SheetDiagnosticKind.Comment, 1),
-            ("Sheet", SheetDiagnosticKind.RotatedText, 1),
+            ("Sheet", SheetDiagnosticKind.Picture, 1), // Not the note, nor the rotated text: they are printed.
         ], Content(Xls(Join(Globals(Globals(0).Length), sheet))));
     }
 

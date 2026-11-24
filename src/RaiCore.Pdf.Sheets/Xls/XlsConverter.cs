@@ -141,6 +141,11 @@ internal static class XlsConverter
             }
 
             var worksheet = XlsWorksheet.Read(workbook, workbook.SheetOffsets[entry.Index], limits.MaxTableCells, checkpoint, limits);
+            if (worksheet.ConditionalRules.Count > 0)
+            {
+                ConditionalFormatting.Apply(worksheet, worksheet.ConditionalRules, options.PrintDate ?? DateTime.Now, workbook.Settings.Date1904, limits.MaxTableCells, checkpoint);
+            }
+
             worksheet.Unsupported.Report(entry.Name, diagnostics);
             yield return XlsxConverter.Build(worksheet, entry, workbook.PrintArea(entry.Index), workbook.PrintTitleRows(entry.Index),
                 workbook.Styles.DefaultFontSize, workbook.Styles.DefaultFontName, options, limits.MaxTableCells, bookmarks);

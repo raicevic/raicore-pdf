@@ -1,3 +1,4 @@
+using System.Globalization;
 using RaiCore.Pdf.Layout;
 using RaiCore.Pdf.Sheets.Xlsx;
 
@@ -24,8 +25,8 @@ internal sealed record XlsXf
 
     public int Indent { get; init; }
 
-    /// <summary>Whether the text is rotated or stacked vertically (not supported, only reported).</summary>
-    public bool Rotated { get; init; }
+    /// <summary>The text's rotation in degrees, counterclockwise (-90 to 90).</summary>
+    public int Rotation { get; init; }
 
     /// <summary>Whether the text is shrunk to fit its cell (not supported, only reported).</summary>
     public bool ShrinkToFit { get; init; }
@@ -167,6 +168,7 @@ internal sealed class XlsStyles
             Indent = xf.Indent,
             ShrinkToFit = xf.ShrinkToFit,
             Stacked = xf.Stacked,
+            Rotation = xf.Rotation,
         };
         var alignment = xf.Horizontal switch
         {
@@ -175,11 +177,54 @@ internal sealed class XlsStyles
             3 => CellAlignment.Right,
             _ => CellAlignment.General,
         };
-        style = new XlsxCellStyle(format, NumberFormatOf(xf.NumberFormat), alignment, xf.Rotated);
+        style = new XlsxCellStyle(format, NumberFormatOf(xf.NumberFormat), alignment);
         _resolved[index] = style;
         return style;
     }
 
-    private CellBorder Border(int line, int color) =>
+    /// <summary>
+    /// The runs of rich text: the text split where each formatting run starts, the text before the first in the cell's
+    /// font, the rest in the run's font (index 4 does not exist; an unknown index is the cell's font).
+    /// </summary>
+    public IReadOnlyList<CellRun> Runs(string text, IReadOnlyList<(int First, int Font)> formatting)
+    {
+        var runs = new List<CellRun>();
+        var at = 0;
+        CellFont? font = null;
+        foreach (var (first, index) in formatting.Where(r => r.First < text.Length).OrderBy(r => r.First))
+        {
+            if (first > at)
+            {
+                runs.Add(new CellRun(text[at..first], font));
+                at = first;
+            }
+
+            var fontIndex = index >= 4 ? index - 1 : index;
+            font = index != 4 && fontIndex >= 0 && fontIndex < Fonts.Count && Fonts[fontIndex] is var f
+                ? new CellFont(f.Name, f.Size, f.Bold, f.Italic, f.Underline, f.Strikethrough, f.Color == 0x7FFF ? null : _colors.PaletteColor(f.Color))
+                : null;
+        }
+
+        runs.Add(new CellRun(text[at..], font));
+        return runs;
+    }
+
+    /// <summary>
+    /// A color of conditional formatting (an XColor, [MS-XLS] 2.5.287): automatic (<paramref name="type"/> 0), a palette
+    /// index (1), an RGB value (2: red, green and blue bytes from the lowest) or a theme color (3), with a tint.
+    /// </summary>
+    public PdfColor? ExtendedColor(int type, uint value, double tint)
+    {
+        var shade = double.IsFinite(tint) && tint != 0 ? Math.Clamp(tint, -1, 1).ToString("R", CultureInfo.InvariantCulture) : null;
+        return type switch
+        {
+            1 => _colors.PaletteColor((int)Math.Min(value, 0x7FFF)),
+            2 => _colors.Resolve(((value & 0xFF) << 16 | (value & 0xFF00) | ((value >> 16) & 0xFF)).ToString("X6", CultureInfo.InvariantCulture), null, null, shade, null),
+            3 => _colors.Resolve(null, null, Math.Min(value, 100).ToString(CultureInfo.InvariantCulture), shade, null),
+            _ => null,
+        };
+    }
+
+    internal CellBorder Border(int line, int color) =>
         line > 0 && line < LineStyles.Length ? XlsxStyles.Border(LineStyles[line], _colors.PaletteColor(color)) : CellBorder.None;
 }

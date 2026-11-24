@@ -44,9 +44,18 @@ internal sealed class XlsDrawingRecords
     /// <summary>Notes a TXO record (its text and formatting runs follow in its CONTINUE records).</summary>
     public void AddText(ReadOnlySpan<byte> data, IReadOnlyList<int> breaks)
     {
+        if (data.Length >= 14)
+        {
+            Texts.Add((_data.WrittenCount, ReadText(data, breaks)));
+        }
+    }
+
+    /// <summary>The text of a TXO record: its characters (in its first CONTINUE record), formatting runs (in its last) and alignment.</summary>
+    public static XlsText ReadText(ReadOnlySpan<byte> data, IReadOnlyList<int> breaks)
+    {
         if (data.Length < 14)
         {
-            return;
+            return new XlsText(string.Empty, [], 0, 0);
         }
 
         var flags = BiffReader.U16(data, 0);
@@ -67,7 +76,7 @@ internal sealed class XlsDrawingRecords
             }
         }
 
-        Texts.Add((_data.WrittenCount, new XlsText(text, runs, (flags >> 1) & 0x7, (flags >> 4) & 0x7)));
+        return new XlsText(text, runs, (flags >> 1) & 0x7, (flags >> 4) & 0x7);
     }
 }
 

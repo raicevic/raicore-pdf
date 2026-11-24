@@ -71,10 +71,19 @@ internal static class Sheets
         });
         foreach (var diagnostic in diagnostics)
         {
-            Console.WriteLine($"{diagnostic.SheetName}: {diagnostic.Kind}: {diagnostic.Message}"); // Summary: Comment: 1 comment is left out.
+            // For example "Summary: PivotTable: 1 pivot table is shown as plain cells, without the pivot table style."
+            Console.WriteLine($"{diagnostic.SheetName}: {diagnostic.Kind}: {diagnostic.Message}");
         }
 
         checkedWorkbook.Save("summary-checked.pdf");
+        #endregion
+
+        #region comments
+        var annotated = XlsxToPdf.Convert("summary.xlsx", new XlsxConverterOptions
+        {
+            Comments = SheetComments.Annotations, // PDF notes at their cells; AtEnd lists them after the sheet.
+        });
+        annotated.Save("summary-notes.pdf");
         #endregion
 
         #region fonts

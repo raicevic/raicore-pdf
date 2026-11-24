@@ -82,6 +82,7 @@ internal static class PdfASamples
 
         // Links: a URI, a page and a named destination.
         first.AddLink(72, top - 340, 100, 14, new Uri("https://example.com/archive?q=pdf%2Fa"));
+        first.AddNote(180, top - 340, 12, 12, "A note for archive readers").Author = "Archivist";
         canvas.DrawText("Visit example.com", StandardFont.Helvetica, 12, 72, top - 337);
         first.AddLink(72, top - 360, 100, 14, new PdfDestination(second));
         first.AddLink(72, top - 380, 100, 14, "second");

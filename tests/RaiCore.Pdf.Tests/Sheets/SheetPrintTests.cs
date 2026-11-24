@@ -292,9 +292,9 @@ public class SheetPrintTests
         var format = cells[1].Format!;
         Assert.Equal((PdfColor.FromRgb(255, 0, 0), PdfColor.FromRgb(255, 255, 0), PdfColor.FromRgb(0, 0, 255)), (format.Color, format.Fill, format.Left.Color));
 
-        // Text constants; a formula that is not a constant is not applied.
+        // Text constants; a formula that is not supported (another sheet) is not applied.
         var text = Column(Rule("A1:A3", "<cfRule type=\"cellIs\" dxfId=\"0\" priority=\"1\" operator=\"equal\"><formula>\"b\"</formula></cfRule>")
-            + Rule("A1:A3", "<cfRule type=\"cellIs\" dxfId=\"1\" priority=\"2\" operator=\"greaterThan\"><formula>$B$1</formula></cfRule>"), "a", "B", "c");
+            + Rule("A1:A3", "<cfRule type=\"cellIs\" dxfId=\"1\" priority=\"2\" operator=\"greaterThan\"><formula>Other!$B$1</formula></cfRule>"), "a", "B", "c");
         Assert.Equal([false, true, false], text.Select(Bold));
         Assert.All(text, c => Assert.False(c.Format?.Italic ?? false));
     }
@@ -342,7 +342,7 @@ public class SheetPrintTests
     {
         var diagnostics = new List<SheetDiagnostic>();
         var xlsx = XlsxToPdfTests.Workbook("<row r=\"1\"><c r=\"A1\"><v>1</v></c></row>", $"<cellXfs count=\"1\"><xf/></cellXfs>{CfStyles}",
-            sheetExtra: Rule("A1", "<cfRule type=\"expression\" dxfId=\"0\" priority=\"1\"><formula>A1&gt;0</formula></cfRule><cfRule type=\"dataBar\" priority=\"2\"/>"
+            sheetExtra: Rule("A1", "<cfRule type=\"expression\" dxfId=\"0\" priority=\"1\"><formula>Other!A1&gt;0</formula></cfRule><cfRule type=\"dataBar\" priority=\"2\"/>"
                 + "<cfRule type=\"iconSet\" priority=\"3\"/><cfRule type=\"timePeriod\" priority=\"4\"/><cfRule type=\"cellIs\" dxfId=\"0\" priority=\"5\" operator=\"equal\"><formula>1</formula></cfRule>"));
         XlsxToPdf.ConvertToBytes(xlsx, new XlsxConverterOptions { Sheet = new SheetOptions { Diagnostics = diagnostics.Add } });
         Assert.Equal("4 conditional formatting rules are not applied.", Assert.Single(diagnostics).Message);
@@ -351,12 +351,12 @@ public class SheetPrintTests
     [Fact]
     public void Constants_and_comparisons_of_rules()
     {
-        Assert.Equal((2.5, "2.5"), ConditionalFormatting.Constant(" 2.5 ")!.Value);
-        Assert.Equal((null, "a\"b"), ConditionalFormatting.Constant("\"a\"\"b\"")!.Value);
-        Assert.Null(ConditionalFormatting.Constant("A1"));
-        Assert.True(ConditionalFormatting.Compare("notBetween", 5, "5", (6, "6"), (9, "9")));
-        Assert.False(ConditionalFormatting.Compare("lessThanOrEqual", 5, "5", (4, "4"), (4, "4")));
-        Assert.True(ConditionalFormatting.Compare("notEqual", null, "x", (4, "4"), (4, "4"))); // Text and a number are not equal.
-        Assert.False(ConditionalFormatting.Compare("unknown", 1, "1", (1, "1"), (1, "1")));
+        FormulaValue N(double n) => FormulaValue.Of(n);
+        Assert.True(ConditionalFormatting.Compare("notBetween", N(5), N(6), N(9)));
+        Assert.False(ConditionalFormatting.Compare("lessThanOrEqual", N(5), N(4), N(4)));
+        Assert.True(ConditionalFormatting.Compare("notEqual", FormulaValue.Of("x"), N(4), N(4))); // Text and a number are not equal.
+        Assert.False(ConditionalFormatting.Compare("unknown", N(1), N(1), N(1)));
+        Assert.True(ConditionalFormatting.Compare("lessThan", FormulaValue.Blank, N(4), N(4))); // An empty cell is 0.
+        Assert.False(ConditionalFormatting.Compare("equal", FormulaValue.Error("#N/A"), FormulaValue.Error("#N/A"), N(4)));
     }
 }

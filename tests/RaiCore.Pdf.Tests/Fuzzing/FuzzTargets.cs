@@ -84,6 +84,7 @@ public static class FuzzTargets
         ["sheetdrawing"] = SheetDrawing,
         ["xlsdrawing"] = XlsDrawing,
         ["xfa"] = Xfa,
+        ["cfformula"] = ConditionalFormula,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -761,6 +762,95 @@ public static class FuzzTargets
         return output.ToArray();
     }
 
+    /// <summary>
+    /// A formula of conditional formatting: every other input (by length) as the text of an .xlsx workbook's formula
+    /// (an expression rule, a cellIs rule's value and a data bar's minimum), parsed and computed over a few cells; the
+    /// others as the parsed tokens of an .xls workbook's CF rule (written back as text) and the payload of a CF12 rule.
+    /// </summary>
+    public static void ConditionalFormula(byte[] input)
+    {
+        var options = new XlsxConverterOptions
+        {
+            PrintDate = new DateTime(2026, 3, 4),
+            Sheet = new SheetOptions { Limits = Limits, Diagnostics = _ => { } },
+        };
+        if (input.Length % 2 == 0)
+        {
+            XlsxToPdf.ConvertToBytes(ConditionalInputs.Xlsx(Encoding.UTF8.GetString(input)), options);
+        }
+        else
+        {
+            XlsToPdf.ConvertToBytes(ConditionalInputs.Xls(input), options);
+        }
+    }
+
+    /// <summary>The workbooks the conditional formatting target wraps its inputs in.</summary>
+    internal static class ConditionalInputs
+    {
+        private const string Spreadsheet = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+
+        /// <summary>A workbook of one worksheet (numbers, a text, an error) whose rules have the formula.</summary>
+        public static byte[] Xlsx(string formula)
+        {
+            var text = System.Security.SecurityElement.Escape(new string([.. formula.Where(System.Xml.XmlConvert.IsXmlChar)]));
+            var rules = $"<conditionalFormatting sqref=\"A1:C4\"><cfRule type=\"expression\" dxfId=\"0\" priority=\"1\"><formula>{text}</formula></cfRule>"
+                + $"<cfRule type=\"cellIs\" dxfId=\"0\" priority=\"2\" operator=\"between\"><formula>{text}</formula><formula>A1</formula></cfRule>"
+                + $"<cfRule type=\"dataBar\" priority=\"3\"><dataBar><cfvo type=\"formula\" val=\"{text}\"/><cfvo type=\"max\"/><color rgb=\"FF00FF00\"/></dataBar></cfRule></conditionalFormatting>";
+            using var stream = new MemoryStream();
+            using (var zip = new System.IO.Compression.ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+            {
+                void Text(string path, string content)
+                {
+                    using var entry = zip.CreateEntry(path).Open();
+                    entry.Write(Encoding.UTF8.GetBytes(content));
+                }
+
+                const string package = "http://schemas.openxmlformats.org/package/2006/relationships";
+                const string relationships = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+                Text("_rels/.rels", $"<Relationships xmlns=\"{package}\"><Relationship Id=\"rId1\" Type=\"{relationships}/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>");
+                Text("xl/workbook.xml", $"<workbook xmlns=\"{Spreadsheet}\" xmlns:r=\"{relationships}\"><sheets><sheet name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>");
+                Text("xl/_rels/workbook.xml.rels", $"<Relationships xmlns=\"{package}\"><Relationship Id=\"rId1\" Type=\"{relationships}/worksheet\" Target=\"worksheets/sheet1.xml\"/>"
+                    + $"<Relationship Id=\"rId2\" Type=\"{relationships}/styles\" Target=\"styles.xml\"/></Relationships>");
+                Text("xl/styles.xml", $"<styleSheet xmlns=\"{Spreadsheet}\"><cellXfs count=\"1\"><xf/></cellXfs><dxfs count=\"1\"><dxf><font><b/></font></dxf></dxfs></styleSheet>");
+                Text("xl/worksheets/sheet1.xml", $"<worksheet xmlns=\"{Spreadsheet}\"><sheetData><row r=\"1\"><c r=\"A1\"><v>1</v></c><c r=\"B1\" t=\"inlineStr\"><is><t>x</t></is></c></row>"
+                    + $"<row r=\"3\"><c r=\"C3\" t=\"e\"><v>#N/A</v></c><c r=\"A3\"><v>-2.5</v></c></row></sheetData>{rules}</worksheet>");
+            }
+
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// A bare BIFF8 workbook stream of one worksheet (a few numbers) whose CF rule (for A1:C4) has the tokens as its
+        /// formula, followed by a CF12 rule whose payload (after its header) is the input.
+        /// </summary>
+        public static byte[] Xls(byte[] tokens)
+        {
+            tokens = tokens.Length > 8000 ? tokens[..8000] : tokens;
+            byte[] range = [.. DrawingInputs.U16(0), .. DrawingInputs.U16(3), .. DrawingInputs.U16(0), .. DrawingInputs.U16(2)];
+            var sheet = new MemoryStream();
+            DrawingInputs.Record(sheet, 0x0809, [.. DrawingInputs.U16(0x0600), .. DrawingInputs.U16(0x0010), .. new byte[12]]);
+            for (var r = 0; r < 4; r++)
+            {
+                DrawingInputs.Record(sheet, 0x0203, [.. DrawingInputs.U16(r), .. DrawingInputs.U16(r % 3), .. DrawingInputs.U16(0), .. BitConverter.GetBytes(r - 1.5)]);
+            }
+
+            DrawingInputs.Record(sheet, 0x01B0, [.. DrawingInputs.U16(2), .. DrawingInputs.U16(2), .. range, .. DrawingInputs.U16(1), .. range]);
+            DrawingInputs.Record(sheet, 0x01B1, [2, 0, .. DrawingInputs.U16(tokens.Length), .. DrawingInputs.U16(0), .. BitConverter.GetBytes(0x20000000u), .. DrawingInputs.U16(0),
+                .. DrawingInputs.U16(0), .. DrawingInputs.U16(0x1240), .. tokens]);
+            DrawingInputs.Record(sheet, 0x087A, [.. DrawingInputs.U16(0x087A), .. new byte[10], .. tokens]);
+            DrawingInputs.Record(sheet, 0x087B, [.. DrawingInputs.U16(0x087B), .. new byte[10], .. tokens[..Math.Min(tokens.Length, 64)]]);
+            DrawingInputs.Record(sheet, 0x000A, []);
+            var globals = new MemoryStream();
+            DrawingInputs.Record(globals, 0x0809, [.. DrawingInputs.U16(0x0600), .. DrawingInputs.U16(0x0005), .. new byte[12]]);
+            var boundSheet = globals.Length;
+            DrawingInputs.Record(globals, 0x0085, [.. new byte[4], 0, 0, 6, 0, .. "Sheet1"u8]);
+            DrawingInputs.Record(globals, 0x000A, []);
+            var bytes = globals.ToArray();
+            BitConverter.TryWriteBytes(bytes.AsSpan((int)boundSheet + 4), (int)bytes.Length);
+            return [.. bytes, .. sheet.ToArray()];
+        }
+    }
+
     /// <summary>The workbooks the drawing targets wrap their inputs in (also used by the tests).</summary>
     internal static class DrawingInputs
     {
@@ -874,9 +964,9 @@ public static class FuzzTargets
         public static byte[] Header(int version, int instance, int type, int length) =>
             [.. U16(version | (instance << 4)), .. U16(type), .. BitConverter.GetBytes(length)];
 
-        private static byte[] U16(int value) => [(byte)value, (byte)(value >> 8)];
+        internal static byte[] U16(int value) => [(byte)value, (byte)(value >> 8)];
 
-        private static void Record(MemoryStream stream, int id, byte[] data)
+        internal static void Record(MemoryStream stream, int id, byte[] data)
         {
             stream.Write(U16(id));
             stream.Write(U16(data.Length));

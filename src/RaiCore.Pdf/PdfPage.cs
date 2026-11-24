@@ -12,6 +12,7 @@ public sealed class PdfPage
     private readonly List<(PdfFont Font, string Name, FontUsage Usage)> _fonts = [];
     private readonly List<(PdfImage Image, string Name)> _images = [];
     private readonly List<PdfLink> _links = [];
+    private readonly List<PdfNote> _notes = [];
     private readonly List<((double Fill, double Stroke) Alpha, string Name)> _extGStates = [];
     private readonly List<GroupForm> _groups = [];
     private readonly List<(PdfReaderPage Page, string Name)> _pageForms = [];
@@ -51,6 +52,9 @@ public sealed class PdfPage
 
     /// <summary>The links on the page (link annotations), in the order they were added.</summary>
     public IReadOnlyList<PdfLink> Links => _links;
+
+    /// <summary>The notes on the page (text annotations), in the order they were added.</summary>
+    public IReadOnlyList<PdfNote> Notes => _notes;
 
     internal IReadOnlyList<(PdfFont Font, string Name, FontUsage Usage)> Fonts => _fonts;
 
@@ -155,6 +159,37 @@ public sealed class PdfPage
     {
         ArgumentNullException.ThrowIfNull(destination);
         return Add(x, y, width, height, null, null, destination);
+    }
+
+    /// <summary>
+    /// Adds a note (a text annotation, a "sticky note") whose icon covers a rectangle of the page; viewers show its text
+    /// when it is opened. Coordinates are PDF points with the origin in the bottom-left corner of the page.
+    /// </summary>
+    /// <param name="x">The left edge of the icon.</param>
+    /// <param name="y">The bottom edge of the icon.</param>
+    /// <param name="width">The width of the icon.</param>
+    /// <param name="height">The height of the icon.</param>
+    /// <param name="text">The note's text.</param>
+    /// <returns>The note, whose <see cref="PdfNote.Author"/> can be set.</returns>
+    public PdfNote AddNote(double x, double y, double width, double height, string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        if (!double.IsFinite(x) || !double.IsFinite(y) || !double.IsFinite(width) || !double.IsFinite(height))
+        {
+            throw new ArgumentException("The note's rectangle must have finite coordinates.");
+        }
+
+        var note = new PdfNote(Math.Min(x, x + width), Math.Min(y, y + height), Math.Abs(width), Math.Abs(height), text);
+        _notes.Add(note);
+        if (Document is { Tagged: true } document)
+        {
+            // PDF/UA: an annotation other than a link belongs to an Annot element.
+            var element = (Canvas.CurrentElement ?? document.StructureRoot).AddChild(PdfStructureTypes.Annotation);
+            note.StructureElement = element;
+            element.AddContent(new AnnotationKid(this, note));
+        }
+
+        return note;
     }
 
     private PdfLink Add(double x, double y, double width, double height, Uri? uri, string? name, PdfDestination? destination)

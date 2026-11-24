@@ -178,6 +178,11 @@ internal static partial class SheetRenderer
             }
         }
 
+        if (format.Comments is { Printing: CommentPrinting.AtEnd, List.Count: > 0 } comments)
+        {
+            flow.Add(CommentList(context, comments.List, available));
+        }
+
         if (flow.Blocks.Count == 0)
         {
             flow.Add(new ParagraphBlock(new Paragraph(new TextStyle(context.Fonts(null, false, false), scaledSize))) { Bookmark = bookmark });
@@ -277,20 +282,11 @@ internal static partial class SheetRenderer
         var body = headerFrom is null ? (Start: header.End, End: end) : (Start: start, End: end);
         int[] rows = [.. Enumerable.Range(header.Start, header.End - header.Start), .. Enumerable.Range(body.Start, Math.Max(0, body.End - body.Start))];
         var sheet = context.Sheet;
-        var table = new TableBlock(new BoxStyle
-        {
-            Width = band.Widths.Sum(),
-            BreakBefore = breakBefore ? PageBreak.Page : PageBreak.Auto,
-        })
-        {
-            LayoutMode = TableLayoutMode.Fixed,
-            BorderCollapse = BorderCollapse.Collapse,
-            ColumnWidths = [.. band.Widths.Select(w => (Length?)w)],
-            Direction = context.Format.RightToLeft ? TextDirection.RightToLeft : TextDirection.LeftToRight,
-            Bookmark = bookmark,
-            // Header rows repeated after a page break set by hand show no drawings, as on the pages a table continues on.
-            Overlay = DrawingOverlay(context, band, headerFrom is null ? rows : [.. rows.Select((r, i) => i < header.End - header.Start ? -1 : r)]),
-        };
+
+        // Header rows repeated after a page break set by hand show no drawings, as on the pages a table continues on.
+        var drawingRows = headerFrom is null ? rows : [.. rows.Select((r, i) => i < header.End - header.Start ? -1 : r)];
+        var marks = new List<CellMark>();
+        var tableRows = new List<TableRow>(rows.Length);
 
         var spans = new int[band.Count];
         for (var index = 0; index < rows.Length; index++)
@@ -315,18 +311,47 @@ internal static partial class SheetRenderer
                     var anchor = sheet[merge.Row, merge.Column];
                     var content = merge.Row == row && merge.Column == column ? anchor : anchor with { Text = string.Empty, Kind = CellKind.Empty };
                     cells.Add(FormattedCell(context, content, band, i, spans[i], rowSpan));
+                    Mark(content, rowSpan);
                 }
                 else
                 {
                     cells.Add(FormattedCell(context, sheet[row, column], band, i, spans[i], 1));
+                    Mark(sheet[row, column], 1);
+                }
+
+                void Mark(SheetCell content, int rowSpan)
+                {
+                    var comment = context.CommentAt(row, column);
+                    if (IsMarked(content, comment))
+                    {
+                        marks.Add(new CellMark(index, i, spans[i], rowSpan, content, comment));
+                    }
                 }
             }
 
-            table.Add(new TableRow(cells)
+            tableRows.Add(new TableRow(cells)
             {
                 IsHeader = isHeader,
                 MinHeight = context.RowHeight(row),
             });
+        }
+
+        var table = new TableBlock(new BoxStyle
+        {
+            Width = band.Widths.Sum(),
+            BreakBefore = breakBefore ? PageBreak.Page : PageBreak.Auto,
+        })
+        {
+            LayoutMode = TableLayoutMode.Fixed,
+            BorderCollapse = BorderCollapse.Collapse,
+            ColumnWidths = [.. band.Widths.Select(w => (Length?)w)],
+            Direction = context.Format.RightToLeft ? TextDirection.RightToLeft : TextDirection.LeftToRight,
+            Bookmark = bookmark,
+            Overlay = TableOverlay(context, band, drawingRows, marks),
+        };
+        foreach (var tableRow in tableRows)
+        {
+            table.Add(tableRow);
         }
 
         return table;
@@ -361,7 +386,8 @@ internal static partial class SheetRenderer
             var cell = sheet[row, band.Start + i];
             // Text that wraps stays in its column, and so does text with a fill or borders, which would move with it.
             var format = cell.Format ?? CellFormat.Default;
-            if (spans[i] != 1 || cell.Kind != CellKind.Text || context.MergeAt(row, band.Start + i) is not null || format.Wrap || format.IsVisible || format.ShrinkToFit)
+            if (spans[i] != 1 || cell.Kind != CellKind.Text || context.MergeAt(row, band.Start + i) is not null || format.Wrap || format.IsVisible || format.ShrinkToFit
+                || format.Rotation != 0)
             {
                 continue;
             }
@@ -454,7 +480,10 @@ internal static partial class SheetRenderer
         }
 
         var style = context.Style(format, context.Scale * factor);
-        var paragraph = DisplayText(cell.Text).Length == 0 || cell.Kind == CellKind.Empty ? null : context.CellParagraph(cell, format, style, context.Scale * factor);
+
+        // Rotated text is drawn over the cell once it is placed; a data bar or icon set may hide the value.
+        var paragraph = DisplayText(cell.Text).Length == 0 || cell.Kind == CellKind.Empty || format.Rotation != 0 || format.HideText ? null
+            : context.CellParagraph(cell, format, style, context.Scale * factor);
         return paragraph is null
             ? new TableCell() { Style = box, ColumnSpan = columnSpan, RowSpan = rowSpan, VerticalAlignment = format.Vertical }
             : new TableCell(paragraph) { Style = box, ColumnSpan = columnSpan, RowSpan = rowSpan, VerticalAlignment = format.Vertical };
@@ -488,6 +517,8 @@ internal static partial class SheetRenderer
         private readonly Dictionary<(string?, double, bool, bool, CellUnderline, bool, PdfColor?), TextStyle> _styles = [];
         private readonly Dictionary<(CellFormat, CellAlignment), BoxStyle> _boxes = new(new FormatComparer());
         private readonly Dictionary<long, CellMerge> _merges = [];
+        private readonly Dictionary<(int Row, double Scale), double> _rotatedHeights = [];
+        private Dictionary<long, SheetComment>? _comments;
         private readonly Dictionary<int, SheetCell> _moved = [];
         private readonly Dictionary<(string, TextStyle), (double Min, double Max)> _widths = [];
         private double _digitWidth;
@@ -573,7 +604,30 @@ internal static partial class SheetRenderer
             }
 
             var style = Style(CellFormat.Default, Scale);
-            return style.LineHeight.Resolve(style.Fonts[0], style.FontSize) + (2 * FormattedPaddingY * style.FontSize);
+            return Math.Max(style.LineHeight.Resolve(style.Fonts[0], style.FontSize) + (2 * FormattedPaddingY * style.FontSize), RotatedHeight(row));
+        }
+
+        /// <summary>The height the rotated text of a row needs (its turned bounds and padding), as Excel fits the row to it; 0 without any.</summary>
+        private double RotatedHeight(int row)
+        {
+            if (_rotatedHeights.TryGetValue((row, Scale), out var needed))
+            {
+                return needed;
+            }
+
+            foreach (var cell in Sheet.Rows[row])
+            {
+                if (cell.Format is { Rotation: not 0, HideText: false } format && cell.Kind != CellKind.Empty)
+                {
+                    var (_, width, height) = RotatedText(cell, format);
+                    var angle = format.Rotation * Math.PI / 180;
+                    var size = (format.FontSize ?? Format.DefaultFontSize) * Scale;
+                    needed = Math.Max(needed, (width * Math.Abs(Math.Sin(angle))) + (height * Math.Abs(Math.Cos(angle))) + (2 * FormattedPaddingY * size));
+                }
+            }
+
+            _rotatedHeights[(row, Scale)] = needed;
+            return needed;
         }
 
         /// <summary>
@@ -626,8 +680,41 @@ internal static partial class SheetRenderer
         }
 
         /// <summary>The widest word and line of a cell's text at a scale (its rich text and stacking taken into account).</summary>
-        public (double Min, double Max) MeasureCell(SheetCell cell, CellFormat format, TextStyle style, double scale) =>
-            cell.Runs is null && !format.Stacked ? Measure(DisplayText(cell.Text), style) : CellParagraph(cell, format, style, scale).MeasureIntrinsicWidths();
+        public (double Min, double Max) MeasureCell(SheetCell cell, CellFormat format, TextStyle style, double scale)
+        {
+            var widths = cell.Runs is null && !format.Stacked ? Measure(DisplayText(cell.Text), style) : CellParagraph(cell, format, style, scale).MeasureIntrinsicWidths();
+            if (format.Rotation == 0)
+            {
+                return widths;
+            }
+
+            // Rotated text takes the width of its turned bounds.
+            var angle = format.Rotation * Math.PI / 180;
+            var line = style.LineHeight.Resolve(style.Fonts[0], style.FontSize);
+            var width = (widths.Max * Math.Abs(Math.Cos(angle))) + (line * Math.Abs(Math.Sin(angle)));
+            return (width, width);
+        }
+
+        /// <summary>A cell's rotated text laid out on one line (its own lines kept) at the scale: the blocks, their width and height.</summary>
+        public (Block[] Blocks, double Width, double Height) RotatedText(SheetCell cell, CellFormat format)
+        {
+            var paragraph = CellParagraph(cell, format, Style(format, Scale), Scale);
+            var width = paragraph.MeasureIntrinsicWidths().Max + 1;
+            Block[] blocks = [new ParagraphBlock(paragraph)];
+            return (blocks, width, FlowDocument.MeasureBlocks(blocks, width));
+        }
+
+        /// <summary>The comment printed as a note at a cell, or <c>null</c>.</summary>
+        public SheetComment? CommentAt(int row, int column)
+        {
+            if (Format.Comments.Printing != CommentPrinting.Notes)
+            {
+                return null;
+            }
+
+            _comments ??= Format.Comments.List.GroupBy(c => Key(c.Row, c.Column)).ToDictionary(g => g.Key, g => g.First());
+            return _comments.GetValueOrDefault(Key(row, column));
+        }
 
         /// <summary>The width a cell's text needs on one line at the scale, with its padding and indent.</summary>
         public double TextWidth(SheetCell cell)
@@ -734,11 +821,15 @@ internal static partial class SheetRenderer
             var padX = FormattedPaddingX * size;
             var indent = format.Indent * IndentEms * size;
             var indentRight = alignment == CellAlignment.Right;
+            // An icon of conditional formatting takes the start of the cell (the left, or the right of right-to-left sheets).
+            var icon = format.Icon is null ? 0 : size * 1.25;
+            var (iconLeft, iconRight) = Format.RightToLeft ? (0.0, icon) : (icon, 0.0);
             box = new BoxStyle
             {
-                Padding = new Thickness(FormattedPaddingY * size, padX + (indentRight ? indent : 0), FormattedPaddingY * size, padX + (indentRight ? 0 : indent)),
+                Padding = new Thickness(FormattedPaddingY * size, padX + (indentRight ? indent : 0) + iconRight, FormattedPaddingY * size, padX + (indentRight ? 0 : indent) + iconLeft),
                 Border = new Borders(Side(format.Top), Side(format.Right), Side(format.Bottom), Side(format.Left)),
                 Background = format.Fill,
+                BackgroundLayers = format.DataBar is { } bar ? [DataBarLayer(Format.RightToLeft ? bar with { Start = 1 - bar.End, End = 1 - bar.Start } : bar)] : [],
             };
             _boxes[(format, alignment)] = box;
             return box;

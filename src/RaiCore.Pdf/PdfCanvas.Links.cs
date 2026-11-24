@@ -56,6 +56,22 @@ public sealed partial class PdfCanvas
         return _page.AddLink(px, py, pw, ph, destination);
     }
 
+    /// <summary>
+    /// Adds a note (a text annotation) whose icon covers a rectangle, like
+    /// <see cref="PdfPage.AddNote(double, double, double, double, string)"/> but in the canvas's current coordinates.
+    /// </summary>
+    /// <param name="x">The left edge of the icon.</param>
+    /// <param name="y">The bottom edge of the icon.</param>
+    /// <param name="width">The width of the icon.</param>
+    /// <param name="height">The height of the icon.</param>
+    /// <param name="text">The note's text.</param>
+    /// <returns>The note, whose <see cref="PdfNote.Author"/> can be set.</returns>
+    public PdfNote AddNote(double x, double y, double width, double height, string text)
+    {
+        var (px, py, pw, ph) = ToPage(x, y, width, height);
+        return _page.AddNote(px, py, pw, ph, text);
+    }
+
     private void PushTransform() => _savedTransforms.Push(_transform);
 
     private void PopTransform()

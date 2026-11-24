@@ -58,11 +58,13 @@ workbook.Save("invoice.xlsx");
 Pictures, shapes, text boxes and charts are drawn over the cells where Excel shows them, split across page breaks and
 bands of columns as Excel prints them.
 
-Headers and footers, page breaks set by hand, rich text, stacked and shrunk text, and (in `.xlsx`) conditional
-formatting over the stored values are printed too.
+Headers and footers, page breaks set by hand, rich text, rotated, stacked and shrunk text, conditional formatting over
+the stored values (color scales, data bars, icon sets and formula rules too), comments (at the end of the sheet, or as
+PDF notes with `XlsxConverterOptions.Comments`) and the default pivot table styles are printed too.
 
-Not supported in conversion to PDF: chart sheets, SmartArt, form controls, conditional formatting with formulas, data
-bars and icon sets, comments, rotated text, pivot table styles, formula calculation, `.xlsb`, Excel 2.x-4.0 and password-protected files. Content a conversion
+Not supported in conversion to PDF: chart sheets, SmartArt, form controls, conditional formatting with formulas of
+other sheets or uncommon functions, other pivot table styles, formula calculation, `.xlsb`, Excel 2.x-4.0 and
+password-protected files. Content a conversion
 leaves out is reported through `SheetOptions.Diagnostics`, one diagnostic per kind and sheet with its count, so that
 nothing is dropped silently.
 

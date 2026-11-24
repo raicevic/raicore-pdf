@@ -1,3 +1,14 @@
 #nullable enable
 RaiCore.Pdf.PdfImageFormat.Emf = 8 -> RaiCore.Pdf.PdfImageFormat
 RaiCore.Pdf.PdfImageFormat.Wmf = 7 -> RaiCore.Pdf.PdfImageFormat
+RaiCore.Pdf.PdfCanvas.AddNote(double x, double y, double width, double height, string! text) -> RaiCore.Pdf.PdfNote!
+RaiCore.Pdf.PdfNote
+RaiCore.Pdf.PdfNote.Author.get -> string?
+RaiCore.Pdf.PdfNote.Author.set -> void
+RaiCore.Pdf.PdfNote.Height.get -> double
+RaiCore.Pdf.PdfNote.Text.get -> string!
+RaiCore.Pdf.PdfNote.Width.get -> double
+RaiCore.Pdf.PdfNote.X.get -> double
+RaiCore.Pdf.PdfNote.Y.get -> double
+RaiCore.Pdf.PdfPage.AddNote(double x, double y, double width, double height, string! text) -> RaiCore.Pdf.PdfNote!
+RaiCore.Pdf.PdfPage.Notes.get -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.PdfNote!>!

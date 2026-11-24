@@ -60,8 +60,8 @@ internal sealed class XlsWorkbook
 
     public List<string> SharedStrings { get; } = [];
 
-    /// <summary>The indexes of the shared strings with formatting runs (rich text, which is shown in the cell's font).</summary>
-    public HashSet<int> RichStrings { get; } = [];
+    /// <summary>The formatting runs (first character, font index) of the shared strings that have them (rich text), by index.</summary>
+    public Dictionary<int, List<(int First, int Font)>> SharedRuns { get; } = [];
 
     public XlsStyles Styles { get; } = new();
 
@@ -242,7 +242,7 @@ internal sealed class XlsWorkbook
             Wrap = (data[6] & 0x08) != 0,
             Vertical = (data[6] >> 4) & 0x07,
             Indent = data[8] & 0x0F,
-            Rotated = data[7] is not (0 or 255),
+            Rotation = data[7] is >= 1 and <= 90 ? data[7] : data[7] is > 90 and <= 180 ? 90 - data[7] : 0,
             Stacked = data[7] == 255,
             ShrinkToFit = (data[8] & 0x10) != 0,
             Lines = ((int)(borders & 0x0F), (int)((borders >> 4) & 0x0F), (int)((borders >> 8) & 0x0F), (int)((borders >> 12) & 0x0F)),
@@ -270,7 +270,7 @@ internal sealed class XlsWorkbook
             Horizontal = data[6] & 0x07,
             Wrap = (data[6] & 0x08) != 0,
             Vertical = (data[6] >> 4) & 0x07,
-            Rotated = (data[7] & 0x03) is 2 or 3,
+            Rotation = (data[7] & 0x03) switch { 2 => 90, 3 => -90, _ => 0 },
             Stacked = (data[7] & 0x03) == 1,
             Lines = ((int)((borders >> 3) & 0x07), (int)((borders >> 6) & 0x07), (int)(borders & 0x07), (int)((fill >> 22) & 0x07)),
             LineColors = ((int)((borders >> 16) & 0x7F), (int)((borders >> 23) & 0x7F), (int)((borders >> 9) & 0x7F), (int)((fill >> 25) & 0x7F)),
@@ -306,12 +306,13 @@ internal sealed class XlsWorkbook
         var position = 8;
         while (position < data.Length)
         {
-            if (position + 5 <= data.Length && (data[position + 2] & 0x08) != 0 && BiffReader.U16(data, position + 3) > 0)
+            var runs = position + 5 <= data.Length && (data[position + 2] & 0x08) != 0 && BiffReader.U16(data, position + 3) > 0 ? new List<(int First, int Font)>() : null;
+            SharedStrings.Add(BiffReader.ReadString(data, breaks, ref position, 2, null, extended: true, runs));
+            if (runs is { Count: > 0 })
             {
-                RichStrings.Add(SharedStrings.Count);
+                SharedRuns[SharedStrings.Count - 1] = runs;
             }
 
-            SharedStrings.Add(BiffReader.ReadString(data, breaks, ref position, 2, null, extended: true));
             if (SharedStrings.Count % 4096 == 0)
             {
                 checkpoint?.Invoke();

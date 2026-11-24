@@ -30,7 +30,7 @@ internal sealed class StructureTreeWriter
     /// <summary>The form XObject of each transparency group whose content is marked (page streams are not here).</summary>
     private readonly Dictionary<MarkedContentStream, PdfReference> _forms = new(ReferenceEqualityComparer.Instance);
 
-    private readonly Dictionary<PdfLink, PdfReference> _annotations = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<object, PdfReference> _annotations = new(ReferenceEqualityComparer.Instance);
 
     private int _nextKey;
 
@@ -75,6 +75,20 @@ internal sealed class StructureTreeWriter
             form["StructParents"] = new PdfInteger(key);
             _forms[marks] = reference;
         }
+    }
+
+    /// <summary>Gives a note (a text annotation) its parent tree entry.</summary>
+    public void RegisterNote(PdfNote note, PdfDictionary annotation, PdfReference reference)
+    {
+        if (note.StructureElement is not { } element || !IsWritten(element))
+        {
+            return;
+        }
+
+        var key = _nextKey++;
+        annotation["StructParent"] = new PdfInteger(key);
+        _parentTree.Add((key, Reference(element)));
+        _annotations[note] = reference;
     }
 
     /// <summary>Gives a link annotation its parent tree entry and a description, as PDF/UA requires.</summary>

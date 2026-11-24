@@ -5,9 +5,8 @@ left out) with their type, value and XF index; for the files xlrd cannot read, i
 
 Under "content", for each sheet (worksheets and chart sheets, hidden ones too) with content the converter does not
 support, how many of each kind it has, by the names of SheetDiagnosticKind: found by walking the sheet's BIFF8 records
-here (independently of the converter's reader) for drawing objects, embedded charts, comments, conditional formatting,
-and pivot tables, and with xlrd for the cells with rich or rotated text (not stacked text, which is shown, nor shrunk
-text; headers, footers and page breaks set by hand are printed).
+here (independently of the converter's reader) for drawing objects, embedded charts and pivot tables (comments,
+conditional formatting, rich, rotated, stacked and shrunk text, headers, footers and page breaks set by hand are printed).
 Drawing objects the converter draws are not counted: each OBJ record is matched to the OfficeArt shape whose client
 data comes before it in the sheet's MSODRAWING data, and pictures whose BLIP (in the drawing group's BLIP store) is
 PNG, JPEG, DIB, TIFF, WMF or EMF, and lines, rectangles, ovals and text boxes of the common shape types without
@@ -201,10 +200,6 @@ def biff_content(path):
             if kind == 0x005D and len(rec) >= 10 and struct.unpack_from('<H', rec, 0)[0] == 0x15:
                 obj_type, obj_flags = struct.unpack_from('<H', rec, 4)[0], struct.unpack_from('<H', rec, 8)[0]
                 objects.append((len(drawing), obj_type, bool(obj_flags & 0x10), obj_type == PICTURE and has_subrecord(rec, 0x0009)))
-            elif kind == 0x001C:
-                add('Comment')
-            elif kind in (0x01B1, 0x087A):  # CF, CF12
-                add('ConditionalFormatting')
             elif kind == 0x00B0:
                 add('PivotTable')
         # Each shape's OBJ is the first after its client data; the objects not drawn are counted by their kind.
@@ -236,23 +231,59 @@ def biff_content(path):
     return result
 
 
+def biff_conditional(path):
+    """For each BIFF8 worksheet with any: its conditional formatting rules, read here from the CFHEADER/CFHEADER12, CF,
+    CF12 and CFEX records: [record, type, comparison, template, priority, ranges (first row, last row, first column, last
+    column)]. A CF rule's template and priority are its CFEX record's (None without one)."""
+    ole = olefile.OleFileIO(path)
+    data = ole.openstream('Workbook').read()
+    sheets = [(rec[8:8 + (2 if rec[7] & 1 else 1) * rec[6]].decode('utf-16-le' if rec[7] & 1 else 'latin-1'), struct.unpack_from('<I', rec, 0)[0])
+              for kind, rec in records(data, 0) if kind == 0x0085]
+    result = {}
+    for name, offset in sheets:
+        rules, extensions, ranges, header, index, depth = [], {}, [], 0, 0, 0
+        for kind, rec in records(data, offset):
+            if kind == 0x0809:
+                depth += 1
+            elif kind == 0x000A:
+                depth -= 1
+                if depth == 0:
+                    break
+            if depth != 1:
+                continue
+            if kind in (0x01B0, 0x0879):  # CFHEADER, CFHEADER12 (after a 12-byte header)
+                at = 12 if kind == 0x0879 else 0
+                header = struct.unpack_from('<H', rec, at + 2)[0] >> 1
+                count = struct.unpack_from('<H', rec, at + 12)[0]
+                ranges = [list(struct.unpack_from('<4H', rec, at + 14 + 8 * i)) for i in range(count)]
+                index = 0
+            elif kind == 0x01B1:  # CF: type, comparison
+                rules.append(['CF', rec[0], rec[1], None, None, ranges, (header, index)])
+                index += 1
+            elif kind == 0x087A:  # CF12: after the format and formulas, the flags, priority and template.
+                cce1, cce2, cbdxf = struct.unpack_from('<HHI', rec, 14)
+                at = 22 + (2 if cbdxf == 0 else cbdxf) + cce1 + cce2
+                at += 2 + struct.unpack_from('<H', rec, at)[0]  # The formula that makes the rule active.
+                priority, template = struct.unpack_from('<HH', rec, at + 1)
+                rules.append(['CF12', rec[12], rec[13], template, priority, ranges, None])
+            elif kind == 0x087B and struct.unpack_from('<I', rec, 12)[0] == 0:  # CFEX of a CF rule
+                nid, icf = struct.unpack_from('<HH', rec, 16)
+                extensions[(nid, icf)] = (rec[21], struct.unpack_from('<H', rec, 22)[0])
+        for rule in rules:
+            if rule[6] in extensions:
+                rule[3], rule[4] = extensions[rule[6]]
+            del rule[6]
+        if rules:
+            result[name] = rules
+    return result
+
+
 def cell_content(book, content):
-    """Adds to the content the cells (that show a value) with rich text and rotated text, as xlrd reads them."""
+    """Cells with rich, rotated, stacked or shrunk text are all shown: none is counted (kept for the content's sheets)."""
     for sheet in book.sheets():
-        counts = content.setdefault(sheet.name, {})
-        for r in range(sheet.nrows):
-            for c in range(sheet.ncols):
-                cell = sheet.cell(r, c)
-                if cell.ctype in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK) or (cell.ctype == xlrd.XL_CELL_TEXT and cell.value == ''):
-                    continue
-                alignment = book.xf_list[cell.xf_index].alignment
-                # Stacked text (rotation 255) and shrink to fit are shown; headers, footers and page breaks are printed.
-                for key, present in (('RichText', cell.ctype == xlrd.XL_CELL_TEXT and (r, c) in sheet.rich_text_runlist_map),
-                                     ('RotatedText', alignment.rotation not in (0, 255))):
-                    if present:
-                        counts[key] = counts.get(key, 0) + 1
-        if not counts:
-            del content[sheet.name]
+        if not content.get(sheet.name):
+            content.pop(sheet.name, None)
+
 
 # xlrd's cell types.
 TYPES = {xlrd.XL_CELL_TEXT: 'text', xlrd.XL_CELL_NUMBER: 'number', xlrd.XL_CELL_DATE: 'number',
@@ -293,12 +324,20 @@ for name in sorted(glob.glob('*.xls')):
             'hiddenColumns': sorted(c for c, info in sheet.colinfo_map.items() if info.hidden),
             'columnWidths': {str(c): info.width / 256 for c, info in sorted(sheet.colinfo_map.items())},
             'cells': cells,
+            # Comments (notes): their cell, author and text, as xlrd reads them.
+            'notes': [[r, c, note.author, note.text] for (r, c), note in sorted(sheet.cell_note_map.items())],
+            # Rich text (up to 50 cells a sheet): where each formatting run starts, and its font's bold, italic, height
+            # (in points) and color index.
+            'runs': [[r, c, [[first, book.font_list[font].bold, book.font_list[font].italic, book.font_list[font].height / 20,
+                              book.font_list[font].colour_index] for first, font in runs]]
+                     for (r, c), runs in sorted(sheet.rich_text_runlist_map.items())[:50]],
         })
     content = biff_content(name) if book.biff_version >= 80 else {}
     cell_content(book, content)
     file['content'] = content
     if book.biff_version >= 80:
         file['print'] = biff_print(name)
+        file['conditional'] = biff_conditional(name)
     expected[name] = file
 with open('expected.json', 'w') as f:
     json.dump(expected, f, indent=1, sort_keys=True, ensure_ascii=True)
