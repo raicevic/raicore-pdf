@@ -19,7 +19,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
   shown by any viewer. `PdfForm.IsXfaPlaceholder` tells when a dynamic XFA form's PDF pages are only a "Please
   wait..." placeholder; `RemoveXfa` then refuses unless forced. `FlattenForm(PdfFormFlattenOptions)` can remove a
   dynamic XFA form first (`PdfDynamicXfaHandling.RemoveXfa`) instead of throwing. The editing guide recommends how to
-  handle XFA files.
+  handle XFA files. `PdfDynamicXfaHandling.Render` with `PdfFormFlattenOptions.XfaRenderer` (for example
+  `XfaToPdf.Convert` from `RaiCore.Pdf.Xfa`) replaces a dynamic form's pages with the rendered form instead.
 - **Charts** in presentations and Word documents: one chart engine for DrawingML charts, drawn as vector graphics
   from the data cached in the file, with text that can be extracted. Columns and bars (clustered, stacked, 100%,
   horizontal), lines (markers, smoothed), pies (exploded) and doughnuts, areas, scatter, bubble, radar and stock

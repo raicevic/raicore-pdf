@@ -105,6 +105,15 @@ internal static class Editing
         var flat = PdfEditor.Open("contract.pdf");
         flat.FlattenForm(new PdfFormFlattenOptions { DynamicXfa = PdfDynamicXfaHandling.RemoveXfa });
         flat.Save("contract-flat.pdf");
+
+        // Or lay a dynamic XFA form out with RaiCore.Pdf.Xfa, placeholders included, and keep the rest of the file.
+        var rendered = PdfEditor.Open("contract.pdf");
+        rendered.FlattenForm(new PdfFormFlattenOptions
+        {
+            DynamicXfa = PdfDynamicXfaHandling.Render,
+            XfaRenderer = bytes => RaiCore.Pdf.Xfa.XfaToPdf.Convert(bytes),
+        });
+        rendered.Save("contract-rendered.pdf");
         #endregion
 
         #region flatten-annotations

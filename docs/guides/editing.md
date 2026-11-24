@@ -133,11 +133,15 @@ apart, and `RemoveXfa()` makes such a file an ordinary PDF form:
   "Please wait..." message. The form exists only as XFA, so `RemoveXfa()` throws `InvalidOperationException`
   (`RemoveXfa(force: true)` removes it anyway, leaving the message), and so does `FlattenForm` with
   `PdfDynamicXfaHandling.RemoveXfa`.
+- **Rendering instead:** `FlattenForm` with `PdfDynamicXfaHandling.Render` lays a dynamic XFA form out with
+  `XfaRenderer` (`bytes => XfaToPdf.Convert(bytes)` from the [`RaiCore.Pdf.Xfa`](xfa.md) package, which this package
+  does not depend on) and replaces the document's pages with the result, placeholders included. The XFA and the form go;
+  metadata and attachments stay.
 - Scripts and usage rights in the XFA go with it.
 
 The recommended way to handle XFA files: read `GetForm()`; for `Static`, or `Dynamic` that is not a placeholder, call
-`RemoveXfa()` (and `FlattenForm()` if the result should not be fillable); a placeholder needs a viewer that renders
-XFA.
+`RemoveXfa()` (and `FlattenForm()` if the result should not be fillable); a placeholder needs the form rendered, with
+`PdfDynamicXfaHandling.Render` or `XfaToPdf` directly.
 
 ## Flattening annotations
 

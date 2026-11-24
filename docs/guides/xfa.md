@@ -22,7 +22,8 @@ this type of document." The viewer is expected to lay the pages out from the XFA
 does. A *static* XFA form, or a dynamic one that also comes with complete PDF pages and AcroForm fields, can instead
 keep its own pages: remove the XFA with `PdfEditor.RemoveXfa` and flatten the AcroForm (see
 [XFA forms](editing.md#xfa-forms) in the editing guide). `PdfEditor.GetForm()` tells which kind a document has, and
-whether its pages are only a placeholder.
+whether its pages are only a placeholder. To render the form while flattening a document in `PdfEditor`, pass
+`XfaRenderer = bytes => XfaToPdf.Convert(bytes)` with `PdfDynamicXfaHandling.Render` to `FlattenForm`.
 
 ## What is rendered
 
