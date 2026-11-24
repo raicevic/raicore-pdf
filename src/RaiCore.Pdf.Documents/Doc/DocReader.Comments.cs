@@ -85,7 +85,7 @@ internal sealed partial class DocReader
     }
 
     /// <summary>The authors of comments (GrpXstAtnOwners: strings, each its length and its UTF-16 characters).</summary>
-    private static List<string> ReadOwners(ReadOnlySpan<byte> data)
+    internal static List<string> ReadOwners(ReadOnlySpan<byte> data)
     {
         var owners = new List<string>();
         var position = 0;

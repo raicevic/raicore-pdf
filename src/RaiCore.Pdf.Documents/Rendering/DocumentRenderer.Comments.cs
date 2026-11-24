@@ -36,7 +36,6 @@ internal sealed partial class DocumentRenderer
     private readonly HashSet<string> _quoting = new(StringComparer.Ordinal);
     private readonly Dictionary<string, StringBuilder> _commentText = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _noteAnchors = new(StringComparer.Ordinal);
-    private readonly HashSet<string> _anchoredComments = new(StringComparer.Ordinal);
     private Dictionary<string, List<WordComment>>? _replies;
     private RunFormat? _lastRunFormat;
     private bool _inCommentText;
@@ -55,7 +54,6 @@ internal sealed partial class DocumentRenderer
         _quoting.Clear();
         _commentText.Clear();
         _noteAnchors.Clear();
-        _anchoredComments.Clear();
         _lastRunFormat = null;
     }
 
@@ -109,7 +107,7 @@ internal sealed partial class DocumentRenderer
                 }
 
                 return true;
-            case TextRun run when _openComments.Count > 0 && InCommentedText:
+            case TextRun { Format.Hidden: false, Format.Deleted: false } run when _openComments.Count > 0 && InCommentedText:
                 Quote(run.Text);
 
                 _lastRunFormat = run.Format;
@@ -202,7 +200,10 @@ internal sealed partial class DocumentRenderer
         }
     }
 
-    /// <summary>Where a comment's note goes: the start of the text it is about, or its reference (once per comment).</summary>
+    /// <summary>
+    /// A place a comment's note may go: the start of the text it (or a reply) is about, or its reference. The note goes to
+    /// the first one placed (<see cref="PlaceNotes"/>).
+    /// </summary>
     private void AnchorNote(string id, CommentStart? start, LinkTarget? link, List<Atom> atoms)
     {
         if (_options.Comments != DocumentComments.Annotations)
@@ -211,11 +212,6 @@ internal sealed partial class DocumentRenderer
         }
 
         var root = RootComment(id);
-        if (!_anchoredComments.Add(root))
-        {
-            return;
-        }
-
         var name = NoteAnchorPrefix + _noteAnchors.Count.ToString(CultureInfo.InvariantCulture);
         _noteAnchors[name] = root;
         atoms.Add(new Atom(start ?? new CommentStart(root), link, name));

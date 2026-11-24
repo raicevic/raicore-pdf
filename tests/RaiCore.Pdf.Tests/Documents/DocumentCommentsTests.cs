@@ -238,6 +238,13 @@ public class DocumentCommentsTests
         Assert.All(pdf.NamedDestinations.Where(d => d.Key.StartsWith("_cm", StringComparison.Ordinal)), d => Assert.Same(pdf.Pages[^1], d.Value.Page));
         Assert.Equal(4, pdf.Pages[0].Links.Count(l => l.DestinationName?.StartsWith("_cm", StringComparison.Ordinal) == true));
         Assert.Equal("Comments", Assert.Single(pdf.Outline).Title);
+
+        // The marks are superscripts: smaller than the text they follow, and raised.
+        var extractor = new TextExtractor(PdfReader.Open(pdf.ToArray()));
+        var mark = Assert.Single(extractor.FindOnPage(0, "[OO1]")).Bounds;
+        var words = Assert.Single(extractor.FindOnPage(0, "these words")).Bounds;
+        Assert.True(mark.Height < words.Height * 0.8, $"{mark} {words}");
+        Assert.True(mark.Y > words.Y + 1, $"{mark} {words}");
     }
 
     /// <summary>In a tagged document each note is an Annot structure element, and the list is tagged text.</summary>
@@ -350,10 +357,34 @@ public class DocumentCommentsTests
         var text = Docx.AllText(pdf.ToArray());
         Assert.Contains("named[A1]", text, StringComparison.Ordinal);
         Assert.Contains("On \u201Cnamed\u201D", text, StringComparison.Ordinal);
-        Assert.Contains("Reply", text, StringComparison.Ordinal);
+        Assert.Contains("Reply\nTwo", text, StringComparison.Ordinal); // B has no author: Ann's is the comment before.
         Assert.Contains("In a note x[2]", text, StringComparison.Ordinal); // Comments in notes are numbered too.
         Assert.Contains("Three", text, StringComparison.Ordinal);
         Assert.DoesNotContain("On \u201Clonely", text, StringComparison.Ordinal);
+    }
+
+    /// <summary>Hidden and deleted text in a comment's range stays hidden; the quote has only the text shown.</summary>
+    [Fact]
+    public void Hidden_text_in_a_range_stays_hidden()
+    {
+        var comments = Docx.Part("comments", "<w:comment w:id=\"1\" w:author=\"A\"><w:p><w:r><w:t>Note</w:t></w:r></w:p></w:comment>");
+        var data = Docx.Document(
+            "<w:p><w:commentRangeStart w:id=\"1\"/><w:r><w:t xml:space=\"preserve\">Shown </w:t></w:r><w:r><w:rPr><w:vanish/></w:rPr><w:t>Secret</w:t></w:r>"
+            + "<w:del w:id=\"9\" w:author=\"B\"><w:r><w:delText>Gone</w:delText></w:r></w:del><w:r><w:t>end</w:t></w:r><w:commentRangeEnd w:id=\"1\"/>"
+            + "<w:r><w:commentReference w:id=\"1\"/></w:r></w:p>",
+            parts: [("word/comments.xml", comments)], relationships: [("rC", "comments", "comments.xml", false)]);
+        var text = Docx.AllText(DocxToPdf.ConvertToBytes(data, new DocxConverterOptions { Comments = DocumentComments.AtEnd }));
+        Assert.DoesNotContain("Secret", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("Gone", text, StringComparison.Ordinal);
+        Assert.Contains("On \u201CShown end\u201D", text, StringComparison.Ordinal);
+    }
+
+    /// <summary>The authors of .doc comments are read one after the other (each its length and its characters).</summary>
+    [Fact]
+    public void Doc_comment_authors_are_a_list_of_strings()
+    {
+        byte[] data = [3, 0, (byte)'A', 0, (byte)'n', 0, (byte)'n', 0, 0, 0, 3, 0, (byte)'B', 0, (byte)'o', 0, (byte)'b', 0, 9, 0, (byte)'x', 0];
+        Assert.Equal(["Ann", "", "Bob"], RaiCore.Pdf.Documents.Doc.DocReader.ReadOwners(data));
     }
 
     [Theory]
