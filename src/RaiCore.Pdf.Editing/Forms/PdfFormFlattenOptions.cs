@@ -12,6 +12,13 @@ public enum PdfDynamicXfaHandling
     /// still throws, since nothing of the form would be left.
     /// </summary>
     RemoveXfa,
+
+    /// <summary>
+    /// Lay the XFA form out with <see cref="PdfFormFlattenOptions.XfaRenderer"/> (such as <c>XfaToPdf.Convert</c> from
+    /// the <c>RaiCore.Pdf.Xfa</c> package) and replace the document's pages, often only a placeholder, with the result;
+    /// the XFA and the form go. This also works where <see cref="PdfForm.IsXfaPlaceholder"/> is set.
+    /// </summary>
+    Render,
 }
 
 /// <summary>How <see cref="PdfEditor.FlattenForm(PdfFormFlattenOptions)"/> flattens a form.</summary>
@@ -25,4 +32,11 @@ public sealed record PdfFormFlattenOptions
     /// flatten the AcroForm. A static XFA form is always removed with the form.
     /// </summary>
     public PdfDynamicXfaHandling DynamicXfa { get; init; }
+
+    /// <summary>
+    /// Lays out a dynamic XFA form for <see cref="PdfDynamicXfaHandling.Render"/>: it gets the document as saved now
+    /// (unencrypted) and returns the rendered pages, for example <c>bytes =&gt; XfaToPdf.Convert(bytes)</c> from the
+    /// <c>RaiCore.Pdf.Xfa</c> package (which this package does not depend on).
+    /// </summary>
+    public Func<byte[], PdfDocument>? XfaRenderer { get; init; }
 }
