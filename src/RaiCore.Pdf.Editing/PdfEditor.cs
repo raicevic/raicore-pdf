@@ -179,8 +179,14 @@ public sealed class PdfEditor
 
     /// <summary>
     /// Flattens the interactive form as <see cref="FlattenForm()"/> does, with a choice of what happens to a dynamic XFA
-    /// form: throw (the default), or remove the XFA and flatten the AcroForm behind it.
+    /// form: throw (the default), remove the XFA and flatten the AcroForm behind it, or render the XFA form to pages that
+    /// replace the document's (<see cref="PdfDynamicXfaHandling.Render"/> with
+    /// <see cref="PdfFormFlattenOptions.XfaRenderer"/>).
     /// </summary>
+    /// <remarks>
+    /// When a dynamic XFA form is rendered, the result counts the widgets of the replaced pages as removed, and the
+    /// document keeps its metadata, outline entries that still have a page, and attachments.
+    /// </remarks>
     /// <example>
     /// <code>
     /// var editor = PdfEditor.Open("application.pdf");
@@ -192,17 +198,42 @@ public sealed class PdfEditor
     /// <returns>How many widgets were drawn (and how many of those with an appearance made for them) and removed.</returns>
     /// <exception cref="NotSupportedException">The form is a dynamic XFA form and <paramref name="options"/> says to throw.</exception>
     /// <exception cref="InvalidOperationException">
-    /// The form is a dynamic XFA form whose pages are only a placeholder (<see cref="PdfForm.IsXfaPlaceholder"/>).
+    /// The form is a dynamic XFA form whose pages are only a placeholder (<see cref="PdfForm.IsXfaPlaceholder"/>) and
+    /// <paramref name="options"/> says to remove the XFA; or it says to render it without an
+    /// <see cref="PdfFormFlattenOptions.XfaRenderer"/>, or the renderer returned no pages.
     /// </exception>
     public PdfFlattenResult FlattenForm(PdfFormFlattenOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        if (options.DynamicXfa == PdfDynamicXfaHandling.RemoveXfa && GetForm().Xfa == PdfXfaKind.Dynamic)
+        if (options.DynamicXfa != PdfDynamicXfaHandling.Throw && GetForm().Xfa == PdfXfaKind.Dynamic)
         {
+            if (options.DynamicXfa == PdfDynamicXfaHandling.Render)
+            {
+                return RenderXfa(options.XfaRenderer ?? throw new InvalidOperationException(
+                    "PdfDynamicXfaHandling.Render needs PdfFormFlattenOptions.XfaRenderer, for example "
+                    + "bytes => XfaToPdf.Convert(bytes) from the RaiCore.Pdf.Xfa package."));
+            }
+
             RemoveXfa();
         }
 
         return FlattenForm();
+    }
+
+    /// <summary>
+    /// Replaces the pages of a dynamic XFA form with the ones <paramref name="renderer"/> lays out from it, and removes
+    /// the XFA and the form, whose widgets were on the replaced pages.
+    /// </summary>
+    private PdfFlattenResult RenderXfa(Func<byte[], PdfDocument> renderer)
+    {
+        var widgets = GetForm().Fields.Sum(f => f.Widgets.Count);
+        var rendered = PdfReader.Open(renderer(ToArray()).ToArray()); // A document without pages throws here.
+        var count = Pages.Count;
+        Pages.Add(rendered);
+        Pages.Delete(0, count);
+        RemoveXfa(force: true);
+        _table.Dictionary(_catalog)!["AcroForm"] = null;
+        return new PdfFlattenResult(0, 0, widgets);
     }
 
     /// <summary>
