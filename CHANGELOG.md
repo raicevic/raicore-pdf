@@ -5,6 +5,13 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Embedded OLE objects in Outlook messages** (#293): attachments that Outlook keeps as OLE objects become the file
+  inside them: a packaged file under its own name, an Office 2007+ document, a file kept whole (such as a PDF), or an
+  Office 97-2003 document written out as its `.doc`, `.xls` or `.ppt` file. Else they become the object's picture
+  (`.wmf`, `.emf`, `.bmp`). Objects with nothing to take out are reported to `Html.Diagnostics` instead of being
+  dropped silently.
+
 ### Fixed
 - **Large tables and spreadsheets render in linear time** (#250): drawing and splitting table rows looked up their
   cells by scanning every cell of the table for each row group placed, so a table's time grew with the square of its

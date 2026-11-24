@@ -1,0 +1,54 @@
+{
+  "attachments": [
+    {
+      "name": "budget.txt",
+      "sha256": "acfe01d97bfc159bea52846d14bb5b0064cc5416ab2c3edf6e654eeabae0b9be",
+      "size": 27
+    },
+    {
+      "name": "Report.docx",
+      "sha256": "80c0cbbcdac2654e820b8ef987b2a32bcd03626371239a62523e2a2775754975",
+      "size": 399
+    },
+    {
+      "name": "Scan.pdf",
+      "sha256": "cfa3181c1ee36e8bce5e39f84959f4558ea7ba32c0e4539a8ab3c8ce8c716ec6",
+      "size": 69
+    },
+    {
+      "name": "Letter.doc",
+      "streams": {
+        "\u0001CompObj": "e9843916c97aaf7f916635a4fa5654bee7acbc094155a99e0720a8a8e6b0618c",
+        "1Table": "024c57839798c10166a0f7e0f9b56040d65590598383790c9ddb28238b3da2c1",
+        "Data": "525346260096bbcd913a9a8eae7951afd2247ba2c9a4ca372e67e9fb7f9eadba",
+        "ObjectPool/_1234/\u0001Ole": "c36c8a4b7dee703b9ce6e288032033b718feef01ca283cfaa4332a8334b2adf3",
+        "WordDocument": "4345361085c730756d843f13849c50a996fe2f1fac3a7ac05fb063bb743a423e"
+      }
+    },
+    {
+      "name": "Sheet.xls",
+      "streams": {
+        "\u0001CompObj": "1f2bd2eef7c56f04e54b5ec4f3ffd728551b8f684f4816accddfb9b3bdaf009a",
+        "Workbook": "6e79f75020f4cf96baefedbb3164e4a0046f05d6684c27bcd541f84df57c98e8"
+      }
+    },
+    {
+      "name": "Slides.ppt",
+      "streams": {
+        "Current User": "de47c9b27eb8d300dbb5f2c353e632c393262cf06340c4fa7f1b40c4cbd36f90",
+        "PowerPoint Document": "2c34ce1df23b838c5abf2a7f6437cca3d3067ed509ff25f11df6b11b582b51eb"
+      }
+    },
+    {
+      "dib": {
+        "sha256": "327f24bdd0f55aa7b3c1d706fd56c51f480ef0847e95373b9b2b3645e5a9b527",
+        "size": 64
+      },
+      "name": "Drawing.bmp"
+    }
+  ],
+  "left_out": [
+    "Equation",
+    "Inner equation"
+  ]
+}
