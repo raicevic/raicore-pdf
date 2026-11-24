@@ -5,26 +5,26 @@
 
 An open-source .NET library for creating PDF documents and converting HTML, Razor and office documents to PDF, built on its own layout engine with no headless browser.
 
-> **Status:** 1.1: HTML, CSS and Razor to PDF; Word, Excel, PowerPoint, OpenDocument, RTF, CSV and email to PDF; text
-> and image extraction and editing of existing PDFs. See the [documentation](https://raicevic.github.io/raicore-pdf/),
+> **Status:** 1.2: HTML, CSS and Razor to PDF; Word, Excel, PowerPoint, OpenDocument, RTF, CSV, email and dynamic XFA
+> forms to PDF; text and image extraction and editing of existing PDFs. See the [documentation](https://raicevic.github.io/raicore-pdf/),
 > the [changelog](CHANGELOG.md) and the [roadmap](#roadmap).
 
 ## Packages
 
 | Package | Purpose | Status |
 |---|---|---|
-| `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | ✅ 1.1 |
-| `RaiCore.Pdf.Razor` | Razor components → PDF | ✅ 1.1 |
-| `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables, flexbox | ✅ 1.1 |
-| `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | ✅ 1.1 |
-| `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | ✅ 1.1 |
-| `RaiCore.Pdf.Extraction` | Read existing PDFs: text by page in reading order, text search with positions, images with their placement and data | ✅ 1.1 |
-| `RaiCore.Pdf.Editing` | Edit existing PDFs: delete, insert, move and rotate pages, read and flatten forms, flatten annotations, make files smaller, split by size | ✅ 1.1 |
-| `RaiCore.Pdf.Email` | Email (.eml, Outlook .msg) and web archives (.mht) → PDF: header block, inline images, attachments embedded or appended | ✅ 1.1 |
-| `RaiCore.Pdf.Sheets` | CSV and Excel (.xlsx, .xls) → PDF: paginated tables with repeated header rows, number formats, styles, merged cells, print areas, pictures, shapes and charts | ✅ 1.1 |
-| `RaiCore.Pdf.Slides` | PowerPoint (.pptx, .ppt) → PDF: one page per slide with masters, layouts, themes, shapes, text, pictures, tables | ✅ 1.1 |
-| `RaiCore.Pdf.Documents` | Word (.docx, .doc), OpenDocument text (.odt) and RTF → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | ✅ 1.1 |
-| `RaiCore.Pdf.Xfa` | Dynamic XFA forms (.pdf, .xdp) → flattened PDF: data merged into the template, flowed and repeated subforms, tables, pagination, formatted values | 🟡 Unreleased |
+| `RaiCore.Pdf.Html` | HTML + CSS (including CSS Paged Media) → PDF | ✅ 1.2 |
+| `RaiCore.Pdf.Razor` | Razor components → PDF | ✅ 1.2 |
+| `RaiCore.Pdf.Layout` | Format-neutral layout engine: text shaping, line breaking, pagination, tables, flexbox | ✅ 1.2 |
+| `RaiCore.Pdf.Fonts` | Bundled Liberation fonts (metric-compatible with Arial, Times New Roman, Courier New) | ✅ 1.2 |
+| `RaiCore.Pdf` | PDF object model, writer, fonts, images and drawing API | ✅ 1.2 |
+| `RaiCore.Pdf.Extraction` | Read existing PDFs: text by page in reading order, text search with positions, images with their placement and data | ✅ 1.2 |
+| `RaiCore.Pdf.Editing` | Edit existing PDFs: delete, insert, move and rotate pages, read and flatten forms, flatten annotations, make files smaller, split by size | ✅ 1.2 |
+| `RaiCore.Pdf.Email` | Email (.eml, Outlook .msg) and web archives (.mht) → PDF: header block, inline images, attachments embedded or appended | ✅ 1.2 |
+| `RaiCore.Pdf.Sheets` | CSV and Excel (.xlsx, .xls) → PDF: paginated tables with repeated header rows, number formats, styles, merged cells, print areas, pictures, shapes and charts | ✅ 1.2 |
+| `RaiCore.Pdf.Slides` | PowerPoint (.pptx, .ppt) → PDF: one page per slide with masters, layouts, themes, shapes, text, pictures, tables | ✅ 1.2 |
+| `RaiCore.Pdf.Documents` | Word (.docx, .doc), OpenDocument text (.odt) and RTF → PDF: styles, lists, tables, sections, headers and footers with page numbers, images, notes | ✅ 1.2 |
+| `RaiCore.Pdf.Xfa` | Dynamic XFA forms (.pdf, .xdp) → flattened PDF: data merged into the template, flowed and repeated subforms, tables, pagination, formatted values | ✅ 1.2 |
 | `RaiCore.Pdf.XslFo` | XSL-FO → PDF | ⚪ Planned |
 
 What each converter draws, format by format (including the Word 97-2003, Excel 97-2003 and PowerPoint 97-2003 binary
@@ -986,7 +986,7 @@ Every input format is mapped to one shared document model and laid out by one en
 ## Roadmap
 
 1.0 was the first release: a stable, production-ready HTML/Razor to PDF library with its PDF writer and layout engine.
-1.1 added reading, editing and conversions. The way there and what comes next are tracked in [GitHub milestones](https://github.com/raicevic/raicore-pdf/milestones):
+1.1 added reading, editing and conversions, and 1.2 closed migration gaps. The way there and what comes next are tracked in [GitHub milestones](https://github.com/raicevic/raicore-pdf/milestones):
 
 1. **Done:** the PDF writer, fonts, images, text shaping, line breaking, block layout and pagination, HTML/CSS with
    tables, flexbox and CSS Paged Media, Razor, and packaging with a release pipeline.
@@ -1000,7 +1000,9 @@ Every input format is mapped to one shared document model and laid out by one en
 7. **Done, 1.1 Reading, editing and conversions:** text and image extraction, text search, page editing, forms,
    annotation flattening, optimization, PDF/A-1 and level A, TIFF, HTML fragments in the layout API, and email, CSV,
    XLSX/XLS, PPTX/PPT, DOCX/DOC, ODT and RTF to PDF.
-8. **Next:** XSL-FO, grid layout, multi-column layout, digital signatures.
+8. **Done, 1.2 Migration gaps:** dynamic XFA forms, charts, pictures, shapes and print formatting in spreadsheets, WMF
+   and EMF pictures, a workbook API, text of Word documents, notes, and a loader for untrusted HTML.
+9. **Next:** XSL-FO, grid layout, multi-column layout, digital signatures.
 
 The 0.x milestones are internal stages, not releases.
 
