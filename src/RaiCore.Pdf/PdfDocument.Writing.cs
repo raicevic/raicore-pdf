@@ -162,7 +162,8 @@ public sealed partial class PdfDocument
             foreach (var (page, reference, dictionary) in _pages)
             {
                 var annotations = PdfLinkWriter.WriteAnnotations(
-                    _writer, page, _pageRefs, _document.NamedDestinations, _structure is null ? null : _structure.RegisterAnnotation);
+                    _writer, page, _pageRefs, _document.NamedDestinations, _structure is null ? null : _structure.RegisterAnnotation,
+                    _structure is null ? null : _structure.RegisterNote);
                 if (_imports.WriteAnnotations(page, annotations) is { } all)
                 {
                     dictionary["Annots"] = all;

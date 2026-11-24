@@ -65,4 +65,33 @@ public sealed class XlsxConverterOptions
     /// output that is the same every time.
     /// </summary>
     public DateTime? PrintDate { get; init; }
+
+    /// <summary>
+    /// How the worksheets' comments (notes) are printed: as each sheet's page setup asks (the default: listed at the end
+    /// of the sheet if it says so, otherwise not printed), always listed at the end, as PDF notes at their cells, or not
+    /// at all. See <see cref="SheetComments"/>.
+    /// </summary>
+    public SheetComments Comments { get; init; }
+}
+
+/// <summary>How the comments (notes) of worksheets are printed (<see cref="XlsxConverterOptions.Comments"/>).</summary>
+public enum SheetComments
+{
+    /// <summary>
+    /// As the sheet's page setup asks: listed at the end of the sheet when it says so (Excel's "At end of sheet"),
+    /// otherwise not printed. Comments shown on the sheet ("As displayed on sheet") are not drawn.
+    /// </summary>
+    AsPageSetup,
+
+    /// <summary>Listed at the end of each sheet, on a page of their own: each comment's cell and text, as Excel prints them.</summary>
+    AtEnd,
+
+    /// <summary>
+    /// As PDF notes (text annotations, "sticky notes") at the top right corner of their cells, which viewers open to show
+    /// the text.
+    /// </summary>
+    Annotations,
+
+    /// <summary>Not printed.</summary>
+    None,
 }

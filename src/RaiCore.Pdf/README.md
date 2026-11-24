@@ -35,6 +35,8 @@ doc.Save("hello.pdf");
 - Bookmarks: `PdfDocument.Outline` holds nested `PdfOutlineItem`s with Unicode titles.
 - Links: `PdfPage.AddLink` makes a rectangle open a URI or jump to a place in the document, also through named
   destinations (`PdfDocument.NamedDestinations`).
+- Notes: `PdfPage.AddNote` (and `PdfCanvas.AddNote`) adds a text annotation ("sticky note") with an author, printed
+  and with its own appearance, tagged as an `Annot` element in tagged documents.
 - Metadata: `PdfDocument.Info` (title, author, subject, keywords, dates and custom properties) is written to the
   Info dictionary and to an XMP metadata stream kept in sync with it; `PdfDocument.Language` sets the document
   language (`/Lang`).

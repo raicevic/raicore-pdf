@@ -9,8 +9,8 @@ internal sealed record ElementKid(PdfStructureElement Element) : StructureKid;
 /// <summary>A marked-content sequence with an MCID in a content stream (the page's, or a transparency group's).</summary>
 internal sealed record ContentKid(PdfPage Page, MarkedContentStream Stream, int Mcid) : StructureKid;
 
-/// <summary>A link annotation on a page (an object reference, <c>/OBJR</c>).</summary>
-internal sealed record AnnotationKid(PdfPage Page, PdfLink Link) : StructureKid;
+/// <summary>An annotation on a page, a <see cref="PdfLink"/> or a <see cref="PdfNote"/> (an object reference, <c>/OBJR</c>).</summary>
+internal sealed record AnnotationKid(PdfPage Page, object Link) : StructureKid;
 
 /// <summary>
 /// The marked content of one content stream: the structure element each MCID belongs to (MCIDs count from 0 in each

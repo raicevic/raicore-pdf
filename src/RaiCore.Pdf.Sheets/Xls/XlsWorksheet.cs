@@ -20,10 +20,10 @@ internal enum XlsValueKind
 }
 
 /// <summary>
-/// The value of a cell record, as stored: formulas are their last calculated values. <see cref="Rich"/> tells text with
-/// formatting runs (rich text), which is shown in the cell's font.
+/// The value of a cell record, as stored: formulas are their last calculated values. <see cref="Runs"/> are the
+/// formatting runs of rich text (the first character and the font index of each), or <c>null</c>.
 /// </summary>
-internal readonly record struct XlsValue(XlsValueKind Kind, double Number = 0, string Text = "", bool Rich = false)
+internal readonly record struct XlsValue(XlsValueKind Kind, double Number = 0, string Text = "", IReadOnlyList<(int First, int Font)>? Runs = null)
 {
     public static XlsValue Blank => new(XlsValueKind.Blank);
 
@@ -44,9 +44,9 @@ internal readonly record struct XlsValue(XlsValueKind Kind, double Number = 0, s
 
 /// <summary>
 /// Reads a worksheet substream of a binary workbook ([MS-XLS] 2.1.7.20.5): its cells, row and column sizes and
-/// visibility, merged ranges and page setup, into the worksheet the XLSX converter builds sheets from. Embedded
-/// substreams (charts) are skipped, and the records of content it does not support (drawing objects, comments,
-/// conditional formats, headers and footers, page breaks, pivot tables) only counted.
+/// visibility, merged ranges, page setup, headers and footers, page breaks, comments and conditional formatting, into
+/// the worksheet the XLSX converter builds sheets from. Embedded substreams (charts) are skipped, and the records of
+/// content it does not support only counted.
 /// </summary>
 internal static class XlsWorksheet
 {
@@ -77,6 +77,9 @@ internal static class XlsWorksheet
     private const ushort Note = 0x001C;
     private const ushort Cf = 0x01B1;
     private const ushort Cf12 = 0x087A;
+    private const ushort CfHeader = 0x01B0;
+    private const ushort CfHeader12 = 0x0879;
+    private const ushort CfEx = 0x087B;
     private const ushort Header = 0x0014;
     private const ushort Footer = 0x0015;
     private const ushort HeaderFooter = 0x089C;
@@ -111,6 +114,7 @@ internal static class XlsWorksheet
             var style = styles.CellStyle(xf);
             var alignment = style.Alignment;
             FormattedValue formatted;
+            IReadOnlyList<CellRun>? runs = null;
             switch (value.Kind)
             {
                 case XlsValueKind.Number:
@@ -118,6 +122,7 @@ internal static class XlsWorksheet
                     break;
                 case XlsValueKind.Text:
                     formatted = style.NumberFormat.FormatText(value.Text);
+                    runs = value.Runs is { Count: > 0 } && formatted.Text == value.Text ? styles.Runs(value.Text, value.Runs) : null;
                     break;
                 case XlsValueKind.Boolean or XlsValueKind.Error:
                     formatted = new FormattedValue(value.Text, CellKind.Text);
@@ -129,10 +134,11 @@ internal static class XlsWorksheet
             }
 
             var cell = XlsxWorkbook.ToCell(formatted, style.Format, alignment, colored);
+            cell = runs is null || cell.Kind == CellKind.Empty ? cell : cell with { Runs = runs };
             sheet.Add(row, column, cell, maxCells);
-            if (cell.Kind != CellKind.Empty)
+            if (value.Kind == XlsValueKind.Number && cell.Kind != CellKind.Empty)
             {
-                sheet.CountFormatting(style, value.Rich);
+                sheet.Numbers[XlsxWorksheet.Key(row, column)] = value.Number; // For conditional formatting.
             }
         }, limits);
         return sheet;
@@ -151,6 +157,8 @@ internal static class XlsWorksheet
     public static void Read(XlsWorkbook workbook, int offset, XlsxWorksheet sheet, Action? checkpoint, CellSink cells, ResourceLimits? limits = null)
     {
         var drawing = limits is not null && workbook.Biff == 8 ? new XlsDrawingRecords() : null;
+        var conditional = workbook.Biff == 8 ? new XlsConditionalFormatting(workbook.Styles) : null;
+        var notes = new XlsNotes(workbook.Biff, workbook.CodePage);
         var reader = new BiffReader(workbook.Stream, offset);
         if (offset < 0 || !reader.Next() || reader.Id != XlsWorkbook.Bof || BiffReader.U16(reader.Data, 2) != WorksheetType)
         {
@@ -204,6 +212,11 @@ internal static class XlsWorksheet
                 }
             }
 
+            if (id is Obj or Txo or Note)
+            {
+                notes.Read(id, data, reader.Breaks);
+            }
+
             switch (id)
             {
                 case Row when data.Length >= 14:
@@ -239,6 +252,7 @@ internal static class XlsWorksheet
                     sheet.Landscape = !noPrinterSettings && (options & 0x02) == 0 && (options & 0x40) == 0;
                     sheet.Scale = noPrinterSettings ? null : BiffReader.U16(data, 2);
                     sheet.FitToWidth = BiffReader.U16(data, 6);
+                    sheet.CommentsAtEnd = (options & 0x0220) == 0x0220; // Print the notes (fNotes), at the end (fEndNotes).
                     if (data.Length >= 32)
                     {
                         // The header and footer margins, in inches; the first page number when it is set.
@@ -320,11 +334,12 @@ internal static class XlsWorksheet
                 case LabelSst when data.Length >= 10:
                     var index = BiffReader.U32(data, 6);
                     Cell(data, new XlsValue(XlsValueKind.Text, Text: index < (uint)workbook.SharedStrings.Count ? workbook.SharedStrings[(int)index] : string.Empty,
-                        Rich: index <= int.MaxValue && workbook.RichStrings.Contains((int)index)));
+                        Runs: index <= int.MaxValue && workbook.SharedRuns.TryGetValue((int)index, out var shared) ? shared : null));
                     break;
                 case Label or RString when data.Length >= 8:
                     var start = 6;
-                    Cell(data, new XlsValue(XlsValueKind.Text, Text: BiffReader.ReadString(data, reader.Breaks, ref start, 2, workbook.CodePage), Rich: id == RString));
+                    var label = BiffReader.ReadString(data, reader.Breaks, ref start, 2, workbook.CodePage);
+                    Cell(data, new XlsValue(XlsValueKind.Text, Text: label, Runs: id == RString ? StringRuns(data, start, workbook.Biff) : null));
                     break;
                 case Number when data.Length >= 14:
                     Cell(data, NumberValue(BinaryPrimitives.ReadDoubleLittleEndian(data[6..])));
@@ -378,6 +393,21 @@ internal static class XlsWorksheet
                 case Obj when drawing is not null:
                     drawing.AddObject(data, HasSubrecord(data, 0x0009));
                     break;
+                case CfHeader when conditional is not null:
+                    conditional.Header(data, false);
+                    break;
+                case CfHeader12 when conditional is not null:
+                    conditional.Header(data, true);
+                    break;
+                case Cf when conditional is not null:
+                    conditional.Rule(data);
+                    break;
+                case Cf12 when conditional is not null:
+                    conditional.Rule12(data);
+                    break;
+                case CfEx when conditional is not null:
+                    conditional.Extension(data);
+                    break;
                 case Txo when drawing is not null:
                     drawing.AddText(data, reader.Breaks);
                     break;
@@ -386,6 +416,13 @@ internal static class XlsWorksheet
                     break;
             }
         }
+
+        if (conditional is not null)
+        {
+            sheet.ConditionalRules.AddRange(conditional.Rules);
+        }
+
+        sheet.Comments.AddRange(notes.Comments);
 
         if (drawing is not null && limits is not null)
         {
@@ -409,9 +446,32 @@ internal static class XlsWorksheet
     }
 
     /// <summary>
+    /// The formatting runs after the string of an RSTRING record ([MS-XLS] 2.4.218): a count and, for each run, its first
+    /// character and font index (two bytes each in BIFF8, one in BIFF5).
+    /// </summary>
+    private static List<(int First, int Font)> StringRuns(ReadOnlySpan<byte> data, int position, int biff)
+    {
+        var runs = new List<(int First, int Font)>();
+        var size = biff == 8 ? 2 : 1;
+        if (position + size > data.Length)
+        {
+            return runs;
+        }
+
+        var count = size == 2 ? BiffReader.U16(data, position) : data[position];
+        position += size;
+        for (var i = 0; i < count && position + (2 * size) <= data.Length; i++, position += 2 * size)
+        {
+            runs.Add(size == 2 ? (BiffReader.U16(data, position), BiffReader.U16(data, position + 2)) : (data[position], data[position + 1]));
+        }
+
+        return runs;
+    }
+
+    /// <summary>
     /// Counts a record of content that is not supported: a drawing object (OBJ: chart, picture, embedded object, shape or
-    /// control; not those that do not print, nor the shapes of comments and groups), a comment (NOTE), a conditional
-    /// formatting rule (CF, CF12), and a pivot table (SXVIEW).
+    /// control; not those that do not print, nor the shapes of comments and groups), a conditional formatting rule (CF,
+    /// CF12, of BIFF5), and a pivot table (SXVIEW).
     /// </summary>
     private static void CountUnsupported(ushort id, ReadOnlySpan<byte> data, int biff, UnsupportedContent unsupported)
     {
@@ -421,14 +481,6 @@ internal static class XlsWorksheet
                 if (ObjectKind(data, biff) is { } kind)
                 {
                     unsupported.Add(kind);
-                }
-
-                break;
-            case Note when data.Length >= 2:
-                // In BIFF5 a long note goes on in NOTE records of row 0xFFFF.
-                if (biff == 8 || BiffReader.U16(data, 0) != 0xFFFF)
-                {
-                    unsupported.Add(SheetDiagnosticKind.Comment);
                 }
 
                 break;

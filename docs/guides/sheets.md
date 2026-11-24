@@ -210,12 +210,36 @@ The page size and margins always come from `SheetOptions.Page`. Also with `UsePa
   band before their column.
 
 Cells show **rich text** (runs in their own font, size, color, bold, italic, underline and strikethrough),
-**stacked text** (one character under the other) and text set to **shrink to fit**, which is shown smaller until it
-fits its columns. **Conditional formatting** is applied over the stored values (formulas are not calculated): rules
-comparing values with constants (`cellIs`), two- and three-color scales, top and bottom ranks and percents, above and
-below average, duplicate and unique values, text that contains, begins or ends with a text, blanks and errors, in
-their priority with `stopIfTrue`; their formats set the font's bold, italic, underline, strikethrough and color, the
-fill and the borders.
+**stacked text** (one character under the other), **rotated text** (turned up to 90 degrees either way, within its
+cell; a row without a height of its own grows to fit it, as Excel fits it) and text set to **shrink to fit**, which is
+shown smaller until it fits its columns.
+
+**Conditional formatting** is applied over the stored values (the workbook's formulas are not calculated, but the
+rules' own formulas are): rules comparing values (`cellIs`, with constants or formulas), formula rules
+(`expression`), two- and three-color scales, **data bars** (drawn behind the value; Excel 2010's, from the extension
+list, solid or fading, with negative values left of an axis), **icon sets** (all of Excel's, and custom ones, drawn
+at the start of the cell), top and bottom ranks and percents, above and below average, duplicate and unique values,
+text that contains, begins or ends with a text, blanks, errors, and dates in a period (`timePeriod`, against
+`PrintDate`), in their priority with `stopIfTrue`; their formats set the font's bold, italic, underline,
+strikethrough and color, the fill and the borders. Formula and `cellIs` rules are tried on the empty cells of their
+ranges too, as Excel does (so banding with `MOD(ROW(),2)=0` shades empty rows). The rules' formulas may use numbers,
+texts, `TRUE`/`FALSE`, error values, references to cells and ranges of the same sheet, the operators
+`+ - * / ^ & % = <> < > <= >=`, and the functions `AND`, `OR`, `NOT`, `IF`, `MOD`, `ROW`, `COLUMN`, `ISBLANK`,
+`ISNUMBER`, `ISTEXT`, `ISERROR`, `ISNA`, `ISEVEN`, `ISODD`, `ABS`, `INT`, `ROUND`, `LEN`, `LEFT`, `RIGHT`,
+`UPPER`, `LOWER`, `TRIM`, `SEARCH`, `FIND`, `TODAY`, `SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT`, `COUNTA`,
+`COUNTBLANK` and `COUNTIF`; a rule with anything else (other sheets, names, other functions) is not applied, and
+reported. Their work is bounded (length, size and nesting of each formula, and the cells they read per sheet).
+
+**Comments** (notes) print as the sheet's page setup asks: listed after the sheet, on a page of their own, with each
+comment's cell and text, when it says "At end of sheet"; otherwise not. `XlsxConverterOptions.Comments` can list them
+at the end anyway (`SheetComments.AtEnd`), leave them out (`None`), or make them PDF notes (text annotations, "sticky
+notes") at the top right corner of their cells (`Annotations`), which viewers open to show the text:
+
+[!code-csharp[](../snippets/Sheets.cs#comments)]
+
+**Pivot tables** show the cells Excel stored for them with their style: `PivotStyleLight16` (Excel's default) and
+its siblings `PivotStyleLight15` to `PivotStyleLight21` give the header rows and the grand total row a light fill in
+the theme color, bold text and a line under or over them, and subtotals and the grand total column bold text.
 
 | `XlsxConverterOptions` | What it does |
 |---|---|
@@ -224,7 +248,8 @@ fill and the borders.
 | `UsePageSetup` | Use the sheets' print areas, print titles, orientation, scale and fit to width (default `true`). |
 | `AutoFit` | Fit every column and row to its content instead of the sheet's sizes (default `false`). |
 | `Culture` | The culture numbers and dates are shown in (default invariant). |
-| `PrintDate` | The date and time headers and footers print for `&D` and `&T` (default: the time of the conversion). |
+| `PrintDate` | The date and time headers and footers print for `&D` and `&T`, and `TODAY()` and date periods of conditional formatting compare with (default: the time of the conversion). |
+| `Comments` | How comments print: as the page setup asks (`AsPageSetup`, the default), listed at the end (`AtEnd`), as PDF notes at their cells (`Annotations`), or not (`None`). |
 | `Sheet` | The `SheetOptions` above. `FontSize` is not used: cells keep the workbook's sizes. |
 
 ### Untrusted workbooks
@@ -239,9 +264,9 @@ External workbook links, data connections, query tables, web queries and DDE or 
 refreshed: formulas show the values stored with them (see [Untrusted input](untrusted-input.md)).
 
 Not supported in workbooks, and reported through `Diagnostics` ([below](#diagnostics)): chart sheets, the newer chart
-types (waterfall, treemap, sunburst...), SmartArt, ink, form controls, embedded objects, comments, conditional
-formatting rules with formulas, data bars, icon sets and dates, sparklines, pivot tables (their cells are shown),
-rotated text, and in `.xls` workbooks rich text and conditional formatting.
+types (waterfall, treemap, sunburst...), SmartArt, ink, form controls, embedded objects, conditional formatting rules
+whose formulas are not supported, sparklines, pivot tables of other styles than those above (their cells are shown),
+and the pivot tables of `.xls` workbooks.
 
 ### Excel 97-2003 workbooks
 
@@ -257,7 +282,11 @@ pdf.Save("archive.pdf");
 
 Text comes from the shared strings (also when a string runs on into a CONTINUE record), and from cells of every kind
 (`LABEL`, `RSTRING`, `NUMBER`, `RK`, `MULRK`, `BOOLERR`, blank cells with a format); formulas show their last
-calculated values (numbers, the text of the `STRING` record after them, booleans and errors). Excel 5.0 and 95
+calculated values (numbers, the text of the `STRING` record after them, booleans and errors). Rich text keeps its
+formatting runs (of the shared strings and `RSTRING` records); comments come from `NOTE` records and the text of their
+note objects (`TXO`); conditional formatting from `CF` records (Excel 97's rules, their formulas read from their
+parsed tokens), `CF12` records (Excel 2007's: color scales, data bars, icon sets, top and bottom, formula rules made
+from templates) and the priorities of `CFEX` records; their colors are the workbook's palette's. Excel 5.0 and 95
 workbooks are read in their code page (`CODEPAGE`). The data is checked, not trusted: every length and offset is
 bounded by its record, records that cannot be read are skipped, sheets whose offsets are wrong are found by reading
 the stream in order, and the workbook stream is read within `MaxDecompressedBytes`. Damaged compound files throw
@@ -283,12 +312,12 @@ the sheets are converted, while the conversion runs, so a caller can flag the do
 | `Picture` | Pictures that cannot be drawn (unreadable format such as PICT, damaged, linked, over `MaxImagePixels`): left out. | Pictures in the drawing | Picture objects |
 | `Shape` | SmartArt, ink and form controls: left out. | Other graphic frames, ink; form controls | Free forms, less common shape types, control objects |
 | `OleObject` | Embedded and linked objects, ActiveX controls: left out. | `oleObjects`; ActiveX controls | Picture objects of embedded objects |
-| `Comment` | Comments (notes and threaded comments): left out. | Comments part, threaded comments | `NOTE` records |
-| `ConditionalFormatting` | Conditional formatting rules that are not applied (formulas, data bars, icon sets, dates). | Those `cfRule`s, also of the extension list | `CF`, `CF12` records |
+| `Comment` | No longer reported: comments print as the page setup or `Comments` says. | | |
+| `ConditionalFormatting` | Conditional formatting rules that are not applied (formulas that are not supported, damaged rules). | Those `cfRule`s, also of the extension list | `CF`, `CF12` records |
 | `Sparkline` | Sparklines: left out. | Sparklines of the extension list | |
-| `PivotTable` | Pivot tables: their cells are shown as stored, without the pivot table style. | Pivot table parts | `SXVIEW` records |
-| `RichText` | Cells with runs of text in other fonts: shown in the cell's font. | | Rich shared strings, `RSTRING` |
-| `RotatedText` | Cells with rotated text (not stacked): shown horizontally. | `textRotation` | The XF's rotation |
+| `PivotTable` | Pivot tables of styles other than `PivotStyleLight15` to `21`: their cells are shown as stored, without the pivot table style. | Pivot table parts | `SXVIEW` records |
+| `RichText` | No longer reported: rich text is shown. | | |
+| `RotatedText` | No longer reported: rotated text is shown. | | |
 | `Layout` | Content that does not fit the page: drawn past its edge, or cut off, with the page numbers. | | |
 
 Counts are for the whole sheet, also outside the print area. Drawing objects that do not print (hidden, or set not
@@ -296,6 +325,6 @@ to print with the sheet, such as the drop-down arrows of filters) and the cells 
 has no sheets: only `Layout` applies, with no sheet name. Layout problems are rare, since columns are printed in bands
 and text wraps; text too big for the page, such as a very large font on a small page, is one.
 
-Drawing parts are always read, to draw them. With a callback, the parts a workbook keeps the other content in
-(comments, pivot tables, controls and their relationships) are read too, within `MaxDecompressedBytes`; a part that
+Drawing and pivot table parts are always read, to draw them, and comments parts when their comments print. With a
+callback, the parts a workbook keeps the other content in (controls and their relationships) are read too, within `MaxDecompressedBytes`; a part that
 cannot be read counts nothing and does not fail the conversion. Without one (the default), nothing more is read.

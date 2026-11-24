@@ -65,7 +65,7 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Numbers, dates and times in their number formats | ✓ | ✓ | ◐ recognized and aligned |
 | Formulas | ◐ saved values | ◐ saved values | - |
 | Text, booleans, errors | ✓ | ✓ | ✓ |
-| Rich text within a cell | ✓ | ◐ in the cell's font, R | - |
+| Rich text within a cell | ✓ | ✓ | - |
 | Fonts, fills, borders, alignment, wrapping, indents | ✓ | ✓ | - |
 | Merged cells | ✓ | ✓ | - |
 | Column widths and row heights | ✓ | ✓ | ◐ fitted to the content |
@@ -73,18 +73,18 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Right-to-left sheets | ✓ | ✓ | ◐ text aligned by its direction |
 | Print area, print titles, orientation, scale, fit to width | ✓ | ✓ | - |
 | Header row repeated on every page | ✓ print titles | ✓ print titles | ✓ `HasHeaderRow` |
-| Pivot tables | ◐ their cells, R | ◐ their cells, R | - |
+| Pivot tables | ✓ their cells, `PivotStyleLight15`-`21`; other styles R | ◐ their cells, R | - |
 | Charts in a sheet | ✓ newer types R | R | - |
 | Chart sheets | R | R | - |
 | Pictures: PNG, JPEG, GIF, BMP, TIFF, EMF, WMF | ✓ cropped, turned | ✓ bitmaps, metafiles | - |
 | Shapes and text boxes | ✓ preset and free-form geometry | ◐ common shape types, R | - |
 | SmartArt, ink, form controls | R | R | - |
-| Conditional formatting: value, rank, average, duplicate and text rules, color scales | ✓ over stored values | R | - |
-| Conditional formatting: formulas, data bars, icon sets | R | R | - |
-| Comments and notes | R | R | - |
+| Conditional formatting: value, rank, average, duplicate, text and date rules, color scales | ✓ over stored values | ✓ over stored values | - |
+| Conditional formatting: formulas, data bars, icon sets | ✓ formulas of common functions; others R | ✓ formulas of common functions; others R | - |
+| Comments and notes | ✓ at the end of the sheet, or as PDF notes | ✓ at the end of the sheet, or as PDF notes | - |
 | Headers and footers, page breaks set by hand | ✓ | ✓ | - |
 | Stacked text, shrink to fit | ✓ | ✓ | - |
-| Rotated text | R | R | - |
+| Rotated text | ✓ | ✓ | - |
 | External links, data connections | ◐ saved values, never refreshed | ◐ saved values, never refreshed | - |
 | Tagged PDF (`Tagged`): tables with header cells | ✓ | ✓ | ✓ |
 | Binary `.xlsb` | ✗ `NotSupportedException` | - | - |

@@ -61,6 +61,18 @@ internal sealed class XlsxWorksheet
     /// <summary>The <c>conditionalFormatting</c> elements, applied once the cells are read.</summary>
     public List<System.Xml.Linq.XElement> ConditionalFormats { get; } = [];
 
+    /// <summary>The extension list's <c>x14:conditionalFormatting</c> elements (Excel 2010's rules and data bars).</summary>
+    public List<System.Xml.Linq.XElement> ExtendedConditionalFormats { get; } = [];
+
+    /// <summary>The comments (notes): their cell, text and author.</summary>
+    public List<(int Row, int Column, string Text, string? Author)> Comments { get; } = [];
+
+    /// <summary>Whether the page setup asks for the comments to be printed at the end of the sheet.</summary>
+    public bool CommentsAtEnd { get; set; }
+
+    /// <summary>The conditional formatting rules of an .xls worksheet, read from its records.</summary>
+    public List<ConditionalRule> ConditionalRules { get; } = [];
+
     /// <summary>The headers and footers, and where they go.</summary>
     public SheetHeaderFooter HeaderFooter { get; set; } = new();
 
@@ -133,6 +145,7 @@ internal sealed class XlsxWorksheet
                         sheet.Landscape = reader.GetAttribute("orientation") == "landscape";
                         sheet.Scale = Integer(reader.GetAttribute("scale"));
                         sheet.FitToWidth = Integer(reader.GetAttribute("fitToWidth")) ?? 1;
+                        sheet.CommentsAtEnd = reader.GetAttribute("cellComments") == "atEnd";
                         if (reader.GetAttribute("useFirstPageNumber") is "1" or "true" && Integer(reader.GetAttribute("firstPageNumber")) is { } first)
                         {
                             sheet.HeaderFooter = sheet.HeaderFooter with { FirstPageNumber = Math.Clamp(first, -10_000_000, 10_000_000) };
@@ -177,6 +190,13 @@ internal sealed class XlsxWorksheet
 
             switch (section, depth, reader.LocalName)
             {
+                case ("extLst", 4, "conditionalFormatting") when !reader.IsEmptyElement && sheet.ExtendedConditionalFormats.Count < 10_000:
+                    using (var subtree = reader.ReadSubtree())
+                    {
+                        sheet.ExtendedConditionalFormats.Add(System.Xml.Linq.XElement.Load(subtree));
+                    }
+
+                    break;
                 case ("sheetPr", 2, "pageSetUpPr"):
                     sheet.FitToPage = reader.GetAttribute("fitToPage") is "1" or "true";
                     break;
@@ -329,25 +349,6 @@ internal sealed class XlsxWorksheet
         {
             Numbers[Key(row, column)] = number;
         }
-        if (cell.Kind != CellKind.Empty)
-        {
-            CountFormatting(workbook.Styles.CellStyle(style), false);
-        }
-    }
-
-    /// <summary>Counts a cell that shows text with formatting that is not supported: rich text (of .xls workbooks), rotation.</summary>
-    internal void CountFormatting(XlsxCellStyle style, bool rich)
-    {
-        if (rich)
-        {
-            Unsupported.Add(SheetDiagnosticKind.RichText);
-        }
-
-        if (style.Rotated)
-        {
-            Unsupported.Add(SheetDiagnosticKind.RotatedText);
-        }
-
     }
 
     /// <summary>

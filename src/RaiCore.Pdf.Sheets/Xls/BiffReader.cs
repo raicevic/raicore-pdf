@@ -100,7 +100,8 @@ internal sealed class BiffReader
     /// Reads a string with its length before it (one or two bytes, <paramref name="lengthSize"/>): in BIFF8 a Unicode
     /// string with its flags (<see cref="ReadUnicode"/>), before it characters in the workbook's code page.
     /// </summary>
-    public static string ReadString(ReadOnlySpan<byte> data, IReadOnlyList<int> breaks, ref int position, int lengthSize, Encoding? codePage, bool extended = false)
+    public static string ReadString(ReadOnlySpan<byte> data, IReadOnlyList<int> breaks, ref int position, int lengthSize, Encoding? codePage, bool extended = false,
+        List<(int First, int Font)>? runs = null)
     {
         if (position < 0 || position + lengthSize > data.Length)
         {
@@ -118,16 +119,18 @@ internal sealed class BiffReader
             return Clean(text);
         }
 
-        return ReadUnicode(data, breaks, ref position, count, extended);
+        return ReadUnicode(data, breaks, ref position, count, extended, runs);
     }
 
     /// <summary>
     /// Reads <paramref name="count"/> characters of a BIFF8 Unicode string from its flags byte on ([MS-XLS] 2.5.293 and
     /// 2.5.294): one byte a character (the low bytes of UTF-16) or two. Where the characters run on into a CONTINUE
-    /// record, it starts with a new flags byte. An extended string's formatting runs and phonetic data are skipped. A
+    /// record, it starts with a new flags byte. An extended string's phonetic data are skipped, and its formatting runs
+    /// (the first character and the font index of each, [MS-XLS] 2.5.129) added to <paramref name="runs"/> if given. A
     /// string cut short by the end of the data is read as far as it goes.
     /// </summary>
-    public static string ReadUnicode(ReadOnlySpan<byte> data, IReadOnlyList<int> breaks, ref int position, int count, bool extended = false)
+    public static string ReadUnicode(ReadOnlySpan<byte> data, IReadOnlyList<int> breaks, ref int position, int count, bool extended = false,
+        List<(int First, int Font)>? runs = null)
     {
         if (position < 0 || position >= data.Length)
         {
@@ -138,9 +141,11 @@ internal sealed class BiffReader
         var flags = data[position++];
         var high = (flags & 0x01) != 0;
         long skip = 0;
+        var runCount = 0;
         if (extended && (flags & 0x08) != 0)
         {
-            skip += 4L * U16(data, position);
+            runCount = U16(data, position);
+            skip += 4L * runCount;
             position += 2;
         }
 
@@ -182,6 +187,15 @@ internal sealed class BiffReader
             {
                 chars[read++] = high ? (char)(data[position] | (data[position + 1] << 8)) : (char)data[position];
                 position += high ? 2 : 1;
+            }
+        }
+
+        if (runs is not null)
+        {
+            // The runs follow the characters (without flags where they run on into a CONTINUE record).
+            for (var i = 0; i < runCount && position + (4 * i) + 4 <= data.Length; i++)
+            {
+                runs.Add((U16(data, position + (4 * i)), U16(data, position + (4 * i) + 2)));
             }
         }
 

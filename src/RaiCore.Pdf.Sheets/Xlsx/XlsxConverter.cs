@@ -68,14 +68,28 @@ internal static class XlsxConverter
             var worksheet = entry.Path is { } path
                 ? package.Parse(path, reader => XlsxWorksheet.Read(reader, workbook, limits.MaxTableCells, checkpoint), XlsxWorksheet.Empty)
                 : XlsxWorksheet.Empty;
-            if (worksheet.ConditionalFormats.Count > 0)
+            if (entry.Path is { } pivotPart)
             {
-                ConditionalFormatting.Apply(worksheet, worksheet.ConditionalFormats, workbook.Styles, checkpoint);
+                // Before conditional formatting, which goes over it.
+                XlsxPivotTables.Apply(package, pivotPart, worksheet, workbook.Styles.Colors, limits.MaxTableCells);
+            }
+
+            if (worksheet.ConditionalFormats.Count + worksheet.ExtendedConditionalFormats.Count > 0)
+            {
+                var rules = ConditionalFormatting.ReadXlsx(worksheet.ConditionalFormats, worksheet.ExtendedConditionalFormats, workbook.Styles);
+                ConditionalFormatting.Apply(worksheet, rules, options.PrintDate ?? DateTime.Now, workbook.Settings.Date1904, limits.MaxTableCells, checkpoint);
             }
 
             if (entry.Path is { } part)
             {
                 worksheet.Drawings.AddRange(new XlsxDrawing(package, workbook, limits, worksheet.Unsupported, images).Read(part));
+                // The comments part is read only when its comments are printed.
+                if (options.Comments is SheetComments.AtEnd or SheetComments.Annotations
+                    || (options.Comments == SheetComments.AsPageSetup && options.UsePageSetup && worksheet.CommentsAtEnd))
+                {
+                    XlsxComments.Read(package, part, worksheet, checkpoint);
+                }
+
                 if (diagnostics is not null)
                 {
                     XlsxContent.Collect(package, part, worksheet.Unsupported, checkpoint);
@@ -254,6 +268,7 @@ internal static class XlsxConverter
                 PrintContext = (options.PrintDate ?? DateTime.Now, options.Culture ?? CultureInfo.InvariantCulture, null),
                 RowBreaks = usePageSetup ? Breaks(worksheet.RowBreaks, rowArray, headerRows + leadRows) : [],
                 ColumnBreaks = usePageSetup ? Breaks(worksheet.ColumnBreaks, columnArray, 0) : [],
+                Comments = Comments(worksheet, rowArray, columnArray, options),
             },
             Name = entry.Name,
         };
@@ -323,6 +338,38 @@ internal static class XlsxConverter
         }
 
         return merges;
+    }
+
+    /// <summary>
+    /// The comments of the printed cells, by row and column, and how they are printed: as the options say, or as the
+    /// sheet's page setup asks (at the end, or not).
+    /// </summary>
+    private static (IReadOnlyList<SheetComment>, CommentPrinting) Comments(XlsxWorksheet worksheet, int[] rows, int[] columns, XlsxConverterOptions options)
+    {
+        var printing = options.Comments switch
+        {
+            SheetComments.AtEnd => CommentPrinting.AtEnd,
+            SheetComments.Annotations => CommentPrinting.Notes,
+            SheetComments.AsPageSetup when options.UsePageSetup && worksheet.CommentsAtEnd => CommentPrinting.AtEnd,
+            _ => CommentPrinting.None,
+        };
+        if (printing == CommentPrinting.None || worksheet.Comments.Count == 0)
+        {
+            return ([], CommentPrinting.None);
+        }
+
+        var list = new List<SheetComment>();
+        foreach (var (row, column, text, author) in worksheet.Comments.OrderBy(c => c.Row).ThenBy(c => c.Column))
+        {
+            var r = Array.BinarySearch(rows, row);
+            var c = Array.BinarySearch(columns, column);
+            if (r >= 0 && c >= 0)
+            {
+                list.Add(new SheetComment(Workbooks.FormulaReferences.Address(row, column), r, c, text, author));
+            }
+        }
+
+        return (list, printing);
     }
 
     /// <summary>

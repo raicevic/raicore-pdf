@@ -1685,6 +1685,12 @@ internal sealed partial class Paginator
                 {
                     canvas.SetFillColor(background).Rectangle(x + cell.X, pageHeight - cellTop - cellHeight, cell.Width, cellHeight).Fill();
                 }
+
+                if (style.BackgroundLayers.Count > 0)
+                {
+                    // Images and gradients over the color (a spreadsheet's data bars, CSS backgrounds of collapsed cells).
+                    PaintBackgroundLayers(canvas, style, default, x + cell.X, pageHeight - cellTop - cellHeight, cell.Width, cellHeight, true, true, 0, cellHeight);
+                }
             }
             else
             {

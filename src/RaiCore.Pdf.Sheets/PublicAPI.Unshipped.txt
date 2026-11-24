@@ -193,3 +193,10 @@ static RaiCore.Pdf.Sheets.XlsxToPdf.Convert(RaiCore.Pdf.Sheets.Workbook! workboo
 static RaiCore.Pdf.Sheets.XlsxToPdf.ConvertToBytes(RaiCore.Pdf.Sheets.Workbook! workbook, RaiCore.Pdf.Sheets.XlsxConverterOptions? options = null) -> byte[]!
 RaiCore.Pdf.Sheets.XlsxConverterOptions.PrintDate.get -> System.DateTime?
 RaiCore.Pdf.Sheets.XlsxConverterOptions.PrintDate.init -> void
+RaiCore.Pdf.Sheets.SheetComments
+RaiCore.Pdf.Sheets.SheetComments.Annotations = 2 -> RaiCore.Pdf.Sheets.SheetComments
+RaiCore.Pdf.Sheets.SheetComments.AsPageSetup = 0 -> RaiCore.Pdf.Sheets.SheetComments
+RaiCore.Pdf.Sheets.SheetComments.AtEnd = 1 -> RaiCore.Pdf.Sheets.SheetComments
+RaiCore.Pdf.Sheets.SheetComments.None = 3 -> RaiCore.Pdf.Sheets.SheetComments
+RaiCore.Pdf.Sheets.XlsxConverterOptions.Comments.get -> RaiCore.Pdf.Sheets.SheetComments
+RaiCore.Pdf.Sheets.XlsxConverterOptions.Comments.init -> void

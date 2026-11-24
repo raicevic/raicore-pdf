@@ -388,13 +388,14 @@ public class PdfATests
     }
 
     [Fact]
-    public void Links_are_printable_annotations()
+    public void Links_and_notes_are_printable_annotations()
     {
         var reader = PdfReader.Open(PdfASamples.Canvas(PdfAConformance.PdfA2B).ToArray());
 
-        var annotations = ((PdfArray)reader.Resolve(reader.Pages[0].Dictionary["Annots"])!).Items;
-        Assert.Equal(3, annotations.Count);
-        Assert.All(annotations, a => Assert.Equal(4, ((PdfInteger)((PdfDictionary)reader.Resolve(a)!)["F"]!).Value));
+        // Three links (print), and a note (print, no zoom, no rotation) with its appearance.
+        var annotations = ((PdfArray)reader.Resolve(reader.Pages[0].Dictionary["Annots"])!).Items.Select(a => (PdfDictionary)reader.Resolve(a)!).ToList();
+        Assert.Equal([4, 4, 4, 28], annotations.Select(a => ((PdfInteger)a["F"]!).Value));
+        Assert.NotNull(((PdfDictionary)reader.Resolve(annotations[3]["AP"])!)["N"]);
     }
 
     [Fact]

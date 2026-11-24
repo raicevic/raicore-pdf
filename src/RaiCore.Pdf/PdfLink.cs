@@ -104,7 +104,7 @@ internal static class PdfLinkWriter
     /// </summary>
     public static PdfArray? WriteAnnotations(
         PdfFileWriter writer, PdfPage page, IReadOnlyDictionary<PdfPage, PdfReference> pages, IDictionary<string, PdfDestination> names,
-        Action<PdfLink, PdfDictionary, PdfReference>? written = null)
+        Action<PdfLink, PdfDictionary, PdfReference>? written = null, Action<PdfNote, PdfDictionary, PdfReference>? noteWritten = null)
     {
         var annotations = new PdfArray();
         foreach (var link in page.Links)
@@ -156,7 +156,50 @@ internal static class PdfLinkWriter
             written?.Invoke(link, annotation, reference);
         }
 
+        foreach (var note in page.Notes)
+        {
+            var (x, y) = (note.X + page.Origin.X, note.Y + page.Origin.Y);
+            var annotation = new PdfDictionary
+            {
+                ["Type"] = new PdfName("Annot"),
+                ["Subtype"] = new PdfName("Text"),
+                ["Rect"] = PdfArray.OfNumbers(x, y, x + note.Width, y + note.Height),
+                ["Contents"] = PdfString.FromText(note.Text),
+                ["Name"] = new PdfName("Comment"),
+                ["C"] = PdfArray.OfNumbers(1, 0.85, 0.2),
+                ["F"] = new PdfInteger(4 | 8 | 16), // Print (as PDF/A requires), and keep the icon's size and upright.
+                ["AP"] = new PdfDictionary { ["N"] = writer.Add(NoteAppearance(note.Width, note.Height)) },
+            };
+            if (note.Author is { Length: > 0 } author)
+            {
+                annotation["T"] = PdfString.FromText(author);
+            }
+
+            var reference = writer.Add(annotation);
+            annotations.Items.Add(reference);
+            noteWritten?.Invoke(note, annotation, reference);
+        }
+
         return annotations.Items.Count > 0 ? annotations : null;
+    }
+
+    /// <summary>A note's appearance (PDF/A requires one): a yellow sheet with a folded corner and lines of text, filling its rectangle.</summary>
+    private static PdfStreamObject NoteAppearance(double width, double height)
+    {
+        string N(double v) => v.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+        var (w, h) = (Math.Max(width, 1), Math.Max(height, 1));
+        var fold = Math.Min(w, h) * 0.3;
+        var content = $"1 0.85 0.2 rg 0.45 0.35 0 RG {N(Math.Min(w, h) * 0.06)} w 0.5 0.5 m {N(w - 0.5)} 0.5 l {N(w - 0.5)} {N(h - 0.5 - fold)} l "
+            + $"{N(w - 0.5 - fold)} {N(h - 0.5)} l 0.5 {N(h - 0.5)} l h B {N(w - 0.5 - fold)} {N(h - 0.5)} m {N(w - 0.5 - fold)} {N(h - 0.5 - fold)} l "
+            + $"{N(w - 0.5)} {N(h - 0.5 - fold)} l S {N(w * 0.2)} {N(h * 0.55)} m {N(w * 0.6)} {N(h * 0.55)} l {N(w * 0.2)} {N(h * 0.35)} m "
+            + $"{N(w * 0.8)} {N(h * 0.35)} l {N(w * 0.2)} {N(h * 0.15)} m {N(w * 0.8)} {N(h * 0.15)} l S";
+        return new PdfStreamObject(Encoding.ASCII.GetBytes(content), new PdfDictionary
+        {
+            ["Type"] = new PdfName("XObject"),
+            ["Subtype"] = new PdfName("Form"),
+            ["BBox"] = PdfArray.OfNumbers(0, 0, w, h),
+            ["Resources"] = new PdfDictionary(),
+        });
     }
 
     /// <summary>

@@ -14,6 +14,18 @@ and versions follow [Semantic Versioning](https://semver.org/).
   color scales, top/bottom, above/below average, duplicate/unique, text, blank and error rules, with their font, fill
   and border formats. `XlsxConverterOptions.PrintDate` sets the date and time headers print. Diagnostics no longer
   report what is printed now.
+- **Sheets: comments, rotated text, data bars, icon sets, formula rules and pivot table styles** (#259): worksheets
+  print their comments as their page setup asks (listed at the end of the sheet), or by the new
+  `XlsxConverterOptions.Comments` at the end, as PDF notes at their cells, or not at all; rotated text, turned within
+  its cell (rows grow to fit it); and the default pivot table styles (`PivotStyleLight15` to `21`). Conditional
+  formatting adds data bars (also Excel 2010's, with negative values), icon sets (all of Excel's, and custom ones),
+  formula rules and `cellIs` rules with formulas (computed over the stored values: references, operators and common
+  functions, bounded) and date periods, and works the same for `.xls` workbooks (`CF`, `CF12` and `CFEX` records),
+  whose rich text is shown now too. Diagnostics no longer report comments, rich text, rotated text, or the rules and
+  pivot tables that print now.
+- **Notes (text annotations)**: `PdfPage.AddNote` and `PdfCanvas.AddNote` add a "sticky note" with a text and an
+  author, printed with an appearance of its own (as PDF/A requires) and tagged as an `Annot` element in tagged
+  documents.
 - **Removing XFA forms** (#262, `RaiCore.Pdf.Editing`): `PdfEditor.RemoveXfa()` deletes the XFA form and keeps the
   AcroForm with its fields, values and appearances, so files with static or dynamic XFA can be filled, flattened and
   shown by any viewer. `PdfForm.IsXfaPlaceholder` tells when a dynamic XFA form's PDF pages are only a "Please
@@ -97,6 +109,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
   independent Python oracle of their XFA.
 
 ### Fixed
+- **Tables with collapsed borders paint their cells' background images and gradients** (`BoxStyle.BackgroundLayers`;
+  CSS `background-image` on cells of `border-collapse: collapse` tables), not only their color.
 - **A CFF2 font with a huge blend count** in a DICT threw `ArgumentOutOfRangeException` when it was subset (the count times the
   number of regions overflowed); it now throws `FontFormatException`, and the font is embedded whole. Found by fuzzing.
 - **Deeply nested layout content no longer overflows the stack** when `MaxNestingDepth` is raised: finding the forced

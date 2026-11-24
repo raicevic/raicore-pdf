@@ -500,6 +500,13 @@ doc.NamedDestinations["appendix"] = new PdfDestination(lastPage, top: lastPage.H
 page.Canvas.AddLink(0, 0, 50, 20, new PdfDestination(firstPage));     // in the canvas's transformed coordinates
 ```
 
+Notes (text annotations, "sticky notes") put an icon on a page that viewers open to show a text; they print, carry
+their own appearance (as PDF/A requires) and are `Annot` elements in tagged documents:
+
+```csharp
+page.AddNote(200, 700, 12, 12, "Checked against the ledger.").Author = "Alice"; // x, y, width, height of the icon
+```
+
 Encryption protects a document with a password, or lets anyone open it but restricts what they may do (permissions
 are enforced by the viewer). AES-256 (PDF 2.0, security handler revision 6) is the default; AES-128 (revision 4) is
 there for old readers:

@@ -8,7 +8,7 @@ namespace RaiCore.Pdf.Sheets.Xlsx;
 /// A cell style of a workbook (an <c>xf</c> of <c>cellXfs</c>), resolved: its format, number format and alignment, and
 /// whether it rotates its text or shrinks it to fit (which are not supported, only reported).
 /// </summary>
-internal sealed record XlsxCellStyle(CellFormat Format, NumberFormat NumberFormat, CellAlignment Alignment, bool Rotated = false);
+internal sealed record XlsxCellStyle(CellFormat Format, NumberFormat NumberFormat, CellAlignment Alignment);
 
 /// <summary>
 /// The styles part of a workbook (<c>xl/styles.xml</c>): number formats, fonts, fills, borders and the cell styles that
@@ -158,8 +158,9 @@ internal sealed class XlsxStyles
             Indent = xf.Indent,
             ShrinkToFit = xf.ShrinkToFit,
             Stacked = xf.Stacked,
+            Rotation = xf.Rotation,
         };
-        style = new XlsxCellStyle(format, NumberFormatOf(xf.NumberFormatId), xf.Horizontal, xf.Rotated);
+        style = new XlsxCellStyle(format, NumberFormatOf(xf.NumberFormatId), xf.Horizontal);
         _resolved[index] = style;
         return style;
     }
@@ -420,7 +421,9 @@ internal sealed class XlsxStyles
                 },
                 Wrap = child.GetAttribute("wrapText") is "1" or "true",
                 Indent = int.TryParse(child.GetAttribute("indent"), NumberStyles.None, CultureInfo.InvariantCulture, out var indent) ? Math.Min(indent, 250) : 0,
-                Rotated = int.TryParse(child.GetAttribute("textRotation"), NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out var rotation) && rotation is not (0 or 255),
+                // 1 to 90 degrees counterclockwise, 91 to 180 are 1 to 90 clockwise; 255 is stacked.
+                Rotation = int.TryParse(child.GetAttribute("textRotation"), NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture, out var rotation)
+                    ? rotation switch { >= 1 and <= 90 => rotation, > 90 and <= 180 => 90 - rotation, _ => 0 } : 0,
                 Stacked = rotation == 255,
                 ShrinkToFit = child.GetAttribute("shrinkToFit") is "1" or "true",
             };
@@ -463,7 +466,7 @@ internal sealed class XlsxStyles
 
         public int Indent { get; init; }
 
-        public bool Rotated { get; init; }
+        public int Rotation { get; init; }
 
         public bool ShrinkToFit { get; init; }
 

@@ -79,8 +79,48 @@ internal sealed record CellFormat
     /// <summary>Whether the text is stacked vertically, one character under the other.</summary>
     public bool Stacked { get; init; }
 
-    /// <summary>Whether the cell shows anything without text: a fill or a border.</summary>
-    public bool IsVisible => Fill is not null || Top.IsVisible || Right.IsVisible || Bottom.IsVisible || Left.IsVisible;
+    /// <summary>The text's rotation in degrees, counterclockwise (-90 to 90; 0 for none).</summary>
+    public int Rotation { get; init; }
+
+    /// <summary>A data bar of conditional formatting drawn behind the text, or <c>null</c>.</summary>
+    public CellDataBar? DataBar { get; init; }
+
+    /// <summary>An icon of conditional formatting drawn at the start of the cell, or <c>null</c>.</summary>
+    public CellIcon? Icon { get; init; }
+
+    /// <summary>Whether the text is hidden (a data bar or icon set that shows no value).</summary>
+    public bool HideText { get; init; }
+
+    /// <summary>Whether the cell shows anything without text: a fill, a border, a data bar or an icon.</summary>
+    public bool IsVisible => Fill is not null || Top.IsVisible || Right.IsVisible || Bottom.IsVisible || Left.IsVisible || DataBar is not null || Icon is not null;
+}
+
+/// <summary>
+/// A data bar (conditional formatting): a bar from <see cref="Start"/> to <see cref="End"/>, fractions of the cell's width
+/// from its left, in a color (fading to white along a gradient bar), with a border or not.
+/// </summary>
+internal sealed record CellDataBar(double Start, double End, PdfColor Color, bool Gradient, PdfColor? Border);
+
+/// <summary>An icon of an icon set (conditional formatting): the set's name (<c>3TrafficLights1</c>) and the icon's index, from 0 for the lowest values.</summary>
+internal sealed record CellIcon(string Set, int Index);
+
+/// <summary>
+/// A comment (note) of a worksheet: its cell's reference as the sheet names it (<c>B3</c>), its row and column in the
+/// sheet as printed, its text and its author.
+/// </summary>
+internal sealed record SheetComment(string Reference, int Row, int Column, string Text, string? Author);
+
+/// <summary>How a sheet prints its comments.</summary>
+internal enum CommentPrinting
+{
+    /// <summary>Not at all.</summary>
+    None,
+
+    /// <summary>Listed after the sheet.</summary>
+    AtEnd,
+
+    /// <summary>As PDF notes at their cells.</summary>
+    Notes,
 }
 
 /// <summary>A range of merged cells, in the sheet's rows and columns: shown as one cell.</summary>
@@ -151,6 +191,9 @@ internal sealed class SheetFormatting
 
     /// <summary>The printed rows (after the header rows) that start a page, ascending, by page breaks set by hand.</summary>
     public IReadOnlyList<int> RowBreaks { get; init; } = [];
+
+    /// <summary>The comments of the printed cells, by row and column, and how they are printed.</summary>
+    public (IReadOnlyList<SheetComment> List, CommentPrinting Printing) Comments { get; init; } = ([], CommentPrinting.None);
 
     /// <summary>The printed columns (not the first) that start a page, ascending, by page breaks set by hand.</summary>
     public IReadOnlyList<int> ColumnBreaks { get; init; } = [];
