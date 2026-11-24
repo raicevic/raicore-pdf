@@ -61,6 +61,13 @@ public sealed class PdfForm
     public PdfXfaKind Xfa { get; }
 
     /// <summary>
+    /// Whether the document's PDF pages are only a placeholder for a dynamic XFA form: the form is dynamic and the
+    /// AcroForm behind it has no fields, so the pages hold nothing but a "please wait" message. Removing the XFA
+    /// (<see cref="PdfEditor.RemoveXfa"/>) would leave only that message; the form's content is in the XFA alone.
+    /// </summary>
+    public bool IsXfaPlaceholder => Xfa == PdfXfaKind.Dynamic && Fields.Count == 0;
+
+    /// <summary>
     /// The fields, in the order of the form's field tree: terminal fields only (those that have a value), with their full
     /// names. Fields whose widgets are all on deleted pages are not listed.
     /// </summary>

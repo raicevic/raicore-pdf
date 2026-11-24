@@ -111,7 +111,33 @@ look, and the widgets, the fields and the form are removed, so the values stay v
   check boxes and radio buttons with their check character. Text is written in WinAnsi, so other characters show as `?`.
 - Hidden widgets are removed without being drawn. Other annotations (links, notes) stay: see below.
 - A static XFA form goes with the form; a dynamic XFA form throws `NotSupportedException`, since its pages are laid out
-  by the viewer.
+  by the viewer, unless `FlattenForm(new PdfFormFlattenOptions { DynamicXfa = PdfDynamicXfaHandling.RemoveXfa })` asks
+  to remove its XFA first (see below).
+
+### XFA forms
+
+An XFA form (XML Forms Architecture) keeps the form as XML next to the PDF. Only some viewers (Adobe Acrobat and
+Reader) read it; every other viewer, printer and tool shows the AcroForm and the PDF pages. `GetForm()` tells the kinds
+apart, and `RemoveXfa()` makes such a file an ordinary PDF form:
+
+[!code-csharp[](../snippets/Editing.cs#xfa)]
+
+- **Static XFA** (`PdfXfaKind.Static`): the PDF pages and the AcroForm are what is shown everywhere else, so removing
+  the XFA loses nothing those viewers show. `FlattenForm()` removes it with the form.
+- **Dynamic XFA with an AcroForm** (`PdfXfaKind.Dynamic`, `/NeedsRendering`): Acrobat lays the pages out from the XFA,
+  but designers usually also save an AcroForm with the fields and their values. `RemoveXfa()` deletes `/XFA` and
+  `/NeedsRendering` and keeps that AcroForm, fillable; `FlattenForm()` burns it in afterwards. Check the result: the
+  AcroForm shows what was saved last, without the layout Acrobat would make from the XFA (rows added at run time, for
+  example).
+- **Dynamic XFA with only a placeholder** (`IsXfaPlaceholder`): the AcroForm has no fields, and the only PDF page is a
+  "Please wait..." message. The form exists only as XFA, so `RemoveXfa()` throws `InvalidOperationException`
+  (`RemoveXfa(force: true)` removes it anyway, leaving the message), and so does `FlattenForm` with
+  `PdfDynamicXfaHandling.RemoveXfa`.
+- Scripts and usage rights in the XFA go with it.
+
+The recommended way to handle XFA files: read `GetForm()`; for `Static`, or `Dynamic` that is not a placeholder, call
+`RemoveXfa()` (and `FlattenForm()` if the result should not be fillable); a placeholder needs a viewer that renders
+XFA.
 
 ## Flattening annotations
 

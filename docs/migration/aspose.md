@@ -105,6 +105,8 @@ Aspose.PDF numbers pages from 1; RaiCore.Pdf from 0.
 | `Form.Flatten()`, `Document.Flatten()` | `PdfEditor.FlattenForm()` |
 | `Annotation.Flatten()`, `Page.Flatten()` | `PdfEditor.FlattenAnnotations(options)` |
 | `Document.Form.Fields` | `PdfEditor.GetForm().Fields` |
+| `Form.HasXfa`, `Form.Type` | `PdfEditor.GetForm().Xfa` (`None`, `Static`, `Dynamic`), `IsXfaPlaceholder` |
+| `Form.Type = FormType.Standard` (XFA to AcroForm) | `PdfEditor.RemoveXfa()`: keeps the AcroForm saved with the file, without laying the XFA out again |
 | `OptimizeResources()`, `Optimize()` | `PdfEditor.Optimize(options)` |
 | `Pages.Delete(n)` | `PdfEditor.Pages.Delete(n - 1)` |
 | `Pages.Insert(n, page)`, `Pages.Add(other.Pages)` | `PdfEditor.Pages.Insert(index, reader, pageIndexes)`, `Pages.Add(reader)` |

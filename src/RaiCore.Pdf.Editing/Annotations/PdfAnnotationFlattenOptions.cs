@@ -3,7 +3,7 @@ namespace RaiCore.Pdf.Editing;
 /// <summary>Which annotations <see cref="PdfEditor.FlattenAnnotations"/> flattens. By default all but links and form fields.</summary>
 public sealed record PdfAnnotationFlattenOptions
 {
-    /// <summary>All annotations but links (and form fields, which <see cref="PdfEditor.FlattenForm"/> flattens).</summary>
+    /// <summary>All annotations but links (and form fields, which <see cref="PdfEditor.FlattenForm()"/> flattens).</summary>
     public static PdfAnnotationFlattenOptions Default { get; } = new();
 
     /// <summary>
