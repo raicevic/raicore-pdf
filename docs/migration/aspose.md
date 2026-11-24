@@ -105,6 +105,7 @@ Aspose.PDF numbers pages from 1; RaiCore.Pdf from 0.
 | `ImagePlacementAbsorber`, `ImagePlacement.Rectangle`, `Image.Save` | `ImageExtractor.ExtractPage(i)`, `ExtractedImage.Bounds`, `GetData()`, `FileExtension` |
 | `Form.Flatten()`, `Document.Flatten()` | `PdfEditor.FlattenForm()` |
 | `Annotation.Flatten()`, `Page.Flatten()` | `PdfEditor.FlattenAnnotations(options)` |
+| `new TextAnnotation(page, rect) { Contents = ... }` on a new document | `PdfPage.AddNote(x, y, width, height, text)`, `PdfNote.Author` |
 | `Document.Form.Fields` | `PdfEditor.GetForm().Fields` |
 | `Form.HasXfa`, `Form.Type` | `PdfEditor.GetForm().Xfa` (`None`, `Static`, `Dynamic`), `IsXfaPlaceholder` |
 | `Form.Type = FormType.Standard` (XFA to AcroForm) | `PdfEditor.RemoveXfa()`: keeps the AcroForm saved with the file, without laying the XFA out again |
@@ -155,13 +156,16 @@ XlsxToPdf.Convert("figures.xlsx").Save("figures.pdf");
 | Aspose.Cells | RaiCore.Pdf |
 |---|---|
 | `Workbook.Save(pdf)` for `.xlsx`, `.xls`, `.csv` | `XlsxToPdf`, `XlsToPdf`, `CsvToPdf` |
-| The worksheets' `PageSetup` | used by default (`UsePageSetup`): print area, print titles, orientation, scale, fit to width |
+| The worksheets' `PageSetup` | used by default (`UsePageSetup`): print area, print titles, orientation, scale, fit to width, headers and footers (`&P`, `&N`, `&D`, `&A`, fonts; first and even pages), page breaks set by hand |
+| `PageSetup.PrintComments` (`PrintCommentsType.PrintSheetEnd`, ...) | `XlsxConverterOptions.Comments` (`SheetComments.AsPageSetup`, `AtEnd`, `Annotations` as PDF notes, `None`) |
+| The date and time in headers (`&D`, `&T`) | `XlsxConverterOptions.PrintDate` |
 | `PdfSaveOptions.AllColumnsInOnePagePerSheet` | `SheetOptions.FitToWidth` |
 | `PdfSaveOptions.SheetSet` | `SheetNames`, `SheetIndexes` |
 | `TxtLoadOptions.Separator`, `Encoding` | `CsvConverterOptions.Delimiter`, `Encoding` |
 | `PdfSaveOptions.Compliance` | `PdfAConformance` on the returned `PdfDocument` |
 | `new Workbook(path)`, `Cells["A1"].PutValue`, `Cells.Find`, `InsertRows`, `DeleteRows`, `Row.IsHidden`, `Save(SaveFormat.Csv)` | `Workbook.Open(path)`, `worksheet["A1"].SetValue`, `Workbook.Find`, `InsertRows`, `DeleteRows`, `Row(n).IsHidden`, `SaveAsCsv` ([workbooks](../guides/workbooks.md)) |
-| Charts, pictures, conditional formatting, comments, headers and footers in the PDF | planned ([#258](https://github.com/raicevic/raicore-pdf/issues/258), [#257](https://github.com/raicevic/raicore-pdf/issues/257), [#259](https://github.com/raicevic/raicore-pdf/issues/259)) |
+| Charts, pictures, shapes, conditional formatting (colour scales, data bars, icon sets, formula rules), rich and rotated text, pivot table styles in the PDF | drawn by default; what can't be drawn is reported to `SheetOptions.Diagnostics` ([format support](../guides/format-support.md)) |
+| `IWarningCallback` | `SheetOptions.Diagnostics` |
 
 ## Presentations (Aspose.Slides)
 
