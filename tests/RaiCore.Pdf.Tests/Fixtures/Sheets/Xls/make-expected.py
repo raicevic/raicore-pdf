@@ -7,6 +7,10 @@ Under "content", for each sheet (worksheets and chart sheets, hidden ones too) w
 support, how many of each kind it has, by the names of SheetDiagnosticKind: found by walking the sheet's BIFF8 records
 here (independently of the converter's reader) for drawing objects, embedded charts, comments, conditional formatting,
 headers and footers, page breaks and pivot tables, and with xlrd for the cells with rich, rotated or shrunk text.
+Drawing objects the converter draws are not counted: each OBJ record is matched to the OfficeArt shape whose client
+data comes before it in the sheet's MSODRAWING data, and pictures whose BLIP (in the drawing group's BLIP store) is
+PNG, JPEG, DIB, TIFF, WMF or EMF, and lines, rectangles, ovals and text boxes of the common shape types without
+vertices of their own, are drawn.
 
 Run with a venv that has xlrd 2.0.1 or later and olefile; from this folder: python make-expected.py"""
 import glob
@@ -43,12 +47,73 @@ def has_subrecord(obj, wanted):
     return False
 
 
+# The OBJ types of shapes that are drawn (line, rectangle, oval, text box, Office drawing), the OfficeArt shape types
+# (MSOSPT) they are drawn for, and the BLIP record types of the pictures that are drawn.
+DRAWN_OBJECTS = {0x01, 0x02, 0x03, 0x06, 0x1E}
+DRAWN_SHAPES = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 20, 32, 55, 56, 66, 67, 68, 69, 70, 109, 110, 116, 120, 202}
+DRAWN_BLIPS = {0xF01A, 0xF01B, 0xF01D, 0xF01E, 0xF01F, 0xF029, 0xF02A}
+
+
+def officeart(data, start, end):
+    """The OfficeArt records in [start, end): (type, instance, version, body start, body end)."""
+    position = start
+    while position + 8 <= end:
+        vi, kind, length = struct.unpack_from('<HHI', data, position)
+        body_end = min(position + 8 + length, end)
+        yield kind, vi >> 4, vi & 0xF, position + 8, body_end
+        position = body_end
+
+
+def blip_types(group):
+    """The BLIP record type of each entry of the drawing group's BLIP store (the BLIP in each FBSE record), in order."""
+    result = []
+    for kind, _, _, start, end in officeart(group, 0, len(group)):
+        if kind == 0xF000:
+            for inner, _, _, s, e in officeart(group, start, end):
+                if inner == 0xF001:
+                    for _, _, _, fs, fe in officeart(group, s, e):
+                        name = group[fs + 33] if fs + 33 < fe else 0
+                        blip = fs + 36 + name
+                        result.append(struct.unpack_from('<H', group, blip + 2)[0] if blip + 8 <= fe else None)
+    return result
+
+
+def shapes(data, start, end, found):
+    """The shapes (SpContainer records, not the patriarch) in [start, end), in order: (client data end, FSP type,
+    properties by id), groups' children included."""
+    for kind, _, version, s, e in officeart(data, start, end):
+        if kind == 0xF004:
+            shape = {'end': None, 'type': None, 'props': {}, 'patriarch': False}
+            for inner, instance, _, bs, be in officeart(data, s, e):
+                if inner == 0xF00A and be - bs >= 8:
+                    shape['type'] = instance
+                    shape['patriarch'] = bool(struct.unpack_from('<I', data, bs + 4)[0] & 0x4)
+                elif inner == 0xF00B:
+                    for i in range(min(instance, (be - bs) // 6)):
+                        pid, value = struct.unpack_from('<Hi', data, bs + 6 * i)
+                        shape['props'].setdefault(pid & 0x3FFF, value)
+                elif inner == 0xF011:
+                    shape['end'] = be
+            if not shape['patriarch']:
+                found.append(shape)
+        elif version == 0xF:
+            shapes(data, s, e, found)
+    return found
+
+
 def biff_content(path):
     """For each BIFF8 sheet: its name, whether it is a chart sheet, and the counts of the record kinds it has."""
     ole = olefile.OleFileIO(path)
     data = ole.openstream('Workbook' if ole.exists('Workbook') else 'Book').read()
     sheets = []
+    group = b''
+    last = None
     for kind, rec in records(data, 0):
+        if kind == 0x00EB or (kind == 0x003C and last == 0x00EB):  # MSODRAWINGGROUP and its CONTINUE records.
+            group += rec
+            last = 0x00EB
+            continue
+        last = kind
         if kind == 0x0085:  # BOUNDSHEET: offset, visibility, type, name.
             length, flags = rec[6], rec[7]
             name = rec[8:8 + 2 * length].decode('utf-16-le') if flags & 1 else rec[8:8 + length].decode('latin-1')
@@ -65,6 +130,9 @@ def biff_content(path):
         if sheet_type == 2:
             add('ChartSheet')
         depth = 0
+        drawing = b''
+        objects = []
+        previous = None
         for kind, rec in records(data, offset):
             if kind == 0x0809:  # BOF: the sheet's, or an embedded chart's substream.
                 depth += 1
@@ -78,10 +146,14 @@ def biff_content(path):
                 continue
             if depth != 1 or sheet_type == 2:
                 continue
+            if kind == 0x00EC or (kind == 0x003C and previous == 0x00EC):  # MSODRAWING and its CONTINUE records.
+                drawing += rec
+                previous = 0x00EC
+                continue
+            previous = kind
             if kind == 0x005D and len(rec) >= 10 and struct.unpack_from('<H', rec, 0)[0] == 0x15:
                 obj_type, obj_flags = struct.unpack_from('<H', rec, 4)[0], struct.unpack_from('<H', rec, 8)[0]
-                if obj_flags & 0x10 and obj_type not in (GROUP, CHART, NOTE):
-                    add('OleObject' if obj_type == PICTURE and has_subrecord(rec, 0x0009) else 'Picture' if obj_type == PICTURE else 'Shape')
+                objects.append((len(drawing), obj_type, bool(obj_flags & 0x10), obj_type == PICTURE and has_subrecord(rec, 0x0009)))
             elif kind == 0x001C:
                 add('Comment')
             elif kind in (0x01B1, 0x087A):  # CF, CF12
@@ -94,6 +166,30 @@ def biff_content(path):
                 add('PageBreak', struct.unpack_from('<H', rec, 0)[0])
             elif kind == 0x00B0:
                 add('PivotTable')
+        # Each shape's OBJ is the first after its client data; the objects not drawn are counted by their kind.
+        blips = blip_types(group)
+        claimed = {}
+        next_object = 0
+        for shape in shapes(drawing, 0, len(drawing), []):
+            if shape['end'] is None:
+                continue
+            while next_object < len(objects) and objects[next_object][0] < shape['end']:
+                next_object += 1
+            if next_object < len(objects):
+                claimed[next_object] = shape
+                next_object += 1
+        for index, (_, obj_type, prints, embedded) in enumerate(objects):
+            if not prints or obj_type in (GROUP, CHART, NOTE):
+                continue
+            shape = claimed.get(index)
+            if shape is not None and obj_type == PICTURE and not embedded:
+                pib = shape['props'].get(0x0104, 0)
+                if 1 <= pib <= len(blips) and blips[pib - 1] in DRAWN_BLIPS:
+                    continue
+            if (shape is not None and obj_type in DRAWN_OBJECTS and shape['type'] in DRAWN_SHAPES
+                    and 0x0145 not in shape['props']):
+                continue
+            add('OleObject' if obj_type == PICTURE and embedded else 'Picture' if obj_type == PICTURE else 'Shape')
         if counts:
             result[name] = counts
     return result

@@ -26,6 +26,7 @@ internal sealed class XlsWorkbook
     private const ushort Sst = 0x00FC;
     private const ushort Name = 0x0018;
     private const ushort ExternSheet = 0x0017;
+    private const ushort MsoDrawingGroup = 0x00EB;
 
     /// <summary>The BOF type of the workbook globals.</summary>
     private const int GlobalsType = 0x0005;
@@ -47,6 +48,12 @@ internal sealed class XlsWorkbook
     public Encoding? CodePage { get; private set; }
 
     public List<XlsxSheetEntry> Sheets { get; } = [];
+
+    /// <summary>The OfficeArt data of the drawing group (MSODRAWINGGROUP records): the BLIP store of the sheets' pictures.</summary>
+    public byte[] DrawingGroup { get; private set; } = [];
+
+    /// <summary>The pictures of the BLIP store loaded so far, by their index (from 1); <c>null</c> for one that cannot be drawn.</summary>
+    public Dictionary<int, PdfImage?> Pictures { get; } = [];
 
     /// <summary>The offset of each sheet's substream (its BOF record) in <see cref="Stream"/>, or -1.</summary>
     public List<int> SheetOffsets { get; } = [];
@@ -98,6 +105,7 @@ internal sealed class XlsWorkbook
 
         var date1904 = false;
         var count = 0;
+        using var drawingGroup = new MemoryStream();
         while (reader.Next() && reader.Id != Eof)
         {
             if (++count % 4096 == 0)
@@ -141,6 +149,9 @@ internal sealed class XlsWorkbook
                 case BoundSheet:
                     workbook.ReadBoundSheet(data, reader.Breaks);
                     break;
+                case MsoDrawingGroup when workbook.Biff == 8:
+                    drawingGroup.Write(data);
+                    break;
                 case Sst when workbook.Biff == 8:
                     workbook.ReadSharedStrings(data, reader.Breaks, checkpoint);
                     break;
@@ -159,6 +170,7 @@ internal sealed class XlsWorkbook
 
         workbook.Styles.Settings = new FormatSettings(culture, date1904);
         workbook.Styles.Complete();
+        workbook.DrawingGroup = drawingGroup.ToArray();
         workbook.FindSubstreams(reader.NextPosition, checkpoint);
         workbook.ResolveNames();
         return workbook;

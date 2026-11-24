@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Slides.Model;
+namespace RaiCore.Pdf.DrawingML;
 
 /// <summary>The kinds of path segment.</summary>
 internal enum SegmentKind

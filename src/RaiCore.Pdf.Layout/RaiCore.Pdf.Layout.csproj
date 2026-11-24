@@ -30,6 +30,7 @@
     <InternalsVisibleTo Include="RaiCore.Pdf.Tests" />
     <!-- The HTML converter reads paragraph content (spans, anchors); see the #62 note in docs/api-review.md. -->
     <InternalsVisibleTo Include="RaiCore.Pdf.Html" />
+    <InternalsVisibleTo Include="RaiCore.Pdf.Sheets" />
   </ItemGroup>
 
 </Project>

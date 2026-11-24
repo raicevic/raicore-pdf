@@ -1,5 +1,6 @@
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Layout;
+using RaiCore.Pdf.Sheets.Drawings;
 
 namespace RaiCore.Pdf.Sheets;
 
@@ -127,6 +128,8 @@ internal static partial class SheetRenderer
         }
 
         var bands = ColumnFitter.Fit(needs, available);
+        context.ColumnSizes = [.. bands.SelectMany(b => b.Widths)];
+        context.NaturalWidths = natural;
         foreach (var band in bands)
         {
             var breakBefore = band.Start > 0;
@@ -217,6 +220,7 @@ internal static partial class SheetRenderer
             ColumnWidths = [.. band.Widths.Select(w => (Length?)w)],
             Direction = context.Format.RightToLeft ? TextDirection.RightToLeft : TextDirection.LeftToRight,
             Bookmark = bookmark,
+            Overlay = DrawingOverlay(context, band, start, end),
         };
 
         headerRows = Math.Min(headerRows, end - start);
@@ -419,6 +423,7 @@ internal static partial class SheetRenderer
         private readonly Dictionary<int, SheetCell> _moved = [];
         private readonly Dictionary<(string, TextStyle), (double Min, double Max)> _widths = [];
         private double _digitWidth;
+        private DrawingPainter? _painter;
 
         public FormattedContext(Sheet sheet, SheetFormatting format, SheetOptions options, double grid)
         {
@@ -445,6 +450,23 @@ internal static partial class SheetRenderer
 
         /// <summary>The scale the table is laid out at (1 while it is measured).</summary>
         public double Scale { get; set; } = 1;
+
+        /// <summary>The width of every column as laid out (in its band), in points.</summary>
+        public double[] ColumnSizes { get; set; } = [];
+
+        /// <summary>The width of every column the sheet asks for (or its content needs) at 100%, in points.</summary>
+        public double[] NaturalWidths { get; set; } = [];
+
+        /// <summary>Draws the items of the sheet's drawings with the sheet's fonts.</summary>
+        public DrawingPainter Painter => _painter ??= new DrawingPainter((name, bold, italic) => Fonts(name, bold, italic), ChartFont);
+
+        /// <summary>The family of chart text: the typeface, with the theme's fonts (<c>+mn-lt</c>, <c>+mj-lt</c>) resolved.</summary>
+        private string? ChartFont(string? typeface) => typeface switch
+        {
+            null or "" or "+mn-lt" or "+mn-ea" or "+mn-cs" => Format.MinorFont ?? Format.DefaultFontName,
+            "+mj-lt" or "+mj-ea" or "+mj-cs" => Format.MajorFont ?? Format.DefaultFontName,
+            _ => typeface,
+        };
 
         private static long Key(int row, int column) => ((long)row << 32) | (uint)column;
 

@@ -155,6 +155,33 @@ and day names, short date and currency symbol instead.
   fitted to their content; `AutoFit` does that for every sheet, and ignores row heights too.
 - **Hidden** rows, columns and sheets are left out; a sheet set to read from right to left is laid out that way.
 
+### Pictures, shapes and charts
+
+A sheet's drawings are drawn over its cells where Excel shows them:
+
+- **Pictures** in PNG, JPEG, GIF, BMP, TIFF, WMF and EMF, cropped, turned and mirrored, clipped to their shape, with
+  their border.
+- **Shapes and text boxes** with their geometry (the preset shapes, as in presentations, and free forms), fill (solid;
+  gradients and patterns as one color), outline (width, color, dashes) and text (fonts, sizes, bold, italic,
+  underline, colors, alignment, insets, vertical anchoring, wrapping), the theme's line and fill where a shape has
+  none of its own. Connectors are drawn as lines, without arrowheads.
+- **Charts** in a sheet, by the same chart engine that draws the charts of presentations and documents, from the data
+  cached in the workbook.
+- **Groups** of all of these.
+
+Anchors are resolved against the laid-out columns and rows, at the sheet's scale: a two-cell anchor moves and
+stretches with the cells between its corners (an offset is never more than its cell, which may be narrower than in
+Excel), a one-cell anchor keeps its size, an absolute anchor is placed at its distance from the top-left corner.
+Hidden rows and columns take no room, as in Excel. A drawing that crosses a page break or a band of columns is split
+there, each page showing the part over its own rows and columns, as Excel prints it; on the pages a table continues
+on, the repeated header rows show no drawings. Without a print area, the printed range grows to take in the drawings.
+Pictures with more pixels than `Limits.MaxImagePixels`, and those that cannot be read, are left out and reported.
+
+In `.xls` workbooks, the OfficeArt drawing is read the same way: pictures from the workbook's picture store (PNG,
+JPEG, DIB, TIFF, WMF, EMF), lines, rectangles, ovals and the other common shape types with their fill and line, text
+boxes with their text, and groups, anchored in fractions of their cells. Charts (BIFF charts), free forms, form
+controls and embedded objects are not drawn, and reported.
+
 ### Page setup
 
 With `UsePageSetup` (the default), each sheet's page setup is used:
@@ -191,11 +218,10 @@ workbooks throw `NotSupportedException`. Excel 97-2003 `.xls` files are converte
 External workbook links, data connections, query tables, web queries and DDE or OLE links are never followed or
 refreshed: formulas show the values stored with them (see [Untrusted input](untrusted-input.md)).
 
-Not supported in workbooks, and reported through `Diagnostics` ([below](#diagnostics)): charts and chart sheets (the
-chart engine that draws the charts of presentations and documents is ready for them; they come with support for a
-sheet's drawings), pictures, shapes and other drawings, embedded objects, comments, conditional formatting (also data
-bars, color scales and icon sets), sparklines, pivot tables (their cells are shown), headers and footers, page breaks
-set by hand, rich text formatting within a cell, rotated text, and shrink to fit.
+Not supported in workbooks, and reported through `Diagnostics` ([below](#diagnostics)): chart sheets, the newer chart
+types (waterfall, treemap, sunburst...), SmartArt, ink, form controls, embedded objects, comments, conditional
+formatting (also data bars, color scales and icon sets), sparklines, pivot tables (their cells are shown), headers and
+footers, page breaks set by hand, rich text formatting within a cell, rotated text, and shrink to fit.
 
 ### Excel 97-2003 workbooks
 
@@ -232,10 +258,10 @@ the sheets are converted, while the conversion runs, so a caller can flag the do
 
 | `SheetDiagnosticKind` | What is reported | In `.xlsx` | In `.xls` |
 |---|---|---|---|
-| `Chart` | Charts in a sheet: left out. | Chart frames in the drawing | Embedded chart objects |
+| `Chart` | Charts the chart engine cannot draw: left out. | Newer chart types (`chartex`), chart frames without a chart | Embedded chart objects |
 | `ChartSheet` | A chart sheet that would be converted (visible, or named in the options): left out. | Chart sheets | Chart sheets |
-| `Picture` | Pictures: left out. | Pictures in the drawing | Picture objects |
-| `Shape` | Shapes, text boxes, WordArt, SmartArt, ink and form controls: left out. | Shapes, connectors, other frames; form controls | Shape, text box and control objects |
+| `Picture` | Pictures that cannot be drawn (unreadable format such as PICT, damaged, linked, over `MaxImagePixels`): left out. | Pictures in the drawing | Picture objects |
+| `Shape` | SmartArt, ink and form controls: left out. | Other graphic frames, ink; form controls | Free forms, less common shape types, control objects |
 | `OleObject` | Embedded and linked objects, ActiveX controls: left out. | `oleObjects`; ActiveX controls | Picture objects of embedded objects |
 | `Comment` | Comments (notes and threaded comments): left out. | Comments part, threaded comments | `NOTE` records |
 | `ConditionalFormatting` | Conditional formatting rules: not applied. | `cfRule`s, also of the extension list | `CF`, `CF12` records |
@@ -253,6 +279,6 @@ to print with the sheet, such as the drop-down arrows of filters) and the cells 
 has no sheets: only `Layout` applies, with no sheet name. Layout problems are rare, since columns are printed in bands
 and text wraps; text too big for the page, such as a very large font on a small page, is one.
 
-With a callback, the parts a workbook keeps this content in (drawings, comments and their relationships) are read
-too, within `MaxDecompressedBytes`; a part that cannot be read counts nothing and does not fail the conversion.
-Without one (the default), nothing more is read.
+Drawing parts are always read, to draw them. With a callback, the parts a workbook keeps the other content in
+(comments, pivot tables, controls and their relationships) are read too, within `MaxDecompressedBytes`; a part that
+cannot be read counts nothing and does not fail the conversion. Without one (the default), nothing more is read.

@@ -140,7 +140,7 @@ internal static class XlsConverter
                 continue;
             }
 
-            var worksheet = XlsWorksheet.Read(workbook, workbook.SheetOffsets[entry.Index], limits.MaxTableCells, checkpoint);
+            var worksheet = XlsWorksheet.Read(workbook, workbook.SheetOffsets[entry.Index], limits.MaxTableCells, checkpoint, limits);
             worksheet.Unsupported.Report(entry.Name, diagnostics);
             yield return XlsxConverter.Build(worksheet, entry, workbook.PrintArea(entry.Index), workbook.PrintTitleRows(entry.Index),
                 workbook.Styles.DefaultFontSize, workbook.Styles.DefaultFontName, options, limits.MaxTableCells, bookmarks);

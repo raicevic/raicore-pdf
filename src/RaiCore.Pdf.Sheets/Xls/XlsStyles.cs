@@ -87,6 +87,9 @@ internal sealed class XlsStyles
     /// <summary>The family of the workbook's default font, or <c>null</c>.</summary>
     public string? DefaultFontName => Fonts.Count > 0 ? Fonts[0].Name : null;
 
+    /// <summary>A color of the workbook's palette by index, or <c>null</c>.</summary>
+    public PdfColor? PaletteColor(int index) => _colors.PaletteColor(index);
+
     /// <summary>Prepares the palette once every record is read.</summary>
     public void Complete()
     {

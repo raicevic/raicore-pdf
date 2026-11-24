@@ -1,3 +1,4 @@
+using RaiCore.Pdf.DrawingML;
 using System.Xml.Linq;
 using RaiCore.Pdf.Slides.Model;
 
@@ -372,7 +373,7 @@ internal sealed partial class PptxReader
         }
 
         var style = element.El("style");
-        var geometry = Geometry(spPr) ?? Geometry(layoutPh.El("spPr")) ?? Geometry(masterPh.El("spPr")) ?? Model.Geometry.Rectangle;
+        var geometry = Geometry(spPr) ?? Geometry(layoutPh.El("spPr")) ?? Geometry(masterPh.El("spPr")) ?? DrawingML.Geometry.Rectangle;
         var fill = FillOf(spPr, sheet, null, groupFill);
         if (!fill.Specified && ph is not null)
         {
@@ -497,7 +498,7 @@ internal sealed partial class PptxReader
             Data = data,
             Source = source,
             Crop = crop,
-            Geometry = Geometry(spPr) ?? Model.Geometry.Rectangle,
+            Geometry = Geometry(spPr) ?? DrawingML.Geometry.Rectangle,
             Fill = FillOf(spPr, sheet, null, null).Fill,
             Line = Line([StyleLine(style.El("lnRef"), sheet), spPr.El("ln")], sheet, DrawingColors.Child(style.El("lnRef"), sheet.Colors, null)),
             Opacity = blip.El("alphaModFix")?.Number("amt") is { } amount ? Math.Clamp(amount / 100000, 0, 1) : 1,

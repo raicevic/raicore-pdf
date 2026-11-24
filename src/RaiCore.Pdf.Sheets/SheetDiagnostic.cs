@@ -15,16 +15,26 @@ public sealed record SheetDiagnostic(string? SheetName, SheetDiagnosticKind Kind
 /// </summary>
 public enum SheetDiagnosticKind
 {
-    /// <summary>Charts in a worksheet (each in its drawing); they are left out.</summary>
+    /// <summary>
+    /// Charts in a worksheet that the chart engine cannot draw (newer chart types such as treemaps and waterfalls, the
+    /// charts of Excel 97-2003 workbooks, charts whose part is missing); they are left out.
+    /// </summary>
     Chart,
 
     /// <summary>A chart sheet that would be converted (visible, or named by the options); it is left out.</summary>
     ChartSheet,
 
-    /// <summary>Pictures; they are left out.</summary>
+    /// <summary>
+    /// Pictures that cannot be drawn: in a format that cannot be read (such as PICT) or damaged, linked rather than
+    /// embedded, or with more pixels than <see cref="ResourceLimits.MaxImagePixels"/> allows; they are left out.
+    /// </summary>
     Picture,
 
-    /// <summary>Shapes, text boxes, WordArt, SmartArt, ink and form controls (buttons, check boxes); they are left out.</summary>
+    /// <summary>
+    /// Shapes the converter cannot draw: SmartArt, ink, form controls (buttons, check boxes) and, in Excel 97-2003
+    /// workbooks, free forms and the less common shape types; they are left out. (Shapes and text boxes with preset or
+    /// free-form geometry are drawn.)
+    /// </summary>
     Shape,
 
     /// <summary>Embedded and linked objects (OLE), such as a document shown as its icon, and ActiveX controls; they are left out.</summary>

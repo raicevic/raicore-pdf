@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace RaiCore.Pdf.Slides.Model;
+namespace RaiCore.Pdf.DrawingML;
 
 /// <summary>The kinds of command of a free-form path.</summary>
 internal enum CustomCommandKind
