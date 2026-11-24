@@ -22,9 +22,10 @@ supply a loader that reads it**, and only the HTML-based converters take a loade
 | XLSX, XLS | `XlsxToPdf`, `XlsToPdf` | external workbook links, data connections, query tables, web queries, DDE and OLE links | Never followed and never refreshed; formulas show the values stored with them. |
 | CSV | `CsvToPdf` | none | - |
 | PPTX, PPT | `PptxToPdf`, `PptToPdf` | linked pictures, media and OLE objects | Never followed; linked pictures are left out and reported. |
+| XFA (PDF, XDP) | `XfaToPdf` | linked images (`href`), prototypes in other files (`usehref`), data connections, scripts | Never followed and never run; linked images and prototypes are reported (`ImageNotLoaded`, `UnsupportedContent`), scripts too (`ScriptNotRun`). |
 | PDF | `PdfReader`, `PdfEditor`, `TextExtractor`, `ImageExtractor` | external streams (`/F`), remote go-to actions, URI links | Never followed; links are kept as links. |
 
-The Office and email packages contain no code that opens files, sockets or processes other than reading the input
+The Office, email and XFA packages contain no code that opens files, sockets or processes other than reading the input
 path and writing the output path you name; a test checks their compiled code for it.
 
 ### HTML from strangers

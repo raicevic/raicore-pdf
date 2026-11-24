@@ -18,6 +18,7 @@ machine.
 | `RaiCore.Pdf.Sheets` | CSV and Excel (`.xlsx`, `.xls`) to PDF: see [Spreadsheets](sheets.md) |
 | `RaiCore.Pdf.Slides` | PowerPoint (`.pptx`, `.ppt`) to PDF: see [Presentations](slides.md) |
 | `RaiCore.Pdf.Email` | Email (`.eml`, `.msg`) and web archives (`.mht`) to PDF: see [Email](email.md) |
+| `RaiCore.Pdf.Xfa` | Dynamic XFA forms to flattened PDF pages: see [XFA forms](xfa.md) |
 | `RaiCore.Pdf.Extraction` | Text, search and images of existing PDFs: see [Text extraction](text-extraction.md) |
 | `RaiCore.Pdf.Editing` | Editing existing PDFs: see [Editing](editing.md) |
 

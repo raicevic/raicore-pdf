@@ -2,7 +2,7 @@
 
 What each converter turns into PDF, side by side, for planning which files can go through RaiCore.Pdf. The guides of
 the formats have the details: [Word, ODT and RTF](documents.md), [CSV, XLSX and XLS](sheets.md),
-[PowerPoint](slides.md), [email and web archives](email.md).
+[PowerPoint](slides.md), [email and web archives](email.md), [XFA forms](xfa.md).
 
 | Mark | Meaning |
 |---|---|
@@ -137,6 +137,27 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Calendar items, contacts | ◐ invitations as attachments | ◐ their message properties | - |
 | OLE objects attached to messages | - | ✗ | - |
 | Tagged PDF, PDF/A (`Html` options) | ✓ | ✓ | ✓ |
+
+## XFA forms
+
+`XfaToPdf` renders the XFA form of a PDF file (dynamic or static, its packets as one stream or an array) or an XDP
+file to flattened PDF pages.
+
+| Feature | Dynamic XFA (PDF, XDP) |
+|---|---|
+| Data merge: normal, global, data reference and no bindings; repeated subforms; exclusion groups | ✓ |
+| Positioned and flowed layout (`tb`, `lr-tb`, `rl-tb`), tables, growable objects, rotation | ✓ |
+| Page areas and content areas, breaks, overflow leaders and trailers, keep rules | ✓ |
+| Text, rich text, floating fields, images, lines, rectangles, arcs | ✓ |
+| Check boxes, radio buttons, choice lists, comb and password fields | ✓ |
+| Picture clauses (numbers, dates, times, text) and locales | ✓ |
+| Captions, margins, borders, fills | ◐ 3D borders flat, gradients as one color |
+| Fonts embedded in the PDF for the form | ✓ TrueType and OpenType |
+| Scripts (FormCalc, JavaScript): calculations, events, page numbers | R not run |
+| Barcodes | ◐ as their text, R |
+| Signature fields | ◐ their box |
+| Linked images and prototypes in other files | R |
+| Form fields in the output | ✗ flattened |
 
 Planned work on these gaps is tracked in the
 [issues](https://github.com/raicevic/raicore-pdf/issues?q=is%3Aopen+label%3A%22area%3A+formats%22).

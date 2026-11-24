@@ -10,6 +10,7 @@ job, all built on one layout engine (no browser, no Office):
 | Aspose.PDF: creating documents | `RaiCore.Pdf`, `RaiCore.Pdf.Layout` | `PdfDocument`, `PdfCanvas`, the layout API |
 | Aspose.PDF: text and images out of PDFs | `RaiCore.Pdf.Extraction` | `TextExtractor`, `ImageExtractor` |
 | Aspose.PDF: changing existing PDFs | `RaiCore.Pdf.Editing` | `PdfEditor` |
+| Aspose.PDF: XFA forms to PDF pages | `RaiCore.Pdf.Xfa` | `XfaToPdf` |
 | Aspose.Words: to PDF | `RaiCore.Pdf.Documents` | `DocxToPdf`, `DocToPdf`, `RtfToPdf`, `OdtToPdf` |
 | Aspose.Cells: to PDF | `RaiCore.Pdf.Sheets` | `XlsxToPdf`, `XlsToPdf`, `CsvToPdf` |
 | Aspose.Slides: to PDF | `RaiCore.Pdf.Slides` | `PptxToPdf`, `PptToPdf` |
@@ -107,6 +108,7 @@ Aspose.PDF numbers pages from 1; RaiCore.Pdf from 0.
 | `Document.Form.Fields` | `PdfEditor.GetForm().Fields` |
 | `Form.HasXfa`, `Form.Type` | `PdfEditor.GetForm().Xfa` (`None`, `Static`, `Dynamic`), `IsXfaPlaceholder` |
 | `Form.Type = FormType.Standard` (XFA to AcroForm) | `PdfEditor.RemoveXfa()`: keeps the AcroForm saved with the file, without laying the XFA out again |
+| Rendering a dynamic XFA form (`Form.Type = FormType.Standard`, then flattening) | `XfaToPdf.Convert(path)` (`RaiCore.Pdf.Xfa`): the form laid out as flattened pages |
 | `OptimizeResources()`, `Optimize()` | `PdfEditor.Optimize(options)` |
 | `Pages.Delete(n)` | `PdfEditor.Pages.Delete(n - 1)` |
 | `Pages.Insert(n, page)`, `Pages.Add(other.Pages)` | `PdfEditor.Pages.Insert(index, reader, pageIndexes)`, `Pages.Add(reader)` |

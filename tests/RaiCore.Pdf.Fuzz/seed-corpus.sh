@@ -32,6 +32,7 @@ case "$target" in
   doc) while IFS= read -r file; do files+=("$file"); done < <(find "$fixtures"/Documents/Doc -name '*.doc' -size -40k | sort) ;;
   doctext) files=("$fixtures"/Fuzz/Seeds/docx/* "$fixtures"/Fuzz/Seeds/odt/* "$fixtures"/Fuzz/Seeds/rtf/*)
     while IFS= read -r file; do files+=("$file"); done < <(find "$fixtures"/Documents/Doc -name '*.doc' -size -40k | sort) ;;
+  xfa) files=("$fixtures"/Xfa/*.pdf) ;;
   *) files=() ;;
 esac
 files+=("$fixtures"/Fuzz/Seeds/"$target"/* "$fixtures"/Fuzz/Crashes/"$target"/*)

@@ -23,6 +23,7 @@
     <Project Path="src/RaiCore.Pdf.Razor/RaiCore.Pdf.Razor.csproj" />
     <Project Path="src/RaiCore.Pdf.Sheets/RaiCore.Pdf.Sheets.csproj" />
     <Project Path="src/RaiCore.Pdf.Slides/RaiCore.Pdf.Slides.csproj" />
+    <Project Path="src/RaiCore.Pdf.Xfa/RaiCore.Pdf.Xfa.csproj" />
     <Project Path="src/RaiCore.Pdf/RaiCore.Pdf.csproj" />
   </Folder>
   <Folder Name="/tests/">

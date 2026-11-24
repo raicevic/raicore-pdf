@@ -26,6 +26,7 @@ var samples = new (string Name, Func<Task> Run)[]
     ("workbooks", Workbooks.RunAsync),
     ("PPTX", Slides.RunAsync),
     ("Word documents", WordDocuments.RunAsync),
+    ("XFA forms", Xfa.RunAsync),
 };
 
 foreach (var (name, run) in samples)

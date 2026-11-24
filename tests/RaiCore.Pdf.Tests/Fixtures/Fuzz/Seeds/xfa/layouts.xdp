@@ -1,0 +1,46 @@
+<xdp:xdp xmlns:xdp="http://ns.adobe.com/xdp/"><template xmlns="http://www.xfa.org/schema/xfa-template/3.3/">
+<subform name="form1" layout="tb" locale="en_US">
+  <pageSet>
+    <pageArea name="Columns" id="Columns">
+      <contentArea name="Left" x="0.5in" y="1in" w="3.6in" h="9in"/>
+      <contentArea name="Right" x="4.4in" y="1in" w="3.6in" h="9in"/>
+      <medium stock="letter" short="8.5in" long="11in"/>
+    </pageArea>
+    <pageArea name="Wide" id="Wide">
+      <contentArea x="0.5in" y="0.5in" w="7.5in" h="10in"/>
+      <medium stock="letter" short="8.5in" long="11in"/>
+      <draw name="WideHeader" w="3in" h="0.3in" x="0.5in" y="0.1in"><value><text>Wide Page</text></value><font typeface="Arial" size="9pt"/></draw>
+    </pageArea>
+  </pageSet>
+  <subform name="Grid" layout="lr-tb" w="7.5in">
+    <break before="pageArea" beforeTarget="#Wide"/>
+    <field name="Cell00" w="2.4in" h="0.4in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field><field name="Cell01" w="2.4in" h="0.4in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field><field name="Cell02" w="2.4in" h="0.4in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field><field name="Cell03" w="2.4in" h="0.4in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field><field name="Cell04" w="2.4in" h="0.4in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field><field name="Cell05" w="2.4in" h="0.4in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field><field name="Cell06" w="2.4in" h="0.4in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field><field name="Cell07" w="2.4in" h="0.4in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field><field name="Cell08" w="2.4in" h="0.4in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field><field name="Cell09" w="2.4in" h="0.4in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field><field name="Cell10" w="2.4in" h="0.4in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field><field name="Cell11" w="2.4in" h="0.4in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field>
+  </subform>
+  <subform name="Widgets" w="7.5in" h="3in">
+    <field name="Agree" x="0in" y="0in" w="2in" h="0.3in"><ui><checkButton size="10pt"><border><edge/></border></checkButton></ui>
+      <items><integer>1</integer><integer>0</integer></items><caption placement="right" reserve="1.5in"><value><text>I agree</text></value></caption><font typeface="Arial" size="9pt"/></field>
+    <exclGroup name="Choice" x="2.5in" y="0in" w="3in" h="0.3in" layout="lr-tb">
+      <field name="A" w="1in" h="0.3in"><ui><checkButton shape="round" size="10pt"/></ui><items><text>A</text></items><caption placement="right" reserve="0.6in"><value><text>Alpha</text></value></caption></field>
+      <field name="B" w="1in" h="0.3in"><ui><checkButton shape="round" size="10pt"/></ui><items><text>B</text></items><caption placement="right" reserve="0.6in"><value><text>Beta</text></value></caption></field>
+    </exclGroup>
+    <field name="Color" x="0in" y="0.5in" w="2in" h="0.3in"><ui><choiceList/></ui><font typeface="Arial" size="9pt"/>
+      <items><text>Red</text><text>Green</text></items><items save="1" presence="hidden"><text>r</text><text>g</text></items></field>
+    <field name="Zip" x="2.5in" y="0.5in" w="1.5in" h="0.3in"><ui><textEdit><comb numberOfCells="5"/></textEdit></ui><font typeface="Courier" size="10pt"/></field>
+    <field name="Amount" w="2in" h="0.3in" x="4.5in" y="0.5in"><ui><numericEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/><format><picture>num{z,zz9.99s}|num{z,zz9.99}</picture></format></field>
+    <field name="Unbound" w="2in" h="0.3in" x="0in" y="1in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/><bind match="none"/><value><text>Default value</text></value></field>
+    <draw name="Rotated" x="3in" y="2.9in" w="1in" h="0.3in" rotate="90"><value><text>Up</text></value><font typeface="Arial" size="9pt"/></draw>
+    <draw name="Logo" x="5in" y="1in" w="1in" h="0.5in"><value><image contentType="image/png">iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAIAAABwJOjsAAAAJ0lEQVR4nGM4ISdHNqJA6wmGUYtHLR61eNTiUYtHLR61eNTikWMxAD+DLK4eYdZcAAAAAElFTkSuQmCC</image></value></draw>
+    <draw name="Rule" x="0in" y="1.6in" w="7.5in" h="0in"><value><line><edge thickness="1pt"/></line></value></draw>
+    <draw name="Box" x="0in" y="1.8in" w="1in" h="0.5in"><value><rectangle><edge thickness="1pt"/><fill><color value="200,200,255"/></fill></rectangle></value></draw>
+    <draw name="Circle" x="1.5in" y="1.8in" w="0.5in" h="0.5in"><value><arc circular="1"><edge/></arc></value></draw>
+    <draw name="Centered" x="5in" y="2.5in" w="2in" h="0.4in" anchorType="middleCenter"><value><text>Centered</text></value><para hAlign="center"/></draw>
+  </subform>
+  <subform name="List" layout="tb" w="3.6in">
+    <breakBefore targetType="pageArea" target="#Columns"/>
+    <subform name="Entry" w="3.6in" h="0.5in">
+      <occur min="0" max="-1"/>
+      <field name="Label" w="3.4in" h="0.4in" x="0in" y="0in"><ui><textEdit/></ui><font typeface="Arial" size="9pt"/><margin topInset="1pt" bottomInset="1pt" leftInset="2pt" rightInset="2pt"/></field>
+    </subform>
+  </subform>
+</subform>
+</template><xfa:datasets xmlns:xfa="http://www.xfa.org/schema/xfa-data/1.0/"><xfa:data><form1><Grid><Cell00>C00</Cell00><Cell01>C01</Cell01><Cell02>C02</Cell02><Cell03>C03</Cell03><Cell04>C04</Cell04><Cell05>C05</Cell05><Cell06>C06</Cell06><Cell07>C07</Cell07><Cell08>C08</Cell08><Cell09>C09</Cell09><Cell10>C10</Cell10><Cell11>C11</Cell11></Grid><Widgets><Agree>1</Agree><Choice>B</Choice><Color>g</Color><Zip>12345</Zip><Amount>-42.5</Amount></Widgets><List><Entry><Label>Entry 01</Label></Entry><Entry><Label>Entry 02</Label></Entry><Entry><Label>Entry 03</Label></Entry><Entry><Label>Entry 04</Label></Entry><Entry><Label>Entry 05</Label></Entry><Entry><Label>Entry 06</Label></Entry><Entry><Label>Entry 07</Label></Entry><Entry><Label>Entry 08</Label></Entry><Entry><Label>Entry 09</Label></Entry><Entry><Label>Entry 10</Label></Entry><Entry><Label>Entry 11</Label></Entry><Entry><Label>Entry 12</Label></Entry><Entry><Label>Entry 13</Label></Entry><Entry><Label>Entry 14</Label></Entry><Entry><Label>Entry 15</Label></Entry><Entry><Label>Entry 16</Label></Entry><Entry><Label>Entry 17</Label></Entry><Entry><Label>Entry 18</Label></Entry><Entry><Label>Entry 19</Label></Entry><Entry><Label>Entry 20</Label></Entry><Entry><Label>Entry 21</Label></Entry><Entry><Label>Entry 22</Label></Entry><Entry><Label>Entry 23</Label></Entry><Entry><Label>Entry 24</Label></Entry><Entry><Label>Entry 25</Label></Entry><Entry><Label>Entry 26</Label></Entry><Entry><Label>Entry 27</Label></Entry><Entry><Label>Entry 28</Label></Entry><Entry><Label>Entry 29</Label></Entry><Entry><Label>Entry 30</Label></Entry></List></form1></xfa:data></xfa:datasets></xdp:xdp>
