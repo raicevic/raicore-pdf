@@ -294,6 +294,30 @@ public class ChartExTests
     }
 
     [Fact]
+    public void Waterfall_bars_float_on_the_running_total_and_funnel_bars_are_centered()
+    {
+        // 10 up, 4 down, a total of 6: the decrease hangs from 10 down to 6, the total stands on the axis up to 6.
+        var drawing = ChartXml.Draw(Part($"<cx:data id=\"0\">{Numbers(10, -4, 6)}</cx:data>",
+            "<cx:series layoutId=\"waterfall\"><cx:dataId val=\"0\"/><cx:layoutPr><cx:subtotals><cx:idx val=\"2\"/></cx:subtotals></cx:layoutPr></cx:series>"));
+        var rects = drawing.Rects();
+        var up = rects.Single(r => r.Color == ChartXml.Rgb(0x44, 0x72, 0xC4));
+        var down = rects.Single(r => r.Color == ChartXml.Rgb(0xED, 0x7D, 0x31));
+        var total = rects.Single(r => r.Color == ChartXml.Rgb(0xA5, 0xA5, 0xA5));
+        Assert.Equal(up.Y, total.Y, 3); // Both stand on the axis.
+        Assert.Equal(0.4, down.Height / up.Height, 3);
+        Assert.Equal(0.6, total.Height / up.Height, 3);
+        Assert.Equal(total.Y + total.Height, down.Y, 3); // The decrease ends at the total.
+        Assert.Equal(up.Y + up.Height, down.Y + down.Height, 3); // It starts where the increase ends.
+
+        var funnel = ChartXml.Draw(Part($"<cx:data id=\"0\">{Numbers(8, 4, 2)}</cx:data>", "<cx:series layoutId=\"funnel\"><cx:dataId val=\"0\"/></cx:series>")).Rects()
+            .Where(r => r.Color == ChartXml.Rgb(0x44, 0x72, 0xC4)).OrderByDescending(r => r.Width).ToList();
+        Assert.Equal(3, funnel.Count);
+        Assert.All(funnel, r => Assert.Equal(funnel[0].X + (funnel[0].Width / 2), r.X + (r.Width / 2), 3));
+        Assert.Equal([1, 0.5, 0.25], funnel.Select(r => Math.Round(r.Width / funnel[0].Width, 3)));
+        Assert.True(funnel[0].Y > funnel[2].Y); // The widest at the top.
+    }
+
+    [Fact]
     public void Hierarchies_repeat_blank_outer_levels_and_end_at_blank_inner_ones()
     {
         // Levels in the file: the innermost first.
