@@ -1,2 +1,1 @@
 #nullable enable
-static RaiCore.Pdf.Html.ResourceLoaders.None(RaiCore.Pdf.Html.ResourceRequest! request) -> byte[]?
