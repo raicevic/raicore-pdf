@@ -18,10 +18,10 @@ internal sealed class WordDocument
     public Dictionary<string, List<WordBlock>> Endnotes { get; } = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// The comments by the id their references use (<see cref="CommentReference"/>); read only for text extraction
-    /// (<see cref="ReadExtras.Comments"/>).
+    /// The comments by the id their references use (<see cref="CommentReference"/>); read only when they are shown or
+    /// extracted (<see cref="ReadExtras.Comments"/>).
     /// </summary>
-    public Dictionary<string, List<WordBlock>> Comments { get; } = new(StringComparer.Ordinal);
+    public Dictionary<string, WordComment> Comments { get; } = new(StringComparer.Ordinal);
 
     /// <summary>How footnote numbers are written.</summary>
     public NumberFormat FootnoteFormat { get; set; } = NumberFormat.Decimal;
@@ -43,6 +43,25 @@ internal sealed class WordDocument
 
     /// <summary>The document's language (a BCP 47 tag such as <c>en-US</c>), or <c>null</c>.</summary>
     public string? Language { get; set; }
+}
+
+/// <summary>A comment: its text, who wrote it and when, and the comment it replies to.</summary>
+internal sealed class WordComment
+{
+    /// <summary>The comment's text.</summary>
+    public List<WordBlock> Blocks { get; } = [];
+
+    /// <summary>Who wrote it, or <c>null</c>.</summary>
+    public string? Author { get; set; }
+
+    /// <summary>The author's initials, or <c>null</c>.</summary>
+    public string? Initials { get; set; }
+
+    /// <summary>When it was written (as stored, in no particular time zone), or <c>null</c>.</summary>
+    public DateTime? Date { get; set; }
+
+    /// <summary>The id of the comment it replies to, or <c>null</c>.</summary>
+    public string? ParentId { get; set; }
 }
 
 /// <summary>How a section starts.</summary>

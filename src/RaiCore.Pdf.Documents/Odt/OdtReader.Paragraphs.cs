@@ -10,6 +10,15 @@ internal sealed partial class OdtReader
     private readonly ListCounter _outline = new();
     private int _notes;
     private int _comments;
+
+    /// <summary>The ids of the named comments (<c>office:name</c>), whose ranges end at their <c>office:annotation-end</c>.</summary>
+    private readonly Dictionary<string, string> _commentNames = new(StringComparer.Ordinal);
+
+    /// <summary>The ids of the comments by name, for replies (which name the comment they answer).</summary>
+    private readonly Dictionary<string, string> _commentIds = new(StringComparer.Ordinal);
+
+    private XElement? _commentEndsRoot;
+    private HashSet<string> _commentEnds = [];
     private Dictionary<string, XElement>? _deletions;
     private readonly HashSet<string> _readingDeletions = new(StringComparer.Ordinal);
     private int _noteDepth;
@@ -96,9 +105,29 @@ internal sealed partial class OdtReader
             return;
         }
 
-        if (ns == Odf.Office && name == "annotation" && _context.Has(ReadExtras.Comments))
+        if (ns == Odf.Office && name == "annotation")
         {
-            ReadComment(element, target);
+            if (_context.Has(ReadExtras.Comments))
+            {
+                ReadComment(element, target);
+            }
+            else
+            {
+                _context.ReportCommentsLeftOut();
+            }
+
+            return;
+        }
+
+        if (ns == Odf.Office && name == "annotation-end" && _context.Has(ReadExtras.Comments))
+        {
+            if (Odf.Attr(element, Odf.Office, "name") is { } end && _commentNames.Remove(end, out var ended))
+            {
+                // The reference mark goes after the text the comment is about, as in Word documents.
+                target.Add(new CommentEnd(ended));
+                target.Add(new CommentReference(ended));
+            }
+
             return;
         }
 
@@ -308,27 +337,64 @@ internal sealed partial class OdtReader
     }
 
     /// <summary>
-    /// For text extraction: a comment (<c>office:annotation</c>), its paragraphs kept in the document's comments and
-    /// referred to here (a comment in a comment is kept too, but not listed: the text follows references from the body).
+    /// A comment (<c>office:annotation</c>): its paragraphs, author, initials and date kept in the document's comments
+    /// and referred to here (a comment in a comment is kept too, but not listed: references are followed from the body).
+    /// A named comment is about the text up to its <c>office:annotation-end</c>; a reply names the comment it answers
+    /// (LibreOffice's <c>parent-name</c>).
     /// </summary>
     private void ReadComment(XElement element, List<WordInline> target)
     {
         var id = "o" + (++_comments).ToString(System.Globalization.CultureInfo.InvariantCulture);
-        var blocks = new List<WordBlock>();
+        var comment = new WordComment
+        {
+            Author = element.Element(Odf.Dc + "creator")?.Value is { Length: > 0 } author ? author.Trim() : null,
+            Initials = element.Elements().FirstOrDefault(e => e.Name.LocalName == "creator-initials")?.Value is { Length: > 0 } initials ? initials.Trim() : null,
+            Date = element.Element(Odf.Dc + "date")?.Value is { } date ? Docx.DocxReader.ParseDate(date) : null,
+        };
         var (afterSpace, breakBefore, skipNumber) = (_afterSpace, _breakBeforeNext, _skipNumber);
         try
         {
             _skipNumber = false;
-            ReadBlocks(element, blocks, body: false);
+            ReadBlocks(element, comment.Blocks, body: false);
         }
         finally
         {
             (_afterSpace, _breakBeforeNext, _skipNumber) = (afterSpace, breakBefore, skipNumber);
         }
 
-        _document.Comments[id] = blocks;
+        var parent = element.Attributes().FirstOrDefault(a => a.Name.LocalName == "parent-name")?.Value;
+        if (parent is not null && _commentIds.TryGetValue(parent, out var parentId))
+        {
+            comment.ParentId = parentId;
+        }
+
+        _document.Comments[id] = comment;
+        if (Odf.Attr(element, Odf.Office, "name") is { Length: > 0 } name)
+        {
+            _commentIds.TryAdd(name, id);
+            if (EndsOf(element).Contains(name) && _commentNames.TryAdd(name, id))
+            {
+                target.Add(new CommentStart(id)); // Referred to at its end.
+                return;
+            }
+        }
+
         target.Add(new CommentReference(id));
     }
+
+    /// <summary>The names of the comment ends (<c>office:annotation-end</c>) in the part an element is in, found once per part.</summary>
+    private HashSet<string> EndsOf(XElement element)
+    {
+        var root = element.AncestorsAndSelf().Last();
+        if (!ReferenceEquals(root, _commentEndsRoot))
+        {
+            _commentEndsRoot = root;
+            _commentEnds = [.. root.Descendants(Odf.Office + "annotation-end").Select(e => Odf.Attr(e, Odf.Office, "name") ?? string.Empty)];
+        }
+
+        return _commentEnds;
+    }
+
 
     /// <summary>Text with the first letter of each word in capitals.</summary>
     private static string Capitalize(string text, bool startsWord)

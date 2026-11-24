@@ -70,6 +70,7 @@ internal sealed partial class DocumentRenderer
         var anchored = new List<AnchoredBlocks>();
         var images = new List<ImageInline>();
         Flatten(paragraph.Inlines, null, atoms, anchored, images);
+        EndCommentedParagraph();
 
         var first = output.Count;
         var textWidth = Math.Max(1, width - Math.Max(0, format.IndentStart) - Math.Max(0, format.IndentEnd));

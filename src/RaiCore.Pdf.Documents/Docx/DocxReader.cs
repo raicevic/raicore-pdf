@@ -40,6 +40,12 @@ internal sealed partial class DocxReader
         public XElement Properties { get; } = properties;
     }
 
+    /// <summary>The Word 2010 namespace (paragraph ids).</summary>
+    private static readonly XNamespace W14 = "http://schemas.microsoft.com/office/word/2010/wordml";
+
+    /// <summary>The Word 2012 namespace (extended comments: replies).</summary>
+    private static readonly XNamespace W15 = "http://schemas.microsoft.com/office/word/2012/wordml";
+
     /// <summary>Reads a document.</summary>
     /// <exception cref="DocumentFormatException">The package has no main document part, or it is not a Word document.</exception>
     public static WordDocument Read(DocxPackage package, ConversionContext context) => new DocxReader(package, context).ReadDocument();
@@ -77,7 +83,7 @@ internal sealed partial class DocxReader
         ReadNotes(RelatedPath("endnotes"), "endnote", _document.Endnotes);
         if (_context.Has(ReadExtras.Comments))
         {
-            ReadNotes(RelatedPath("comments"), "comment", _document.Comments);
+            ReadComments();
         }
 
         var body = Ooxml.Child(root, "body");
@@ -178,6 +184,64 @@ internal sealed partial class DocxReader
             (_part, _relationships) = (part, relationships);
         }
     }
+
+    /// <summary>
+    /// Reads the comments part: each comment's text, author, initials and date, and (from the extended comments part of
+    /// Word 2013 and later) the comment it replies to, which is named by the id of its last paragraph.
+    /// </summary>
+    private void ReadComments()
+    {
+        if (RelatedPath("comments") is not { } path)
+        {
+            return;
+        }
+
+        var byParagraph = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        WithPart(path, root =>
+        {
+            foreach (var element in Ooxml.Children(root, "comment"))
+            {
+                if (Ooxml.Attr(element, "id") is not { } id || _document.Comments.ContainsKey(id))
+                {
+                    continue;
+                }
+
+                var comment = new WordComment
+                {
+                    Author = Ooxml.Attr(element, "author") is { Length: > 0 } author ? author : null,
+                    Initials = Ooxml.Attr(element, "initials") is { Length: > 0 } initials ? initials : null,
+                    Date = Ooxml.Attr(element, "date") is { } date ? ParseDate(date) : null,
+                };
+                ReadBlocks(element, comment.Blocks, TableContext.None);
+                _document.Comments[id] = comment;
+                if (Ooxml.Children(element, "p").LastOrDefault()?.Attribute(W14 + "paraId")?.Value is { } paragraph)
+                {
+                    byParagraph.TryAdd(paragraph, id);
+                }
+            }
+        });
+
+        if (RelatedPath("commentsExtended") is { } extended && _package.Load(extended) is { } extendedRoot)
+        {
+            foreach (var element in extendedRoot.Elements(W15 + "commentEx"))
+            {
+                if (element.Attribute(W15 + "paraIdParent")?.Value is { } parent && element.Attribute(W15 + "paraId")?.Value is { } paragraph
+                    && byParagraph.TryGetValue(paragraph, out var id) && byParagraph.TryGetValue(parent, out var parentId) && id != parentId)
+                {
+                    _document.Comments[id].ParentId = parentId;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// A comment's date (<c>w:date</c>, an XML date and time), as its clock shows (a time zone, if any, is dropped: Word
+    /// writes its local time), or <c>null</c>.
+    /// </summary>
+    internal static DateTime? ParseDate(string value) =>
+        DateTimeOffset.TryParse(value.Trim(), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeUniversal, out var date)
+            ? date.DateTime
+            : null;
 
     /// <summary>The blocks of a header or footer part, read once.</summary>
     private List<WordBlock> HeaderFooter(string path)

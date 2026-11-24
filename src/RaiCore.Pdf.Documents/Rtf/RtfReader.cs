@@ -49,6 +49,12 @@ internal enum RtfDestination
     /// <summary>A child group of <c>\upr</c> (the ANSI version), unless it is <c>\ud</c>.</summary>
     UnicodeChild,
     DefaultCharacter,
+
+    /// <summary>
+    /// A comment's details (<c>\atnid</c>, <c>\atnauthor</c>, <c>\atndate</c>, <c>\atnref</c>, <c>\atnparent</c>) or the
+    /// start or end of the text it is about (<c>\atrfstart</c>, <c>\atrfend</c>), read when comments are.
+    /// </summary>
+    Annotation,
     DefaultParagraph,
 }
 
@@ -83,6 +89,13 @@ internal sealed partial class RtfReader
     private RunFormat? _runFormat;
     private int _skip;
     private int _comments;
+
+    // Comments: the details before the next one, and the ranges by their tags (\atrfstart and \atnref).
+    private string? _commentInitials;
+    private string? _commentAuthor;
+    private readonly Dictionary<string, List<WordInline>> _commentRanges = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _commentTags = new(StringComparer.Ordinal);
+    private readonly List<(WordComment Comment, string Tag)> _replies = [];
 
     private RtfReader(byte[] data, ConversionContext context)
     {
@@ -137,7 +150,8 @@ internal sealed partial class RtfReader
             RtfDestination.FontTable => RtfDestination.FontEntry,
             RtfDestination.StyleSheet => RtfDestination.StyleEntry,
             RtfDestination.FontEntry or RtfDestination.StyleEntry or RtfDestination.ColorTable or RtfDestination.LevelText
-                or RtfDestination.Title or RtfDestination.Author or RtfDestination.Bookmark or RtfDestination.ShapePropertyName => RtfDestination.Skip,
+                or RtfDestination.Title or RtfDestination.Author or RtfDestination.Bookmark or RtfDestination.ShapePropertyName
+                or RtfDestination.Annotation => RtfDestination.Skip,
             _ => parent,
         };
     }
@@ -512,6 +526,13 @@ internal sealed partial class RtfReader
                 }
 
                 break;
+            case RtfDestination.Annotation:
+                if (group.Data is AnnotationPart part && part.Text.Length < 256)
+                {
+                    part.Text.Append(text);
+                }
+
+                break;
             case RtfDestination.ListText:
                 ListText(text);
                 break;
@@ -771,6 +792,15 @@ internal sealed partial class RtfReader
             case "atnparent":
             case "atrfstart":
             case "atrfend":
+                if (_context.Has(ReadExtras.Comments))
+                {
+                    group.Data = new AnnotationPart(word);
+                    SetDestination(RtfDestination.Annotation);
+                    return true;
+                }
+
+                SetDestination(RtfDestination.Skip);
+                return true;
             case "objdata":
             case "objclass":
             case "objname":
@@ -783,10 +813,12 @@ internal sealed partial class RtfReader
                     AddInline(new CommentReference(id));
                     StartStory(group, StoryKind.Comment);
                     group.Data = id;
+                    _document.Comments[id] = new WordComment { Author = _commentAuthor, Initials = _commentInitials };
+                    (_commentAuthor, _commentInitials) = (null, null);
                     return true;
                 }
 
-                _context.Report(DocumentDiagnosticKind.UnsupportedContent, "Comments (annotations) are left out.");
+                _context.ReportCommentsLeftOut();
                 SetDestination(RtfDestination.Skip);
                 return true;
             case "do":
@@ -899,6 +931,13 @@ internal sealed partial class RtfReader
                     && parent is not null && parent.Destination == RtfDestination.Text)
                 {
                     AddInline(new BookmarkInline(Clean(bookmark)));
+                }
+
+                break;
+            case RtfDestination.Annotation:
+                if (group.Data is AnnotationPart part)
+                {
+                    EndAnnotationPart(part, parent);
                 }
 
                 break;

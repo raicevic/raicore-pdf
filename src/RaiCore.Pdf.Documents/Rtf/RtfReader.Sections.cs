@@ -314,6 +314,7 @@ internal sealed partial class RtfReader
             }
         }
 
+        ResolveReplies();
         _document.Title = _title.ToString().Trim() is { Length: > 0 } title ? Clean(title) : null;
         _document.Author = _author.ToString().Trim() is { Length: > 0 } author ? Clean(author) : null;
         return _document;

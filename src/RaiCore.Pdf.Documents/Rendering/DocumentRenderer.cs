@@ -78,7 +78,13 @@ internal sealed partial class DocumentRenderer
             _ => $"An image is scaled down to fit page {d.Page + 1}.",
         });
         var pdf = new PdfDocument { Tagged = _options.Tagged };
+        if (_noteAnchors.Count > 0)
+        {
+            flow.AnchorPlaced = PlaceNotes();
+        }
+
         flow.RenderTo(pdf);
+        RemoveNoteAnchors(pdf);
         pdf.Info.Title = _options.Title ?? _document.Title;
         pdf.Info.Author = _document.Author;
         pdf.Info.Creator = creator;
@@ -116,6 +122,7 @@ internal sealed partial class DocumentRenderer
         _endnotes.Clear();
         _footnoteNumber = 0;
         _endnoteNumber = 0;
+        ResetComments();
         _sectionOfPageName.Clear();
         _setups.Clear();
         _pageNames.Clear();
@@ -169,6 +176,11 @@ internal sealed partial class DocumentRenderer
             if (i == names.Length - 1)
             {
                 foreach (var block in Endnotes(width))
+                {
+                    container.Add(block);
+                }
+
+                foreach (var block in CommentsAtEnd(width))
                 {
                     container.Add(block);
                 }

@@ -135,6 +135,14 @@ public sealed class FlowDocument
     /// </summary>
     public Action<LayoutDiagnostic>? Diagnostics { get; set; }
 
+    /// <summary>
+    /// Called as the document is rendered (<see cref="RenderTo"/>) for each paragraph anchor (<see cref="Paragraph.AddAnchor"/>)
+    /// that is placed, once its page is drawn: the anchor's id and where it is, as a destination with the page, the
+    /// left edge of the anchor's place on its line and the top of that line (in PDF points from the page's bottom-left
+    /// corner). Useful to put annotations, such as notes, at places in the text. <c>null</c> (the default) for none.
+    /// </summary>
+    public Action<string, PdfDestination>? AnchorPlaced { get; set; }
+
     /// <summary>Appends a block.</summary>
     public FlowDocument Add(Block block)
     {
@@ -217,6 +225,7 @@ public sealed class FlowDocument
 
         var pages = result.Pages;
         var rendered = new List<PdfPage>(pages.Count);
+        var placed = AnchorPlaced is null ? null : result.Anchors.Where(a => a.Name is not null).ToLookup(a => a.Page);
         for (var i = 0; i < pages.Count; i++)
         {
             ResourceLimits.Checkpoint(); // Drawing (and, saving page by page, writing) takes a while too.
@@ -246,6 +255,14 @@ public sealed class FlowDocument
             LayoutTagging.BeginArtifact(page.Canvas, PdfArtifactKind.Pagination);
             PageDecorator?.Invoke(page.Canvas, new PageInfo(context, pages.Count, setup, markers));
             LayoutTagging.End(page.Canvas);
+            if (placed is not null)
+            {
+                foreach (var anchor in placed[i])
+                {
+                    AnchorPlaced!(anchor.Name!, new PdfDestination(page, anchor.Left + shift, page.Height - anchor.Top));
+                }
+            }
+
             if (document.IsSaving)
             {
                 document.FlushPages(); // Written page by page: the finished page goes to the output now.

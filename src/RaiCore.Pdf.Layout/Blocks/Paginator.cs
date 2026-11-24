@@ -17,12 +17,12 @@ internal sealed record Placement(int Page, Block Block, double Top, double Botto
 /// <summary>
 /// Where a block that can be navigated to (one with a <see cref="Block.Bookmark"/> or a <see cref="Block.Id"/>) starts:
 /// the top of its border box, or of its content when that moved to a later page. Also where a paragraph's anchor
-/// (<see cref="Paragraph.AddAnchor"/>) is: the top of its line. Y values are from the top of the page.
+/// (<see cref="Paragraph.AddAnchor"/>) is: the top of its line, at its place on the line. Y values are from the top of the page.
 /// </summary>
 /// <param name="Block">The block (for a paragraph's anchor, the paragraph's block).</param>
 /// <param name="Page">0-based page index.</param>
 /// <param name="Top">Top of the block, or of the anchor's line.</param>
-/// <param name="Left">Left edge of the block's border box, or of the anchor's line.</param>
+/// <param name="Left">Left edge of the block's border box, or the anchor's place on its line.</param>
 internal sealed record Anchor(Block Block, int Page, double Top, double Left)
 {
     /// <summary>The id of a paragraph's anchor; <c>null</c> for the block's own anchor.</summary>
@@ -1422,11 +1422,47 @@ internal sealed partial class Paginator
                 var line = lines[i];
                 if (anchor.Index >= line.Start && (anchor.Index < line.End || i == lines.Count - 1))
                 {
-                    _anchors.Add(new Anchor(block, PageIndex, top + line.Top - lines[first].Top, x + line.X) { Name = anchor.Id });
+                    _anchors.Add(new Anchor(block, PageIndex, top + line.Top - lines[first].Top, x + line.X + AnchorX(line, anchor.Index)) { Name = anchor.Id });
                     break;
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Where a position of a paragraph's text is on its line, from the start of the line's content: the start of the
+    /// text or image that begins there (its right edge, right to left), a proportional place inside text it falls in,
+    /// or the end of the line.
+    /// </summary>
+    private static double AnchorX(LineLayout line, int index)
+    {
+        double? next = null;
+        var nextStart = int.MaxValue;
+        foreach (var fragment in line.Fragments)
+        {
+            var (start, end) = fragment.Range;
+            var rightToLeft = fragment.Run.Direction == TextDirection.RightToLeft;
+            if (index > start && index < end)
+            {
+                var share = (double)(index - start) / (end - start);
+                return fragment.X + (fragment.Width * (rightToLeft ? 1 - share : share));
+            }
+
+            if (start >= index && start < nextStart)
+            {
+                (next, nextStart) = (rightToLeft ? fragment.X + fragment.Width : fragment.X, start);
+            }
+        }
+
+        foreach (var image in line.Images)
+        {
+            if (image.Start >= index && image.Start < nextStart)
+            {
+                (next, nextStart) = (image.X, image.Start);
+            }
+        }
+
+        return next ?? line.Width;
     }
 
     /// <summary>

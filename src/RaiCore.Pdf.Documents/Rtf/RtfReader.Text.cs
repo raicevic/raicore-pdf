@@ -403,9 +403,9 @@ internal sealed partial class RtfReader
 
                 break;
             case StoryKind.Comment:
-                if (group.Data is string comment)
+                if (group.Data is string comment && _document.Comments.TryGetValue(comment, out var annotation))
                 {
-                    _document.Comments[comment] = story.Blocks;
+                    annotation.Blocks.AddRange(story.Blocks);
                 }
 
                 break;

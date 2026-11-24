@@ -318,11 +318,28 @@ internal sealed class FieldEnd : WordInline
 }
 
 /// <summary>
-/// Where a comment is anchored (<see cref="WordDocument.Comments"/>). Readers add it only for text extraction
-/// (<see cref="ReadExtras.Comments"/>).
+/// Where a comment is anchored (<see cref="WordDocument.Comments"/>): its reference mark. Readers add it only when
+/// comments are shown or extracted (<see cref="ReadExtras.Comments"/>).
 /// </summary>
 internal sealed class CommentReference(string id) : WordInline
 {
     /// <summary>The comment's id.</summary>
     public string Id { get; } = id;
+}
+
+/// <summary>
+/// Where the text a comment is about starts (<see cref="CommentEnd"/> ends it). Readers add it only with
+/// <see cref="ReadExtras.Comments"/>; ranges may span paragraphs and overlap.
+/// </summary>
+internal sealed class CommentStart(string id) : WordInline
+{
+    /// <summary>The comment's id (set once the reader knows it, where the range comes before the comment).</summary>
+    public string Id { get; set; } = id;
+}
+
+/// <summary>Where the text a comment is about ends (see <see cref="CommentStart"/>).</summary>
+internal sealed class CommentEnd(string id) : WordInline
+{
+    /// <summary>The comment's id (set once the reader knows it, where the range comes before the comment).</summary>
+    public string Id { get; set; } = id;
 }

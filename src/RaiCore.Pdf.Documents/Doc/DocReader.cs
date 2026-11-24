@@ -71,16 +71,23 @@ internal sealed partial class DocReader
         if (_context.Has(ReadExtras.Comments))
         {
             ReadNoteReferences(4, _commentReferences, 30);
+            ReadComments();
         }
         else if (_file.TableData(4).Length > 4)
         {
-            _context.Report(DocumentDiagnosticKind.UnsupportedContent, "Comments (annotations) are left out.");
+            _context.ReportCommentsLeftOut();
         }
 
         ReadSections();
-        ReadNotes(3, DocStory.Footnotes, _footnoteReferences, _document.Footnotes, "f");
-        ReadNotes(47, DocStory.Endnotes, _endnoteReferences, _document.Endnotes, "e");
-        ReadNotes(5, DocStory.Comments, _commentReferences, _document.Comments, "c");
+        ReadNotes(3, DocStory.Footnotes, _footnoteReferences, (id, blocks) => _document.Footnotes[id] = blocks, "f");
+        ReadNotes(47, DocStory.Endnotes, _endnoteReferences, (id, blocks) => _document.Endnotes[id] = blocks, "e");
+        ReadNotes(5, DocStory.Comments, _commentReferences, (id, blocks) =>
+        {
+            if (_document.Comments.TryGetValue(id, out var comment))
+            {
+                comment.Blocks.AddRange(blocks);
+            }
+        }, "c");
         ReadTextBoxes();
         if (_document.Sections.Count == 0)
         {
@@ -357,7 +364,7 @@ internal sealed partial class DocReader
     }
 
     /// <summary>The notes (PlcffndTxt, PlcfendTxt) or comments (PlcfandTxt): each one's story, by the id of its reference.</summary>
-    private void ReadNotes(int index, DocStory kind, Dictionary<int, int> references, Dictionary<string, List<WordBlock>> notes, string prefix)
+    private void ReadNotes(int index, DocStory kind, Dictionary<int, int> references, Action<string, List<WordBlock>> store, string prefix)
     {
         if (references.Count == 0)
         {
@@ -375,7 +382,7 @@ internal sealed partial class DocReader
             var story = new Story(kind, start) { Note = true };
             ReadRange(story, start + from, start + to);
             CloseTables(story, 0);
-            notes[prefix + i.ToString(CultureInfo.InvariantCulture)] = story.Blocks;
+            store(prefix + i.ToString(CultureInfo.InvariantCulture), story.Blocks);
         }
     }
 
