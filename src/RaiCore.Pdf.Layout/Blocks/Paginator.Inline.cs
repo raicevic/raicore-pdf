@@ -64,7 +64,7 @@ internal sealed partial class Paginator
         var contentWidth = Math.Max(MinimumContentWidth, borderWidth - style.Border.Widths.Fixed.Horizontal - style.Padding.Fixed.Horizontal);
         var layout = TableLayouter.Layout(table, 0, contentWidth);
         double? best = null;
-        foreach (var cell in layout.Cells.Where(c => c.Grid.Row == 0 && c.Grid.Cell.Content.Count > 0))
+        foreach (var cell in layout.CellsStartingIn(0).Where(c => c.Grid.Cell.Content.Count > 0))
         {
             var first = cell.Grid.Cell.Content[0];
             var firstStyle = ResolveStyle(first, cell.InnerWidth);
