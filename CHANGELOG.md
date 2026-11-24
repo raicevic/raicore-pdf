@@ -5,6 +5,22 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-24
+
+Closing migration gaps: dynamic XFA forms, charts, pictures and print formatting in spreadsheets, WMF and EMF
+pictures, a workbook API and direct text of Word documents.
+
+### Highlights
+- **Dynamic XFA forms** (`RaiCore.Pdf.Xfa`, new): XFA forms laid out from their template and data as flattened PDF
+  pages; `PdfEditor.RemoveXfa()` keeps the AcroForm instead, and `FlattenForm` can do either.
+- **Charts** in workbooks, Word documents and presentations, drawn as vector graphics by one shared chart engine.
+- **Spreadsheets:** pictures, shapes and charts; headers and footers, page breaks, conditional formatting (colour
+  scales, data bars, icon sets, formula rules), comments, rotated and rich text, pivot styles; diagnostics for what is
+  left out; and a `Workbook` API to open, edit and save `.xlsx` files and delimited text.
+- **WMF and EMF pictures** (with EMF+) drawn as vector graphics in every Office converter.
+- **Text of Word documents** (`DocumentText.Extract`) straight from DOCX, DOC, RTF and ODT, without a PDF.
+- **Notes** (`PdfPage.AddNote`), **`ResourceLoaders.None`** for untrusted HTML, and an untrusted input guide.
+
 ### Added
 - **Sheets: headers and footers, page breaks, rich text and conditional formatting** (#259): worksheets print their
   headers and footers (left, center and right sections, page number with offsets, pages, date, time, sheet name, font
@@ -1110,6 +1126,7 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   drawing the first (page counts, `target-counter()`), so their peak memory is the layout's and hardly changes.
   Pages imported from other PDFs keep what they copy until `EndSave`.
 
-[Unreleased]: https://github.com/raicevic/raicore-pdf/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/raicevic/raicore-pdf/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/raicevic/raicore-pdf/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/raicevic/raicore-pdf/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/raicevic/raicore-pdf/releases/tag/v1.0.0

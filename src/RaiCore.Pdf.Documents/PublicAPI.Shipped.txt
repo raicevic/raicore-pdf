@@ -39,6 +39,33 @@ RaiCore.Pdf.Documents.DocumentFormatException
 RaiCore.Pdf.Documents.DocumentFormatException.DocumentFormatException() -> void
 RaiCore.Pdf.Documents.DocumentFormatException.DocumentFormatException(string! message) -> void
 RaiCore.Pdf.Documents.DocumentFormatException.DocumentFormatException(string! message, System.Exception! innerException) -> void
+RaiCore.Pdf.Documents.DocumentText
+RaiCore.Pdf.Documents.DocumentTextOptions
+RaiCore.Pdf.Documents.DocumentTextOptions.DocumentTextOptions() -> void
+RaiCore.Pdf.Documents.DocumentTextOptions.FieldCodes.get -> bool
+RaiCore.Pdf.Documents.DocumentTextOptions.FieldCodes.init -> void
+RaiCore.Pdf.Documents.DocumentTextOptions.IncludeComments.get -> bool
+RaiCore.Pdf.Documents.DocumentTextOptions.IncludeComments.init -> void
+RaiCore.Pdf.Documents.DocumentTextOptions.IncludeDeletedText.get -> bool
+RaiCore.Pdf.Documents.DocumentTextOptions.IncludeDeletedText.init -> void
+RaiCore.Pdf.Documents.DocumentTextOptions.IncludeHeadersAndFooters.get -> bool
+RaiCore.Pdf.Documents.DocumentTextOptions.IncludeHeadersAndFooters.init -> void
+RaiCore.Pdf.Documents.DocumentTextOptions.IncludeHiddenText.get -> bool
+RaiCore.Pdf.Documents.DocumentTextOptions.IncludeHiddenText.init -> void
+RaiCore.Pdf.Documents.DocumentTextOptions.IncludeNotes.get -> bool
+RaiCore.Pdf.Documents.DocumentTextOptions.IncludeNotes.init -> void
+RaiCore.Pdf.Documents.DocumentTextOptions.IncludeTextBoxes.get -> bool
+RaiCore.Pdf.Documents.DocumentTextOptions.IncludeTextBoxes.init -> void
+RaiCore.Pdf.Documents.DocumentTextOptions.Limits.get -> RaiCore.Pdf.ResourceLimits!
+RaiCore.Pdf.Documents.DocumentTextOptions.Limits.init -> void
+RaiCore.Pdf.Documents.DocumentTextOptions.ListLabels.get -> bool
+RaiCore.Pdf.Documents.DocumentTextOptions.ListLabels.init -> void
+RaiCore.Pdf.Documents.DocumentTextOptions.ParagraphSeparator.get -> string!
+RaiCore.Pdf.Documents.DocumentTextOptions.ParagraphSeparator.init -> void
+RaiCore.Pdf.Documents.DocumentTextOptions.TableCellSeparator.get -> string!
+RaiCore.Pdf.Documents.DocumentTextOptions.TableCellSeparator.init -> void
+RaiCore.Pdf.Documents.DocumentTextOptions.TableRowSeparator.get -> string!
+RaiCore.Pdf.Documents.DocumentTextOptions.TableRowSeparator.init -> void
 RaiCore.Pdf.Documents.DocxConverterOptions
 RaiCore.Pdf.Documents.DocxConverterOptions.DocxConverterOptions() -> void
 RaiCore.Pdf.Documents.DocxToPdf
@@ -57,6 +84,11 @@ static RaiCore.Pdf.Documents.DocToPdf.ConvertToBytes(byte[]! doc, RaiCore.Pdf.Do
 static RaiCore.Pdf.Documents.DocToPdf.ConvertToBytes(System.IO.Stream! doc, RaiCore.Pdf.Documents.DocConverterOptions? options = null) -> byte[]!
 static RaiCore.Pdf.Documents.DocumentDiagnostic.operator !=(RaiCore.Pdf.Documents.DocumentDiagnostic? left, RaiCore.Pdf.Documents.DocumentDiagnostic? right) -> bool
 static RaiCore.Pdf.Documents.DocumentDiagnostic.operator ==(RaiCore.Pdf.Documents.DocumentDiagnostic? left, RaiCore.Pdf.Documents.DocumentDiagnostic? right) -> bool
+static RaiCore.Pdf.Documents.DocumentText.Extract(byte[]! document, RaiCore.Pdf.Documents.DocumentTextOptions? options = null) -> string!
+static RaiCore.Pdf.Documents.DocumentText.Extract(string! path, RaiCore.Pdf.Documents.DocumentTextOptions? options = null) -> string!
+static RaiCore.Pdf.Documents.DocumentText.Extract(System.IO.Stream! document, RaiCore.Pdf.Documents.DocumentTextOptions? options = null) -> string!
+static RaiCore.Pdf.Documents.DocumentText.ExtractAsync(byte[]! document, RaiCore.Pdf.Documents.DocumentTextOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+static RaiCore.Pdf.Documents.DocumentText.ExtractAsync(System.IO.Stream! document, RaiCore.Pdf.Documents.DocumentTextOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
 static RaiCore.Pdf.Documents.DocxToPdf.Convert(byte[]! docx, RaiCore.Pdf.Documents.DocxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
 static RaiCore.Pdf.Documents.DocxToPdf.Convert(string! path, RaiCore.Pdf.Documents.DocxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!
 static RaiCore.Pdf.Documents.DocxToPdf.Convert(System.IO.Stream! docx, RaiCore.Pdf.Documents.DocxConverterOptions? options = null) -> RaiCore.Pdf.PdfDocument!

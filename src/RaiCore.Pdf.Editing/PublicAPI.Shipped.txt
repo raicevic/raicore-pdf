@@ -6,6 +6,9 @@ override RaiCore.Pdf.Editing.PdfFlattenResult.Equals(object? obj) -> bool
 override RaiCore.Pdf.Editing.PdfFlattenResult.GetHashCode() -> int
 override RaiCore.Pdf.Editing.PdfFlattenResult.ToString() -> string!
 override RaiCore.Pdf.Editing.PdfFormField.ToString() -> string!
+override RaiCore.Pdf.Editing.PdfFormFlattenOptions.Equals(object? obj) -> bool
+override RaiCore.Pdf.Editing.PdfFormFlattenOptions.GetHashCode() -> int
+override RaiCore.Pdf.Editing.PdfFormFlattenOptions.ToString() -> string!
 override RaiCore.Pdf.Editing.PdfFormWidget.Equals(object? obj) -> bool
 override RaiCore.Pdf.Editing.PdfFormWidget.GetHashCode() -> int
 override RaiCore.Pdf.Editing.PdfFormWidget.ToString() -> string!
@@ -24,12 +27,18 @@ RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.KeepLinks.init -> void
 RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.PdfAnnotationFlattenOptions() -> void
 RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.Types.get -> System.Collections.Generic.IReadOnlySet<string!>?
 RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions.Types.init -> void
+RaiCore.Pdf.Editing.PdfDynamicXfaHandling
+RaiCore.Pdf.Editing.PdfDynamicXfaHandling.RemoveXfa = 1 -> RaiCore.Pdf.Editing.PdfDynamicXfaHandling
+RaiCore.Pdf.Editing.PdfDynamicXfaHandling.Render = 2 -> RaiCore.Pdf.Editing.PdfDynamicXfaHandling
+RaiCore.Pdf.Editing.PdfDynamicXfaHandling.Throw = 0 -> RaiCore.Pdf.Editing.PdfDynamicXfaHandling
 RaiCore.Pdf.Editing.PdfEditor
 RaiCore.Pdf.Editing.PdfEditor.FlattenAnnotations(RaiCore.Pdf.Editing.PdfAnnotationFlattenOptions? options = null) -> RaiCore.Pdf.Editing.PdfFlattenResult!
 RaiCore.Pdf.Editing.PdfEditor.FlattenForm() -> RaiCore.Pdf.Editing.PdfFlattenResult!
+RaiCore.Pdf.Editing.PdfEditor.FlattenForm(RaiCore.Pdf.Editing.PdfFormFlattenOptions! options) -> RaiCore.Pdf.Editing.PdfFlattenResult!
 RaiCore.Pdf.Editing.PdfEditor.GetForm() -> RaiCore.Pdf.Editing.PdfForm!
 RaiCore.Pdf.Editing.PdfEditor.Optimize(RaiCore.Pdf.Editing.PdfOptimizationOptions? options = null) -> RaiCore.Pdf.Editing.PdfOptimizationResult!
 RaiCore.Pdf.Editing.PdfEditor.Pages.get -> RaiCore.Pdf.Editing.PdfEditorPages!
+RaiCore.Pdf.Editing.PdfEditor.RemoveXfa(bool force = false) -> bool
 RaiCore.Pdf.Editing.PdfEditor.Save(string! path) -> void
 RaiCore.Pdf.Editing.PdfEditor.Save(System.IO.Stream! stream) -> void
 RaiCore.Pdf.Editing.PdfEditor.SaveAsync(System.IO.Stream! stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
@@ -77,6 +86,7 @@ RaiCore.Pdf.Editing.PdfFlattenResult.Removed.init -> void
 RaiCore.Pdf.Editing.PdfForm
 RaiCore.Pdf.Editing.PdfForm.Fields.get -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.Editing.PdfFormField!>!
 RaiCore.Pdf.Editing.PdfForm.HasAcroForm.get -> bool
+RaiCore.Pdf.Editing.PdfForm.IsXfaPlaceholder.get -> bool
 RaiCore.Pdf.Editing.PdfForm.this[string! fullName].get -> RaiCore.Pdf.Editing.PdfFormField?
 RaiCore.Pdf.Editing.PdfForm.Xfa.get -> RaiCore.Pdf.Editing.PdfXfaKind
 RaiCore.Pdf.Editing.PdfFormField
@@ -88,6 +98,14 @@ RaiCore.Pdf.Editing.PdfFormField.Type.get -> RaiCore.Pdf.Editing.PdfFieldType
 RaiCore.Pdf.Editing.PdfFormField.Value.get -> string?
 RaiCore.Pdf.Editing.PdfFormField.Values.get -> System.Collections.Generic.IReadOnlyList<string!>!
 RaiCore.Pdf.Editing.PdfFormField.Widgets.get -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.Editing.PdfFormWidget!>!
+RaiCore.Pdf.Editing.PdfFormFlattenOptions
+RaiCore.Pdf.Editing.PdfFormFlattenOptions.<Clone>$() -> RaiCore.Pdf.Editing.PdfFormFlattenOptions!
+RaiCore.Pdf.Editing.PdfFormFlattenOptions.DynamicXfa.get -> RaiCore.Pdf.Editing.PdfDynamicXfaHandling
+RaiCore.Pdf.Editing.PdfFormFlattenOptions.DynamicXfa.init -> void
+RaiCore.Pdf.Editing.PdfFormFlattenOptions.Equals(RaiCore.Pdf.Editing.PdfFormFlattenOptions? other) -> bool
+RaiCore.Pdf.Editing.PdfFormFlattenOptions.PdfFormFlattenOptions() -> void
+RaiCore.Pdf.Editing.PdfFormFlattenOptions.XfaRenderer.get -> System.Func<byte[]!, RaiCore.Pdf.PdfDocument!>?
+RaiCore.Pdf.Editing.PdfFormFlattenOptions.XfaRenderer.init -> void
 RaiCore.Pdf.Editing.PdfFormWidget
 RaiCore.Pdf.Editing.PdfFormWidget.<Clone>$() -> RaiCore.Pdf.Editing.PdfFormWidget!
 RaiCore.Pdf.Editing.PdfFormWidget.Deconstruct(out int PageIndex, out RaiCore.Pdf.PdfRectangle Rectangle, out bool IsHidden, out string? State) -> void
@@ -145,6 +163,9 @@ static RaiCore.Pdf.Editing.PdfEditor.Open(string! path, string? password = null)
 static RaiCore.Pdf.Editing.PdfEditor.Open(System.IO.Stream! stream, string? password = null) -> RaiCore.Pdf.Editing.PdfEditor!
 static RaiCore.Pdf.Editing.PdfFlattenResult.operator !=(RaiCore.Pdf.Editing.PdfFlattenResult? left, RaiCore.Pdf.Editing.PdfFlattenResult? right) -> bool
 static RaiCore.Pdf.Editing.PdfFlattenResult.operator ==(RaiCore.Pdf.Editing.PdfFlattenResult? left, RaiCore.Pdf.Editing.PdfFlattenResult? right) -> bool
+static RaiCore.Pdf.Editing.PdfFormFlattenOptions.Default.get -> RaiCore.Pdf.Editing.PdfFormFlattenOptions!
+static RaiCore.Pdf.Editing.PdfFormFlattenOptions.operator !=(RaiCore.Pdf.Editing.PdfFormFlattenOptions? left, RaiCore.Pdf.Editing.PdfFormFlattenOptions? right) -> bool
+static RaiCore.Pdf.Editing.PdfFormFlattenOptions.operator ==(RaiCore.Pdf.Editing.PdfFormFlattenOptions? left, RaiCore.Pdf.Editing.PdfFormFlattenOptions? right) -> bool
 static RaiCore.Pdf.Editing.PdfFormWidget.operator !=(RaiCore.Pdf.Editing.PdfFormWidget? left, RaiCore.Pdf.Editing.PdfFormWidget? right) -> bool
 static RaiCore.Pdf.Editing.PdfFormWidget.operator ==(RaiCore.Pdf.Editing.PdfFormWidget? left, RaiCore.Pdf.Editing.PdfFormWidget? right) -> bool
 static RaiCore.Pdf.Editing.PdfOptimizationOptions.Default.get -> RaiCore.Pdf.Editing.PdfOptimizationOptions!

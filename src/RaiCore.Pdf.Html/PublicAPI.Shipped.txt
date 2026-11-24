@@ -139,6 +139,7 @@ static RaiCore.Pdf.Html.HtmlToPdf.ConvertToStreamAsync(string! html, System.IO.S
 static RaiCore.Pdf.Html.HtmlToPdf.CreateFlowDocument(string! html, RaiCore.Pdf.Html.HtmlConverterOptions? options = null) -> RaiCore.Pdf.Layout.FlowDocument!
 static RaiCore.Pdf.Html.ResourceLoaders.DecodeDataUri(string! uri) -> byte[]?
 static RaiCore.Pdf.Html.ResourceLoaders.Default(RaiCore.Pdf.Html.ResourceRequest! request) -> byte[]?
+static RaiCore.Pdf.Html.ResourceLoaders.None(RaiCore.Pdf.Html.ResourceRequest! request) -> byte[]?
 static RaiCore.Pdf.Html.ResourceRequest.operator !=(RaiCore.Pdf.Html.ResourceRequest? left, RaiCore.Pdf.Html.ResourceRequest? right) -> bool
 static RaiCore.Pdf.Html.ResourceRequest.operator ==(RaiCore.Pdf.Html.ResourceRequest? left, RaiCore.Pdf.Html.ResourceRequest? right) -> bool
 virtual RaiCore.Pdf.Html.ResourceLoader.Invoke(RaiCore.Pdf.Html.ResourceRequest! request) -> byte[]?
