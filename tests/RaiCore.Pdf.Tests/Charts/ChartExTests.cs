@@ -291,6 +291,13 @@ public class ChartExTests
         Assert.Equal([chart.Accents[0], chart.Accents[1], chart.Accents[2]], [.. Enumerable.Range(0, 3).Select(i => series.Points[i].Shape!.Fill!.Color!.Value)]);
         Assert.True(series.Labels!.ShowValue);
         Assert.Equal("Flow", chart.Title!.Text);
+
+        // Data labels that do not say what they show show the value; hidden ones of single points are deleted.
+        var plain = ReadPart(Part($"<cx:data id=\"0\">{Numbers(1, 2)}</cx:data>",
+            "<cx:series layoutId=\"waterfall\"><cx:dataLabels pos=\"inEnd\"><cx:dataLabelHidden idx=\"1\"/></cx:dataLabels><cx:dataId val=\"0\"/></cx:series>"))!;
+        var labels = plain.PlotArea.Groups[0].Series[0].Labels!;
+        Assert.Equal((true, false, "inEnd"), (labels.ShowValue, labels.ShowCategory, labels.Position));
+        Assert.True(labels.Points[1].Delete);
         var valueAxis = chart.PlotArea.Axes.Single(a => a.Id == 1);
         Assert.Equal((20, false), (valueAxis.Max!.Value, valueAxis.Deleted));
         Assert.Equal(TickLabelPosition.Low, chart.PlotArea.Axes.Single(a => a.Id == 0).Labels);
