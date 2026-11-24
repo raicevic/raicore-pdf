@@ -320,8 +320,10 @@ public class ChartExTests
         Assert.Equal(up.Y + up.Height, down.Y + down.Height, 3); // It starts where the increase ends.
 
         // The scale reaches the highest running total: two increases of 10 are two whole bars, the second up to 20.
-        var steps = ChartXml.Draw(Part($"<cx:data id=\"0\">{Numbers(10, 10)}</cx:data>", "<cx:series layoutId=\"waterfall\"><cx:dataId val=\"0\"/></cx:series>")).Rects()
-            .Where(r => r.Color == ChartXml.Rgb(0x44, 0x72, 0xC4)).OrderBy(r => r.X).ToList();
+        var stepped = ChartXml.Draw(Part($"<cx:data id=\"0\">{Numbers(10, 10)}</cx:data>",
+            "<cx:series layoutId=\"waterfall\"><cx:dataId val=\"0\"/></cx:series>", "<cx:axis id=\"1\"><cx:valScaling/><cx:tickLabels/></cx:axis>"));
+        Assert.Contains("20", stepped.Text(), StringComparison.Ordinal);
+        var steps = stepped.Rects().Where(r => r.Color == ChartXml.Rgb(0x44, 0x72, 0xC4)).OrderBy(r => r.X).ToList();
         Assert.Equal(steps[0].Height, steps[1].Height, 3);
         Assert.Equal(steps[0].Y + steps[0].Height, steps[1].Y, 3);
 
