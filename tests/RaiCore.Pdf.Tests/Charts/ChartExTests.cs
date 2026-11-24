@@ -247,6 +247,9 @@ public class ChartExTests
         Assert.Equal((int)Math.Ceiling(8 / width), bins.Count);
         Assert.Equal(values.Length, bins.Sum(b => b.Count));
 
+        // The sample standard deviation (n - 1): one bin here, where the population's would make two.
+        Assert.Single(ChartReader.Bins([18, 2, 8, 3], new ChartReader.Bin(), null));
+
         // All equal: one bin; none: no bins; a bin count beyond the limit is cut to it.
         Assert.Equal([("[4, 4]", 3)], ChartReader.Bins([4, 4, 4], new ChartReader.Bin(), null));
         Assert.Empty(ChartReader.Bins([], new ChartReader.Bin(), null));
