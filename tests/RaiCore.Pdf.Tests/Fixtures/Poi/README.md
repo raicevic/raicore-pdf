@@ -14,7 +14,8 @@ reader, the Outlook message converter, the PPTX converter, the Word document con
   `document/chartex.docx` (four DrawingML charts and two newer chart types with their stored pictures), unchanged.
 - Source of the Word documents: the same commit, files `document/ComplexNumberedLists.docx`,
   `document/ThreeColHeadFoot.docx`, `document/DiffFirstPageHeadFoot.docx`, `document/footnotes.docx`,
-  `document/table-alignment.docx`, `document/IllustrativeCases.docx`, `document/bug53475-password-is-pass.docx`
+  `document/table-alignment.docx`, `document/IllustrativeCases.docx`, `document/comment.docx` (a comment of three
+  paragraphs), `document/bug53475-password-is-pass.docx`
   (encrypted), `document/ExternalEntityInText.docx` (a DTD with an external entity) and `document/deep-table-cell.docx`
   (deeply nested tables), unchanged.
 - Source of the WMF and EMF pictures (for the metafile renderer, with POI's expectations from `TestHwmfParsing` and

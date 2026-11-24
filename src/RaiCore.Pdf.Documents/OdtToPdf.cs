@@ -25,11 +25,11 @@ namespace RaiCore.Pdf.Documents;
 /// others stand on a line of their own before their paragraph); the replacement images of charts and embedded objects;
 /// links to web addresses and to bookmarks; page numbers, page counts and page references computed from the PDF's
 /// pages, other fields as their text; footnotes (at the end of their section) and endnotes (at the end of the
-/// document), linked from their citations; tracked changes as if accepted.
+/// document), linked from their citations; tracked changes as if accepted; comments as <see cref="DocumentConverterOptions.Comments"/> asks (listed at the end, or as PDF notes).
 /// </para>
 /// <para>
 /// Not supported: text boxes and drawing shapes as floating frames (their text is laid out after their paragraph),
-/// charts and embedded objects beyond their replacement images, StarView images, comments, forms,
+/// charts and embedded objects beyond their replacement images, StarView images, forms,
 /// several text columns (laid out as one), footnotes at the bottom of the page, line numbers, page borders and
 /// backgrounds, right-to-left and vertical text beyond what the layout engine does by itself. What is left out is
 /// reported to <see cref="DocumentConverterOptions.Diagnostics"/>. Password-protected (encrypted) documents throw

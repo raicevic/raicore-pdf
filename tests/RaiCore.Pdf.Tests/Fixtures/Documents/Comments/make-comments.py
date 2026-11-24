@@ -2,7 +2,8 @@
 writes it: w14:paraId on the comments' last paragraphs and a commentsExtended part), comments.odt (hand-written ODF XML)
 and comments.rtf (hand-written RTF). Each has comments with authors, initials and dates, a comment of two paragraphs,
 a reply, a comment whose text spans two paragraphs, overlapping comments, a comment without a range (a point), a
-comment in a table and one about a long text. Run from this folder with a venv that has python-docx:
+comment in a table and one about a long text. Also writes small uncompressed copies as fuzzing seeds
+(../../Fuzz/Seeds/docx, odt and rtf). Run from this folder with a venv that has python-docx:
 python -m venv venv && venv/bin/pip install python-docx && venv/bin/python make-comments.py. The files are
 deterministic: fixed dates, no random data. make-expected.py then writes what independent readers find in them."""
 import datetime
@@ -193,9 +194,45 @@ def make_rtf():
     return "".join(parts).encode("ascii")
 
 
+def stored(entries):
+    """A ZIP package of (name, bytes) entries, uncompressed, so that fuzzing mutations reach the XML."""
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_STORED) as package:
+        for name, data in entries:
+            package.writestr(zipfile.ZipInfo(name, ZIP_DATE), data)
+    return out.getvalue()
+
+
+def docx_seed(data):
+    """The comment parts of comments.docx in a small package of their own (no styles, theme or thumbnail)."""
+    source = zipfile.ZipFile(io.BytesIO(data))
+    types = ('<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+             '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+             '<Default Extension="xml" ContentType="application/xml"/>'
+             '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+             "</Types>")
+    rels = ('<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
+            "</Relationships>")
+    document_rels = ('<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                     '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" Target="comments.xml"/>'
+                     '<Relationship Id="rId2" Type="http://schemas.microsoft.com/office/2011/relationships/commentsExtended" Target="commentsExtended.xml"/>'
+                     "</Relationships>")
+    return stored([("[Content_Types].xml", types), ("_rels/.rels", rels), ("word/document.xml", source.read("word/document.xml")),
+                   ("word/_rels/document.xml.rels", document_rels), ("word/comments.xml", source.read("word/comments.xml")),
+                   ("word/commentsExtended.xml", source.read("word/commentsExtended.xml"))])
+
+
 def main():
-    for name, data in (("comments.docx", make_docx()), ("comments.odt", make_odt()), ("comments.rtf", make_rtf())):
-        with open(os.path.join(HERE, name), "wb") as file:
+    seeds = os.path.join(HERE, "..", "..", "Fuzz", "Seeds")
+    docx_data, odt_data, rtf_data = make_docx(), make_odt(), make_rtf()
+    odt_seed = stored([(item.filename, zipfile.ZipFile(io.BytesIO(odt_data)).read(item.filename))
+                       for item in zipfile.ZipFile(io.BytesIO(odt_data)).infolist()])
+    for path, data in (("comments.docx", docx_data), ("comments.odt", odt_data), ("comments.rtf", rtf_data),
+                       (os.path.join(seeds, "docx", "comments.docx"), docx_seed(docx_data)),
+                       (os.path.join(seeds, "odt", "comments.odt"), odt_seed),
+                       (os.path.join(seeds, "rtf", "comments.rtf"), rtf_data)):
+        with open(os.path.join(HERE, path), "wb") as file:
             file.write(data)
 
 

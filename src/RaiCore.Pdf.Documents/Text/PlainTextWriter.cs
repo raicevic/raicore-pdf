@@ -106,16 +106,16 @@ internal sealed class PlainTextWriter
     }
 
     /// <summary>
-    /// The text of blocks of their own (a comment's), with the default options: paragraphs on lines of their own, without
-    /// the last one's end.
+    /// The text of blocks of their own (a comment's), with the default options (or those given): paragraphs on lines of
+    /// their own, without the last one's end.
     /// </summary>
-    public static string TextOf(List<WordBlock> blocks, ConversionContext context)
+    public static string TextOf(List<WordBlock> blocks, ConversionContext context, DocumentTextOptions? options = null)
     {
         var document = new WordDocument();
         var section = new WordSection();
         section.Blocks.AddRange(blocks);
         document.Sections.Add(section);
-        return new PlainTextWriter(document, new DocumentTextOptions(), context).Write().TrimEnd('\n');
+        return new PlainTextWriter(document, options ?? new DocumentTextOptions(), context).Write().TrimEnd('\n');
     }
 
     /// <summary>A section's own headers or footers that show (first page, other pages, even pages), each once.</summary>

@@ -24,11 +24,11 @@ namespace RaiCore.Pdf.Documents;
 /// paragraph); hyperlinks to web addresses and to bookmarks; page references (<c>PAGEREF</c>, as in tables of
 /// contents) with the PDF's page numbers; other fields as their last result; footnotes (at the end of their section)
 /// and endnotes (at the end of the document), linked from their marks; tracked changes as if accepted; content
-/// controls; equations as plain text; charts as vector graphics (newer chart types as their stored picture).
+/// controls; equations as plain text; charts as vector graphics (newer chart types as their stored picture); comments as <see cref="DocumentConverterOptions.Comments"/> asks (listed at the end, or as PDF notes).
 /// </para>
 /// <para>
 /// Not supported: text boxes and shapes as floating frames (their text is laid out after their paragraph), surface
-/// charts, SmartArt, embedded objects (their preview image is shown), comments, several text columns (laid out as one), footnotes at the
+/// charts, SmartArt, embedded objects (their preview image is shown), comments in headers and footers, several text columns (laid out as one), footnotes at the
 /// bottom of the page, line numbers, page borders, watermarks, right-to-left and vertical text beyond what the layout
 /// engine does by itself. What is left out is reported to <see cref="DocumentConverterOptions.Diagnostics"/>.
 /// Password-protected (encrypted) documents throw <see cref="NotSupportedException"/>; a Word 97-2003 (<c>.doc</c>)

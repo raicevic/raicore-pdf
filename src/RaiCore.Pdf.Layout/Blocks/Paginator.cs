@@ -1431,8 +1431,8 @@ internal sealed partial class Paginator
 
     /// <summary>
     /// Where a position of a paragraph's text is on its line, from the start of the line's content: the start of the
-    /// text or image that begins there (its right edge, right to left), a proportional place inside text it falls in,
-    /// or the end of the line.
+    /// text or image that begins there (the right edge of right-to-left text), or the end of the line. Anchors are
+    /// between spans, which are never shaped together, so a position is where a fragment starts.
     /// </summary>
     private static double AnchorX(LineLayout line, int index)
     {
@@ -1440,17 +1440,10 @@ internal sealed partial class Paginator
         var nextStart = int.MaxValue;
         foreach (var fragment in line.Fragments)
         {
-            var (start, end) = fragment.Range;
-            var rightToLeft = fragment.Run.Direction == TextDirection.RightToLeft;
-            if (index > start && index < end)
+            if (fragment.Range.Start >= index && fragment.Range.Start < nextStart)
             {
-                var share = (double)(index - start) / (end - start);
-                return fragment.X + (fragment.Width * (rightToLeft ? 1 - share : share));
-            }
-
-            if (start >= index && start < nextStart)
-            {
-                (next, nextStart) = (rightToLeft ? fragment.X + fragment.Width : fragment.X, start);
+                next = fragment.Run.Direction == TextDirection.RightToLeft ? fragment.X + fragment.Width : fragment.X;
+                nextStart = fragment.Range.Start;
             }
         }
 

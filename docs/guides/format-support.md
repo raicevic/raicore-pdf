@@ -40,7 +40,7 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Headings as PDF bookmarks | ✓ | ✓ | ✓ | ✓ |
 | Footnotes and endnotes | ◐ after the section | ◐ after the section | ◐ after the section | ◐ after the section |
 | Tracked changes | ◐ as accepted | ◐ as accepted | ◐ as accepted | ◐ as accepted |
-| Comments | ✗ | R | R | R |
+| Comments | ✓ at the end, or as PDF notes | ✓ at the end, or as PDF notes | ✓ at the end, or as PDF notes | ✓ at the end, or as PDF notes |
 | Pictures: PNG, JPEG | ✓ | ✓ | ✓ | ✓ |
 | Pictures: GIF, BMP, TIFF, WebP | ✓ | ◐ TIFF and bitmaps | ◐ bitmaps | ✓ |
 | Pictures: SVG | - | - | - | ✓ |

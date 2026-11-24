@@ -23,12 +23,12 @@ namespace RaiCore.Pdf.Documents;
 /// page numbers, hyperlinks (<c>HYPERLINK</c> fields) and other fields as their last result; inline and floating PNG,
 /// JPEG, TIFF, bitmap, EMF and WMF pictures at their size (metafiles drawn as vector graphics); the text of text boxes (laid out after their paragraph); bookmarks;
 /// footnotes and endnotes; revisions as if accepted (deleted text left out); the title and author of the summary
-/// information.
+/// information; comments as <see cref="DocumentConverterOptions.Comments"/> asks (listed at the end, or as PDF notes).
 /// </para>
 /// <para>
 /// Not supported: encrypted (password-protected) documents and documents in the Word 6 and Word 95 formats (both
 /// throw <see cref="NotSupportedException"/>), PICT pictures, drawing shapes other than pictures and text
-/// boxes, embedded objects (their preview picture is shown when it can be drawn), comments, several text columns
+/// boxes, embedded objects (their preview picture is shown when it can be drawn), several text columns
 /// (laid out as one), frames and positioned paragraphs, footnotes at the bottom of the page (they follow their
 /// section), right-to-left and vertical text beyond what the layout engine does by itself. What is left out is
 /// reported to <see cref="DocumentConverterOptions.Diagnostics"/>.

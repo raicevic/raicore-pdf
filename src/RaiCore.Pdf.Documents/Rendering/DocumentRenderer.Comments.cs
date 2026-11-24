@@ -31,9 +31,13 @@ internal sealed partial class DocumentRenderer
     private readonly List<string> _commentOrder = [];
     private readonly Dictionary<string, int> _commentNumbers = new(StringComparer.Ordinal);
     private readonly HashSet<string> _openComments = new(StringComparer.Ordinal);
+
+    /// <summary>The open comments whose quotes are still short enough to grow (each gets at most a little text).</summary>
+    private readonly HashSet<string> _quoting = new(StringComparer.Ordinal);
     private readonly Dictionary<string, StringBuilder> _commentText = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _noteAnchors = new(StringComparer.Ordinal);
     private readonly HashSet<string> _anchoredComments = new(StringComparer.Ordinal);
+    private Dictionary<string, List<WordComment>>? _replies;
     private RunFormat? _lastRunFormat;
     private bool _inCommentText;
 
@@ -48,6 +52,7 @@ internal sealed partial class DocumentRenderer
         _commentOrder.Clear();
         _commentNumbers.Clear();
         _openComments.Clear();
+        _quoting.Clear();
         _commentText.Clear();
         _noteAnchors.Clear();
         _anchoredComments.Clear();
@@ -56,14 +61,20 @@ internal sealed partial class DocumentRenderer
 
     /// <summary>
     /// The comment a reply belongs under: the comment it answers (or that one's, for a reply to a reply), or the comment
-    /// itself when it answers none that the document has.
+    /// itself when it answers none that the document has (or the replies go round in a circle).
     /// </summary>
     private string RootComment(string id)
     {
         var current = id;
-        for (var i = 0; i < 16 && _document.Comments.TryGetValue(current, out var comment) && comment.ParentId is { } parent
-            && parent != id && _document.Comments.ContainsKey(parent); i++)
+        HashSet<string>? seen = null;
+        while (_document.Comments.TryGetValue(current, out var comment) && comment.ParentId is { } parent && _document.Comments.ContainsKey(parent))
         {
+            seen ??= new HashSet<string>(StringComparer.Ordinal) { id };
+            if (!seen.Add(parent))
+            {
+                return id;
+            }
+
             current = parent;
         }
 
@@ -82,12 +93,14 @@ internal sealed partial class DocumentRenderer
                 if (InCommentedText && _document.Comments.ContainsKey(start.Id))
                 {
                     _openComments.Add(start.Id);
+                    _quoting.Add(start.Id);
                     AnchorNote(start.Id, start, link, atoms);
                 }
 
                 return true;
             case CommentEnd end:
                 _openComments.Remove(end.Id);
+                _quoting.Remove(end.Id);
                 return true;
             case CommentReference reference:
                 if (InCommentedText && _document.Comments.ContainsKey(reference.Id))
@@ -97,19 +110,7 @@ internal sealed partial class DocumentRenderer
 
                 return true;
             case TextRun run when _openComments.Count > 0 && InCommentedText:
-                foreach (var id in _openComments)
-                {
-                    if (!_commentText.TryGetValue(id, out var text))
-                    {
-                        text = new StringBuilder();
-                        _commentText[id] = text;
-                    }
-
-                    if (text.Length <= MaxQuotedText)
-                    {
-                        text.Append(run.Text);
-                    }
-                }
+                Quote(run.Text);
 
                 _lastRunFormat = run.Format;
                 atoms.Add(new Atom(run.Format.Background is null ? new TextRun(run.Text, run.Format with { Background = CommentHighlight }) : run, link));
@@ -164,10 +165,35 @@ internal sealed partial class DocumentRenderer
         atoms.Add(new Atom(new TextRun(CommentLabel(id, number), format), LinkTarget.ToDestination(CommentDestination(number))));
     }
 
+    /// <summary>Adds text to the quotes of the open comments (a quote stops growing once it is long enough).</summary>
+    private void Quote(string text)
+    {
+        List<string>? full = null;
+        foreach (var id in _quoting)
+        {
+            if (!_commentText.TryGetValue(id, out var quote))
+            {
+                quote = new StringBuilder();
+                _commentText[id] = quote;
+            }
+
+            quote.Append(text, 0, Math.Min(text.Length, MaxQuotedText + 1));
+            if (quote.Length > MaxQuotedText)
+            {
+                (full ??= []).Add(id);
+            }
+        }
+
+        foreach (var id in full ?? [])
+        {
+            _quoting.Remove(id);
+        }
+    }
+
     /// <summary>Ends a paragraph in the text of the comments whose ranges are open: their quotes run on with a space.</summary>
     private void EndCommentedParagraph()
     {
-        foreach (var id in _openComments)
+        foreach (var id in _quoting)
         {
             if (_commentText.TryGetValue(id, out var text) && text.Length > 0 && text[^1] != ' ')
             {
@@ -202,8 +228,28 @@ internal sealed partial class DocumentRenderer
     private static string CommentDestination(int number) => "_cm" + number.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>The replies to a comment (and to its replies), in the document's order.</summary>
-    private List<(string Id, WordComment Comment)> Replies(string id) =>
-        [.. _document.Comments.Where(c => c.Key != id && c.Value.ParentId is not null && RootComment(c.Key) == id).Select(c => (c.Key, c.Value))];
+    private List<WordComment> Replies(string id)
+    {
+        if (_replies is null)
+        {
+            _replies = new Dictionary<string, List<WordComment>>(StringComparer.Ordinal);
+            foreach (var (key, comment) in _document.Comments)
+            {
+                if (comment.ParentId is not null && RootComment(key) is var root && root != key)
+                {
+                    if (!_replies.TryGetValue(root, out var list))
+                    {
+                        list = [];
+                        _replies[root] = list;
+                    }
+
+                    list.Add(comment);
+                }
+            }
+        }
+
+        return _replies.TryGetValue(id, out var replies) ? replies : [];
+    }
 
     /// <summary>
     /// The comments listed after the document (<see cref="DocumentComments.AtEnd"/>): on a page of their own under a
@@ -246,7 +292,7 @@ internal sealed partial class DocumentRenderer
                         Format = ParagraphFormat.Default with { IndentStart = 18, SpaceAfter = 3 },
                         MarkFormat = RunFormat.Default with { Italic = true, Color = PdfColor.FromRgb(89, 89, 89) },
                     };
-                    quote.Inlines.Add(new TextRun("On “" + about + "”", quote.MarkFormat));
+                    quote.Inlines.Add(new TextRun("On \u201C" + about + "\u201D", quote.MarkFormat));
                     foreach (var block in RenderBlocks([quote], width, inTable: false))
                     {
                         entry.Add(block);
@@ -254,7 +300,7 @@ internal sealed partial class DocumentRenderer
                 }
 
                 entry.Add(CommentBody(comment, width));
-                foreach (var (_, reply) in Replies(id))
+                foreach (var reply in Replies(id))
                 {
                     foreach (var block in CommentHeader("Reply", reply, width, reply: true))
                     {
@@ -313,7 +359,7 @@ internal sealed partial class DocumentRenderer
     /// <summary>Text on one line, at most <see cref="MaxQuotedText"/> characters (cut at a word, with an ellipsis).</summary>
     internal static string Shortened(string text)
     {
-        var line = string.Join(' ', text.Split((char[])[' ', '\t', '\n', '\r', ' '], StringSplitOptions.RemoveEmptyEntries));
+        var line = string.Join(' ', text.Split((char[])[' ', '\t', '\n', '\r', '\u00A0'], StringSplitOptions.RemoveEmptyEntries));
         if (line.Length <= MaxQuotedText)
         {
             return line;
@@ -326,7 +372,7 @@ internal sealed partial class DocumentRenderer
             cut--;
         }
 
-        return line[..cut].TrimEnd() + "…";
+        return line[..cut].TrimEnd() + "\u2026";
     }
 
     /// <summary>
@@ -355,7 +401,7 @@ internal sealed partial class DocumentRenderer
     private string NoteText(string id, WordComment comment)
     {
         var text = new StringBuilder(PlainTextWriter.TextOf(comment.Blocks, _context));
-        foreach (var (_, reply) in Replies(id))
+        foreach (var reply in Replies(id))
         {
             text.Append("\n\nReply");
             if (reply.Author is { } author)

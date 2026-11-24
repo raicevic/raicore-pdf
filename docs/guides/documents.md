@@ -79,12 +79,37 @@ The [format support](format-support.md) page compares all formats side by side.
 | `HeadingBookmarks` | Headings as the PDF's bookmarks (default `true`). |
 | `Title` | The document's title; by default the title of the document's properties. |
 | `Tagged` | A tagged (accessible) PDF (default `false`). |
+| `Comments` | How comments are printed: `None` (the default), `AtEnd` or `Annotations`; see [Comments](#comments). |
 | `Diagnostics` | Receives what could not be shown as the document does, below. |
 | `Limits` | The `ResourceLimits` of the conversion, below. |
 
 Page size, margins and orientation come from the document's sections. The returned `PdfDocument` can be changed
 before it is saved: metadata, `Language` (set from the document's default language in a tagged PDF), `PdfUA`,
 `PdfAConformance`, encryption, attachments.
+
+## Comments
+
+Comments are left out by default (`DocumentComments.None`), as word processors print without markup, and reported to
+`Diagnostics`. `Comments` prints them, in all four formats (the option is on `DocumentConverterOptions`, which every
+converter's options share):
+
+- `DocumentComments.AtEnd`: after the document, on a page of its own under a "Comments" heading (a PDF bookmark), each
+  comment in the order of its anchor with its label (the author's initials and its number, `[AR1]`, as Word prints
+  markup), author, date (if the document stores one), the text it is about (shortened to a line) and its text; replies
+  follow the comment they answer. In the body, the text a comment is about is highlighted and its label marks the
+  anchor, as a superscript that links to the comment.
+- `DocumentComments.Annotations`: as PDF notes (text annotations, "sticky notes"), each where the text it is about
+  starts (or at its mark, when it has no range), with its author as the note's title; the text is highlighted, and the
+  replies are part of the note's text. In a tagged PDF, each note is an `Annot` structure element.
+
+[!code-csharp[](../snippets/WordDocuments.cs#comments)]
+
+What is read: DOCX comments with their ranges, authors, initials, dates and replies (Word 2013 and later); `.doc`
+comments (annotations) with their authors, initials and ranges, and their dates and replies from Word 2002 and later;
+RTF annotations (`\atnid`, `\atnauthor`, `\atndate`, `\atrfstart`, `\atrfend`, `\atnparent`); ODT annotations with
+their creators, dates, ranges (`office:annotation-end`) and replies (LibreOffice's `parent-name`). Comments in
+headers and footers are not printed. `DocumentText` includes the comments' text with
+`DocumentTextOptions.IncludeComments`.
 
 ## Fonts
 
@@ -104,8 +129,8 @@ system's fonts, or Carlito, for Word's line breaks.
 - `UnsupportedContent`: charts that cannot be drawn (surface charts; newer chart types, shown as their stored
   picture; 3-D charts, drawn flat), SmartArt, embedded objects (shown as their preview image when it can be drawn),
   shapes and text boxes (their text is laid out after their paragraph), several text columns (laid out as one),
-  embedded document parts (`altChunk`), equations (shown as text), and what a WMF or EMF picture uses that is
-  approximated or left out (see below).
+  embedded document parts (`altChunk`), equations (shown as text), comments when `Comments` is `None`, and what a
+  WMF or EMF picture uses that is approximated or left out (see below).
 - `ImageNotLoaded`: images in formats that cannot be drawn (PICT, StarView metafiles), damaged, missing or linked
   images; they are left out. A damaged WMF or EMF picture is drawn up to the damage, and reported here too.
 - `Layout`: content wider than its box or taller than a page.
@@ -187,7 +212,7 @@ turn converts a `.docx` package given to it.
 - **Content:** sections (hidden ones left out), tables of contents and other indexes as their content, links to web
   addresses and bookmarks, bookmarks, footnotes and endnotes (with their own citations, numbered as the notes
   configuration says), page numbers, page counts and page references computed from the PDF's pages, other fields
-  (dates, titles, chapters, sequences) as their text, tracked changes as if accepted, comments left out.
+  (dates, titles, chapters, sequences) as their text, tracked changes as if accepted, comments as `Comments` asks.
 - **Frames:** images in the package (PNG, JPEG, GIF, BMP, TIFF, WebP, SVG, WMF, EMF) or embedded as base64 in flat
   documents; of several alternatives the first that can be drawn (a bitmap or SVG before a metafile). Frames anchored as characters are in the line; frames anchored
   to the paragraph with text wrapping float at the left or right; others stand on a line of their own. Charts and
@@ -195,7 +220,7 @@ turn converts a `.docx` package given to it.
   StarView metafile, which cannot); the text of text boxes and shapes follows their paragraph.
 
 Not supported in OpenDocument text: drawing shapes (their text is kept), several columns of a page style or section,
-forms and their controls, scripts (ignored), comments, line numbering and page backgrounds; each is reported to
+forms and their controls, scripts (ignored), line numbering and page backgrounds; each is reported to
 `Diagnostics`. Password-protected (encrypted) documents throw `NotSupportedException`; malformed packages and XML that
 is not well-formed `DocumentFormatException`. Linked images (outside the package) are left out. The `Limits` apply as to
 Word documents, the XML of flat documents included; table rows and cells that repeat others
@@ -244,7 +269,7 @@ What is converted (RTF 1.9.1):
 
 Not supported, and reported to `Diagnostics`: PICT pictures (`ImageNotLoaded` for pictures that cannot be decoded or
 are larger than `MaxResourceBytes`), drawing objects (`\do`), shapes as drawings, embedded objects (their
-result is shown), comments (annotations), several text columns. Also not supported: frames and positioned paragraphs
+result is shown), several text columns. Also not supported: frames and positioned paragraphs
 (laid out in the text), footnotes at the bottom of the page, page borders, right-to-left and vertical text beyond what
 the layout engine does by itself. Revisions are shown as if accepted.
 
@@ -291,7 +316,7 @@ What is converted ([MS-DOC]):
   summary information as the PDF's.
 
 Not supported, and reported to `Diagnostics`: PICT pictures (`ImageNotLoaded`, as are pictures larger than
-`MaxResourceBytes` and damaged ones), drawing shapes other than pictures and text boxes, comments, several text
+`MaxResourceBytes` and damaged ones), drawing shapes other than pictures and text boxes, several text
 columns; text boxes are laid out after their paragraph. Also not supported: frames and positioned paragraphs, form
 fields' boxes, footnotes at the bottom of the page, page borders, right-to-left and vertical text beyond what the
 layout engine does by itself. Revisions are shown as if accepted.
@@ -345,7 +370,7 @@ text, rows deleted from a Word table, charts, SmartArt and embedded objects have
 ## Not supported
 
 Floating text boxes and shapes as frames (their text is laid out after their paragraph), surface charts and charts in
-`.doc`, RTF and ODT files (beyond the pictures stored with them), SmartArt, embedded objects, PICT images, comments, several text columns, footnotes at the bottom of their page (they follow their
+`.doc`, RTF and ODT files (beyond the pictures stored with them), SmartArt, embedded objects, PICT images, comments in headers and footers, several text columns, footnotes at the bottom of their page (they follow their
 section), line numbers, page borders and backgrounds, watermarks, drop caps, vertical and right-to-left text beyond what
 the layout engine does by itself, hyphenation settings, and fields that would need calculating (their saved result is
 shown).

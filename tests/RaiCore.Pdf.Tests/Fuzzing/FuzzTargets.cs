@@ -518,13 +518,15 @@ public static class FuzzTargets
 
     /// <summary>
     /// A Word document: its package and parts read (document, styles, numbering, settings, theme, headers, footers,
-    /// notes, media) and laid out; every third one (by length) tagged, every other one without heading bookmarks.
+    /// notes, comments, media) and laid out; every third one (by length) tagged, every other one without heading
+    /// bookmarks, comments left out, listed at the end or as notes (by length / 3).
     /// </summary>
     public static void Docx(byte[] input) => DocxToPdf.ConvertToBytes(input, new DocxConverterOptions
     {
         Limits = Limits,
         Tagged = input.Length % 3 == 0,
         HeadingBookmarks = input.Length % 2 == 0,
+        Comments = CommentsFor(input),
         Diagnostics = _ => { },
     });
 
@@ -629,39 +631,48 @@ public static class FuzzTargets
 
     /// <summary>
     /// An OpenDocument text document: its package (or flat XML document) and parts read (content, styles, meta,
-    /// settings, pictures) and laid out; every third one (by length) tagged, every other one without heading bookmarks.
+    /// settings, pictures, comments) and laid out; every third one (by length) tagged, every other one without heading
+    /// bookmarks, comments left out, listed at the end or as notes (by length / 3).
     /// </summary>
     public static void Odt(byte[] input) => OdtToPdf.ConvertToBytes(input, new OdtConverterOptions
     {
         Limits = Limits,
         Tagged = input.Length % 3 == 0,
         HeadingBookmarks = input.Length % 2 == 0,
+        Comments = CommentsFor(input),
         Diagnostics = _ => { },
     });
 
     /// <summary>
-    /// RTF conversion (groups, destinations, code pages, lists, tables, fields, pictures), every third input (by length)
-    /// tagged, every other one without heading bookmarks.
+    /// RTF conversion (groups, destinations, code pages, lists, tables, fields, pictures, comments), every third input (by
+    /// length) tagged, every other one without heading bookmarks, comments left out, listed at the end or as notes (by
+    /// length / 3).
     /// </summary>
     public static void Rtf(byte[] input) => RtfToPdf.ConvertToBytes(input, new RtfConverterOptions
     {
         Limits = Limits,
         Tagged = input.Length % 3 == 0,
         HeadingBookmarks = input.Length % 2 == 0,
+        Comments = CommentsFor(input),
         Diagnostics = _ => { },
     });
 
     /// <summary>
     /// Word 97-2003 conversion (compound file, FIB, piece table, formatted disk pages, style sheet, lists, tables,
-    /// fields, pictures), every third input (by length) tagged, every other one without heading bookmarks.
+    /// fields, pictures, comments), every third input (by length) tagged, every other one without heading bookmarks,
+    /// comments left out, listed at the end or as notes (by length / 3).
     /// </summary>
     public static void Doc(byte[] input) => DocToPdf.ConvertToBytes(input, new DocConverterOptions
     {
         Limits = Limits,
         Tagged = input.Length % 3 == 0,
         HeadingBookmarks = input.Length % 2 == 0,
+        Comments = CommentsFor(input),
         Diagnostics = _ => { },
     });
+
+    /// <summary>How the word-processing targets print comments: by the input's length / 3, so each mode meets tagging.</summary>
+    private static DocumentComments CommentsFor(byte[] input) => (DocumentComments)(input.Length / 3 % 3);
 
     /// <summary>
     /// Text extraction from word-processing documents of any format (DOCX, DOC, RTF, ODT, detected from the data): every

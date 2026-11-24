@@ -5,6 +5,15 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Documents: comments at the end or as notes** (#292): the new `DocumentConverterOptions.Comments` prints the
+  comments of DOCX, DOC, RTF and ODT documents, listed after the document (`DocumentComments.AtEnd`: each with its
+  author, date, the text it is about and its replies, the anchors marked with numbered superscripts linking to them)
+  or as PDF notes where the text they are about starts (`DocumentComments.Annotations`); the commented text is
+  highlighted. The default (`None`) leaves them out as before, now reported to `Diagnostics` for DOCX and ODT too.
+  Layout: `FlowDocument.AnchorPlaced` reports where paragraph anchors are drawn.
+
 ## [1.2.0] - 2026-11-24
 
 Closing migration gaps: dynamic XFA forms, charts, pictures and print formatting in spreadsheets, WMF and EMF
