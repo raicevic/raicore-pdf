@@ -1,1 +1,19 @@
 #nullable enable
+RaiCore.Pdf.Editing.PdfDynamicXfaHandling
+RaiCore.Pdf.Editing.PdfDynamicXfaHandling.RemoveXfa = 1 -> RaiCore.Pdf.Editing.PdfDynamicXfaHandling
+RaiCore.Pdf.Editing.PdfDynamicXfaHandling.Throw = 0 -> RaiCore.Pdf.Editing.PdfDynamicXfaHandling
+RaiCore.Pdf.Editing.PdfEditor.FlattenForm(RaiCore.Pdf.Editing.PdfFormFlattenOptions! options) -> RaiCore.Pdf.Editing.PdfFlattenResult!
+RaiCore.Pdf.Editing.PdfEditor.RemoveXfa(bool force = false) -> bool
+RaiCore.Pdf.Editing.PdfForm.IsXfaPlaceholder.get -> bool
+RaiCore.Pdf.Editing.PdfFormFlattenOptions
+RaiCore.Pdf.Editing.PdfFormFlattenOptions.DynamicXfa.get -> RaiCore.Pdf.Editing.PdfDynamicXfaHandling
+RaiCore.Pdf.Editing.PdfFormFlattenOptions.DynamicXfa.init -> void
+RaiCore.Pdf.Editing.PdfFormFlattenOptions.PdfFormFlattenOptions() -> void
+static RaiCore.Pdf.Editing.PdfFormFlattenOptions.Default.get -> RaiCore.Pdf.Editing.PdfFormFlattenOptions!
+override RaiCore.Pdf.Editing.PdfFormFlattenOptions.Equals(object? obj) -> bool
+override RaiCore.Pdf.Editing.PdfFormFlattenOptions.GetHashCode() -> int
+override RaiCore.Pdf.Editing.PdfFormFlattenOptions.ToString() -> string!
+RaiCore.Pdf.Editing.PdfFormFlattenOptions.<Clone>$() -> RaiCore.Pdf.Editing.PdfFormFlattenOptions!
+RaiCore.Pdf.Editing.PdfFormFlattenOptions.Equals(RaiCore.Pdf.Editing.PdfFormFlattenOptions? other) -> bool
+static RaiCore.Pdf.Editing.PdfFormFlattenOptions.operator !=(RaiCore.Pdf.Editing.PdfFormFlattenOptions? left, RaiCore.Pdf.Editing.PdfFormFlattenOptions? right) -> bool
+static RaiCore.Pdf.Editing.PdfFormFlattenOptions.operator ==(RaiCore.Pdf.Editing.PdfFormFlattenOptions? left, RaiCore.Pdf.Editing.PdfFormFlattenOptions? right) -> bool

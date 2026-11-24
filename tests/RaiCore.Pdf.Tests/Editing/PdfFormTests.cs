@@ -104,6 +104,7 @@ public class PdfFormTests
         var form = PdfEditor.Open(pdf).GetForm();
 
         Assert.Equal(expected, form.Xfa);
+        Assert.Equal(expected == PdfXfaKind.Dynamic, form.IsXfaPlaceholder); // No fields: only a dynamic form's pages are a placeholder.
         Assert.True(form.HasAcroForm);
         Assert.Empty(form.Fields);
     }

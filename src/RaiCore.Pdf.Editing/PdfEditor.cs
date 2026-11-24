@@ -169,12 +169,90 @@ public sealed class PdfEditor
     /// </para>
     /// <para>
     /// A static XFA form is removed with the form it comes with; a dynamic XFA form cannot be flattened, since its pages
-    /// are laid out by the viewer. Other annotations are not touched.
+    /// are laid out by the viewer (<see cref="FlattenForm(PdfFormFlattenOptions)"/> can remove its XFA first). Other
+    /// annotations are not touched.
     /// </para>
     /// </remarks>
     /// <returns>How many widgets were drawn (and how many of those with an appearance made for them) and removed.</returns>
     /// <exception cref="NotSupportedException">The form is a dynamic XFA form.</exception>
     public PdfFlattenResult FlattenForm() => new FormFlattener(_table, _table.Dictionary(_catalog)!, Pages.References).Flatten();
+
+    /// <summary>
+    /// Flattens the interactive form as <see cref="FlattenForm()"/> does, with a choice of what happens to a dynamic XFA
+    /// form: throw (the default), or remove the XFA and flatten the AcroForm behind it.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var editor = PdfEditor.Open("application.pdf");
+    /// editor.FlattenForm(new PdfFormFlattenOptions { DynamicXfa = PdfDynamicXfaHandling.RemoveXfa });
+    /// editor.Save("application-flat.pdf");
+    /// </code>
+    /// </example>
+    /// <param name="options">What to do with a dynamic XFA form.</param>
+    /// <returns>How many widgets were drawn (and how many of those with an appearance made for them) and removed.</returns>
+    /// <exception cref="NotSupportedException">The form is a dynamic XFA form and <paramref name="options"/> says to throw.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The form is a dynamic XFA form whose pages are only a placeholder (<see cref="PdfForm.IsXfaPlaceholder"/>).
+    /// </exception>
+    public PdfFlattenResult FlattenForm(PdfFormFlattenOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.DynamicXfa == PdfDynamicXfaHandling.RemoveXfa && GetForm().Xfa == PdfXfaKind.Dynamic)
+        {
+            RemoveXfa();
+        }
+
+        return FlattenForm();
+    }
+
+    /// <summary>
+    /// Removes the XFA form and keeps the AcroForm: deletes <c>/XFA</c> from the form and <c>/NeedsRendering</c> from the
+    /// catalog, so that every viewer shows and fills the AcroForm fields, with their values and appearances, on the PDF
+    /// pages. The fields stay fillable; <see cref="FlattenForm()"/> burns them in afterwards if wanted.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For a static XFA form this loses nothing that viewers without XFA show. A dynamic XFA form is laid out by the viewer,
+    /// so its AcroForm may be partial or out of date; where the PDF pages are only a placeholder
+    /// (<see cref="PdfForm.IsXfaPlaceholder"/>), the result would be the "please wait" page alone, so this throws unless
+    /// <paramref name="force"/> is set.
+    /// </para>
+    /// <para>XFA usage rights and scripts go with the XFA. Check <see cref="GetForm"/> first to see what a document has.</para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// var editor = PdfEditor.Open("application.pdf");
+    /// if (!editor.GetForm().IsXfaPlaceholder)
+    /// {
+    ///     editor.RemoveXfa();
+    ///     editor.Save("application-acroform.pdf");
+    /// }
+    /// </code>
+    /// </example>
+    /// <param name="force">Remove the XFA even when the PDF pages are only a placeholder.</param>
+    /// <returns>Whether there was an XFA form to remove.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// The PDF pages are only a placeholder for a dynamic XFA form and <paramref name="force"/> is not set.
+    /// </exception>
+    public bool RemoveXfa(bool force = false)
+    {
+        var form = GetForm();
+        if (form.IsXfaPlaceholder && !force)
+        {
+            throw new InvalidOperationException(
+                "The document's pages are only a placeholder for a dynamic XFA form: removing the XFA would leave the placeholder "
+                + "page alone. Pass force: true to remove it anyway.");
+        }
+
+        var catalog = _table.Dictionary(_catalog)!;
+        catalog["NeedsRendering"] = null;
+        if (_table.Dictionary(catalog["AcroForm"]) is { } acroForm)
+        {
+            acroForm["XFA"] = null;
+        }
+
+        return form.Xfa != PdfXfaKind.None;
+    }
 
     /// <summary>
     /// Flattens annotations: draws each one into its page as it looks when printed, then removes it, so that highlights,
@@ -190,7 +268,7 @@ public sealed class PdfEditor
     /// <para>
     /// Links are kept unless <see cref="PdfAnnotationFlattenOptions.KeepLinks"/> is off, and
     /// <see cref="PdfAnnotationFlattenOptions.Types"/> picks the types to flatten. Form fields are never touched: use
-    /// <see cref="FlattenForm"/>.
+    /// <see cref="FlattenForm()"/>.
     /// </para>
     /// </remarks>
     /// <param name="options">Which annotations; by default all but links.</param>

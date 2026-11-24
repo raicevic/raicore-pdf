@@ -88,6 +88,25 @@ internal static class Editing
         filled.Save("contract-flattened.pdf");
         #endregion
 
+        #region xfa
+        // An XFA form: keep what viewers without XFA show (the AcroForm), unless the pages are only a placeholder.
+        var application = PdfEditor.Open("contract.pdf");
+        var xfa = application.GetForm();
+        if (xfa.IsXfaPlaceholder)
+        {
+            Console.WriteLine("The form exists only as XFA: the PDF pages just say 'Please wait...'.");
+        }
+        else if (application.RemoveXfa())
+        {
+            application.Save("contract-acroform.pdf");
+        }
+
+        // Or remove a dynamic XFA form while flattening (a placeholder still throws).
+        var flat = PdfEditor.Open("contract.pdf");
+        flat.FlattenForm(new PdfFormFlattenOptions { DynamicXfa = PdfDynamicXfaHandling.RemoveXfa });
+        flat.Save("contract-flat.pdf");
+        #endregion
+
         #region flatten-annotations
         // Burn the reviewers' highlights, ink and stamps into the pages; links keep working.
         var reviewed = PdfEditor.Open("contract-reviewed.pdf");

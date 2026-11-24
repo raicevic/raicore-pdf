@@ -7,7 +7,7 @@ using RaiCore.Pdf.Reading;
 namespace RaiCore.Pdf.Editing;
 
 /// <summary>
-/// Flattens a document's interactive form (see <see cref="PdfEditor.FlattenForm"/>): draws each widget's normal
+/// Flattens a document's interactive form (see <see cref="PdfEditor.FlattenForm()"/>): draws each widget's normal
 /// appearance into its page, making one where there is none (or the form asks viewers to make new ones), and removes the
 /// widgets, the fields and the form.
 /// </summary>
