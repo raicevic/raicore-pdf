@@ -334,6 +334,16 @@ public class ChartExTests
     }
 
     [Fact]
+    public void A_single_axis_id_names_a_category_or_value_axis_by_the_files_axis()
+    {
+        // The funnel's one axis id is its category axis (its gap width applies), the pareto columns' their value axis.
+        var funnel = ReadPartOf("color_funnel.xlsx", "xl/charts/chartEx1.xml").Chart!.PlotArea.Groups[0];
+        Assert.Equal((1, 60), (funnel.AxisIds[0], funnel.GapWidth));
+        var pareto = ReadPartOf("paretoLine.xlsx", "xl/charts/chartEx1.xml").Chart!.PlotArea.Groups[0];
+        Assert.Equal([0, 1], pareto.AxisIds);
+    }
+
+    [Fact]
     public void Hierarchies_repeat_blank_outer_levels_and_end_at_blank_inner_ones()
     {
         // Levels in the file: the innermost first.
