@@ -1474,6 +1474,7 @@ internal sealed partial class Paginator
         var headerEnd = layout.HeaderRows;
         var footerStart = table.Rows.Count - layout.FooterRows;
         var anchoredCells = new HashSet<CellLayout>(ReferenceEqualityComparer.Instance);
+        List<PlacedRow>? placed = table.Overlay is null ? null : [];
 
         // Header rows are content where the table starts, and artifacts where they repeat.
         var headerPlaced = false;
@@ -1484,6 +1485,12 @@ internal sealed partial class Paginator
             headerPlaced |= start == 0 && end == headerEnd;
             _pages[PageIndex].Add((canvas, pageHeight) => DrawRows(canvas, pageHeight, layout, x, top, start, end, repeated));
             AddCellAnchors(layout, top, start, end, anchoredCells);
+            for (var row = start; row < end && placed is not null; row++)
+            {
+                var rowTop = top + layout.Height(start, row) + (row > start ? layout.SpacingY : 0);
+                placed.Add(new PlacedRow(row, PageIndex, rowTop, layout.RowHeights[row], repeated));
+            }
+
             Y += layout.Height(start, end);
             _placements.Add(new Placement(PageIndex, table, top, Y, start, end, x, width));
             Y += layout.SpacingY;
@@ -1532,7 +1539,7 @@ internal sealed partial class Paginator
                 // A row that does not fit is split here if the start of its cells fits, as in browsers.
                 if (!_static && CanSplit(layout, groupStart, end) && MinimumRowStart(layout, groupStart) <= Remaining + Epsilon)
                 {
-                    SplitRows(layout, groupStart, end, x, width);
+                    SplitRows(layout, groupStart, end, x, width, placed);
                     continue;
                 }
 
@@ -1548,7 +1555,7 @@ internal sealed partial class Paginator
                 }
                 else
                 {
-                    SplitRows(layout, groupStart, end, x, width);
+                    SplitRows(layout, groupStart, end, x, width, placed);
                 }
             }
         }
@@ -1560,6 +1567,7 @@ internal sealed partial class Paginator
 
         if (layout.FooterRows == 0)
         {
+            DrawOverlay(table, layout, x, placed);
             return;
         }
 
@@ -1575,10 +1583,45 @@ internal sealed partial class Paginator
                 var top = bottom + layout.SpacingY;
                 _pages[page].Add((canvas, pageHeight) => DrawRows(canvas, pageHeight, layout, x, top, footerStart, table.Rows.Count, repeated: true));
                 _placements.Add(new Placement(page, table, top, top + footerHeight, footerStart, table.Rows.Count, x, width));
+                for (var row = footerStart; row < table.Rows.Count && placed is not null; row++)
+                {
+                    placed.Add(new PlacedRow(row, page, top + layout.Height(footerStart, row) + (row > footerStart ? layout.SpacingY : 0), layout.RowHeights[row], true));
+                }
             }
         }
 
         Place(footerStart, table.Rows.Count);
+        DrawOverlay(table, layout, x, placed);
+    }
+
+    /// <summary>
+    /// Adds what a table's overlay (if it has one) draws to its pages, given where its rows went, over the flow content,
+    /// as an artifact.
+    /// </summary>
+    private void DrawOverlay(TableBlock table, TableLayout layout, double x, List<PlacedRow>? placed)
+    {
+        if (table.Overlay is not { } overlay || placed is null)
+        {
+            return;
+        }
+
+        var placement = new TablePlacement([.. layout.ColumnX.Select(c => x + c)], placed);
+        var outer = _layer;
+        _layer = new PaintLayer(PaintLayer.Positioned, 0);
+        try
+        {
+            foreach (var (page, draw) in overlay(placement))
+            {
+                if (page >= 0 && page < _pages.Count)
+                {
+                    _pages[page].Add((canvas, pageHeight) => LayoutTagging.Decoration(canvas, () => draw(canvas, pageHeight)));
+                }
+            }
+        }
+        finally
+        {
+            _layer = outer;
+        }
     }
 
     /// <summary>

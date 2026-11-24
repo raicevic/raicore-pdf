@@ -52,6 +52,12 @@ internal sealed class XlsxWorksheet
     /// <summary>Whether rows are hidden unless the sheet lists them.</summary>
     public bool ZeroHeight { get; set; }
 
+    /// <summary>The height of rows without one, in points, or <c>null</c>.</summary>
+    public double? DefaultRowHeight { get; set; }
+
+    /// <summary>The drawings (pictures, shapes, charts), anchored to the sheet's own rows and columns, in z-order.</summary>
+    public List<Drawings.SheetDrawing> Drawings { get; } = [];
+
     public bool RightToLeft { get; set; }
 
     /// <summary>
@@ -104,6 +110,7 @@ internal sealed class XlsxWorksheet
                 {
                     case "sheetFormatPr":
                         sheet.DefaultColumnWidth = Width(reader.GetAttribute("defaultColWidth"));
+                        sheet.DefaultRowHeight = Width(reader.GetAttribute("defaultRowHeight"));
                         sheet.BaseColumnWidth = Width(reader.GetAttribute("baseColWidth"));
                         sheet.ZeroHeight = reader.GetAttribute("zeroHeight") is "1" or "true";
                         break;

@@ -83,6 +83,8 @@ internal static class XlsWorksheet
     private const ushort HorizontalPageBreaks = 0x001B;
     private const ushort VerticalPageBreaks = 0x001A;
     private const ushort SxView = 0x00B0;
+    private const ushort MsoDrawing = 0x00EC;
+    private const ushort Txo = 0x01B6;
 
     /// <summary>The BOF type of a worksheet (or dialog sheet).</summary>
     private const int WorksheetType = 0x0010;
@@ -98,7 +100,8 @@ internal static class XlsWorksheet
     /// <param name="offset">The offset of the sheet's BOF record in the stream.</param>
     /// <param name="maxCells">The most cells that show something the sheet may have.</param>
     /// <param name="checkpoint">Called regularly; throws to stop.</param>
-    public static XlsxWorksheet Read(XlsWorkbook workbook, int offset, long maxCells, Action? checkpoint)
+    /// <param name="limits">The limits its drawing is read within, or <c>null</c> to leave its drawing out (its objects only counted).</param>
+    public static XlsxWorksheet Read(XlsWorkbook workbook, int offset, long maxCells, Action? checkpoint, ResourceLimits? limits = null)
     {
         var sheet = new XlsxWorksheet();
         var colored = new Dictionary<(CellFormat, PdfColor), CellFormat>();
@@ -131,7 +134,7 @@ internal static class XlsWorksheet
             {
                 sheet.CountFormatting(style, value.Rich);
             }
-        });
+        }, limits);
         return sheet;
     }
 
@@ -139,8 +142,15 @@ internal static class XlsWorksheet
     /// Reads a worksheet's records: its layout into <paramref name="sheet"/> and its cells, as stored, to
     /// <paramref name="cells"/>. Reads nothing unless the substream at the offset is a worksheet.
     /// </summary>
-    public static void Read(XlsWorkbook workbook, int offset, XlsxWorksheet sheet, Action? checkpoint, CellSink cells)
+    /// <param name="workbook">The workbook.</param>
+    /// <param name="offset">The offset of the sheet's BOF record.</param>
+    /// <param name="sheet">Receives the layout (and, with <paramref name="limits"/>, the drawings).</param>
+    /// <param name="checkpoint">Called regularly; throws to stop.</param>
+    /// <param name="cells">Receives the cells.</param>
+    /// <param name="limits">The limits its drawing is read within, or <c>null</c> to leave its drawing out (its objects only counted).</param>
+    public static void Read(XlsWorkbook workbook, int offset, XlsxWorksheet sheet, Action? checkpoint, CellSink cells, ResourceLimits? limits = null)
     {
+        var drawing = limits is not null && workbook.Biff == 8 ? new XlsDrawingRecords() : null;
         var reader = new BiffReader(workbook.Stream, offset);
         if (offset < 0 || !reader.Next() || reader.Id != XlsWorkbook.Bof || BiffReader.U16(reader.Data, 2) != WorksheetType)
         {
@@ -301,10 +311,24 @@ internal static class XlsWorksheet
                     }
 
                     break;
+                case MsoDrawing when drawing is not null:
+                    drawing.AddDrawing(data);
+                    break;
+                case Obj when drawing is not null:
+                    drawing.AddObject(data, HasSubrecord(data, 0x0009));
+                    break;
+                case Txo when drawing is not null:
+                    drawing.AddText(data, reader.Breaks);
+                    break;
                 default:
                     CountUnsupported(id, data, workbook.Biff, sheet.Unsupported);
                     break;
             }
+        }
+
+        if (drawing is not null && limits is not null)
+        {
+            sheet.Drawings.AddRange(XlsDrawing.Read(workbook, drawing, limits, sheet.Unsupported));
         }
 
         if (pending is var (lastRow, lastColumn, lastXf))

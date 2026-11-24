@@ -83,6 +83,13 @@ public sealed class TableBlock : Block
     /// <summary>Position of a table narrower than the available width (e.g. CSS <c>margin: 0 auto</c> centers it).</summary>
     public BlockAlignment Alignment { get; init; }
 
+    /// <summary>
+    /// Draws over the table once its rows are placed (the drawings of a spreadsheet, anchored to its cells), or
+    /// <c>null</c> (the default) for nothing. Called once each time the table is laid out, with where its columns and
+    /// rows went; what it returns for each page is painted over the page's flow content, as an artifact.
+    /// </summary>
+    internal Func<TablePlacement, IEnumerable<(int Page, Action<PdfCanvas, double> Draw)>>? Overlay { get; init; }
+
     /// <summary>Appends a row.</summary>
     public TableBlock Add(TableRow row)
     {
@@ -91,6 +98,22 @@ public sealed class TableBlock : Block
         return this;
     }
 }
+
+/// <summary>A piece of a table row placed on a page.</summary>
+/// <param name="Row">The row's index in the table.</param>
+/// <param name="Page">The page, from 0.</param>
+/// <param name="Top">The top of the piece, in points from the top of the page.</param>
+/// <param name="Height">The height of the piece.</param>
+/// <param name="Repeated">Whether this is a header (or footer) row repeated on a page the table continues on.</param>
+internal readonly record struct PlacedRow(int Row, int Page, double Top, double Height, bool Repeated);
+
+/// <summary>Where a table went (for <see cref="TableBlock.Overlay"/>).</summary>
+/// <param name="ColumnEdges">
+/// The left edge of each column of the grid and the right edge of the last, in points from the left of the page, left
+/// to right (a right-to-left table's first column is its last here).
+/// </param>
+/// <param name="Rows">The pieces of its rows, in the order they were placed.</param>
+internal sealed record TablePlacement(IReadOnlyList<double> ColumnEdges, IReadOnlyList<PlacedRow> Rows);
 
 /// <summary>A table row.</summary>
 public sealed class TableRow

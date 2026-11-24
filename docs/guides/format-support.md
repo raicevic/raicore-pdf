@@ -74,8 +74,11 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Print area, print titles, orientation, scale, fit to width | ✓ | ✓ | - |
 | Header row repeated on every page | ✓ print titles | ✓ print titles | ✓ `HasHeaderRow` |
 | Pivot tables | ◐ their cells, R | ◐ their cells, R | - |
-| Charts and chart sheets | R | R | - |
-| Pictures and drawings | R | R | - |
+| Charts in a sheet | ✓ newer types R | R | - |
+| Chart sheets | R | R | - |
+| Pictures: PNG, JPEG, GIF, BMP, TIFF, EMF, WMF | ✓ cropped, turned | ✓ bitmaps, metafiles | - |
+| Shapes and text boxes | ✓ preset and free-form geometry | ◐ common shape types, R | - |
+| SmartArt, ink, form controls | R | R | - |
 | Conditional formatting, data bars, color scales | R | R | - |
 | Comments and notes | R | R | - |
 | Headers and footers, page breaks set by hand | R | R | - |

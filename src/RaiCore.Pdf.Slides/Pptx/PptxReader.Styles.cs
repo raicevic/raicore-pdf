@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+using RaiCore.Pdf.DrawingML;
 using RaiCore.Pdf.Slides.Model;
 
 namespace RaiCore.Pdf.Slides.Pptx;
@@ -22,86 +23,7 @@ internal sealed partial class PptxReader
     };
 
     /// <summary>The geometry of a shape's properties (<c>a:prstGeom</c> or <c>a:custGeom</c>), or <c>null</c> if it has none.</summary>
-    internal static Model.Geometry? Geometry(XElement? spPr)
-    {
-        if (spPr.El("prstGeom") is { } preset)
-        {
-            return new PresetGeometry(preset.Attr("prst") ?? "rect", Adjustments(preset.El("avLst")));
-        }
-
-        if (spPr.El("custGeom") is { } custom)
-        {
-            var guides = new List<(string, string)>();
-            foreach (var list in new[] { custom.El("avLst"), custom.El("gdLst") })
-            {
-                foreach (var gd in list.Els("gd"))
-                {
-                    if (gd.Attr("name") is { Length: > 0 } name)
-                    {
-                        guides.Add((name, gd.Attr("fmla") ?? string.Empty));
-                    }
-                }
-            }
-
-            var paths = new List<CustomPath>();
-            foreach (var path in custom.El("pathLst").Els("path"))
-            {
-                var commands = new List<CustomCommand>();
-                foreach (var command in path.Elements())
-                {
-                    var points = command.Els("pt").SelectMany(p => new[] { p.Attr("x") ?? "0", p.Attr("y") ?? "0" }).ToList();
-                    switch (command.Name.LocalName)
-                    {
-                        case "moveTo":
-                            commands.Add(new CustomCommand(CustomCommandKind.MoveTo, points));
-                            break;
-                        case "lnTo":
-                            commands.Add(new CustomCommand(CustomCommandKind.LineTo, points));
-                            break;
-                        case "quadBezTo":
-                            commands.Add(new CustomCommand(CustomCommandKind.QuadTo, points));
-                            break;
-                        case "cubicBezTo":
-                            commands.Add(new CustomCommand(CustomCommandKind.CubicTo, points));
-                            break;
-                        case "arcTo":
-                            commands.Add(new CustomCommand(CustomCommandKind.ArcTo,
-                                [command.Attr("wR") ?? "0", command.Attr("hR") ?? "0", command.Attr("stAng") ?? "0", command.Attr("swAng") ?? "0"]));
-                            break;
-                        case "close":
-                            commands.Add(new CustomCommand(CustomCommandKind.Close, []));
-                            break;
-                    }
-                }
-
-                paths.Add(new CustomPath(
-                    Math.Max(path.Number("w") ?? 0, 0),
-                    Math.Max(path.Number("h") ?? 0, 0),
-                    path.Attr("fill") != "none",
-                    path.Bool("stroke") != false,
-                    commands));
-            }
-
-            return new CustomGeometry(guides, paths);
-        }
-
-        return null;
-    }
-
-    /// <summary>The adjust values of a preset (<c>&lt;a:gd name="adj" fmla="val 25000"/&gt;</c>).</summary>
-    private static Dictionary<string, double> Adjustments(XElement? avLst)
-    {
-        var values = new Dictionary<string, double>(StringComparer.Ordinal);
-        foreach (var gd in avLst.Els("gd"))
-        {
-            if (gd.Attr("name") is { } name && gd.Attr("fmla") is { } formula)
-            {
-                values[name] = CustomGeometry.Evaluate(formula, []);
-            }
-        }
-
-        return values;
-    }
+    internal static DrawingML.Geometry? Geometry(XElement? spPr) => GeometryReader.Read(spPr);
 
     /// <summary>
     /// The fill of an element's fill child (<c>a:noFill</c>, <c>a:solidFill</c>, <c>a:gradFill</c>, <c>a:blipFill</c>,

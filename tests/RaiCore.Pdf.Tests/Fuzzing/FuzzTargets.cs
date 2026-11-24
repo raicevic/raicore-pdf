@@ -80,6 +80,8 @@ public static class FuzzTargets
         ["wmf"] = Metafile,
         ["emf"] = Metafile,
         ["chart"] = Chart,
+        ["sheetdrawing"] = SheetDrawing,
+        ["xlsdrawing"] = XlsDrawing,
     };
 
     /// <summary>Runs a target on one input; expected exceptions are swallowed, anything else is thrown.</summary>
@@ -578,6 +580,38 @@ public static class FuzzTargets
     }
 
     /// <summary>
+    /// A worksheet's drawing part (<c>xdr:wsDr</c> XML) in a workbook with a picture (PNG) and a chart part it may refer
+    /// to (<c>rId1</c>, <c>rId2</c>): its anchors, pictures, shapes, text, groups and charts read and drawn over the
+    /// cells; every other input (by length) fitted to the width (so drawings cross bands of columns less often), every
+    /// third one tagged.
+    /// </summary>
+    public static void SheetDrawing(byte[] input) => XlsxToPdf.ConvertToBytes(DrawingInputs.Xlsx(input), new XlsxConverterOptions
+    {
+        Sheet = new SheetOptions
+        {
+            Limits = Limits,
+            FitToWidth = input.Length % 2 == 0,
+            Tagged = input.Length % 3 == 0,
+            Diagnostics = _ => { },
+        },
+    });
+
+    /// <summary>
+    /// A binary worksheet's drawing (the OfficeArt data of its MSODRAWING records) in a BIFF8 workbook with a BLIP store
+    /// (a PNG and a DIB) and as many OBJ records (pictures, shapes, text boxes, by the input) as the input's length
+    /// picks, with a text box's TXO: its shapes, groups, anchors and pictures read and drawn.
+    /// </summary>
+    public static void XlsDrawing(byte[] input) => XlsToPdf.ConvertToBytes(DrawingInputs.Xls(input), new XlsxConverterOptions
+    {
+        Sheet = new SheetOptions
+        {
+            Limits = Limits,
+            Tagged = input.Length % 3 == 0,
+            Diagnostics = _ => { },
+        },
+    });
+
+    /// <summary>
     /// An OpenDocument text document: its package (or flat XML document) and parts read (content, styles, meta,
     /// settings, pictures) and laid out; every third one (by length) tagged, every other one without heading bookmarks.
     /// </summary>
@@ -710,6 +744,129 @@ public static class FuzzTargets
         using var output = new MemoryStream();
         HtmlToPdf.ConvertToStream(html, output, options);
         return output.ToArray();
+    }
+
+    /// <summary>The workbooks the drawing targets wrap their inputs in (also used by the tests).</summary>
+    internal static class DrawingInputs
+    {
+        /// <summary>A PNG of one pixel.</summary>
+        public static readonly byte[] Png = System.Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+
+        private const string Spreadsheet = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+        private const string Relationships = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+        private const string Package = "http://schemas.openxmlformats.org/package/2006/relationships";
+
+        /// <summary>
+        /// A workbook of one worksheet (a few cells) whose drawing part is <paramref name="drawing"/>, with a picture
+        /// (<c>rId1</c>, a PNG) and a chart (<c>rId2</c>) it may refer to.
+        /// </summary>
+        public static byte[] Xlsx(byte[] drawing, string sheetData = "<row r=\"1\"><c r=\"A1\"><v>1</v></c><c r=\"B1\"><v>2</v></c></row><row r=\"3\" ht=\"30\" customHeight=\"1\"><c r=\"C3\"><v>3</v></c></row>")
+        {
+            using var stream = new MemoryStream();
+            using (var zip = new System.IO.Compression.ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+            {
+                void Add(string path, byte[] content)
+                {
+                    using var entry = zip.CreateEntry(path).Open();
+                    entry.Write(content);
+                }
+
+                void Text(string path, string content) => Add(path, Encoding.UTF8.GetBytes(content));
+                Text("_rels/.rels", $"<Relationships xmlns=\"{Package}\"><Relationship Id=\"rId1\" Type=\"{Relationships}/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>");
+                Text("xl/workbook.xml", $"<workbook xmlns=\"{Spreadsheet}\" xmlns:r=\"{Relationships}\"><sheets><sheet name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/></sheets></workbook>");
+                Text("xl/_rels/workbook.xml.rels", $"<Relationships xmlns=\"{Package}\"><Relationship Id=\"rId1\" Type=\"{Relationships}/worksheet\" Target=\"worksheets/sheet1.xml\"/></Relationships>");
+                Text("xl/worksheets/sheet1.xml", $"<worksheet xmlns=\"{Spreadsheet}\" xmlns:r=\"{Relationships}\"><sheetData>{sheetData}</sheetData><drawing r:id=\"rId1\"/></worksheet>");
+                Text("xl/worksheets/_rels/sheet1.xml.rels", $"<Relationships xmlns=\"{Package}\"><Relationship Id=\"rId1\" Type=\"{Relationships}/drawing\" Target=\"../drawings/drawing1.xml\"/></Relationships>");
+                Text("xl/drawings/_rels/drawing1.xml.rels", $"<Relationships xmlns=\"{Package}\"><Relationship Id=\"rId1\" Type=\"{Relationships}/image\" Target=\"../media/image1.png\"/>"
+                    + $"<Relationship Id=\"rId2\" Type=\"{Relationships}/chart\" Target=\"../charts/chart1.xml\"/></Relationships>");
+                Add("xl/drawings/drawing1.xml", drawing);
+                Add("xl/media/image1.png", Png);
+                Text("xl/charts/chart1.xml", "<c:chartSpace xmlns:c=\"http://schemas.openxmlformats.org/drawingml/2006/chart\"><c:chart><c:plotArea><c:barChart><c:barDir val=\"col\"/>"
+                    + "<c:ser><c:idx val=\"0\"/><c:val><c:numRef><c:numCache><c:ptCount val=\"2\"/><c:pt idx=\"0\"><c:v>1</c:v></c:pt><c:pt idx=\"1\"><c:v>3</c:v></c:pt></c:numCache></c:numRef></c:val></c:ser>"
+                    + "<c:axId val=\"1\"/><c:axId val=\"2\"/></c:barChart><c:catAx><c:axId val=\"1\"/><c:crossAx val=\"2\"/></c:catAx><c:valAx><c:axId val=\"2\"/><c:crossAx val=\"1\"/></c:valAx></c:plotArea></c:chart></c:chartSpace>");
+            }
+
+            return stream.ToArray();
+        }
+
+        /// <summary>
+        /// A bare BIFF8 workbook stream of one worksheet whose drawing data is <paramref name="drawing"/> (in MSODRAWING
+        /// records), with a BLIP store of a PNG and a DIB, and OBJ records after it: by default as many as the
+        /// input's length picks (a picture, a rectangle, a text box with its TXO, an oval and a group in turn).
+        /// </summary>
+        /// <param name="drawing">The drawing data.</param>
+        /// <param name="objects">The OBJ types after it, or <c>null</c> for those the length picks.</param>
+        /// <param name="leading">OBJ types (pictures) before the drawing data, whose shapes are not in it.</param>
+        public static byte[] Xls(byte[] drawing, IReadOnlyList<int>? objects = null, IReadOnlyList<int>? leading = null)
+        {
+            objects ??= [.. Enumerable.Range(0, 1 + (drawing.Length % 6)).Select(i => new[] { 0x08, 0x02, 0x06, 0x03, 0x00 }[i % 5])];
+            var sheet = new MemoryStream();
+            Record(sheet, 0x0809, [.. U16(0x0600), .. U16(0x0010), .. new byte[12]]);
+            Record(sheet, 0x0203, [.. U16(0), .. U16(0), .. U16(0), .. BitConverter.GetBytes(1.0)]);
+            foreach (var type in leading ?? [])
+            {
+                Record(sheet, 0x005D, [.. U16(0x15), .. U16(18), .. U16(type), .. U16(99), .. U16(0x6011), .. new byte[12], .. U16(0), .. U16(0)]);
+            }
+
+            for (var at = 0; at < drawing.Length; at += 8224)
+            {
+                Record(sheet, 0x00EC, drawing.AsSpan(at, Math.Min(8224, drawing.Length - at)).ToArray());
+            }
+
+            for (var i = 0; i < objects.Count; i++)
+            {
+                // FtCmo (type, id, flags: printed), then FtEnd.
+                Record(sheet, 0x005D, [.. U16(0x15), .. U16(18), .. U16(objects[i]), .. U16(i + 1), .. U16(0x6011), .. new byte[12], .. U16(0), .. U16(0)]);
+                if (objects[i] == 0x06)
+                {
+                    Record(sheet, 0x01B6, [.. U16(0x0004 | 0x0020), .. new byte[8], .. U16(4), .. U16(16), .. new byte[4]]);
+                    Record(sheet, 0x003C, [0, .. "Fuzz"u8]);
+                    Record(sheet, 0x003C, [.. U16(0), .. U16(0), .. new byte[4], .. U16(4), .. U16(0), .. new byte[4]]);
+                }
+            }
+
+            Record(sheet, 0x000A, []);
+            var globals = new MemoryStream();
+            Record(globals, 0x0809, [.. U16(0x0600), .. U16(0x0005), .. new byte[12]]);
+            Record(globals, 0x00EB, DrawingGroup());
+            var boundSheet = globals.Length;
+            Record(globals, 0x0085, [.. new byte[4], 0, 0, 6, 0, .. "Sheet1"u8]);
+            Record(globals, 0x000A, []);
+            var bytes = globals.ToArray();
+            BitConverter.TryWriteBytes(bytes.AsSpan((int)boundSheet + 4), (int)bytes.Length);
+            return [.. bytes, .. sheet.ToArray()];
+        }
+
+        /// <summary>An OfficeArt drawing group: its BLIP store with a PNG (entry 1) and a 2 by 2 DIB (entry 2).</summary>
+        public static byte[] DrawingGroup()
+        {
+            byte[] dib = [.. BitConverter.GetBytes(40), .. BitConverter.GetBytes(2), .. BitConverter.GetBytes(2), .. U16(1), .. U16(24), .. new byte[24],
+                255, 0, 0, 0, 255, 0, 0, 0, 0, 0, 255, 255, 255, 255, 0, 0];
+            byte[] Entry(int blipType, int instance, int recordType, byte[] picture)
+            {
+                byte[] blip = [.. Header(0, instance, recordType, 17 + picture.Length), .. new byte[16], 0xFF, .. picture];
+                return [.. Header(2, blipType, 0xF007, 36 + blip.Length), (byte)blipType, (byte)blipType, .. new byte[16], .. U16(0xFF),
+                    .. BitConverter.GetBytes(blip.Length), .. BitConverter.GetBytes(1), .. new byte[4], 0, 0, 0, 0, .. blip];
+            }
+
+            byte[] store = [.. Entry(6, 0x6E0, 0xF01E, Png), .. Entry(7, 0x7A8, 0xF01F, dib)];
+            byte[] fdgg = [.. Header(0, 0, 0xF006, 16), .. new byte[16]];
+            byte[] container = [.. fdgg, .. Header(0xF, 2, 0xF001, store.Length), .. store];
+            return [.. Header(0xF, 0, 0xF000, container.Length), .. container];
+        }
+
+        /// <summary>An OfficeArt record header.</summary>
+        public static byte[] Header(int version, int instance, int type, int length) =>
+            [.. U16(version | (instance << 4)), .. U16(type), .. BitConverter.GetBytes(length)];
+
+        private static byte[] U16(int value) => [(byte)value, (byte)(value >> 8)];
+
+        private static void Record(MemoryStream stream, int id, byte[] data)
+        {
+            stream.Write(U16(id));
+            stream.Write(U16(data.Length));
+            stream.Write(data);
+        }
     }
 }
 

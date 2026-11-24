@@ -62,6 +62,17 @@ and versions follow [Semantic Versioning](https://semver.org/).
   and ActiveX controls, comments, conditional formatting rules, sparklines, pivot tables, headers and footers, page
   breaks set by hand, and cells with rich, rotated or shrunk text, in `.xlsx` and `.xls` alike; and content that does
   not fit the page (`Layout`, with its page numbers, also for CSV). A workbook with none of these reports nothing.
+- **Sheets: pictures, shapes and charts** (#257): the drawings of `.xlsx` and `.xls` worksheets are drawn over their
+  cells where Excel shows them. Pictures (PNG, JPEG, GIF, BMP, TIFF, WMF, EMF) cropped, turned, mirrored and clipped
+  to their shape, with their border; shapes and text boxes with their preset or free-form geometry, fill, outline and
+  text; charts by the shared chart engine; groups. Two-cell, one-cell and absolute anchors are resolved against the
+  laid-out columns and rows at the sheet's scale, with hidden rows and columns taking no room; a drawing that crosses
+  a page break or a band of columns is split there, as Excel prints it, and without a print area the printed range
+  takes in the drawings. In `.xls` workbooks, the OfficeArt drawing: pictures from the picture store (also DIB),
+  the common shape types with their fill, line and text box text, and groups. Pictures over `MaxImagePixels`, and
+  what still can't be drawn (newer chart types, SmartArt, ink, form controls, BIFF charts, free forms in `.xls`), are
+  reported to `SheetOptions.Diagnostics`. The preset and free-form geometry that presentations draw moved to the
+  core, shared by both packages.
 
 ### Fixed
 - **A CFF2 font with a huge blend count** in a DICT threw `ArgumentOutOfRangeException` when it was subset (the count times the

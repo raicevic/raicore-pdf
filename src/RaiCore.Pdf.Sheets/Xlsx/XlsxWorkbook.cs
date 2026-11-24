@@ -43,6 +43,15 @@ internal sealed class XlsxWorkbook
     /// <summary>The title of the document properties, or <c>null</c>.</summary>
     public string? Title { get; private set; }
 
+    /// <summary>The theme's colors (see <see cref="ReadTheme"/>), or <c>null</c> for the Office theme's.</summary>
+    public IReadOnlyList<uint>? ThemeColors { get; private set; }
+
+    /// <summary>The theme's Latin font for headings, or <c>null</c>.</summary>
+    public string? MajorFont { get; private set; }
+
+    /// <summary>The theme's Latin font for body text, or <c>null</c>.</summary>
+    public string? MinorFont { get; private set; }
+
     /// <summary>Reads the workbook part of a package and the parts it shares.</summary>
     /// <exception cref="NotSupportedException">The workbook is binary (<c>.xlsb</c>).</exception>
     /// <exception cref="SpreadsheetFormatException">The package has no workbook part.</exception>
@@ -69,7 +78,9 @@ internal sealed class XlsxWorkbook
         workbook.Settings = new FormatSettings(culture, date1904);
 
         string? Part(string type) => relationships.FirstOrDefault(r => r.Type == type).Target;
-        var theme = Part("theme") is { } themePath ? package.Parse(themePath, ReadTheme, null) : null;
+        var (theme, major, minor) = Part("theme") is { } themePath ? package.Parse(themePath, ReadTheme, default) : default;
+        workbook.ThemeColors = theme;
+        (workbook.MajorFont, workbook.MinorFont) = (major, minor);
         workbook.Styles = Part("styles") is { } stylesPath
             ? package.Parse(stylesPath, reader => XlsxStyles.Read(reader, workbook.Settings, theme), XlsxStyles.Empty(workbook.Settings))
             : XlsxStyles.Empty(workbook.Settings);
@@ -154,9 +165,13 @@ internal sealed class XlsxWorkbook
         return null;
     }
 
-    /// <summary>The theme's colors in the order theme indexes name them: light 1, dark 1, light 2, dark 2, accents, links.</summary>
-    private static List<uint>? ReadTheme(XmlReader reader)
+    /// <summary>
+    /// The theme's colors in the order theme indexes name them (light 1, dark 1, light 2, dark 2, accents, links), and
+    /// its major and minor Latin fonts.
+    /// </summary>
+    private static (List<uint>? Colors, string? Major, string? Minor) ReadTheme(XmlReader reader)
     {
+        string? major = null, minor = null, font = null;
         string[] names = ["lt1", "dk1", "lt2", "dk2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6", "hlink", "folHlink"];
         var colors = new uint?[names.Length];
         var current = -1;
@@ -178,13 +193,23 @@ internal sealed class XlsxWorkbook
             {
                 colors[current] = rgb & 0xFFFFFF;
             }
-            else if (reader.LocalName == "fontScheme")
+            else if (reader.LocalName is "majorFont" or "minorFont")
+            {
+                current = -1;
+                font = reader.LocalName;
+            }
+            else if (reader.LocalName == "latin" && font is not null && reader.GetAttribute("typeface") is { Length: > 0 } typeface)
+            {
+                (major, minor) = font == "majorFont" ? (major ?? typeface, minor) : (major, minor ?? typeface);
+                font = null;
+            }
+            else if (reader.LocalName == "fmtScheme")
             {
                 break;
             }
         }
 
-        return colors.Take(4).All(c => c is not null) ? [.. colors.Select(c => c ?? 0)] : null;
+        return (colors.Take(4).All(c => c is not null) ? [.. colors.Select(c => c ?? 0)] : null, major, minor);
     }
 
     private List<string> ReadSharedStrings(XmlReader reader)

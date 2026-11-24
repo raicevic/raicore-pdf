@@ -1,4 +1,4 @@
-namespace RaiCore.Pdf.Slides.Model;
+namespace RaiCore.Pdf.DrawingML;
 
 /// <summary>
 /// A preset shape of DrawingML (<c>prstGeom</c>) by name, with its adjust values (in the format's units: 100000ths of

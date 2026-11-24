@@ -55,6 +55,7 @@ internal static class XlsxConverter
     {
         var diagnostics = options.Sheet.Diagnostics;
         var bookmarks = chosen.Count(s => s.IsWorksheet) > 1;
+        var images = new Dictionary<string, PdfImage?>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in chosen)
         {
             checkpoint?.Invoke();
@@ -67,10 +68,14 @@ internal static class XlsxConverter
             var worksheet = entry.Path is { } path
                 ? package.Parse(path, reader => XlsxWorksheet.Read(reader, workbook, limits.MaxTableCells, checkpoint), XlsxWorksheet.Empty)
                 : XlsxWorksheet.Empty;
-            if (diagnostics is not null && entry.Path is { } part)
+            if (entry.Path is { } part)
             {
-                XlsxContent.Collect(package, part, worksheet.Unsupported, checkpoint);
-                worksheet.Unsupported.Report(entry.Name, diagnostics);
+                worksheet.Drawings.AddRange(new XlsxDrawing(package, workbook, limits, worksheet.Unsupported, images).Read(part));
+                if (diagnostics is not null)
+                {
+                    XlsxContent.Collect(package, part, worksheet.Unsupported, checkpoint);
+                    worksheet.Unsupported.Report(entry.Name, diagnostics);
+                }
             }
 
             yield return Build(worksheet, entry, workbook, options, limits.MaxTableCells, bookmarks);
@@ -136,21 +141,23 @@ internal static class XlsxConverter
     /// print titles (rows repeated on every page) as header rows, merged ranges, sizes and page settings.
     /// </summary>
     internal static Sheet Build(XlsxWorksheet worksheet, XlsxSheetEntry entry, XlsxWorkbook workbook, XlsxConverterOptions options, long maxCells, bool bookmark) =>
-        Build(worksheet, entry, workbook.PrintArea(entry), workbook.PrintTitleRows(entry), workbook.Styles.DefaultFontSize, workbook.Styles.DefaultFontName, options, maxCells, bookmark);
+        Build(worksheet, entry, workbook.PrintArea(entry), workbook.PrintTitleRows(entry), workbook.Styles.DefaultFontSize, workbook.Styles.DefaultFontName, options, maxCells, bookmark,
+            (workbook.MajorFont, workbook.MinorFont));
 
     /// <summary>
     /// Builds the sheet to print from a worksheet of any workbook format, with its print area and print titles (the
     /// rows repeated on every page) and the workbook's default font.
     /// </summary>
     internal static Sheet Build(XlsxWorksheet worksheet, XlsxSheetEntry entry, CellRange? printArea, (int First, int Last)? printTitleRows,
-        double defaultFontSize, string? defaultFontName, XlsxConverterOptions options, long maxCells, bool bookmark)
+        double defaultFontSize, string? defaultFontName, XlsxConverterOptions options, long maxCells, bool bookmark, (string? Major, string? Minor) themeFonts = default)
     {
         var usePageSetup = options.UsePageSetup;
-        int firstRow = 0, firstColumn = 0, lastRow = worksheet.LastRow, lastColumn = worksheet.LastColumn;
+        var (usedRows, usedColumns) = SheetDrawings.UsedRange(worksheet);
+        int firstRow = 0, firstColumn = 0, lastRow = usedRows, lastColumn = usedColumns;
         if (usePageSetup && printArea is { } area)
         {
-            (firstRow, lastRow) = area.Row1 < 0 ? (0, worksheet.LastRow) : (area.Row1, area.Row2);
-            (firstColumn, lastColumn) = area.Column1 < 0 ? (0, worksheet.LastColumn) : (area.Column1, area.Column2);
+            (firstRow, lastRow) = area.Row1 < 0 ? (0, usedRows) : (area.Row1, area.Row2);
+            (firstColumn, lastColumn) = area.Column1 < 0 ? (0, usedColumns) : (area.Column1, area.Column2);
         }
 
         var titles = usePageSetup ? printTitleRows : null;
@@ -235,6 +242,9 @@ internal static class XlsxConverter
                 RightToLeft = worksheet.RightToLeft,
                 Heading = options.ShowSheetNames ? entry.Name : null,
                 Bookmark = bookmark ? entry.Name : null,
+                Drawings = SheetDrawings.Map(worksheet, rowArray, columnArray, defaultWidth),
+                MajorFont = themeFonts.Major,
+                MinorFont = themeFonts.Minor,
             },
             Name = entry.Name,
         };

@@ -1,3 +1,4 @@
+using RaiCore.Pdf.DrawingML;
 using RaiCore.Pdf.Metafiles;
 using RaiCore.Pdf.Slides.Model;
 
@@ -250,7 +251,7 @@ internal sealed partial class PptReader
             Report(_slideNumber, "shape", $"The shape type {shape.ShapeType} is drawn as a rectangle.");
         }
 
-        return Model.Geometry.Rectangle;
+        return DrawingML.Geometry.Rectangle;
     }
 
     /// <summary>

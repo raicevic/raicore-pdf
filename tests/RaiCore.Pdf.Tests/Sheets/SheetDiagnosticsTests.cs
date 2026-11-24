@@ -95,9 +95,6 @@ public class SheetDiagnosticsTests
         var diagnostics = Xlsx(Fixtures.Read("Sheets/content.xlsx"));
         Assert.Equal(
         [
-            ("Drawings", SheetDiagnosticKind.Chart, 1),
-            ("Drawings", SheetDiagnosticKind.Picture, 2),
-            ("Drawings", SheetDiagnosticKind.Shape, 1),
             ("Notes", SheetDiagnosticKind.Comment, 2),
             ("Notes", SheetDiagnosticKind.ConditionalFormatting, 3), // The data bar is in the extension list too.
             ("Notes", SheetDiagnosticKind.Sparkline, 1),
@@ -108,12 +105,9 @@ public class SheetDiagnosticsTests
             ("Formats", SheetDiagnosticKind.ShrinkToFit, 1),
             ("Chart1", SheetDiagnosticKind.ChartSheet, 1),
         ], Content(diagnostics));
-        Assert.DoesNotContain(diagnostics, d => d.SheetName == "Plain");
+        Assert.DoesNotContain(diagnostics, d => d.SheetName is "Plain" or "Drawings"); // Its pictures, shape and chart are drawn.
         Assert.Equal(
         [
-            "1 chart is left out.",
-            "2 pictures are left out.",
-            "1 shape, text box or form control is left out.",
             "2 comments are left out.",
             "3 conditional formatting rules are not applied.",
             "1 sparkline is left out.",
@@ -148,21 +142,39 @@ public class SheetDiagnosticsTests
     [Fact]
     public void Without_a_callback_nothing_is_collected_and_the_referenced_parts_are_not_read()
     {
-        // The drawing part decompresses to more than the limit allows: read only for diagnostics.
-        var big = Workbook("<drawing r:id=\"rId1\"/>", Relationship("rId1", "drawing", "../drawings/drawing1.xml"),
-            parts: DrawingPart(string.Concat(Enumerable.Repeat(Anchor(Picture()), 2000))));
+        // The comments part decompresses to more than the limit allows: read only for diagnostics.
+        var comments = string.Concat(Enumerable.Range(0, 2000).Select(i => $"<comment ref=\"A{i + 1}\" authorId=\"0\"><text><t>Comment {i}</t></text></comment>"));
+        var big = Workbook(string.Empty, Relationship("rId1", "comments", "../comments1.xml"),
+            parts: ("xl/comments1.xml", $"<comments xmlns=\"{Main}\"><authors><author>A</author></authors><commentList>{comments}</commentList></comments>"));
         var limits = new ResourceLimits { MaxDecompressedBytes = 64 * 1024 };
         Assert.NotEmpty(XlsxToPdf.ConvertToBytes(big, new XlsxConverterOptions { Sheet = new SheetOptions { Limits = limits } }));
         var exception = Assert.Throws<ResourceLimitExceededException>(() =>
             XlsxToPdf.ConvertToBytes(big, new XlsxConverterOptions { Sheet = new SheetOptions { Limits = limits, Diagnostics = _ => { } } }));
         Assert.Equal(nameof(ResourceLimits.MaxDecompressedBytes), exception.LimitName);
+        Assert.Equal([("Sheet1", SheetDiagnosticKind.Comment, 2000)], Content(Xlsx(big)));
+    }
+
+    [Fact]
+    public void Drawing_parts_are_read_to_draw_them_within_the_limits_with_or_without_a_callback()
+    {
+        var big = Workbook("<drawing r:id=\"rId1\"/>", Relationship("rId1", "drawing", "../drawings/drawing1.xml"),
+            parts: DrawingPart(string.Concat(Enumerable.Repeat(Anchor(Picture()), 2000))));
+        var limits = new ResourceLimits { MaxDecompressedBytes = 64 * 1024 };
+        foreach (var diagnostics in new Action<SheetDiagnostic>?[] { null, _ => { } })
+        {
+            var exception = Assert.Throws<ResourceLimitExceededException>(() =>
+                XlsxToPdf.ConvertToBytes(big, new XlsxConverterOptions { Sheet = new SheetOptions { Limits = limits, Diagnostics = diagnostics } }));
+            Assert.Equal(nameof(ResourceLimits.MaxDecompressedBytes), exception.LimitName);
+        }
+
+        // Pictures without an image part cannot be drawn.
         Assert.Equal([("Sheet1", SheetDiagnosticKind.Picture, 2000)], Content(Xlsx(big)));
     }
 
     // ---- XLSX: hand-made packages ----
 
     [Fact]
-    public void Drawing_objects_are_counted_by_kind_in_groups_and_alternate_content()
+    public void Drawing_objects_that_cannot_be_drawn_are_counted_by_kind_in_groups_and_alternate_content()
     {
         var drawing = DrawingPart(
             Anchor(Picture())
@@ -182,11 +194,14 @@ public class SheetDiagnosticsTests
             + Anchor(Picture(), "<xdr:clientData fPrintsWithSheet=\"0\"/>")
             + "<xdr:twoCellAnchor/>");
         var diagnostics = Xlsx(Workbook("<drawing r:id=\"rId1\"/>", Relationship("rId1", "drawing", "../drawings/drawing1.xml"), parts: drawing));
+
+        // Drawn: the shapes, the connector and the group (its shapes). Not: the pictures without an image part, the
+        // chart without a chart part, the SmartArt, the newer chart type of the choice (not its fallback) and the ink.
         Assert.Equal(
         [
             ("Sheet1", SheetDiagnosticKind.Chart, 2),
             ("Sheet1", SheetDiagnosticKind.Picture, 3),
-            ("Sheet1", SheetDiagnosticKind.Shape, 6),
+            ("Sheet1", SheetDiagnosticKind.Shape, 2),
         ], Content(diagnostics));
     }
 
@@ -304,12 +319,11 @@ public class SheetDiagnosticsTests
     [Fact]
     public void Xls_corpus_spot_checks()
     {
-        // By default, the visible sheets: not the hidden ones with a footer and with rich text.
-        Assert.Equal([("Template", SheetDiagnosticKind.Picture, 1), ("Template", SheetDiagnosticKind.Shape, 3), ("Template", SheetDiagnosticKind.Comment, 1)],
-            Content(Xls(Fixtures.Read("Sheets/Xls/46250.xls"))));
+        // By default, the visible sheets: not the hidden ones with a footer and with rich text. The picture and the text
+        // boxes are drawn; the embedded chart (a BIFF chart, not DrawingML) is not.
+        Assert.Equal([("Template", SheetDiagnosticKind.Comment, 1)], Content(Xls(Fixtures.Read("Sheets/Xls/46250.xls"))));
         Assert.Equal([("Sheet2", SheetDiagnosticKind.Chart, 1)], Content(Xls(Fixtures.Read("Sheets/Xls/WithChart.xls"))));
-        Assert.Equal([("auto_1", SheetDiagnosticKind.Shape, 6), ("Graph2", SheetDiagnosticKind.ChartSheet, 1)],
-            Content(Xls(Fixtures.Read("Sheets/Xls/44010-SingleChart.xls"))));
+        Assert.Equal([("Graph2", SheetDiagnosticKind.ChartSheet, 1)], Content(Xls(Fixtures.Read("Sheets/Xls/44010-SingleChart.xls"))));
         Assert.Empty(Xls(Fixtures.Read("Sheets/Xls/SampleSS.xls")));
     }
 

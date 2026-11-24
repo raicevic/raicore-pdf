@@ -1,0 +1,849 @@
+{
+ "../../Workbooks/Poi/WithDrawing.xlsx": {
+  "openpyxl": {
+   "charts": 0,
+   "images": 2
+  },
+  "sheets": {
+   "xl/worksheets/sheet1.xml": [
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "object": "pic",
+     "pos": null,
+     "to": [
+      3,
+      0,
+      8,
+      152400
+     ]
+    },
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      4,
+      85725,
+      1,
+      38100
+     ],
+     "object": "pic",
+     "pos": null,
+     "to": [
+      8,
+      88294,
+      10,
+      29280
+     ]
+    },
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      8,
+      295275,
+      1,
+      114300
+     ],
+     "object": "pic",
+     "pos": null,
+     "to": [
+      10,
+      314325,
+      6,
+      38100
+     ]
+    },
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      0,
+      142875,
+      10,
+      0
+     ],
+     "object": "pic",
+     "pos": null,
+     "to": [
+      3,
+      462825,
+      16,
+      162000
+     ]
+    },
+    {
+     "anchor": "oneCellAnchor",
+     "drawn": true,
+     "ext": [
+      1905971,
+      436786
+     ],
+     "from": [
+      3,
+      561975,
+      15,
+      152400
+     ],
+     "object": "sp",
+     "pos": null,
+     "to": null
+    },
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      8,
+      238125,
+      9,
+      180975
+     ],
+     "object": "pic",
+     "pos": null,
+     "to": [
+      11,
+      132969,
+      19,
+      124892
+     ]
+    }
+   ]
+  }
+ },
+ "../Xls/44010-SingleChart.xls": {
+  "sheets": {
+   "auto_1": [
+    {
+     "anchor": [
+      5,
+      0,
+      12,
+      0,
+      5,
+      0,
+      12,
+      0
+     ],
+     "drawn": true,
+     "object": 6,
+     "shape": 202
+    },
+    {
+     "anchor": [
+      12,
+      0,
+      12,
+      0,
+      12,
+      0,
+      12,
+      0
+     ],
+     "drawn": true,
+     "object": 6,
+     "shape": 202
+    },
+    {
+     "anchor": [
+      13,
+      0,
+      12,
+      0,
+      13,
+      0,
+      12,
+      0
+     ],
+     "drawn": true,
+     "object": 6,
+     "shape": 202
+    },
+    {
+     "anchor": [
+      13,
+      0,
+      12,
+      0,
+      13,
+      0,
+      12,
+      0
+     ],
+     "drawn": true,
+     "object": 6,
+     "shape": 202
+    },
+    {
+     "anchor": [
+      5,
+      0,
+      12,
+      0,
+      5,
+      0,
+      12,
+      0
+     ],
+     "drawn": true,
+     "object": 6,
+     "shape": 202
+    },
+    {
+     "anchor": [
+      12,
+      0,
+      12,
+      0,
+      12,
+      0,
+      12,
+      0
+     ],
+     "drawn": true,
+     "object": 6,
+     "shape": 202
+    }
+   ]
+  }
+ },
+ "../Xls/46250.xls": {
+  "sheets": {
+   "Instructions": [],
+   "Item Info": [
+    {
+     "anchor": [
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0
+     ],
+     "drawn": false,
+     "object": 20,
+     "shape": 201
+    },
+    {
+     "anchor": [
+      1,
+      0,
+      0,
+      0,
+      2,
+      0,
+      1,
+      0
+     ],
+     "drawn": false,
+     "object": 20,
+     "shape": 201
+    },
+    {
+     "anchor": [
+      2,
+      0,
+      0,
+      0,
+      3,
+      0,
+      1,
+      0
+     ],
+     "drawn": false,
+     "object": 20,
+     "shape": 201
+    },
+    {
+     "anchor": [
+      3,
+      0,
+      0,
+      0,
+      4,
+      0,
+      1,
+      0
+     ],
+     "drawn": false,
+     "object": 20,
+     "shape": 201
+    },
+    {
+     "anchor": [
+      4,
+      0,
+      0,
+      0,
+      5,
+      0,
+      1,
+      0
+     ],
+     "drawn": false,
+     "object": 20,
+     "shape": 201
+    },
+    {
+     "anchor": [
+      5,
+      0,
+      0,
+      0,
+      6,
+      0,
+      1,
+      0
+     ],
+     "drawn": false,
+     "object": 20,
+     "shape": 201
+    },
+    {
+     "anchor": [
+      6,
+      0,
+      0,
+      0,
+      7,
+      0,
+      1,
+      0
+     ],
+     "drawn": false,
+     "object": 20,
+     "shape": 201
+    },
+    {
+     "anchor": [
+      7,
+      0,
+      0,
+      0,
+      8,
+      0,
+      1,
+      0
+     ],
+     "drawn": false,
+     "object": 20,
+     "shape": 201
+    },
+    {
+     "anchor": [
+      8,
+      0,
+      0,
+      0,
+      9,
+      0,
+      1,
+      0
+     ],
+     "drawn": false,
+     "object": 20,
+     "shape": 201
+    }
+   ],
+   "Template": [
+    {
+     "anchor": [
+      3,
+      886,
+      3,
+      215,
+      4,
+      417,
+      7,
+      0
+     ],
+     "drawn": false,
+     "object": 25,
+     "shape": 202
+    },
+    {
+     "anchor": [
+      1,
+      0,
+      15,
+      0,
+      1,
+      114,
+      16,
+      12
+     ],
+     "drawn": true,
+     "object": 6,
+     "shape": 202
+    },
+    {
+     "anchor": [
+      1,
+      0,
+      16,
+      0,
+      1,
+      139,
+      17,
+      15
+     ],
+     "drawn": true,
+     "object": 6,
+     "shape": 202
+    },
+    {
+     "anchor": [
+      9,
+      832,
+      7,
+      177,
+      10,
+      16,
+      8,
+      0
+     ],
+     "drawn": true,
+     "object": 6,
+     "shape": 202
+    },
+    {
+     "anchor": [
+      1,
+      38,
+      0,
+      114,
+      2,
+      110,
+      4,
+      73
+     ],
+     "drawn": true,
+     "object": 8,
+     "shape": 75
+    }
+   ]
+  }
+ },
+ "../Xls/DrawingAndComments.xls": {
+  "sheets": {
+   "Sheet1": [
+    {
+     "anchor": [
+      6,
+      240,
+      5,
+      105,
+      8,
+      496,
+      10,
+      15
+     ],
+     "drawn": false,
+     "object": 25,
+     "shape": 202
+    },
+    {
+     "anchor": [
+      3,
+      240,
+      4,
+      105,
+      5,
+      496,
+      9,
+      15
+     ],
+     "drawn": false,
+     "object": 25,
+     "shape": 202
+    },
+    {
+     "anchor": [
+      2,
+      240,
+      2,
+      105,
+      4,
+      496,
+      7,
+      15
+     ],
+     "drawn": false,
+     "object": 25,
+     "shape": 202
+    },
+    {
+     "anchor": [
+      1,
+      336,
+      12,
+      0,
+      3,
+      272,
+      17,
+      0
+     ],
+     "drawn": true,
+     "object": 3,
+     "shape": 3
+    }
+   ]
+  }
+ },
+ "../content.xlsx": {
+  "openpyxl": {
+   "charts": 1,
+   "images": 2
+  },
+  "sheets": {
+   "xl/worksheets/sheet2.xml": [
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      2,
+      0,
+      0,
+      0
+     ],
+     "object": "pic",
+     "pos": null,
+     "to": [
+      2,
+      76200,
+      0,
+      76200
+     ]
+    },
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      2,
+      0,
+      5,
+      0
+     ],
+     "object": "pic",
+     "pos": null,
+     "to": [
+      2,
+      76200,
+      5,
+      76200
+     ]
+    },
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      4,
+      0,
+      7,
+      0
+     ],
+     "object": "graphicFrame",
+     "pos": null,
+     "to": [
+      11,
+      304800,
+      21,
+      76200
+     ]
+    },
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      4,
+      0,
+      0,
+      0
+     ],
+     "object": "sp",
+     "pos": null,
+     "to": [
+      7,
+      0,
+      6,
+      0
+     ]
+    }
+   ]
+  }
+ },
+ "SheetWithDrawing.xls": {
+  "sheets": {
+   "Sheet1": [
+    {
+     "anchor": [
+      0,
+      0,
+      0,
+      0,
+      9,
+      0,
+      25,
+      105
+     ],
+     "drawn": true,
+     "object": 8,
+     "shape": 75
+    }
+   ]
+  }
+ },
+ "SimpleWithImages.xls": {
+  "sheets": {
+   "Sheet1": [
+    {
+     "anchor": [
+      0,
+      0,
+      0,
+      0,
+      3,
+      0,
+      10,
+      90
+     ],
+     "drawn": true,
+     "object": 8,
+     "shape": 75
+    },
+    {
+     "anchor": [
+      4,
+      704,
+      1,
+      60,
+      9,
+      384,
+      18,
+      226
+     ],
+     "drawn": true,
+     "object": 8,
+     "shape": 75
+    },
+    {
+     "anchor": [
+      1,
+      0,
+      20,
+      90,
+      3,
+      848,
+      31,
+      196
+     ],
+     "drawn": true,
+     "object": 8,
+     "shape": 75
+    },
+    {
+     "anchor": [
+      5,
+      176,
+      24,
+      181,
+      8,
+      688,
+      32,
+      181
+     ],
+     "drawn": true,
+     "object": 8,
+     "shape": 75
+    }
+   ]
+  }
+ },
+ "WithTextBox.xlsx": {
+  "openpyxl": {
+   "charts": 0,
+   "images": 0
+  },
+  "sheets": {
+   "xl/worksheets/sheet1.xml": [
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      2,
+      228600,
+      1,
+      123825
+     ],
+     "object": "sp",
+     "pos": null,
+     "to": [
+      7,
+      504825,
+      5,
+      142875
+     ]
+    }
+   ]
+  }
+ },
+ "WithThreeCharts.xlsx": {
+  "openpyxl": {
+   "charts": 3,
+   "images": 0
+  },
+  "sheets": {
+   "xl/worksheets/sheet2.xml": [
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      0,
+      0,
+      0,
+      19050
+     ],
+     "object": "graphicFrame",
+     "pos": null,
+     "to": [
+      8,
+      247650,
+      15,
+      66675
+     ]
+    },
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      0,
+      95250,
+      16,
+      38100
+     ],
+     "object": "graphicFrame",
+     "pos": null,
+     "to": [
+      8,
+      285750,
+      30,
+      114300
+     ]
+    }
+   ],
+   "xl/worksheets/sheet3.xml": [
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      0,
+      66675,
+      0,
+      66675
+     ],
+     "object": "graphicFrame",
+     "pos": null,
+     "to": [
+      9,
+      609600,
+      14,
+      142875
+     ]
+    }
+   ]
+  }
+ },
+ "absolute-anchor-over-empty-sheet.xlsx": {
+  "openpyxl": {
+   "charts": 0,
+   "images": 1
+  },
+  "sheets": {
+   "xl/worksheets/sheet1.xml": [
+    {
+     "anchor": "absoluteAnchor",
+     "drawn": true,
+     "ext": [
+      10084254,
+      6762750
+     ],
+     "from": null,
+     "object": "pic",
+     "pos": [
+      4463143,
+      6599464
+     ],
+     "to": null
+    }
+   ]
+  }
+ },
+ "picture-and-shape-same-size.xlsx": {
+  "openpyxl": {
+   "charts": 0,
+   "images": 1
+  },
+  "sheets": {
+   "xl/worksheets/sheet1.xml": [
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      1,
+      10440,
+      3,
+      8280
+     ],
+     "object": "sp",
+     "pos": null,
+     "to": [
+      6,
+      23040,
+      8,
+      129960
+     ]
+    },
+    {
+     "anchor": "twoCellAnchor",
+     "drawn": true,
+     "ext": null,
+     "from": [
+      1,
+      10440,
+      3,
+      8280
+     ],
+     "object": "pic",
+     "pos": null,
+     "to": [
+      6,
+      23040,
+      8,
+      129960
+     ]
+    }
+   ]
+  }
+ }
+}

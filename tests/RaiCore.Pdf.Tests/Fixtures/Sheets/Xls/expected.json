@@ -3022,9 +3022,6 @@
   "content": {
    "Graph2": {
     "ChartSheet": 1
-   },
-   "auto_1": {
-    "Shape": 6
    }
   },
   "datemode": 0,
@@ -3934,9 +3931,7 @@
     "HeaderFooter": 1
    },
    "Template": {
-    "Comment": 1,
-    "Picture": 1,
-    "Shape": 3
+    "Comment": 1
    }
   },
   "datemode": 0,
@@ -11577,7 +11572,7 @@
   "content": {
    "Sheet1": {
     "Comment": 3,
-    "Shape": 2
+    "Shape": 1
    }
   },
   "datemode": 0,

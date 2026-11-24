@@ -1,3 +1,5 @@
+using RaiCore.Pdf.DrawingML;
+
 namespace RaiCore.Pdf.Slides.Model;
 
 /// <summary>

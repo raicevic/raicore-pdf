@@ -1,4 +1,5 @@
 using RaiCore.Pdf.Layout;
+using RaiCore.Pdf.Sheets.Drawings;
 
 namespace RaiCore.Pdf.Sheets;
 
@@ -125,4 +126,13 @@ internal sealed class SheetFormatting
 
     /// <summary>A bookmark for the sheet's first page (its name), or <c>null</c>.</summary>
     public string? Bookmark { get; init; }
+
+    /// <summary>The drawings (pictures, shapes, charts), anchored to the sheet's rows and columns, in z-order.</summary>
+    public IReadOnlyList<SheetDrawing> Drawings { get; init; } = [];
+
+    /// <summary>The theme's font for headings (<c>+mj-lt</c>), or <c>null</c>.</summary>
+    public string? MajorFont { get; init; }
+
+    /// <summary>The theme's font for body text (<c>+mn-lt</c>), or <c>null</c>.</summary>
+    public string? MinorFont { get; init; }
 }

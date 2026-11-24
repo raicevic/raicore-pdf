@@ -35,9 +35,10 @@ internal sealed partial class Paginator
     /// continue on the following pages in their own columns (below the repeated header rows); a row ends where the
     /// last of the cells ending in it does, so a cell spanning rows runs alongside them, across pages if need be.
     /// A page break may also fall between the rows. Backgrounds, cell boxes and grid lines are then drawn per page,
-    /// sliced like boxes: top edges where a row (or spanning cell) starts, bottom edges where it ends.
+    /// sliced like boxes: top edges where a row (or spanning cell) starts, bottom edges where it ends. The pieces of the
+    /// rows are added to <paramref name="placed"/> (for the table's overlay) when it is not <c>null</c>.
     /// </summary>
-    private void SplitRows(TableLayout layout, int start, int end, double x, double width)
+    private void SplitRows(TableLayout layout, int start, int end, double x, double width, List<PlacedRow>? placed = null)
     {
         var startPage = PageIndex;
         var insertAt = _pages[startPage].Count;
@@ -101,6 +102,7 @@ internal sealed partial class Paginator
                 if (Fragment(tops[i], ends[i], page) is { } piece)
                 {
                     rows.Add(new RowFragment(start + i, piece.Top, piece.Height, piece.First, piece.Last));
+                    placed?.Add(new PlacedRow(start + i, page, piece.Top, piece.Height, false));
                     _placements.Add(new Placement(page, layout.Table, piece.Top, piece.Top + piece.Height, start + i, start + i + 1, x, width));
                 }
             }
