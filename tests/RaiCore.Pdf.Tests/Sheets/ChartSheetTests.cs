@@ -138,8 +138,9 @@ public class ChartSheetTests
         var pdf = XlsxToPdf.ConvertToBytes(xlsx, new XlsxConverterOptions { SheetIndexes = [1] });
         Assert.Contains("Quarterly sales", Assert.Single(Pages(pdf)));
 
-        // One sheet: no bookmark.
+        // One sheet: no bookmark; a worksheet and a chart sheet: one each.
         Assert.Empty(XlsxToPdf.Convert(xlsx, new XlsxConverterOptions { SheetIndexes = [1] }).Outline);
+        Assert.Equal(["First", "Chart"], XlsxToPdf.Convert(xlsx, new XlsxConverterOptions { SheetIndexes = [0, 1] }).Outline.Select(o => o.Title));
     }
 
     [Fact]
