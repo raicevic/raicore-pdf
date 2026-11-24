@@ -460,6 +460,32 @@ public class ChartExTests
     }
 
     [Fact]
+    public void Document_choices_give_way_to_their_fallback_unless_their_chartex_part_is_drawn()
+    {
+        static string Alternate(string id) =>
+            "<w:p><w:r><mc:AlternateContent xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\"><mc:Choice Requires=\"cx1\"><w:drawing><wp:inline>"
+            + $"<wp:extent cx=\"914400\" cy=\"457200\"/><wp:docPr id=\"1\" name=\"c\"/><a:graphic><a:graphicData uri=\"{Cx}\"><cx:chart xmlns:cx=\"{Cx}\" r:id=\"{id}\"/></a:graphicData></a:graphic>"
+            + $"</wp:inline></w:drawing></mc:Choice><mc:Fallback><w:t>fallback {id}</w:t></mc:Fallback></mc:AlternateContent></w:r></w:p>";
+        var chartex = Part($"<cx:data id=\"0\">{Numbers(3, 2)}</cx:data>", "<cx:series layoutId=\"funnel\"><cx:dataId val=\"0\"/></cx:series>");
+        var docx = Document(Alternate("rEx") + Alternate("rClassic") + Alternate("rMissing") + Alternate("rRegion"),
+            parts:
+            [
+                ("word/charts/ex.xml", chartex),
+                ("word/charts/classic.xml", ChartXml.Bars(ChartXml.Series(0, "S", ["a"], [1]))),
+                ("word/charts/region.xml", Part($"<cx:data id=\"0\">{Numbers(1)}</cx:data>", "<cx:series layoutId=\"regionMap\"><cx:dataId val=\"0\"/></cx:series>")),
+            ],
+            relationships: [("rEx", "chartEx", "charts/ex.xml", false), ("rClassic", "chartEx", "charts/classic.xml", false), ("rRegion", "chartEx", "charts/region.xml", false)]);
+        var paragraphs = Paragraphs(Read(docx));
+        Assert.Equal(ChartKind.Bar, Assert.Single(paragraphs.SelectMany(p => p.Inlines).OfType<ImageInline>()).Chart!.Chart.PlotArea.Groups[0].Kind);
+        var text = AllText(DocxToPdf.ConvertToBytes(docx));
+        Assert.DoesNotContain("fallback rEx", text, StringComparison.Ordinal);
+        foreach (var id in new[] { "rClassic", "rMissing", "rRegion" })
+        {
+            Assert.Contains("fallback " + id, text, StringComparison.Ordinal); // Only a chartex part the engine draws replaces it.
+        }
+    }
+
+    [Fact]
     public void Presentation_charts_are_drawn_and_region_maps_show_their_stored_picture()
     {
         var reports = new List<SlideDiagnostic>();
