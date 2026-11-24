@@ -6,10 +6,8 @@
     <!--
       A core package (it reads the XFA packets with the core's PDF reader through InternalsVisibleTo, so it is
       released with the core at the same version). It uses only the public API of RaiCore.Pdf.Layout and
-      RaiCore.Pdf.Fonts. It has no released version to validate against yet: set the baseline to the first release that
-      includes it.
+      RaiCore.Pdf.Fonts. First released in 1.2.0, so it validates against the baseline of the whole train.
     -->
-    <PackageValidationBaselineVersion></PackageValidationBaselineVersion>
   </PropertyGroup>
 
   <ItemGroup>
