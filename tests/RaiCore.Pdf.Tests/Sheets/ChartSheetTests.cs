@@ -44,7 +44,7 @@ public class ChartSheetTests
     /// drawing part has <paramref name="anchors"/> (a PNG is <c>rId1</c>, a bar chart <c>rId2</c>) and whose part has
     /// <paramref name="setup"/> before its drawing.
     /// </summary>
-    internal static byte[] Workbook(string anchors, string setup = "", bool drawing = true)
+    internal static byte[] Workbook(string anchors, string setup = "", bool drawing = true, string type = "chartsheet")
     {
         using var stream = new MemoryStream();
         using (var zip = new System.IO.Compression.ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
@@ -60,7 +60,7 @@ public class ChartSheetTests
             Text("xl/workbook.xml", $"<workbook xmlns=\"{Main}\" xmlns:r=\"{R}\"><sheets><sheet name=\"First\" sheetId=\"1\" r:id=\"rId1\"/>"
                 + "<sheet name=\"Chart\" sheetId=\"2\" r:id=\"rId2\"/><sheet name=\"Last\" sheetId=\"3\" r:id=\"rId3\"/></sheets></workbook>");
             Text("xl/_rels/workbook.xml.rels", $"<Relationships xmlns=\"{Package}\"><Relationship Id=\"rId1\" Type=\"{R}/worksheet\" Target=\"worksheets/sheet1.xml\"/>"
-                + $"<Relationship Id=\"rId2\" Type=\"{R}/chartsheet\" Target=\"chartsheets/sheet1.xml\"/><Relationship Id=\"rId3\" Type=\"{R}/worksheet\" Target=\"worksheets/sheet2.xml\"/></Relationships>");
+                + $"<Relationship Id=\"rId2\" Type=\"{R}/{type}\" Target=\"chartsheets/sheet1.xml\"/><Relationship Id=\"rId3\" Type=\"{R}/worksheet\" Target=\"worksheets/sheet2.xml\"/></Relationships>");
             Text("xl/worksheets/sheet1.xml", $"<worksheet xmlns=\"{Main}\"><sheetData><row r=\"1\"><c r=\"A1\" t=\"inlineStr\"><is><t>first sheet</t></is></c></row></sheetData></worksheet>");
             Text("xl/worksheets/sheet2.xml", $"<worksheet xmlns=\"{Main}\"><sheetData><row r=\"1\"><c r=\"A1\" t=\"inlineStr\"><is><t>last sheet</t></is></c></row></sheetData></worksheet>");
             Text("xl/chartsheets/sheet1.xml", $"<chartsheet xmlns=\"{Main}\" xmlns:r=\"{R}\"><sheetPr/><sheetViews><sheetView workbookViewId=\"0\" zoomToFit=\"1\"/></sheetViews>"
@@ -188,6 +188,7 @@ public class ChartSheetTests
 
         // Landscape, said in so many words; without the page setup, the options' page and no headers or footers.
         Assert.Equal(842, Math.Round(Size(XlsxToPdf.ConvertToBytes(Workbook(Absolute(Chart, 0, 0, 100, 100), "<pageSetup orientation=\"landscape\"/>"), options), 0).Width));
+        Assert.Equal(595, Math.Round(Size(XlsxToPdf.ConvertToBytes(Workbook(Absolute(Chart, 0, 0, 100, 100)), new XlsxConverterOptions { SheetNames = ["Chart"], UsePageSetup = false }), 0).Width));
         var plain = XlsxToPdf.ConvertToBytes(xlsx, new XlsxConverterOptions { SheetNames = ["Chart"], UsePageSetup = false });
         Assert.Equal(595, Math.Round(Size(plain, 0).Width));
         Assert.DoesNotContain("report", Assert.Single(Pages(plain)));
@@ -204,6 +205,10 @@ public class ChartSheetTests
             Assert.Contains(Diagnose(xlsx), d => d is { SheetName: "Chart", Kind: SheetDiagnosticKind.ChartSheet });
             Assert.Equal(2, Pages(XlsxToPdf.ConvertToBytes(xlsx)).Length);
         }
+
+        // A dialog sheet named by the options is neither drawn nor reported as a chart sheet.
+        var dialog = Workbook(Absolute(Chart, 0, 0, 100, 100), type: "dialogsheet");
+        Assert.Empty(XlsxConverter.Read(dialog, new XlsxConverterOptions { SheetNames = ["Chart"] }));
 
         // A chart the engine cannot draw is reported as a chart too.
         var frame = Chart.Replace("http://schemas.openxmlformats.org/drawingml/2006/chart\"", "http://example.com/unknown\"", StringComparison.Ordinal);
