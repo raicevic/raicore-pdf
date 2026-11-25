@@ -165,7 +165,7 @@ XlsxToPdf.Convert("figures.xlsx").Save("figures.pdf");
 | `TxtLoadOptions.Separator`, `Encoding` | `CsvConverterOptions.Delimiter`, `Encoding` |
 | `PdfSaveOptions.Compliance` | `PdfAConformance` on the returned `PdfDocument` |
 | `new Workbook(path)`, `Cells["A1"].PutValue`, `Cells.Find`, `InsertRows`, `DeleteRows`, `Row.IsHidden`, `Save(SaveFormat.Csv)` | `Workbook.Open(path)`, `worksheet["A1"].SetValue`, `Workbook.Find`, `InsertRows`, `DeleteRows`, `Row(n).IsHidden`, `SaveAsCsv` ([workbooks](../guides/workbooks.md)) |
-| Charts, pictures, shapes, conditional formatting (colour scales, data bars, icon sets, formula rules), rich and rotated text, pivot table styles in the PDF | drawn by default; what can't be drawn is reported to `SheetOptions.Diagnostics` ([format support](../guides/format-support.md)) |
+| Charts (the newer types too), chart sheets, pictures, shapes, conditional formatting (colour scales, data bars, icon sets, formula rules), rich and rotated text, pivot table styles in the PDF | drawn by default; what can't be drawn is reported to `SheetOptions.Diagnostics` ([format support](../guides/format-support.md)) |
 | `IWarningCallback` | `SheetOptions.Diagnostics` |
 
 ## Presentations (Aspose.Slides)

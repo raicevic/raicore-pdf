@@ -55,8 +55,9 @@ workbook.Worksheets[0].InsertRows(10, 2);
 workbook.Save("invoice.xlsx");
 ```
 
-Pictures, shapes, text boxes and charts are drawn over the cells where Excel shows them, split across page breaks and
-bands of columns as Excel prints them.
+Pictures, shapes, text boxes and charts (the newer waterfall, histogram, pareto, box and whisker, funnel, treemap and
+sunburst charts too) are drawn over the cells where Excel shows them, split across page breaks and bands of columns as
+Excel prints them.
 
 Headers and footers, page breaks set by hand, rich text, rotated, stacked and shrunk text, conditional formatting over
 the stored values (color scales, data bars, icon sets and formula rules too), comments (at the end of the sheet, or as

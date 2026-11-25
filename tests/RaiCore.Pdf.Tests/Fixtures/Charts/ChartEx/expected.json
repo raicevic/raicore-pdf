@@ -1,0 +1,782 @@
+{
+ "../../Poi/chartex.docx": {
+  "word/charts/chart4.xml": [
+   {
+    "boxes": {
+     "Category 1": {
+      "high": 47.0,
+      "low": -28.0,
+      "mean": 1.2222222222222223,
+      "median": -7.0,
+      "q1": -24.0,
+      "q3": 23.5
+     },
+     "Category 2": {
+      "high": 47.0,
+      "low": -78.0,
+      "mean": -11.142857142857142,
+      "median": -12.0,
+      "q1": -24.0,
+      "q3": 17.0
+     },
+     "Category 3": {
+      "high": 46.0,
+      "low": -26.0,
+      "mean": 2.5,
+      "median": -2.0,
+      "q1": -21.5,
+      "q3": 25.75
+     }
+    },
+    "layout": "boxWhisker",
+    "method": "exclusive"
+   },
+   {
+    "boxes": {
+     "Category 1": {
+      "high": 34.0,
+      "low": -28.0,
+      "mean": 16.22222222222222,
+      "median": 1.0,
+      "q1": -9.0,
+      "q3": 28.0
+     },
+     "Category 2": {
+      "high": 31.0,
+      "low": -13.0,
+      "mean": 4.714285714285714,
+      "median": 6.0,
+      "q1": -12.0,
+      "q3": 12.0
+     },
+     "Category 3": {
+      "high": 41.0,
+      "low": 10.0,
+      "mean": 20.166666666666668,
+      "median": 16.0,
+      "q1": 13.75,
+      "q3": 27.5
+     }
+    },
+    "layout": "boxWhisker",
+    "method": "exclusive"
+   },
+   {
+    "boxes": {
+     "Category 1": {
+      "high": 44.0,
+      "low": -24.0,
+      "mean": 11.222222222222221,
+      "median": 11.0,
+      "q1": -11.0,
+      "q3": 30.5
+     },
+     "Category 2": {
+      "high": 91.0,
+      "low": -8.0,
+      "mean": 36.42857142857143,
+      "median": 36.0,
+      "q1": 16.0,
+      "q3": 50.0
+     },
+     "Category 3": {
+      "high": 48.0,
+      "low": -18.0,
+      "mean": 14.0,
+      "median": 18.5,
+      "q1": -9.0,
+      "q3": 29.25
+     }
+    },
+    "layout": "boxWhisker",
+    "method": "exclusive"
+   }
+  ],
+  "word/charts/chart6.xml": [
+   {
+    "layout": "sunburst",
+    "top": {
+     "Branch 1": 258.0,
+     "Branch 2": 154.0,
+     "Branch 3": 165.0
+    },
+    "total": 577.0
+   }
+  ]
+ },
+ "SimpleHistogram.xlsx": {
+  "xl/charts/chartEx1.xml": [
+   {
+    "counts": [
+     4,
+     1
+    ],
+    "edges": [
+     10.0,
+     13.937122293836484,
+     15.0
+    ],
+    "layout": "clusteredColumn"
+   }
+  ]
+ },
+ "boxWhisker.xlsx": {
+  "xl/charts/chartEx1.xml": [
+   {
+    "boxes": {
+     "": {
+      "high": 9.0,
+      "low": 3.0,
+      "mean": 5.777777777777778,
+      "median": 6.0,
+      "q1": 4.0,
+      "q3": 7.5
+     }
+    },
+    "layout": "boxWhisker",
+    "method": "exclusive"
+   },
+   {
+    "boxes": {
+     "": {
+      "high": 7.0,
+      "low": 2.0,
+      "mean": 5.111111111111111,
+      "median": 5.0,
+      "q1": 3.5,
+      "q3": 7.0
+     }
+    },
+    "layout": "boxWhisker",
+    "method": "exclusive"
+   },
+   {
+    "boxes": {
+     "": {
+      "high": 7.0,
+      "low": 1.0,
+      "mean": 4.777777777777778,
+      "median": 5.0,
+      "q1": 3.5,
+      "q3": 6.0
+     }
+    },
+    "layout": "boxWhisker",
+    "method": "exclusive"
+   }
+  ]
+ },
+ "chartex.docx": {
+  "boxWhisker": [
+   {
+    "boxes": {
+     "North": {
+      "high": 10.0,
+      "low": 4.0,
+      "mean": 7.6,
+      "median": 8.0,
+      "q1": 7.0,
+      "q3": 9.0
+     },
+     "South": {
+      "high": 6.0,
+      "low": 2.0,
+      "mean": 8.166666666666666,
+      "median": 4.0,
+      "q1": 3.0,
+      "q3": 5.75
+     }
+    },
+    "layout": "boxWhisker",
+    "method": "inclusive"
+   },
+   {
+    "boxes": {
+     "North": {
+      "high": 7.0,
+      "low": 5.0,
+      "mean": 6.6,
+      "median": 6.0,
+      "q1": 6.0,
+      "q3": 7.0
+     },
+     "South": {
+      "high": 8.0,
+      "low": 4.0,
+      "mean": 4.833333333333333,
+      "median": 5.0,
+      "q1": 4.25,
+      "q3": 5.75
+     }
+    },
+    "layout": "boxWhisker",
+    "method": "inclusive"
+   }
+  ],
+  "funnel": [
+   {
+    "categories": [
+     "Visits",
+     "Sign-ups",
+     "Trials",
+     "Orders",
+     "Renewals"
+    ],
+    "layout": "funnel",
+    "values": [
+     500.0,
+     320.0,
+     210.0,
+     120.0,
+     45.0
+    ]
+   }
+  ],
+  "histogram": [
+   {
+    "counts": [
+     7,
+     5,
+     2,
+     3,
+     1
+    ],
+    "edges": [
+     12.0,
+     25.0,
+     38.0,
+     51.0,
+     64.0,
+     77.0
+    ],
+    "layout": "clusteredColumn"
+   }
+  ],
+  "histogram-auto": [
+   {
+    "counts": [
+     3,
+     10,
+     3,
+     2
+    ],
+    "edges": [
+     20.0,
+     43.71334431025659,
+     60.0
+    ],
+    "layout": "clusteredColumn"
+   }
+  ],
+  "pareto": [
+   {
+    "categories": [
+     "Damaged",
+     "Wrong item",
+     "Late",
+     "Lost",
+     "Other"
+    ],
+    "layout": "clusteredColumn",
+    "shares": [
+     0.45454545454545453,
+     0.7575757575757576,
+     0.8787878787878788,
+     0.9494949494949495,
+     1.0
+    ],
+    "sorted": [
+     45.0,
+     30.0,
+     12.0,
+     7.0,
+     5.0
+    ]
+   },
+   {
+    "layout": "paretoLine"
+   }
+  ],
+  "regionMap": [
+   {
+    "layout": "regionMap"
+   }
+  ],
+  "sunburst": [
+   {
+    "layout": "sunburst",
+    "top": {
+     "Fruit": 75.0,
+     "Grain": 32.0,
+     "Vegetables": 45.0
+    },
+    "total": 152.0
+   }
+  ],
+  "treemap": [
+   {
+    "layout": "treemap",
+    "top": {
+     "Fruit": 75.0,
+     "Grain": 32.0,
+     "Vegetables": 45.0
+    },
+    "total": 152.0
+   }
+  ],
+  "waterfall": [
+   {
+    "ends": [
+     100.0,
+     120.0,
+     105.0,
+     135.0,
+     135.0,
+     110.0,
+     120.0,
+     120.0
+    ],
+    "layout": "waterfall",
+    "starts": [
+     0,
+     100.0,
+     120.0,
+     105.0,
+     0,
+     135.0,
+     110.0,
+     0
+    ],
+    "totals": [
+     4,
+     7
+    ],
+    "values": [
+     100.0,
+     20.0,
+     -15.0,
+     30.0,
+     135.0,
+     -25.0,
+     10.0,
+     120.0
+    ]
+   }
+  ]
+ },
+ "chartex.pptx": {
+  "boxWhisker": [
+   {
+    "boxes": {
+     "North": {
+      "high": 10.0,
+      "low": 4.0,
+      "mean": 7.6,
+      "median": 8.0,
+      "q1": 7.0,
+      "q3": 9.0
+     },
+     "South": {
+      "high": 6.0,
+      "low": 2.0,
+      "mean": 8.166666666666666,
+      "median": 4.0,
+      "q1": 3.0,
+      "q3": 5.75
+     }
+    },
+    "layout": "boxWhisker",
+    "method": "inclusive"
+   },
+   {
+    "boxes": {
+     "North": {
+      "high": 7.0,
+      "low": 5.0,
+      "mean": 6.6,
+      "median": 6.0,
+      "q1": 6.0,
+      "q3": 7.0
+     },
+     "South": {
+      "high": 8.0,
+      "low": 4.0,
+      "mean": 4.833333333333333,
+      "median": 5.0,
+      "q1": 4.25,
+      "q3": 5.75
+     }
+    },
+    "layout": "boxWhisker",
+    "method": "inclusive"
+   }
+  ],
+  "funnel": [
+   {
+    "categories": [
+     "Visits",
+     "Sign-ups",
+     "Trials",
+     "Orders",
+     "Renewals"
+    ],
+    "layout": "funnel",
+    "values": [
+     500.0,
+     320.0,
+     210.0,
+     120.0,
+     45.0
+    ]
+   }
+  ],
+  "histogram": [
+   {
+    "counts": [
+     7,
+     5,
+     2,
+     3,
+     1
+    ],
+    "edges": [
+     12.0,
+     25.0,
+     38.0,
+     51.0,
+     64.0,
+     77.0
+    ],
+    "layout": "clusteredColumn"
+   }
+  ],
+  "histogram-auto": [
+   {
+    "counts": [
+     3,
+     10,
+     3,
+     2
+    ],
+    "edges": [
+     20.0,
+     43.71334431025659,
+     60.0
+    ],
+    "layout": "clusteredColumn"
+   }
+  ],
+  "pareto": [
+   {
+    "categories": [
+     "Damaged",
+     "Wrong item",
+     "Late",
+     "Lost",
+     "Other"
+    ],
+    "layout": "clusteredColumn",
+    "shares": [
+     0.45454545454545453,
+     0.7575757575757576,
+     0.8787878787878788,
+     0.9494949494949495,
+     1.0
+    ],
+    "sorted": [
+     45.0,
+     30.0,
+     12.0,
+     7.0,
+     5.0
+    ]
+   },
+   {
+    "layout": "paretoLine"
+   }
+  ],
+  "regionMap": [
+   {
+    "layout": "regionMap"
+   }
+  ],
+  "sunburst": [
+   {
+    "layout": "sunburst",
+    "top": {
+     "Fruit": 75.0,
+     "Grain": 32.0,
+     "Vegetables": 45.0
+    },
+    "total": 152.0
+   }
+  ],
+  "treemap": [
+   {
+    "layout": "treemap",
+    "top": {
+     "Fruit": 75.0,
+     "Grain": 32.0,
+     "Vegetables": 45.0
+    },
+    "total": 152.0
+   }
+  ],
+  "waterfall": [
+   {
+    "ends": [
+     100.0,
+     120.0,
+     105.0,
+     135.0,
+     135.0,
+     110.0,
+     120.0,
+     120.0
+    ],
+    "layout": "waterfall",
+    "starts": [
+     0,
+     100.0,
+     120.0,
+     105.0,
+     0,
+     135.0,
+     110.0,
+     0
+    ],
+    "totals": [
+     4,
+     7
+    ],
+    "values": [
+     100.0,
+     20.0,
+     -15.0,
+     30.0,
+     135.0,
+     -25.0,
+     10.0,
+     120.0
+    ]
+   }
+  ]
+ },
+ "color_funnel.xlsx": {
+  "xl/charts/chartEx1.xml": [
+   {
+    "categories": null,
+    "layout": "funnel",
+    "values": [
+     4.0,
+     6.0,
+     3.0,
+     7.0,
+     5.0,
+     4.0,
+     6.0,
+     5.0
+    ]
+   }
+  ]
+ },
+ "funnel-pp1.pptx": {
+  "ppt/charts/chartEx1.xml": [
+   {
+    "categories": [
+     "Thing 1",
+     "Thing 2",
+     "Thing 3",
+     "Thing 4"
+    ],
+    "layout": "funnel",
+    "values": [
+     4.3,
+     2.5,
+     3.5,
+     4.5
+    ]
+   }
+  ]
+ },
+ "funnel1.xlsx": {
+  "xl/charts/chartEx1.xml": [
+   {
+    "categories": null,
+    "layout": "funnel",
+    "values": [
+     4.0,
+     5.0,
+     7.0,
+     12.0,
+     3.0,
+     5.0
+    ]
+   }
+  ]
+ },
+ "paretoLine.xlsx": {
+  "xl/charts/chartEx1.xml": [
+   {
+    "categories": null,
+    "counts": [
+     6,
+     4
+    ],
+    "edges": [
+     1.0,
+     3.1660747890192966,
+     5.0
+    ],
+    "layout": "clusteredColumn",
+    "shares": [
+     0.6,
+     1.0
+    ],
+    "sorted": [
+     6,
+     4
+    ]
+   },
+   {
+    "layout": "paretoLine"
+   }
+  ]
+ },
+ "sunburst.xlsx": {
+  "xl/charts/chartEx1.xml": [
+   {
+    "layout": "sunburst",
+    "top": {
+     "Best": 27.0,
+     "Worst": 16.0
+    },
+    "total": 43.0
+   }
+  ]
+ },
+ "treemap.xlsx": {
+  "xl/charts/chartEx1.xml": [
+   {
+    "layout": "treemap",
+    "top": {
+     "Best": 27.0,
+     "Worst": 16.0
+    },
+    "total": 43.0
+   }
+  ]
+ },
+ "waterfall.xlsx": {
+  "xl/charts/chartEx1.xml": [
+   {
+    "ends": [
+     2.0,
+     7.0,
+     11.0,
+     17.0,
+     12.0,
+     6.0,
+     2.0,
+     9.0,
+     17.0,
+     23.0,
+     30.0,
+     35.0
+    ],
+    "layout": "waterfall",
+    "starts": [
+     0,
+     2.0,
+     7.0,
+     11.0,
+     17.0,
+     12.0,
+     6.0,
+     2.0,
+     9.0,
+     17.0,
+     23.0,
+     30.0
+    ],
+    "totals": [],
+    "values": [
+     2.0,
+     5.0,
+     4.0,
+     6.0,
+     -5.0,
+     -6.0,
+     -4.0,
+     7.0,
+     8.0,
+     6.0,
+     7.0,
+     5.0
+    ]
+   }
+  ]
+ },
+ "waterfall2.xlsx": {
+  "xl/charts/chartEx1.xml": [
+   {
+    "ends": [
+     4.0,
+     7.0,
+     1.0,
+     -6.0,
+     -1.0,
+     5.0,
+     9.0,
+     4.0,
+     1.0,
+     5.0,
+     10.0,
+     6.0,
+     -1.0,
+     8.0,
+     15.0,
+     20.0
+    ],
+    "layout": "waterfall",
+    "starts": [
+     0,
+     4.0,
+     7.0,
+     1.0,
+     -6.0,
+     -1.0,
+     5.0,
+     9.0,
+     4.0,
+     1.0,
+     5.0,
+     10.0,
+     6.0,
+     -1.0,
+     8.0,
+     15.0
+    ],
+    "totals": [],
+    "values": [
+     4.0,
+     3.0,
+     -6.0,
+     -7.0,
+     5.0,
+     6.0,
+     4.0,
+     -5.0,
+     -3.0,
+     4.0,
+     5.0,
+     -4.0,
+     -7.0,
+     9.0,
+     7.0,
+     5.0
+    ]
+   }
+  ]
+ }
+}

@@ -41,7 +41,7 @@ legacy.Save("old-deck.pdf");
   runs, bullets and links, and the footers the presentation sets.
 
 - **Charts:** columns, bars, lines, pies, doughnuts, areas, scatter, bubble, radar and stock charts and their
-  combinations, drawn as vector graphics with Excel's axis scaling, legends, titles and data labels as text.
+  combinations, and the newer waterfall, histogram, pareto, box and whisker, funnel, treemap and sunburst charts, drawn as vector graphics with Excel's axis scaling, legends, titles and data labels as text.
 
 Not supported: surface charts, PICT pictures, animations, 3D effects, shadows, WordArt transforms, notes and
 comments (reported to `Diagnostics`), encrypted presentations, and PowerPoint 95 and older files.

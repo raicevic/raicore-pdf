@@ -11,7 +11,7 @@ reader, the Outlook message converter, the PPTX converter, the Word document con
   `bug58144-headers-footers-2007.pptx`, `crop-to-0.pptx`, `layouts.pptx`, `missing-blip-fill.pptx`,
   `picture-transparency.pptx`, `sample.pptx`, `shapes.pptx`, `table_test.pptx` and `themes.pptx`, and the charts
   `slideshow/line-chart.pptx`, `pie-chart.pptx`, `radar-chart.pptx`, `scatter-chart.pptx` and
-  `document/chartex.docx` (four DrawingML charts and two newer chart types with their stored pictures), unchanged.
+  `document/chartex.docx` (four DrawingML charts and, as Word writes them, a box and whisker and a sunburst chart with their stored pictures), unchanged.
 - Source of the Word documents: the same commit, files `document/ComplexNumberedLists.docx`,
   `document/ThreeColHeadFoot.docx`, `document/DiffFirstPageHeadFoot.docx`, `document/footnotes.docx`,
   `document/table-alignment.docx`, `document/IllustrativeCases.docx`, `document/comment.docx` (a comment of three

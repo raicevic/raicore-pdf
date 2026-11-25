@@ -72,7 +72,7 @@ belongs to.
 
 ## Charts
 
-Charts (DrawingML chart parts, as PowerPoint, Word and Excel store them) are drawn as vector graphics from the data the
+Charts (DrawingML chart parts and the newer `chartex` parts, as PowerPoint, Word and Excel store them) are drawn as vector graphics from the data the
 file caches with them, so the PDF shows the chart as it was saved; its text (title, axis labels, legend, data labels)
 is real text that can be searched and extracted. The same chart engine draws the charts of Word documents.
 
@@ -81,6 +81,14 @@ is real text that can be searched and extracted. The same chart engine draws the
   smoothed lines), bubbles, radar charts (lines, markers, filled) and stock charts (high-low lines, up-down bars), and
   combinations of them, with secondary axes. 3-D charts are drawn flat, and a pie of pie or bar of pie as one pie
   (reported).
+- **Newer chart types** (Office 2016 and later, `chartex` parts): waterfalls (bars floating on the running total,
+  totals standing on the axis, connector lines, increase, decrease and total colors in the legend), histograms (bins
+  by count, width or, automatically, Scott's normal reference rule as Excel bins; underflow and overflow bins), paretos
+  (columns sorted from the largest and the cumulative percentage on its own axis), box and whisker plots (quartiles by
+  the chart's exclusive or inclusive quartile method, whiskers within 1.5 interquartile ranges, means, outliers and
+  inner points as the chart asks), funnels, treemaps (squarified, with parent names over their children or in a
+  banner) and sunbursts, with their titles, legends, data labels and theme colors. Region maps are not drawn: the
+  stored picture is shown, or they are reported.
 - **Axes:** category, value and date axes, Excel's automatic scaling (the minimum, maximum and major unit Excel picks
   for the data, so tick labels match), fixed minimums, maximums and units, logarithmic and reversed scales, where an
   axis crosses the other, tick marks, major and minor gridlines, tick label positions, number formats (General,
@@ -93,8 +101,7 @@ is real text that can be searched and extracted. The same chart engine draws the
   their transforms, and the chart style's automatic colors (the theme's accent colors, darker and lighter after six
   series) for what the file leaves to it. Text without a size is 18 points, as in PowerPoint.
 
-Not drawn: surface charts, the chart types of Office 2016 and later (waterfall, treemap, sunburst, histogram, box and
-whisker, funnel, map; PowerPoint stores a picture with them, which is drawn instead), gradients and pictures in chart
+Not drawn: surface charts, region maps (PowerPoint stores a picture with them, which is drawn instead), gradients and pictures in chart
 fills (a solid color is used), trendlines, error bars, data tables, and shadows and other effects. Chart data comes
 from the file's cache: charts are not recalculated from their embedded workbook.
 

@@ -48,7 +48,7 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Pictures: PICT | R | R | R | R |
 | Floating pictures with text wrapping | ✓ | ✓ | ◐ in the text | ✓ |
 | Text boxes and shapes | ◐ text after the paragraph, R | ◐ text after the paragraph, R | ◐ in the text, R | ◐ text after the paragraph, R |
-| Charts | ✓ newer types as their stored picture, R | ◐ preview picture | ◐ object's result | ◐ replacement picture |
+| Charts | ✓ newer types too; region maps as their stored picture, R | ◐ preview picture | ◐ object's result | ◐ replacement picture |
 | SmartArt | R | ◐ preview picture | ◐ object's result | ◐ replacement picture |
 | Embedded objects | ◐ preview picture, R | ◐ preview picture | ◐ object's result, R | ◐ replacement picture |
 | Equations | ◐ as plain text, R | ◐ preview picture | ◐ saved result | ◐ replacement picture |
@@ -74,7 +74,7 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Print area, print titles, orientation, scale, fit to width | ✓ | ✓ | - |
 | Header row repeated on every page | ✓ print titles | ✓ print titles | ✓ `HasHeaderRow` |
 | Pivot tables | ✓ their cells, `PivotStyleLight15`-`21`; other styles R | ◐ their cells, R | - |
-| Charts in a sheet | ✓ newer types R | R | - |
+| Charts in a sheet | ✓ newer types too; region maps R | R | - |
 | Chart sheets | ✓ on a page of their own | R | - |
 | Pictures: PNG, JPEG, GIF, BMP, TIFF, EMF, WMF | ✓ cropped, turned | ✓ bitmaps, metafiles | - |
 | Shapes and text boxes | ✓ preset and free-form geometry | ◐ common shape types, R | - |
@@ -108,7 +108,7 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Pictures: PICT | R | R |
 | Tables with table styles | ✓ | ◐ drawn as their shapes |
 | SmartArt | ◐ stored drawing, else R | - |
-| Charts | ✓ surface charts R, newer types as their stored picture | ◐ stored picture |
+| Charts | ✓ newer types too; surface charts R, region maps as their stored picture | ◐ stored picture |
 | Embedded objects | ◐ stored picture | ◐ stored picture |
 | Video and audio | ◐ poster picture | ✗ |
 | Slide numbers, footers, dates | ✓ | ✓ (automatic dates R) |

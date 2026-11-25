@@ -7,7 +7,7 @@ namespace RaiCore.Pdf.Documents.Docx;
 /// <summary>Charts: a drawing's chart part, read by the core's chart engine and drawn as a vector image.</summary>
 internal sealed partial class DocxReader
 {
-    /// <summary>The namespace of the chart types of Office 2016 (waterfall, treemap, sunburst...), which the engine does not draw.</summary>
+    /// <summary>The namespace of the chart types of Office 2016 (waterfall, treemap, sunburst...).</summary>
     private const string ChartExNamespace = "http://schemas.microsoft.com/office/drawing/2014/chartex";
 
     /// <summary>
@@ -74,4 +74,27 @@ internal sealed partial class DocxReader
     /// </summary>
     private static bool RequiresChartEx(XElement choice) =>
         choice.Descendants().Any(e => e.Name.LocalName == "graphicData" && Ooxml.Attr(e, "uri") == ChartExNamespace);
+
+    /// <summary>
+    /// Whether the chart engine draws a choice's newer chart: its chartex part is there, sound, and of a type it draws
+    /// (not a region map).
+    /// </summary>
+    private bool CanDrawChartEx(XElement choice)
+    {
+        var data = choice.Descendants().First(e => e.Name.LocalName == "graphicData" && Ooxml.Attr(e, "uri") == ChartExNamespace);
+        var reference = data.Elements().FirstOrDefault(e => e.Name.LocalName == "chart");
+        if (reference is null || RelationshipId(reference) is not { } id || !_relationships.TryGetValue(id, out var relationship) || relationship.External)
+        {
+            return false;
+        }
+
+        try
+        {
+            return _package.Load(relationship.Target) is { } root && root.Name.NamespaceName == ChartExNamespace && ChartReader.Read(root, _theme.Color, _context.Limits) is { PlotArea.Groups.Count: > 0 };
+        }
+        catch (DocumentFormatException)
+        {
+            return false;
+        }
+    }
 }

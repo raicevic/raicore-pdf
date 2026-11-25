@@ -206,20 +206,19 @@ public class ChartConversionTests
     }
 
     [Fact]
-    public void Newer_document_chart_types_show_their_stored_picture()
+    public void Newer_document_chart_types_are_drawn()
     {
         var diagnostics = new List<DocumentDiagnostic>();
         var data = Fixtures.Read("Poi/chartex.docx");
         var document = Read(data, diagnostics: diagnostics);
         var images = Paragraphs(document).SelectMany(p => p.Inlines).OfType<ImageInline>().ToList();
-        Assert.Equal(4, images.Count(i => i.Chart is not null)); // Columns, lines, radar, stock.
-        Assert.Equal(2, images.Count(i => i.Chart is null && i.Data.Length > 0)); // Box and whisker, sunburst: their pictures.
-        Assert.Contains(diagnostics, d => d.Message == "A chart of a newer type (such as a waterfall or treemap chart) is shown as its stored picture.");
+        Assert.Equal(6, images.Count(i => i.Chart is not null)); // Columns, lines, radar, stock, and Word's box and whisker and sunburst charts.
+        Assert.Empty(diagnostics);
         var kinds = images.Where(i => i.Chart is not null).Select(i => i.Chart!.Chart.PlotArea.Groups[0].Kind).ToList();
-        Assert.Equal([Pdf.Charts.ChartKind.Bar, Pdf.Charts.ChartKind.Line, Pdf.Charts.ChartKind.Radar, Pdf.Charts.ChartKind.Stock], kinds);
+        Assert.Equal([Pdf.Charts.ChartKind.Bar, Pdf.Charts.ChartKind.Line, Pdf.Charts.ChartKind.Radar, Pdf.Charts.ChartKind.BoxWhisker, Pdf.Charts.ChartKind.Stock, Pdf.Charts.ChartKind.Sunburst], kinds);
 
         var text = AllText(DocxToPdf.ConvertToBytes(data));
-        foreach (var expected in new[] { "my chart looks nice", "This is a line chart I just made", "This is a radar chart", "This is a stock chart", "Category 4", "1/9/2002" })
+        foreach (var expected in new[] { "my chart looks nice", "This is a line chart I just made", "This is a radar chart", "This is a stock chart", "Category 4", "1/9/2002", "this is a box and whisker chart", "this is a sunburst chart", "Branch 1" })
         {
             Assert.Contains(expected, text, StringComparison.Ordinal);
         }

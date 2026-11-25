@@ -15,6 +15,14 @@ and versions follow [Semantic Versioning](https://semver.org/).
   each on a page of its own with its chart stretched over the content area, in landscape unless its page setup asks
   for portrait, with its headers and footers. `SheetNames`, `SheetIndexes` and the bookmarks include them. Chart
   sheets without anything that can be drawn, and those of `.xls` workbooks (BIFF charts), are still reported.
+- **Charts: waterfall, treemap, sunburst, histogram, box and whisker and funnel charts** (#291): the chart types of
+  Office 2016 (`chartex` parts) are drawn as vector graphics in workbooks, Word documents and presentations by the
+  shared chart engine: waterfalls (running totals, totals, connector lines), histograms (Excel's binning, with
+  underflow and overflow bins) and paretos, box and whisker plots (exclusive or inclusive quartiles, means, outliers),
+  funnels, treemaps and sunbursts, with their titles, legends, data labels and theme colors. Word documents and
+  presentations draw them instead of their stored pictures; workbooks read their data from the cells their hidden
+  names refer to (and charts without cached data from their cells). Region maps are still shown as their stored
+  picture or reported.
 - **Documents: comments at the end or as notes** (#292): the new `DocumentConverterOptions.Comments` prints the
   comments of DOCX, DOC, RTF and ODT documents, listed after the document (`DocumentComments.AtEnd`: each with its
   author, date, the text it is about and its replies, the anchors marked with numbered superscripts linking to them)

@@ -121,7 +121,9 @@ internal sealed class XlsxWorkbook
                 case "definedName" when reader.Depth == 2:
                     var name = reader.GetAttribute("name") ?? string.Empty;
                     int? sheet = int.TryParse(reader.GetAttribute("localSheetId"), NumberStyles.None, CultureInfo.InvariantCulture, out var local) ? local : null;
-                    if (name is "_xlnm.Print_Area" or "_xlnm.Print_Titles")
+                    // Print areas and titles, and the hidden names newer chart types (chartex) refer to their data by.
+                    if (name is "_xlnm.Print_Area" or "_xlnm.Print_Titles"
+                        || (sheet is null && name.StartsWith("_xlchart.", StringComparison.Ordinal) && _definedNames.Count < 100_000))
                     {
                         _definedNames.Add((sheet, name, ReadText(reader)));
                     }
@@ -538,6 +540,9 @@ internal sealed class XlsxWorkbook
         var shown = format.IsDate ? format : NumberFormat.Parse(date.TimeOfDay == TimeSpan.Zero ? "yyyy-mm-dd" : "yyyy-mm-dd hh:mm:ss");
         return shown.Format(serial, Settings);
     }
+
+    /// <summary>The value of a workbook-wide name a chart refers to its data by (<c>_xlchart.v1.0</c>), or <c>null</c>.</summary>
+    public string? ChartName(string name) => _definedNames.FirstOrDefault(n => n.SheetId is null && n.Name == name).Value;
 
     /// <summary>The print area of a sheet, or <c>null</c>.</summary>
     public CellRange? PrintArea(XlsxSheetEntry sheet) => Areas(sheet, "_xlnm.Print_Area").Cast<CellRange?>().FirstOrDefault();

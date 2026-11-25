@@ -10,10 +10,11 @@ namespace RaiCore.Pdf.Sheets.Xlsx;
 /// <summary>
 /// Reads the drawing part of a worksheet (<c>xdr:wsDr</c>): its anchors (two-cell, one-cell, absolute) with their
 /// pictures (PNG, JPEG, GIF, BMP, TIFF, WMF, EMF; cropped), shapes and text boxes (preset and free-form geometry, fill,
-/// outline, text), charts (for the chart engine) and groups. Anchors are in the source's rows and columns. What cannot
-/// be drawn is counted in the worksheet's <see cref="UnsupportedContent"/>: pictures that cannot be read (or have more
-/// pixels than <see cref="ResourceLimits.MaxImagePixels"/>), charts the engine cannot draw (such as the newer
-/// <c>chartex</c> types), SmartArt, ink and other graphic frames. Objects that do not print or are hidden are skipped.
+/// outline, text), charts (for the chart engine; the newer <c>chartex</c> types too, their data from the cells their
+/// hidden names refer to) and groups. Anchors are in the source's rows and columns. What cannot be drawn is counted in
+/// the worksheet's <see cref="UnsupportedContent"/>: pictures that cannot be read (or have more pixels than
+/// <see cref="ResourceLimits.MaxImagePixels"/>), charts the engine cannot draw (such as region maps), SmartArt, ink and
+/// other graphic frames. Objects that do not print or are hidden are skipped.
 /// </summary>
 internal sealed class XlsxDrawing
 {
@@ -30,6 +31,7 @@ internal sealed class XlsxDrawing
     private string _folder = string.Empty;
     private List<(string Id, string Type, string Target)> _relationships = [];
     private long _objects;
+    private readonly XlsxChartCells _cells;
 
     /// <summary>Creates a reader for the drawings of a workbook's worksheets.</summary>
     /// <param name="package">The package.</param>
@@ -45,6 +47,7 @@ internal sealed class XlsxDrawing
         _images = images;
         _scheme = Scheme(workbook.ThemeColors);
         (_majorFont, _minorFont) = (workbook.MajorFont, workbook.MinorFont);
+        _cells = new XlsxChartCells(package, workbook, limits);
     }
 
     /// <summary>
@@ -360,14 +363,14 @@ internal sealed class XlsxDrawing
         return new GroupItem(children, bounds) { Name = name, Rotation = rotation, FlipH = flipH, FlipV = flipV };
     }
 
-    /// <summary>A graphic frame: a chart for the chart engine; others (SmartArt, newer chart types) are counted.</summary>
+    /// <summary>A graphic frame: a chart (or a chart of a newer type) for the chart engine; others (SmartArt) are counted.</summary>
     private ChartItem? ReadFrame(XElement frame, string? name)
     {
         var data = Child(Child(frame, "graphic"), "graphicData");
         var uri = Attr(data, "uri") ?? string.Empty;
-        if (!uri.EndsWith("/chart", StringComparison.OrdinalIgnoreCase))
+        if (!uri.EndsWith("/chart", StringComparison.OrdinalIgnoreCase) && !uri.EndsWith("/chartex", StringComparison.OrdinalIgnoreCase))
         {
-            _unsupported.Add(uri.EndsWith("/chartex", StringComparison.OrdinalIgnoreCase) ? SheetDiagnosticKind.Chart : SheetDiagnosticKind.Shape);
+            _unsupported.Add(SheetDiagnosticKind.Shape);
             return null;
         }
 
@@ -377,7 +380,7 @@ internal sealed class XlsxDrawing
             try
             {
                 var root = _package.Parse(target, reader => XElement.Load(reader), null);
-                chart = root is null ? null : ChartReader.Read(root, _scheme, _limits);
+                chart = root is null ? null : ChartReader.Read(root, _scheme, _limits, references: _cells.Resolve);
             }
             catch (SpreadsheetFormatException)
             {
