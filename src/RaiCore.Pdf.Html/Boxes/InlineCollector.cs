@@ -98,7 +98,8 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         }
 
         Paragraph().Add(processed, textStyle);
-        if (processed.Any(c => !char.IsWhiteSpace(c)))
+        // Only CSS white space is collapsible: a no-break space (the "&nbsp;" spacer paragraph) gives the line a box.
+        if (processed.Any(c => c is not (' ' or '\t' or '\n' or '\f' or '\r')))
         {
             _hasVisibleContent = true;
         }

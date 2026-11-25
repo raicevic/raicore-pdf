@@ -17,6 +17,11 @@ and versions follow [Semantic Versioning](https://semver.org/).
   longer reported as an unsupported selector (#307).
 - HTML: `@page` margin boxes take the `font` shorthand (`font: 8pt Arial, sans-serif`), `line-height` and the
   font-size keywords (`small`, `x-large`, `larger`, ...); before, only the font longhands had an effect (#177).
+- HTML: a paragraph holding only a no-break space (`<p>&nbsp;</p>`, the spacer line of e-mails and word processor
+  exports) is one line tall instead of collapsing to nothing (#305).
+- Tables: a cell with a fixed width keeps it when the table is wider than its columns need, and the other columns
+  take the extra width, as in browsers; in HTML its content is laid out for that width (a `margin: 0 auto` box in it
+  is centered in the cell, as in e-mail layouts with gutter cells).
 
 ## [1.3.0] - 2026-11-25
 

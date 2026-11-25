@@ -161,6 +161,15 @@ internal sealed partial class BoxBuilder
         var valign = td.GetAttribute("valign")?.ToUpperInvariant() ?? style.VerticalAlign.ToUpperInvariant();
         var (box, contentWidth) = BoxStyleFor(style with { Margin = [CssLength.Zero, CssLength.Zero, CssLength.Zero, CssLength.Zero], Width = CssLength.Auto, MinWidth = CssLength.Auto, MaxWidth = CssLength.Auto }, tableWidth);
 
+        // A cell with a fixed width keeps it while the table has other columns to widen (see TableLayouter): its
+        // content is built for that width, so that percentages and auto margins (margin: 0 auto beside a max-width)
+        // resolve against it, not against the whole table.
+        var width = style.Width.IsAuto ? Dimension(td.GetAttribute("width")) : style.Width;
+        if (TableWidthFor(width, tableWidth) is { HasPercent: false } fixedWidth)
+        {
+            contentWidth = Math.Min(contentWidth, fixedWidth.Points);
+        }
+
         var content = new List<Block>();
         var collector = new InlineCollector(this, style, contentWidth);
         WithPageWidthFluid(false, () =>
@@ -173,7 +182,6 @@ internal sealed partial class BoxBuilder
             Own(block, td);
         }
 
-        var width = style.Width.IsAuto ? Dimension(td.GetAttribute("width")) : style.Width;
         return new TableCell(content)
         {
             Tag = CellTag(td, headerGroup),

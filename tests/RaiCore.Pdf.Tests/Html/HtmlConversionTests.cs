@@ -1,4 +1,6 @@
+using System.Text.RegularExpressions;
 using PDFtoImage;
+using RaiCore.Pdf.Extraction;
 using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Layout;
 
@@ -81,6 +83,43 @@ public class HtmlConversionTests
     [InlineData("<p style='text-transform: capitalize'>hello big world</p>", "Hello Big World")]
     public void Processes_white_space_and_line_breaks_like_css(string html, string expected) =>
         Assert.Equal(expected, Text(Assert.Single(Paragraphs(Blocks(html)))));
+
+    [Theory]
+    [InlineData("<p>A</p><p>&nbsp;</p><p>B</p>", new[] { "A", "\u00A0", "B" })] // The spacer paragraph of e-mails and word processors.
+    [InlineData("<p>A</p><p> &nbsp; </p><p>B</p>", new[] { "A", "\u00A0 ", "B" })]
+    [InlineData("<p>A</p><p><span>\u2003</span></p><p>B</p>", new[] { "A", "\u2003", "B" })]
+    [InlineData("<p>A</p><p> \t\n </p><p>B</p>", new[] { "A", "B" })] // Collapsible white space alone has no line box.
+    public void A_no_break_space_is_not_collapsible(string html, string[] expected) =>
+        Assert.Equal(expected, Paragraphs(Blocks(html)).Select(Text));
+
+    [Fact]
+    public void A_paragraph_holding_a_no_break_space_is_a_line_tall()
+    {
+        var pdf = HtmlToPdf.ConvertToBytes("<p style='margin:0'>A</p><p style='margin:0'>&nbsp;</p><p style='margin:0'>B</p><p style='margin:0'>C</p>");
+        var lines = new TextExtractor(PdfReader.Open(pdf)).FindOnPage(0, new Regex("[ABC]")).Select(m => m.Bounds.Y).ToList();
+
+        Assert.Equal(2 * (lines[2] - lines[1]), lines[1] - lines[0], 3);
+    }
+
+    [Fact]
+    public void A_centered_box_in_a_fixed_width_cell_is_centered_in_the_cell()
+    {
+        // The e-mail layout from the fidelity corpus (leemunroe-email): the box's auto margins resolve against the cell.
+        var pdf = HtmlToPdf.ConvertToBytes("""
+            <style>@page { size: 400pt 400pt; margin: 0 }</style>
+            <body style="margin: 0">
+              <table style="width: 100%; border-spacing: 0"><tr>
+                <td style="padding: 0">&nbsp;</td>
+                <td style="width: 200pt; padding: 0"><div style="max-width: 200pt; margin: 0 auto; background: #ff0000">Box</div></td>
+                <td style="padding: 0">&nbsp;</td>
+              </tr></table>
+            </body>
+            """);
+        using var bitmap = Conversion.ToImage(pdf, page: 0, options: new RenderOptions(Dpi: 72));
+
+        var red = Enumerable.Range(0, bitmap.Width).Where(x => bitmap.GetPixel(x, 5) is { Red: > 200, Green: < 80 }).ToList();
+        Assert.Equal((100, 299), (red[0], red[^1]));
+    }
 
     [Fact]
     public void Inline_elements_become_styled_spans()
