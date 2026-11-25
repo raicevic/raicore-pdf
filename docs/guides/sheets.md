@@ -169,6 +169,14 @@ A sheet's drawings are drawn over its cells where Excel shows them:
   cached in the workbook.
 - **Groups** of all of these.
 
+**Chart sheets** are printed in the workbook's sheet order, each on a page of its own: its chart (and whatever else its
+drawing holds) stretched over the page's content area, as Excel prints a chart sheet on a full page; the chart is laid
+out again at that size, so its text keeps its size. With `UsePageSetup`, the page is landscape unless the chart sheet's
+page setup asks for portrait, and its headers and footers are printed as on worksheets. `SheetNames` and
+`SheetIndexes` choose chart sheets like worksheets (indexes count every sheet). A chart sheet without anything that can
+be drawn is left out and reported. The chart sheets of `.xls` workbooks hold BIFF charts, which are not drawn: they are
+reported.
+
 Anchors are resolved against the laid-out columns and rows, at the sheet's scale: a two-cell anchor moves and
 stretches with the cells between its corners (an offset is never more than its cell, which may be narrower than in
 Excel), a one-cell anchor keeps its size, an absolute anchor is placed at its distance from the top-left corner.
@@ -265,8 +273,8 @@ workbooks throw `NotSupportedException`. Excel 97-2003 `.xls` files are converte
 External workbook links, data connections, query tables, web queries and DDE or OLE links are never followed or
 refreshed: formulas show the values stored with them (see [Untrusted input](untrusted-input.md)).
 
-Not supported in workbooks, and reported through `Diagnostics` ([below](#diagnostics)): chart sheets, the newer chart
-types (waterfall, treemap, sunburst...), SmartArt, ink, form controls, embedded objects, conditional formatting rules
+Not supported in workbooks, and reported through `Diagnostics` ([below](#diagnostics)): chart sheets of `.xls`
+workbooks, the newer chart types (waterfall, treemap, sunburst...), SmartArt, ink, form controls, embedded objects, conditional formatting rules
 whose formulas are not supported, sparklines, pivot tables of other styles than those above (their cells are shown),
 and the pivot tables of `.xls` workbooks.
 
@@ -312,7 +320,7 @@ the sheets are converted, while the conversion runs, so a caller can flag the do
 | `SheetDiagnosticKind` | What is reported | In `.xlsx` | In `.xls` |
 |---|---|---|---|
 | `Chart` | Charts the chart engine cannot draw: left out. | Newer chart types (`chartex`), chart frames without a chart | Embedded chart objects |
-| `ChartSheet` | A chart sheet that would be converted (visible, or named in the options): left out. | Chart sheets | Chart sheets |
+| `ChartSheet` | A chart sheet that would be converted (visible, or named in the options) but has nothing that can be drawn: left out. | Chart sheets without a drawing that can be drawn | Chart sheets (BIFF charts) |
 | `Picture` | Pictures that cannot be drawn (unreadable format such as PICT, damaged, linked, over `MaxImagePixels`): left out. | Pictures in the drawing | Picture objects |
 | `Shape` | SmartArt, ink and form controls: left out. | Other graphic frames, ink; form controls | Free forms, less common shape types, control objects |
 | `OleObject` | Embedded and linked objects, ActiveX controls: left out. | `oleObjects`; ActiveX controls | Picture objects of embedded objects |

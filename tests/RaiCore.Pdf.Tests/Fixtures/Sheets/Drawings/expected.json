@@ -2,7 +2,13 @@
  "../../Workbooks/Poi/WithDrawing.xlsx": {
   "openpyxl": {
    "charts": 0,
-   "images": 2
+   "chartsheets": [],
+   "images": 2,
+   "visible": [
+    "Sheet1",
+    "Sheet2",
+    "Sheet3"
+   ]
   },
   "sheets": {
    "xl/worksheets/sheet1.xml": [
@@ -117,6 +123,40 @@
       19,
       124892
      ]
+    }
+   ]
+  }
+ },
+ "../../Workbooks/Poi/chart_sheet.xlsx": {
+  "openpyxl": {
+   "charts": 1,
+   "chartsheets": [
+    "Chart1"
+   ],
+   "images": 0,
+   "visible": [
+    "Sheet1",
+    "Sheet2",
+    "Chart1",
+    "Sheet3"
+   ]
+  },
+  "sheets": {
+   "xl/chartsheets/sheet1.xml": [
+    {
+     "anchor": "absoluteAnchor",
+     "drawn": true,
+     "ext": [
+      8697232,
+      6281964
+     ],
+     "from": null,
+     "object": "graphicFrame",
+     "pos": [
+      34018,
+      34018
+     ],
+     "to": null
     }
    ]
   }
@@ -504,10 +544,38 @@
  },
  "../content.xlsx": {
   "openpyxl": {
-   "charts": 1,
-   "images": 2
+   "charts": 2,
+   "chartsheets": [
+    "Chart1"
+   ],
+   "images": 2,
+   "visible": [
+    "Plain",
+    "Drawings",
+    "Notes",
+    "Print",
+    "Formats",
+    "Chart1"
+   ]
   },
   "sheets": {
+   "xl/chartsheets/sheet1.xml": [
+    {
+     "anchor": "absoluteAnchor",
+     "drawn": true,
+     "ext": [
+      9308969,
+      6078325
+     ],
+     "from": null,
+     "object": "graphicFrame",
+     "pos": [
+      0,
+      0
+     ],
+     "to": null
+    }
+   ],
    "xl/worksheets/sheet2.xml": [
     {
      "anchor": "twoCellAnchor",
@@ -675,10 +743,53 @@
    ]
   }
  },
+ "WithChartSheet.xlsx": {
+  "openpyxl": {
+   "charts": 1,
+   "chartsheets": [
+    "Chart2"
+   ],
+   "images": 0,
+   "visible": [
+    "Sheet1",
+    "Sheet6",
+    "Sheet5",
+    "Sheet4",
+    "Sheet3",
+    "Sheet2",
+    "Chart2"
+   ]
+  },
+  "sheets": {
+   "xl/chartsheets/sheet1.xml": [
+    {
+     "anchor": "absoluteAnchor",
+     "drawn": true,
+     "ext": [
+      8582025,
+      5838825
+     ],
+     "from": null,
+     "object": "graphicFrame",
+     "pos": [
+      0,
+      0
+     ],
+     "to": null
+    }
+   ]
+  }
+ },
  "WithTextBox.xlsx": {
   "openpyxl": {
    "charts": 0,
-   "images": 0
+   "chartsheets": [],
+   "images": 0,
+   "visible": [
+    "Sheet1",
+    "Sheet2",
+    "Sheet3"
+   ]
   },
   "sheets": {
    "xl/worksheets/sheet1.xml": [
@@ -707,7 +818,13 @@
  "WithThreeCharts.xlsx": {
   "openpyxl": {
    "charts": 3,
-   "images": 0
+   "chartsheets": [],
+   "images": 0,
+   "visible": [
+    "Sheet1",
+    "Sheet2",
+    "Sheet3"
+   ]
   },
   "sheets": {
    "xl/worksheets/sheet2.xml": [
@@ -776,7 +893,11 @@
  "absolute-anchor-over-empty-sheet.xlsx": {
   "openpyxl": {
    "charts": 0,
-   "images": 1
+   "chartsheets": [],
+   "images": 1,
+   "visible": [
+    "picture"
+   ]
   },
   "sheets": {
    "xl/worksheets/sheet1.xml": [
@@ -801,7 +922,11 @@
  "picture-and-shape-same-size.xlsx": {
   "openpyxl": {
    "charts": 0,
-   "images": 1
+   "chartsheets": [],
+   "images": 1,
+   "visible": [
+    "Sheet1"
+   ]
   },
   "sheets": {
    "xl/worksheets/sheet1.xml": [

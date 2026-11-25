@@ -11,6 +11,10 @@ and versions follow [Semantic Versioning](https://semver.org/).
   Office 97-2003 document written out as its `.doc`, `.xls` or `.ppt` file. Else they become the object's picture
   (`.wmf`, `.emf`, `.bmp`). Objects with nothing to take out are reported to `Html.Diagnostics` instead of being
   dropped silently.
+- **Sheets: chart sheets** (#290): the chart sheets of `.xlsx` workbooks are printed in the workbook's sheet order,
+  each on a page of its own with its chart stretched over the content area, in landscape unless its page setup asks
+  for portrait, with its headers and footers. `SheetNames`, `SheetIndexes` and the bookmarks include them. Chart
+  sheets without anything that can be drawn, and those of `.xls` workbooks (BIFF charts), are still reported.
 
 - **Sheets: comments as displayed, data bar borders and axes, exact .xls colors** (#286): comments shown on a sheet
   whose page setup prints them "As displayed on sheet" are drawn over it as their boxes (fill, outline, rich text),

@@ -19,7 +19,7 @@ public sealed class XlsxConverterOptions
 
     /// <summary>
     /// The names of the sheets to convert (compared ignoring case), or <c>null</c> (the default) for all visible
-    /// worksheets. Named sheets are converted even if they are hidden. Together with <see cref="SheetIndexes"/>, the
+    /// worksheets and chart sheets. Named sheets are converted even if they are hidden. Together with <see cref="SheetIndexes"/>, the
     /// sheets either names are converted. Sheets are converted in the workbook's order.
     /// </summary>
     /// <exception cref="ArgumentException">Thrown by the conversion when the workbook has no sheet of a name.</exception>
