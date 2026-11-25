@@ -78,8 +78,8 @@ public sealed class XlsxConverterOptions
 public enum SheetComments
 {
     /// <summary>
-    /// As the sheet's page setup asks: listed at the end of the sheet when it says so (Excel's "At end of sheet"),
-    /// otherwise not printed. Comments shown on the sheet ("As displayed on sheet") are not drawn.
+    /// As the sheet's page setup asks: listed at the end of the sheet when it says so (Excel's "At end of sheet"), the
+    /// boxes of the comments shown on the sheet drawn over it when it says "As displayed on sheet", otherwise not printed.
     /// </summary>
     AsPageSetup,
 

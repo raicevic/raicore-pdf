@@ -24,6 +24,13 @@ and versions follow [Semantic Versioning](https://semver.org/).
   names refer to (and charts without cached data from their cells). Region maps are still shown as their stored
   picture or reported.
 
+- **Sheets: comments as displayed, data bar borders and axes, exact .xls colors** (#286): comments shown on a sheet
+  whose page setup prints them "As displayed on sheet" are drawn over it as their boxes (fill, outline, rich text),
+  from `.xlsx` (VML notes) and `.xls` (note objects) workbooks. Excel 2010 data bars draw their borders (and the
+  negative bars' own), and their axis as a dashed line in its color, also in the middle of the cells or not at all.
+  The conditional formatting of `.xls` workbooks takes the exact colors Excel 2007 and later keep after a rule's
+  format (RGB and theme colors) instead of the nearest palette colors.
+
 ### Fixed
 - **Conditional formatting formulas with a missing text argument** no longer fail the conversion: `SEARCH("x")`,
   `UPPER()` and the like take a missing argument as an empty text, as a blank cell, instead of throwing a

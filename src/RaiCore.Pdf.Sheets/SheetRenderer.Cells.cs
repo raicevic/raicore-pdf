@@ -132,28 +132,64 @@ internal static partial class SheetRenderer
         canvas.RestoreState();
     }
 
+    /// <summary>The width of a data bar's border and of its axis line, in points (a pixel of Excel's).</summary>
+    internal const double DataBarLine = 0.75;
+
+    /// <summary>The height of a data bar's bars, in percent of the cell's height.</summary>
+    private const double DataBarHeight = 76;
+
     /// <summary>
-    /// A data bar as a cell's background: a bar between its start and end across the cell, most of its height, in its
-    /// color (fading toward white along a gradient bar).
+    /// A data bar as a cell's background layers (the first on top): its axis as a dashed line across the cell, and a bar
+    /// between its start and end across the cell, most of its height, in its color (fading toward white along a gradient
+    /// bar), inside its border. <paramref name="dashes"/> gives the dash of an axis line of a color (one image a
+    /// document shares).
     /// </summary>
-    internal static BackgroundLayer DataBarLayer(CellDataBar bar)
+    internal static IReadOnlyList<BackgroundLayer> DataBarLayers(CellDataBar bar, Func<PdfColor, PdfImage> dashes)
     {
         var (start, end) = (Math.Clamp(Math.Min(bar.Start, bar.End), 0, 1), Math.Clamp(Math.Max(bar.Start, bar.End), 0, 1));
         var length = end - start;
         var color = bar.Color;
         var faded = new PdfColor(color.Red + ((1 - color.Red) * 0.75), color.Green + ((1 - color.Green) * 0.75), color.Blue + ((1 - color.Blue) * 0.75));
+        var layers = new List<BackgroundLayer>(3);
+        if (bar.Axis is { } axis)
+        {
+            // A position of p% puts the image's point p% along at the box's point p% along: points move the line's
+            // middle to the axis.
+            var at = Math.Clamp(axis, 0, 1);
+            layers.Add(new BackgroundLayer(new ImageBackground(dashes(bar.AxisColor ?? PdfColor.Black)))
+            {
+                RepeatX = BackgroundRepeat.NoRepeat,
+                Size = new BackgroundSize(BackgroundSizeKind.Explicit, new Length(DataBarLine), new Length(2 * DataBarLine)),
+                PositionX = new BackgroundPosition(new Length(DataBarLine * (at - 0.5), at * 100)),
+            });
+        }
 
-        // A position of p% puts the bar's point p% along at the cell's point p% along: the bar's start at start of the cell's width.
-        var position = length < 1 ? start / (1 - length) * 100 : 0;
-        return new BackgroundLayer(new LinearGradient(90, [new GradientStop(color), new GradientStop(bar.Gradient ? faded : color)]))
+        // A position of p% puts the bar's point p% along at the cell's point p% along: the bar's start at start of the
+        // cell's width. A border is a bar of its color under the bar, which is smaller by its width on each side.
+        var position = length < 1 ? start / (1 - length) : 0;
+        var fill = new LinearGradient(90, [new GradientStop(color), new GradientStop(bar.Gradient ? faded : color)]);
+        var inset = bar.Border is null ? 0 : DataBarLine;
+        layers.Add(BarLayer(fill, inset));
+        if (bar.Border is { } border)
+        {
+            layers.Add(BarLayer(new LinearGradient(90, [new GradientStop(border), new GradientStop(border)]), 0));
+        }
+
+        return layers;
+
+        BackgroundLayer BarLayer(BackgroundImage image, double inset) => new(image)
         {
             RepeatX = BackgroundRepeat.NoRepeat,
             RepeatY = BackgroundRepeat.NoRepeat,
-            Size = new BackgroundSize(BackgroundSizeKind.Explicit, Length.FromPercent(length * 100), Length.FromPercent(76)),
-            PositionX = new BackgroundPosition(Length.FromPercent(position)),
+            Size = new BackgroundSize(BackgroundSizeKind.Explicit, new Length(-2 * inset, length * 100), new Length(-2 * inset, DataBarHeight)),
+            PositionX = new BackgroundPosition(new Length(inset * (1 - (2 * position)), position * 100)),
             PositionY = BackgroundPosition.Center,
         };
     }
+
+    /// <summary>The dash of a data bar's axis line: a square of its color over the top half of its height.</summary>
+    internal static PdfImage AxisDash(PdfColor color) =>
+        PdfImage.FromDrawing(DataBarLine, 2 * DataBarLine, canvas => canvas.SetFillColor(color).Rectangle(0, DataBarLine, DataBarLine, DataBarLine).Fill());
 
     /// <summary>
     /// The comments printed after a sheet, on a page of their own: for each, its cell and its text, as Excel prints them

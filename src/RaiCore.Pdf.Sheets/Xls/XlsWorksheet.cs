@@ -252,7 +252,8 @@ internal static class XlsWorksheet
                     sheet.Landscape = !noPrinterSettings && (options & 0x02) == 0 && (options & 0x40) == 0;
                     sheet.Scale = noPrinterSettings ? null : BiffReader.U16(data, 2);
                     sheet.FitToWidth = BiffReader.U16(data, 6);
-                    sheet.CommentsAtEnd = (options & 0x0220) == 0x0220; // Print the notes (fNotes), at the end (fEndNotes).
+                    sheet.CommentsAtEnd = (options & 0x0220) == 0x0220; // Print the notes (fNotes), at the end (fEndNotes),
+                    sheet.CommentsAsDisplayed = (options & 0x0220) == 0x0020; // or as displayed.
                     if (data.Length >= 32)
                     {
                         // The header and footer margins, in inches; the first page number when it is set.
@@ -426,7 +427,7 @@ internal static class XlsWorksheet
 
         if (drawing is not null && limits is not null)
         {
-            sheet.Drawings.AddRange(XlsDrawing.Read(workbook, drawing, limits, sheet.Unsupported));
+            sheet.Drawings.AddRange(XlsDrawing.Read(workbook, drawing, limits, sheet.Unsupported, notes.Shown, sheet.CommentBoxes));
         }
 
         if (pending is var (lastRow, lastColumn, lastXf))

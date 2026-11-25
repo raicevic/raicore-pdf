@@ -25,6 +25,9 @@ internal sealed class XlsNotes(int biff, Encoding? codePage)
         .Select(n => (n.Row, n.Column, (biff == 8 ? _texts.GetValueOrDefault(n.Object, string.Empty) : n.Text).TrimEnd(), n.Author))
         .Where(n => n.Item3.Length > 0);
 
+    /// <summary>The note objects of the comments shown on the sheet (BIFF8 NOTE records' fShow).</summary>
+    public HashSet<int> Shown { get; } = [];
+
     /// <summary>Reads a record that belongs to a comment (OBJ, TXO, NOTE); others are ignored.</summary>
     public void Read(ushort id, ReadOnlySpan<byte> data, IReadOnlyList<int> breaks)
     {
@@ -46,6 +49,10 @@ internal sealed class XlsNotes(int biff, Encoding? codePage)
                         var position = 8;
                         var author = BiffReader.ReadString(data, breaks, ref position, 2, null);
                         _notes.Add((BiffReader.U16(data, 0), BiffReader.U16(data, 2), BiffReader.U16(data, 6), string.Empty, string.IsNullOrWhiteSpace(author) ? null : author));
+                        if ((BiffReader.U16(data, 4) & 0x0002) != 0)
+                        {
+                            Shown.Add(BiffReader.U16(data, 6));
+                        }
                     }
                 }
                 else

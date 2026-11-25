@@ -97,9 +97,14 @@ internal sealed record CellFormat
 
 /// <summary>
 /// A data bar (conditional formatting): a bar from <see cref="Start"/> to <see cref="End"/>, fractions of the cell's width
-/// from its left, in a color (fading to white along a gradient bar), with a border or not.
+/// from its left, in a color (fading to white along a gradient bar), with a border or not, and the axis negative values
+/// start from (a fraction of the cell's width from its left, drawn as a dashed line in its color), or <c>null</c>.
 /// </summary>
-internal sealed record CellDataBar(double Start, double End, PdfColor Color, bool Gradient, PdfColor? Border);
+internal sealed record CellDataBar(double Start, double End, PdfColor Color, bool Gradient, PdfColor? Border, double? Axis = null, PdfColor? AxisColor = null)
+{
+    /// <summary>The bar of a right-to-left sheet, whose cells' fractions are from their right.</summary>
+    public CellDataBar Mirrored() => this with { Start = 1 - End, End = 1 - Start, Axis = 1 - Axis };
+}
 
 /// <summary>An icon of an icon set (conditional formatting): the set's name (<c>3TrafficLights1</c>) and the icon's index, from 0 for the lowest values.</summary>
 internal sealed record CellIcon(string Set, int Index);

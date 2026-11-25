@@ -76,6 +76,12 @@ internal sealed class XlsxWorksheet
     /// <summary>Whether the page setup asks for the comments to be printed at the end of the sheet.</summary>
     public bool CommentsAtEnd { get; set; }
 
+    /// <summary>Whether the page setup asks for the comments to be printed as displayed on the sheet (their boxes).</summary>
+    public bool CommentsAsDisplayed { get; set; }
+
+    /// <summary>The boxes of the comments shown on the sheet, drawn when they are printed as displayed.</summary>
+    public List<Drawings.SheetDrawing> CommentBoxes { get; } = [];
+
     /// <summary>The conditional formatting rules of an .xls worksheet, read from its records.</summary>
     public List<ConditionalRule> ConditionalRules { get; } = [];
 
@@ -153,6 +159,7 @@ internal sealed class XlsxWorksheet
                         sheet.Scale = Integer(reader.GetAttribute("scale"));
                         sheet.FitToWidth = Integer(reader.GetAttribute("fitToWidth")) ?? 1;
                         sheet.CommentsAtEnd = reader.GetAttribute("cellComments") == "atEnd";
+                        sheet.CommentsAsDisplayed = reader.GetAttribute("cellComments") == "asDisplayed";
                         if (reader.GetAttribute("useFirstPageNumber") is "1" or "true" && Integer(reader.GetAttribute("firstPageNumber")) is { } first)
                         {
                             sheet.HeaderFooter = sheet.HeaderFooter with { FirstPageNumber = Math.Clamp(first, -10_000_000, 10_000_000) };

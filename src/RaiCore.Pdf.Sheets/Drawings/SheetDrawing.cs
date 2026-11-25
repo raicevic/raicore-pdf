@@ -142,3 +142,10 @@ internal sealed record ShapeParagraph(IReadOnlyList<ShapeRun> Runs, TextAlignmen
 
 /// <summary>A run of a shape's text in one format.</summary>
 internal sealed record ShapeRun(string Text, double Size, bool Bold, bool Italic, bool Underline, PdfColor Color, string? Font);
+
+/// <summary>What the boxes of comments shown on a sheet look like by default (as spreadsheets draw notes).</summary>
+internal static class CommentBox
+{
+    /// <summary>The fill of a note: the tooltip color (light yellow).</summary>
+    public static PdfColor Fill { get; } = PdfColor.FromRgb(0xFF, 0xFF, 0xE1);
+}

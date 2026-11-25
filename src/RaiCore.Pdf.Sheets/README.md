@@ -60,8 +60,8 @@ sunburst charts too) are drawn over the cells where Excel shows them, split acro
 Excel prints them.
 
 Headers and footers, page breaks set by hand, rich text, rotated, stacked and shrunk text, conditional formatting over
-the stored values (color scales, data bars, icon sets and formula rules too), comments (at the end of the sheet, or as
-PDF notes with `XlsxConverterOptions.Comments`) and the default pivot table styles are printed too.
+the stored values (color scales, data bars, icon sets and formula rules too), comments (at the end of the sheet, their
+boxes as displayed on it, or as PDF notes with `XlsxConverterOptions.Comments`) and the default pivot table styles are printed too.
 
 Chart sheets are printed in the sheet order, each chart on a page of its own.
 

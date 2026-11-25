@@ -7,7 +7,9 @@ namespace RaiCore.Pdf.Sheets.Xls;
 /// Reads the conditional formatting of a BIFF8 worksheet into the rules <see cref="ConditionalFormatting"/> applies:
 /// CFHEADER and CFHEADER12 records give the ranges of the CF (Excel 97 rules: cell values and formulas) and CF12 records
 /// (Excel 2007 rules: color scales, data bars, icon sets, top and bottom, and formula rules made from templates) that
-/// follow them; CFEX records give the CF rules their priority and template ([MS-XLS] 2.4.42-2.4.44).
+/// follow them; CFEX records give the CF rules their priority and template ([MS-XLS] 2.4.42-2.4.44). The exact colors
+/// of Excel 2007 and later (any RGB or theme color) are kept after a rule's format (DXFN12); they replace its palette
+/// colors.
 /// </summary>
 internal sealed class XlsConditionalFormatting(XlsStyles styles)
 {
@@ -17,8 +19,10 @@ internal sealed class XlsConditionalFormatting(XlsStyles styles)
     /// <summary>The rules read, with the id of their CFHEADER and their index in it (for CFEX records).</summary>
     private readonly List<(ConditionalRule Rule, int Header, int Index)> _rules = [];
 
-    /// <summary>The priority and template CFEX records give CF rules, by their CFHEADER's id and their index in it.</summary>
-    private readonly Dictionary<(int Header, int Index), (int Priority, int Template, int Parameter, bool Stop)> _extensions = [];
+    /// <summary>
+    /// The priority, template and exact colors CFEX records give CF rules, by their CFHEADER's id and their index in it.
+    /// </summary>
+    private readonly Dictionary<(int Header, int Index), (int Priority, int Template, int Parameter, bool Stop, ExtendedColors? Colors)> _extensions = [];
 
     private List<CellRange> _ranges = [];
     private int _header;
@@ -29,7 +33,8 @@ internal sealed class XlsConditionalFormatting(XlsStyles styles)
 
     /// <summary>The rules, with their priorities (Excel 97 rules without one go in the order of their records, after the others).</summary>
     public List<ConditionalRule> Rules => [.. _rules.Select((r, i) => _extensions.TryGetValue((r.Header, r.Index), out var extension)
-        ? Templated(r.Rule, extension.Template, extension.Parameter) with { Priority = extension.Priority, StopIfTrue = extension.Stop }
+        ? Templated(r.Rule with { Format = WithColors(r.Rule.Format, extension.Colors) }, extension.Template, extension.Parameter)
+            with { Priority = extension.Priority, StopIfTrue = extension.Stop }
         : r.Rule.Priority == int.MaxValue ? r.Rule with { Priority = 1_000_000 + i } : r.Rule)];
 
     /// <summary>A CFHEADER (or, with <paramref name="future"/>, CFHEADER12 after its 12 bytes of header): the ranges of the rules that follow.</summary>
@@ -105,9 +110,11 @@ internal sealed class XlsConditionalFormatting(XlsStyles styles)
         else
         {
             var start = position;
-            format = Format(data, ref position);
+            var end = (int)Math.Min(start + (long)length, data.Length);
+            format = Format(data[..end], ref position);
             known = format is not null;
-            position = (int)Math.Min(start + (long)length, data.Length);
+            format = WithColors(format, Colors(data[..end], position));
+            position = end;
         }
 
         var formulas = Formulas(data, ref position, BiffReader.U16(data, 14), BiffReader.U16(data, 16));
@@ -146,12 +153,20 @@ internal sealed class XlsConditionalFormatting(XlsStyles styles)
         var priority = BiffReader.U16(data, 22);
         var stop = (data.Length > 24 ? data[24] : 0) & 0x02;
 
-        // The template's parameters come after the format (if it has one: its size, then it); only the first two bytes
-        // (a standard deviation) are used.
-        var at = 26L + (data.Length > 25 && data[25] != 0 ? 4L + BiffReader.U32(data, 26) : 0);
+        // The template's parameters come after the format (if it has one: its size, then it, with its exact colors after
+        // it); only the first two bytes (a standard deviation) are used.
+        var hasFormat = data.Length > 25 && data[25] != 0;
+        var at = 26L + (hasFormat ? 4L + BiffReader.U32(data, 26) : 0);
         var parameter = at + 3 <= data.Length ? BiffReader.U16(data, (int)at + 1) : 0;
+        ExtendedColors? colors = null;
+        if (hasFormat)
+        {
+            var format = data[..(int)Math.Min(at, data.Length)];
+            var position = 30;
+            colors = Format(format, ref position) is null ? null : Colors(format, position);
+        }
 
-        _extensions[(header, index)] = (priority, template, parameter, stop != 0);
+        _extensions[(header, index)] = (priority, template, parameter, stop != 0, colors);
     }
 
     /// <summary>A rule on cell values (type 1, with its comparison) or a formula (type 2).</summary>
@@ -309,6 +324,83 @@ internal sealed class XlsConditionalFormatting(XlsStyles styles)
         }
 
         return new DifferentialFormat(bold, italic, underline, strike, color, fill, top, right, bottom, left);
+    }
+
+    /// <summary>
+    /// The exact colors of a format (DXFN12), by what they color: its text, its fill's pattern and background, and its
+    /// borders; <c>null</c> where it has none.
+    /// </summary>
+    private sealed record ExtendedColors(PdfColor? Text, PdfColor? Foreground, PdfColor? Background, PdfColor? Top, PdfColor? Bottom, PdfColor? Left, PdfColor? Right);
+
+    /// <summary>
+    /// The exact colors kept after a format (XFExtNoFRT, [MS-XLS] 2.5.283: six reserved bytes, the number of properties,
+    /// then the properties, ExtProp 2.5.108: their type, their size with this header, and their data, FullColorExt
+    /// 2.5.155 for colors), from <paramref name="position"/> to the end of <paramref name="data"/>; <c>null</c> if there are none.
+    /// </summary>
+    private ExtendedColors? Colors(ReadOnlySpan<byte> data, int position)
+    {
+        if (position + 8 > data.Length)
+        {
+            return null;
+        }
+
+        var count = BiffReader.U16(data, position + 6);
+        position += 8;
+        PdfColor? text = null, foreground = null, background = null, top = null, bottom = null, left = null, right = null;
+        for (var i = 0; i < count && position + 4 <= data.Length; i++)
+        {
+            var (type, size) = (BiffReader.U16(data, position), BiffReader.U16(data, position + 2));
+            if (size < 4 || position + size > data.Length)
+            {
+                break;
+            }
+
+            if (size >= 12 && type is 0x04 or 0x05 or 0x07 or 0x08 or 0x09 or 0x0A or 0x0D)
+            {
+                // Its type (automatic, palette, RGB or theme), its tint or shade (a signed fraction of 32767) and its value.
+                var tint = (short)BiffReader.U16(data, position + 6) / 32767.0;
+                var color = styles.ExtendedColor(BiffReader.U16(data, position + 4), BiffReader.U32(data, position + 8), tint);
+                switch (type)
+                {
+                    case 0x04: foreground = color; break;
+                    case 0x05: background = color; break;
+                    case 0x07: top = color; break;
+                    case 0x08: bottom = color; break;
+                    case 0x09: left = color; break;
+                    case 0x0A: right = color; break;
+                    default: text = color; break;
+                }
+            }
+
+            position += size;
+        }
+
+        return (text ?? foreground ?? background ?? top ?? bottom ?? left ?? right) is null
+            ? null
+            : new ExtendedColors(text, foreground, background, top, bottom, left, right);
+    }
+
+    /// <summary>
+    /// A format with its exact colors in place of its palette colors: of its text, its fill (a solid fill's background
+    /// color, else its pattern's, as <see cref="Format"/> chooses) and its borders, where it sets them.
+    /// </summary>
+    private static DifferentialFormat? WithColors(DifferentialFormat? format, ExtendedColors? colors)
+    {
+        if (format is null || colors is null)
+        {
+            return format;
+        }
+
+        static CellBorder? Side(CellBorder? border, PdfColor? color) => border is { } b && color is { } c ? b with { Color = c } : border;
+        return format with
+        {
+            Color = format.Color is null ? null : colors.Text ?? format.Color,
+            Fill = format.Fill is null ? null : colors.Background ?? colors.Foreground ?? format.Fill,
+            Top = Side(format.Top, colors.Top),
+            Bottom = Side(format.Bottom, colors.Bottom),
+            Left = Side(format.Left, colors.Left),
+            Right = Side(format.Right, colors.Right),
+        };
     }
 
     /// <summary>A point of a scale, bar or icon set (CFVO): its type, and its formula or number.</summary>

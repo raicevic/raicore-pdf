@@ -81,7 +81,7 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | SmartArt, ink, form controls | R | R | - |
 | Conditional formatting: value, rank, average, duplicate, text and date rules, color scales | ✓ over stored values | ✓ over stored values | - |
 | Conditional formatting: formulas, data bars, icon sets | ✓ formulas of common functions; others R | ✓ formulas of common functions; others R | - |
-| Comments and notes | ✓ at the end of the sheet, or as PDF notes | ✓ at the end of the sheet, or as PDF notes | - |
+| Comments and notes | ✓ at the end of the sheet, as displayed on it, or as PDF notes | ✓ at the end of the sheet, as displayed on it, or as PDF notes | - |
 | Headers and footers, page breaks set by hand | ✓ | ✓ | - |
 | Stacked text, shrink to fit | ✓ | ✓ | - |
 | Rotated text | ✓ | ✓ | - |
