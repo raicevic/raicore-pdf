@@ -23,6 +23,11 @@ internal sealed partial class DocumentRenderer
     {
         foreach (var inline in inlines)
         {
+            if (FlattenComment(inline, link, atoms))
+            {
+                continue;
+            }
+
             switch (inline)
             {
                 case HyperlinkInline hyperlink:
@@ -171,6 +176,9 @@ internal sealed partial class DocumentRenderer
                         current.AddAnchor(bookmark.Name);
                     }
 
+                    break;
+                case CommentStart when atom.Text is { } noteAnchor:
+                    current.AddAnchor(noteAnchor); // Where a comment's note goes (DocumentComments.Annotations).
                     break;
                 default:
                     if (AddAtom(current, atom, format, textWidth))

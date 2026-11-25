@@ -14,7 +14,7 @@ internal static class DocConverter
         cancellationToken.ThrowIfCancellationRequested();
         using (options.Limits.Enforce(cancellationToken))
         {
-            var context = new ConversionContext(options.Limits, options.Diagnostics, cancellationToken);
+            var context = DocxConverter.Context(options, cancellationToken);
             var document = Read(data, context);
             return new DocumentRenderer(document, options, context).Render(DocxConverter.Creator);
         }

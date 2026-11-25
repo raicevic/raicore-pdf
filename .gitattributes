@@ -37,6 +37,13 @@ tests/RaiCore.Pdf.Tests/Fixtures/Fuzz/Crashes/odt/** -text
 # Apache Tika sample files are byte-exact.
 tests/RaiCore.Pdf.Tests/Fixtures/Tika/*.odt -text
 tests/RaiCore.Pdf.Tests/Fixtures/Tika/*.fodt -text
+tests/RaiCore.Pdf.Tests/Fixtures/Tika/*.doc -text
+tests/RaiCore.Pdf.Tests/Fixtures/Tika/*.docx -text
+
+# Documents with comments (DOCX, ODT, RTF) are byte-exact.
+tests/RaiCore.Pdf.Tests/Fixtures/Documents/Comments/*.docx -text
+tests/RaiCore.Pdf.Tests/Fixtures/Documents/Comments/*.odt -text
+tests/RaiCore.Pdf.Tests/Fixtures/Documents/Comments/*.rtf -text
 
 # Apache POI sample files are byte-exact.
 tests/RaiCore.Pdf.Tests/Fixtures/Poi/*.msg -text

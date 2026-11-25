@@ -1,0 +1,232 @@
+{
+ "Documents/Comments/comments.docx": [
+  {
+   "author": "Bob Builder",
+   "initials": "BB",
+   "date": "2026-01-03 10:00",
+   "text": "I agree with Ann.",
+   "about": "these words",
+   "parent": 1
+  },
+  {
+   "author": "Ann Author",
+   "initials": "AA",
+   "date": "2026-01-02 09:30",
+   "text": "First paragraph of the comment.\nSecond paragraph of the comment.",
+   "about": "these words",
+   "parent": null
+  },
+  {
+   "author": "Carla",
+   "initials": null,
+   "date": "2026-01-04 11:15",
+   "text": "This comment spans two paragraphs.",
+   "about": "Spanning starts here and ends here",
+   "parent": null
+  },
+  {
+   "author": "Dan",
+   "initials": "D",
+   "date": "2026-01-05 08:00",
+   "text": "On alpha beta.",
+   "about": "alpha beta",
+   "parent": null
+  },
+  {
+   "author": "Eve",
+   "initials": "E",
+   "date": "2026-01-05 08:05",
+   "text": "On beta gamma.",
+   "about": "beta gamma",
+   "parent": null
+  },
+  {
+   "author": "Fay",
+   "initials": "FF",
+   "date": "2026-01-06 12:00",
+   "text": "A comment in a table.",
+   "about": "cell text",
+   "parent": null
+  },
+  {
+   "author": "Gus",
+   "initials": "GG",
+   "date": "2026-01-07 13:45",
+   "text": "About a long text.",
+   "about": "This sentence is the long text a comment is about, longer than the eighty characters that the list of comments quotes",
+   "parent": null
+  }
+ ],
+ "Documents/Comments/comments.odt": [
+  {
+   "author": "Olga Odf",
+   "initials": "OO",
+   "date": "2026-02-01 09:00",
+   "text": "First paragraph of the comment.\nSecond paragraph of the comment.",
+   "about": "these words",
+   "parent": null
+  },
+  {
+   "author": "Pia",
+   "initials": "PP",
+   "date": "2026-02-02 10:30",
+   "text": "A reply to Olga.",
+   "about": "these words",
+   "parent": 0
+  },
+  {
+   "author": "Quinn",
+   "initials": "Q",
+   "date": "2026-02-03 11:00",
+   "text": "A comment without a range.",
+   "about": null,
+   "parent": null
+  },
+  {
+   "author": "Rob",
+   "initials": null,
+   "date": "2026-02-04 12:00",
+   "text": "This comment spans two paragraphs.",
+   "about": "Spanning starts here and ends here",
+   "parent": null
+  },
+  {
+   "author": "Sue",
+   "initials": "SS",
+   "date": "2026-02-05 13:00",
+   "text": "A comment in a table.",
+   "about": "cell text",
+   "parent": null
+  }
+ ],
+ "Documents/Comments/comments.rtf": [
+  {
+   "author": "Rita Rtf",
+   "initials": "RR",
+   "date": "2026-03-01 09:15",
+   "text": "First paragraph of the comment.\nSecond paragraph of the comment.",
+   "about": "these words",
+   "parent": null
+  },
+  {
+   "author": "Sam",
+   "initials": "SS",
+   "date": "2026-03-02 10:45",
+   "text": "A reply to Rita.",
+   "about": null,
+   "parent": 0
+  },
+  {
+   "author": "Tom",
+   "initials": "TT",
+   "date": "2026-03-03 11:00",
+   "text": "A comment without a range.",
+   "about": null,
+   "parent": null
+  },
+  {
+   "author": "Uma",
+   "initials": "UU",
+   "date": "2026-03-04 12:30",
+   "text": "This comment spans two paragraphs.",
+   "about": "Spanning starts here and ends here",
+   "parent": null
+  },
+  {
+   "author": "Vic",
+   "initials": "V",
+   "date": "2026-03-05 08:00",
+   "text": "On alpha beta.",
+   "about": "alpha beta",
+   "parent": null
+  },
+  {
+   "author": "Wes",
+   "initials": "W",
+   "date": "2026-03-05 08:05",
+   "text": "On beta gamma.",
+   "about": "beta gamma",
+   "parent": null
+  }
+ ],
+ "Tika/testComment.docx": [
+  {
+   "author": "Michael McCandless",
+   "initials": "MM",
+   "date": "2011-09-17 08:32",
+   "text": "Here is a comment",
+   "about": "text",
+   "parent": null
+  }
+ ],
+ "Tika/testComment.doc": [
+  {
+   "author": "Michael McCandless",
+   "initials": "MM",
+   "date": "2011-09-17 08:32",
+   "text": "Here is a comment",
+   "about": "text",
+   "parent": null
+  }
+ ],
+ "Tika/testComment.rtf": [
+  {
+   "author": "Michael McCandless",
+   "initials": "MM",
+   "date": "2011-09-17 08:32",
+   "text": "Here is a comment",
+   "about": "text",
+   "parent": null
+  }
+ ],
+ "Tika/testRTF_annotation_spacing.rtf": [
+  {
+   "author": "Allison, Timothy B.",
+   "initials": "ATB",
+   "date": "2019-03-13 15:04",
+   "text": "This is a comment",
+   "about": "ali",
+   "parent": null
+  }
+ ],
+ "Tika/testODFwithOOo3.odt": [
+  {
+   "author": "Bart Hanssens",
+   "initials": null,
+   "date": "2009-10-05 19:10",
+   "text": "Tika is part of the Lucene project.",
+   "about": null,
+   "parent": null
+  }
+ ],
+ "Poi/comment.docx": [
+  {
+   "author": "Unbekannter Autor",
+   "initials": null,
+   "date": "2019-10-11 05:43",
+   "text": "This is the first line\n\nThis is the second line",
+   "about": null,
+   "parent": null
+  }
+ ],
+ "Documents/Doc/footnote.doc": [
+  {
+   "author": "Maxim Valyanskiy",
+   "initials": "Maxim Val",
+   "date": "2009-06-22 14:46",
+   "text": "TestComment",
+   "about": null,
+   "parent": null
+  }
+ ],
+ "Documents/Doc/testWORD_numbered_list.doc": [
+  {
+   "author": "ISIS",
+   "initials": "I",
+   "date": "2015-04-15 17:03",
+   "text": "Let’s add a list here\ncomment list 1.\ncomment list 2\ncomment list 2a",
+   "about": null,
+   "parent": null
+  }
+ ]
+}

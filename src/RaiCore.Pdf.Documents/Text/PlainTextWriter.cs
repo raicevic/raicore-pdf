@@ -99,10 +99,23 @@ internal sealed class PlainTextWriter
         _inComment = true;
         foreach (var id in _comments)
         {
-            WriteStory(_document.Comments[id]);
+            WriteStory(_document.Comments[id].Blocks);
         }
 
         return _text.ToString();
+    }
+
+    /// <summary>
+    /// The text of blocks of their own (a comment's), with the default options (or those given): paragraphs on lines of
+    /// their own, without the last one's end.
+    /// </summary>
+    public static string TextOf(List<WordBlock> blocks, ConversionContext context, DocumentTextOptions? options = null)
+    {
+        var document = new WordDocument();
+        var section = new WordSection();
+        section.Blocks.AddRange(blocks);
+        document.Sections.Add(section);
+        return new PlainTextWriter(document, options ?? new DocumentTextOptions(), context).Write().TrimEnd('\n');
     }
 
     /// <summary>A section's own headers or footers that show (first page, other pages, even pages), each once.</summary>

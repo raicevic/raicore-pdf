@@ -23,6 +23,12 @@ and versions follow [Semantic Versioning](https://semver.org/).
   presentations draw them instead of their stored pictures; workbooks read their data from the cells their hidden
   names refer to (and charts without cached data from their cells). Region maps are still shown as their stored
   picture or reported.
+- **Documents: comments at the end or as notes** (#292): the new `DocumentConverterOptions.Comments` prints the
+  comments of DOCX, DOC, RTF and ODT documents, listed after the document (`DocumentComments.AtEnd`: each with its
+  author, date, the text it is about and its replies, the anchors marked with numbered superscripts linking to them)
+  or as PDF notes where the text they are about starts (`DocumentComments.Annotations`); the commented text is
+  highlighted. The default (`None`) leaves them out as before, now reported to `Diagnostics` for DOCX and ODT too.
+  Layout: `FlowDocument.AnchorPlaced` reports where paragraph anchors are drawn.
 
 - **Sheets: comments as displayed, data bar borders and axes, exact .xls colors** (#286): comments shown on a sheet
   whose page setup prints them "As displayed on sheet" are drawn over it as their boxes (fill, outline, rich text),

@@ -1,1 +1,7 @@
 #nullable enable
+RaiCore.Pdf.Documents.DocumentComments
+RaiCore.Pdf.Documents.DocumentComments.AtEnd = 1 -> RaiCore.Pdf.Documents.DocumentComments
+RaiCore.Pdf.Documents.DocumentComments.Annotations = 2 -> RaiCore.Pdf.Documents.DocumentComments
+RaiCore.Pdf.Documents.DocumentComments.None = 0 -> RaiCore.Pdf.Documents.DocumentComments
+RaiCore.Pdf.Documents.DocumentConverterOptions.Comments.get -> RaiCore.Pdf.Documents.DocumentComments
+RaiCore.Pdf.Documents.DocumentConverterOptions.Comments.init -> void

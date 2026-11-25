@@ -78,6 +78,33 @@ public abstract class DocumentConverterOptions
     /// Defaults to <see cref="ResourceLimits.Default"/>.
     /// </summary>
     public ResourceLimits Limits { get; init; } = ResourceLimits.Default;
+
+    /// <summary>
+    /// How the document's comments are printed: not at all (the default), listed at the end of the document with numbered
+    /// marks where they are anchored, or as PDF notes at their anchors. See <see cref="DocumentComments"/>.
+    /// </summary>
+    public DocumentComments Comments { get; init; }
+}
+
+/// <summary>How the comments of a word-processing document are printed (<see cref="DocumentConverterOptions.Comments"/>).</summary>
+public enum DocumentComments
+{
+    /// <summary>Not printed (as word processors print without markup).</summary>
+    None,
+
+    /// <summary>
+    /// Listed after the end of the document under a "Comments" heading, in the order of their anchors: each with its
+    /// number, author, date (if stored), the text it is about (shortened) and its text, replies after the comment they
+    /// answer. The text a comment is about is highlighted, and the comment's number marks its anchor, as a superscript
+    /// that links to the comment (as word processors print markup).
+    /// </summary>
+    AtEnd,
+
+    /// <summary>
+    /// As PDF notes (text annotations, "sticky notes") where the text they are about starts, with their author, which
+    /// viewers open to show the text (and the replies); the text a comment is about is highlighted.
+    /// </summary>
+    Annotations,
 }
 
 /// <summary>Options for <see cref="DocxToPdf"/>. See <see cref="DocumentConverterOptions"/> for the options all converters share.</summary>

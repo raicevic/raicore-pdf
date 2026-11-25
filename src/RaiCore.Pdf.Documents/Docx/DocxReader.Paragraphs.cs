@@ -202,6 +202,12 @@ internal sealed partial class DocxReader
                 case "bdo":
                     ReadInlines(element, target, paragraphRun);
                     break;
+                case "commentRangeStart" when _context.Has(ReadExtras.Comments) && Ooxml.Attr(element, "id") is { } start:
+                    Emit(new CommentStart(start), target);
+                    break;
+                case "commentRangeEnd" when _context.Has(ReadExtras.Comments) && Ooxml.Attr(element, "id") is { } end:
+                    Emit(new CommentEnd(end), target);
+                    break;
                 case "bookmarkStart":
                     if (Ooxml.Attr(element, "name") is { Length: > 0 } name && !name.StartsWith("_GoBack", StringComparison.Ordinal))
                     {
@@ -264,7 +270,11 @@ internal sealed partial class DocxReader
 
                     break;
                 case "commentReference":
-                    if (_context.Has(ReadExtras.Comments) && Ooxml.Attr(element, "id") is { } comment)
+                    if (!_context.Has(ReadExtras.Comments))
+                    {
+                        _context.ReportCommentsLeftOut();
+                    }
+                    else if (Ooxml.Attr(element, "id") is { } comment)
                     {
                         Emit(new CommentReference(comment), target);
                     }

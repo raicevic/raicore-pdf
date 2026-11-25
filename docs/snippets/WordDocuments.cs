@@ -60,6 +60,18 @@ internal static class WordDocuments
         memo.Save("memo.pdf");
         #endregion
 
+        // A document with a comment (Word and WordPad write comments as such annotations).
+        File.WriteAllText("reviewed.rtf", @"{\rtf1\ansi\deff0{\fonttbl{\f0\fswiss Arial;}}\pard Delivery on {\*\atrfstart 1}Friday{\*\atrfend 1}"
+            + @"{\*\atnid AR}{\*\atnauthor Ann Reviewer}\chatn{\*\annotation{\*\atnref 1}\pard Can we make it Thursday?}.\par}");
+
+        #region comments
+        // Listed after the document, their anchors marked as Word prints markup ([AR1])...
+        RtfToPdf.Convert("reviewed.rtf", new RtfConverterOptions { Comments = DocumentComments.AtEnd }).Save("reviewed.pdf");
+
+        // ...or as PDF notes where the text they are about starts (DocxToPdf, DocToPdf and OdtToPdf alike).
+        RtfToPdf.Convert("reviewed.rtf", new RtfConverterOptions { Comments = DocumentComments.Annotations }).Save("reviewed-notes.pdf");
+        #endregion
+
         // A folder of Word 97-2003 documents to convert (empty here; put .doc files in it).
         Directory.CreateDirectory("archive");
 

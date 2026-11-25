@@ -69,6 +69,10 @@ internal sealed class ConversionContext
         }
     }
 
+    /// <summary>Reports that the document's comments are left out (<see cref="DocumentConverterOptions.Comments"/> is <c>None</c>).</summary>
+    public void ReportCommentsLeftOut() =>
+        Report(DocumentDiagnosticKind.UnsupportedContent, "Comments (annotations) are left out; DocumentConverterOptions.Comments prints them.");
+
     /// <summary>Reports an issue, once.</summary>
     public void Report(DocumentDiagnosticKind kind, string message)
     {

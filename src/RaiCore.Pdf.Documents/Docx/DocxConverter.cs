@@ -16,7 +16,7 @@ internal static class DocxConverter
         cancellationToken.ThrowIfCancellationRequested();
         using (options.Limits.Enforce(cancellationToken))
         {
-            var context = new ConversionContext(options.Limits, options.Diagnostics, cancellationToken);
+            var context = DocxConverter.Context(options, cancellationToken);
             var document = Read(data, context);
             return new DocumentRenderer(document, options, context).Render(Creator);
         }
@@ -34,6 +34,13 @@ internal static class DocxConverter
         using var package = DocxPackage.Open(data, context);
         return DocxReader.Read(package, context);
     }
+
+    /// <summary>A conversion's context: the options' limits and diagnostics, and comments read when they are shown.</summary>
+    internal static ConversionContext Context(DocumentConverterOptions options, CancellationToken cancellationToken) =>
+        new(options.Limits, options.Diagnostics, cancellationToken)
+        {
+            Extras = options.Comments is DocumentComments.AtEnd or DocumentComments.Annotations ? ReadExtras.Comments : ReadExtras.None,
+        };
 
     /// <summary>Checks the options the converters share.</summary>
     internal static void Validate(DocumentConverterOptions options)

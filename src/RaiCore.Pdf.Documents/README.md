@@ -53,13 +53,17 @@ DocToPdf.Convert("minutes.doc").Save("minutes.pdf");
   table cells separated by tabs, and optionally headers and footers, notes, comments, hidden text, deleted text of
   tracked changes and field codes.
 
+Comments are left out by default; `Comments = DocumentComments.AtEnd` lists them after the document (their anchors
+marked with numbers, as Word prints markup), `DocumentComments.Annotations` adds them as PDF notes at the text they are
+about.
+
 Charts in Word documents are drawn as vector graphics by the same chart engine as presentations' (columns, bars,
 lines, pies, areas, scatter, bubble, radar and stock charts, and the newer waterfall, histogram, pareto, box and
 whisker, funnel, treemap and sunburst charts); region maps show the picture stored with them.
 
 Not supported: text boxes and shapes as floating frames (their text follows their paragraph), surface charts, charts
 in `.doc`, RTF and OpenDocument files beyond their stored pictures, SmartArt, embedded objects (their preview image is
-shown), comments, forms, several text columns, footnotes at the bottom of the page; in RTF and `.doc` also PICT
+shown), forms, several text columns, footnotes at the bottom of the page; in RTF and `.doc` also PICT
 pictures and drawing objects. WMF and EMF pictures (also EMF+) are drawn as vector graphics. What is left
 out is reported to the options' `Diagnostics`.
 

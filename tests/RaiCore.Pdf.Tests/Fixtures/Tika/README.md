@@ -31,9 +31,21 @@ pictures, hyperlinks, footnotes, headers and footers, comments, embedded objects
   `testRTF.rtf`, `testRTFVarious.rtf`, `testRTFListMicrosoftWord.rtf`, `testRTFListLibreOffice.rtf`,
   `testRTFJapanese.rtf`, `testRTF-ms932.rtf`, `testRTFWord2010CzechCharacters.rtf`, `testRTFHyperlink.rtf`,
   `testRTFRegularImages.rtf`, `testRTFTableCellSeparation.rtf`, `testBinControlWord.rtf`, `testRTFWithCurlyBraces.rtf`,
-  `testRTFEmbeddedLink.rtf`, `testComment.rtf` and `testRTFCorruptListOverride.rtf`, unchanged.
+  `testRTFEmbeddedLink.rtf`, `testComment.rtf`, `testRTFCorruptListOverride.rtf` and `testRTF_annotation_spacing.rtf`
+  (a comment on part of a word), unchanged.
 - The texts striprtf, an independent reader, finds in them are in `../Documents/Rtf/expected.json`
   (`../Documents/Rtf/make-expected.py`).
+
+## Word comments
+
+The same comment ("Here is a comment" by Michael McCandless, about the word "text") as a Word document and a Word
+97-2003 document, for the comment options of the converters (`DocumentConverterOptions.Comments`).
+
+- Source: <https://github.com/apache/tika/tree/6ef8f501b1610fcb36d275332d2337e3113de74d>, files
+  `tika-parsers/tika-parsers-standard/tika-parsers-standard-modules/tika-parser-microsoft-module/src/test/resources/test-documents/`
+  `testComment.docx` and `testComment.doc`, unchanged.
+- The comments independent readers find in them (and in `testComment.rtf`, `testRTF_annotation_spacing.rtf` and
+  `testODFwithOOo3.odt`) are in `../Documents/Comments/expected.json` (`../Documents/Comments/make-expected.py`).
 
 ## License
 

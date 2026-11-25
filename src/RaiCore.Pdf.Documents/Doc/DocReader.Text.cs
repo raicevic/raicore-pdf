@@ -458,6 +458,7 @@ internal sealed partial class DocReader
             var runEnd = RunEnd(cp, end);
             for (; cp < runEnd; cp++)
             {
+                CommentRanges(story, cp);
                 if (_bookmarks.TryGetValue(cp, out var names) && !InInstruction(story))
                 {
                     foreach (var name in names)
@@ -471,6 +472,11 @@ internal sealed partial class DocReader
                     Character(story, cp, text[cp], chp, format);
                 }
             }
+        }
+
+        if (_commentEnds.ContainsKey(end) || _commentStarts.ContainsKey(end))
+        {
+            CommentRanges(story, end); // At the paragraph's mark, which is not read as a character.
         }
     }
 
