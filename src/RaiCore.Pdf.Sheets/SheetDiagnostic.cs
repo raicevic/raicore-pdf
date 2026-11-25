@@ -21,7 +21,10 @@ public enum SheetDiagnosticKind
     /// </summary>
     Chart,
 
-    /// <summary>A chart sheet that would be converted (visible, or named by the options); it is left out.</summary>
+    /// <summary>
+    /// A chart sheet that would be converted (visible, or named by the options) but has nothing that can be drawn (in
+    /// <c>.xls</c> workbooks, any chart sheet: BIFF charts are not drawn); it is left out.
+    /// </summary>
     ChartSheet,
 
     /// <summary>

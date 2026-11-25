@@ -34,6 +34,12 @@ internal sealed class XlsxWorksheet
 
     public bool Landscape { get; set; }
 
+    /// <summary>
+    /// Whether the page setup asks for portrait orientation in so many words (chart sheets print in landscape unless
+    /// they do).
+    /// </summary>
+    public bool Portrait { get; set; }
+
     /// <summary>The print scale in percent, or <c>null</c>.</summary>
     public int? Scale { get; set; }
 
@@ -143,6 +149,7 @@ internal sealed class XlsxWorksheet
                         break;
                     case "pageSetup":
                         sheet.Landscape = reader.GetAttribute("orientation") == "landscape";
+                        sheet.Portrait = reader.GetAttribute("orientation") == "portrait";
                         sheet.Scale = Integer(reader.GetAttribute("scale"));
                         sheet.FitToWidth = Integer(reader.GetAttribute("fitToWidth")) ?? 1;
                         sheet.CommentsAtEnd = reader.GetAttribute("cellComments") == "atEnd";
