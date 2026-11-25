@@ -11,8 +11,9 @@ Page size, margins, headers, footers and page numbers come from CSS Paged Media 
   `JIS-B4`, `JIS-B5`, `letter`, `legal` and `ledger`. Without an `@page` rule, `HtmlConverterOptions.Page` applies
   (A4 with 2 cm margins).
 - **Margin boxes:** `@top-left`, `@top-center`, `@top-right`, the same at the bottom, and the corners, with font
-  (also the `font` shorthand), line height, color, alignment and `vertical-align`. They inherit from the root element,
-  so set the document's font on `html`.
+  (also the `font` shorthand), line height, color, alignment and `vertical-align`. They inherit fonts, line height and
+  color from the `@page` rules of their page, and those from the root element: set the document's font on `html` or
+  `@page`.
 - **Content:** strings, `counter(page)` and `counter(pages)` in any counter style, `string()` (with `first`, `start`,
   `last` or `first-except`) for text the document sets with `string-set`, and `element()` for running elements, which
   can be any HTML: a logo, a table, several lines.
