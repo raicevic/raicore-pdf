@@ -34,6 +34,17 @@ public class PagedMediaTests
         Assert.Equal(["top-center", "bottom-right"], pages[0].MarginBoxes.Keys);
     }
 
+    [Theory]
+    [InlineData("<!-- p { color: red } -->", "  p { color: red }  ")]
+    [InlineData("<!--p{}--><!--a{}-->", " p{}  a{} ")]
+    [InlineData("p { content: '<!-- -->' } /* <!-- */", "p { content: '<!-- -->' }  ")] // Strings and comments.
+    [InlineData("p { --x: <!-- } -->", "p { --x: <!-- }  ")] // Only outside blocks.
+    [InlineData("@media print { p { a: b } } <!--", "@media print { p { a: b } }  ")]
+    [InlineData("a--> { } \\{ <!--", "a--> { } \\{  ")] // The hyphens of a-- end a name; an escaped brace opens no block.
+    [InlineData("a---> { }", "a---> { }")]
+    public void Comments_and_comment_markers_outside_blocks_are_removed(string css, string expected) =>
+        Assert.Equal(expected, CssRuleScanner.StripComments(css));
+
     [Fact]
     public void Footer_counts_pages_on_every_page()
     {

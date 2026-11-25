@@ -137,31 +137,58 @@ internal static class CssRuleScanner
         return result;
     }
 
+    /// <summary>
+    /// Removes the comments, and the HTML comment markers <c>&lt;!--</c> and <c>--&gt;</c> (CDO and CDC) outside
+    /// blocks, which CSS ignores at the top level of a style sheet: old pages and e-mails wrap style sheets in them.
+    /// </summary>
     internal static string StripComments(string css)
     {
         var output = new StringBuilder(css.Length);
+        var depth = 0;
         for (var i = 0; i < css.Length; i++)
         {
-            if (css[i] is '"' or '\'')
+            var c = css[i];
+            if (c is '"' or '\'')
             {
                 var end = EndOfString(css, i);
                 output.Append(css, i, end - i + 1);
                 i = end;
             }
-            else if (css[i] == '/' && i + 1 < css.Length && css[i + 1] == '*')
+            else if (c == '/' && i + 1 < css.Length && css[i + 1] == '*')
             {
                 var end = css.IndexOf("*/", i + 2, StringComparison.Ordinal);
                 i = end < 0 ? css.Length : end + 1;
                 output.Append(' ');
             }
+            else if (c == '\\' && i + 1 < css.Length)
+            {
+                output.Append(css, i, 2); // An escaped character is never a brace or a marker.
+                i++;
+            }
+            else if (depth == 0 && (IsAt(css, i, "<!--") || (IsAt(css, i, "-->") && (i == 0 || !IsNameCharacter(css[i - 1])))))
+            {
+                i += css[i] == '<' ? 3 : 2;
+                output.Append(' ');
+            }
             else
             {
-                output.Append(css[i]);
+                depth = c switch
+                {
+                    '{' => depth + 1,
+                    '}' => Math.Max(0, depth - 1),
+                    _ => depth,
+                };
+                output.Append(c);
             }
         }
 
         return output.ToString();
     }
+
+    private static bool IsAt(string text, int index, string value) => string.CompareOrdinal(text, index, value, 0, value.Length) == 0;
+
+    // In "a-->" the hyphens end the name a--, so there is no marker.
+    private static bool IsNameCharacter(char c) => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' || c >= 0x80;
 
     private static int EndOfString(string text, int start)
     {
