@@ -75,7 +75,7 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Header row repeated on every page | ✓ print titles | ✓ print titles | ✓ `HasHeaderRow` |
 | Pivot tables | ✓ their cells, `PivotStyleLight15`-`21`; other styles R | ◐ their cells, R | - |
 | Charts in a sheet | ✓ newer types R | R | - |
-| Chart sheets | R | R | - |
+| Chart sheets | ✓ on a page of their own | R | - |
 | Pictures: PNG, JPEG, GIF, BMP, TIFF, EMF, WMF | ✓ cropped, turned | ✓ bitmaps, metafiles | - |
 | Shapes and text boxes | ✓ preset and free-form geometry | ◐ common shape types, R | - |
 | SmartArt, ink, form controls | R | R | - |

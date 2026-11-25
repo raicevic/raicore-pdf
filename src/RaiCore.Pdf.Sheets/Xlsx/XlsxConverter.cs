@@ -48,20 +48,25 @@ internal static class XlsxConverter
     }
 
     /// <summary>
-    /// Reads and builds the chosen worksheets one at a time, so that only one is in memory while it is laid out, and
-    /// reports what each has that is not supported (when diagnostics are wanted), and the chosen chart sheets.
+    /// Reads and builds the chosen worksheets and chart sheets one at a time, so that only one is in memory while it is
+    /// laid out, and reports what each has that is not supported (when diagnostics are wanted): also chart sheets
+    /// without anything to draw, which are left out.
     /// </summary>
     private static IEnumerable<Sheet> Sheets(XlsxPackage package, XlsxWorkbook workbook, List<XlsxSheetEntry> chosen, XlsxConverterOptions options, ResourceLimits limits, Action? checkpoint)
     {
         var diagnostics = options.Sheet.Diagnostics;
-        var bookmarks = chosen.Count(s => s.IsWorksheet) > 1;
+        var bookmarks = chosen.Count(s => s.IsWorksheet || s.IsChartSheet) > 1;
         var images = new Dictionary<string, PdfImage?>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in chosen)
         {
             checkpoint?.Invoke();
             if (!entry.IsWorksheet)
             {
-                ReportChartSheet(entry, diagnostics);
+                if (ChartSheet(package, workbook, entry, options, limits, images, checkpoint, bookmarks) is { } chartSheet)
+                {
+                    yield return chartSheet;
+                }
+
                 continue;
             }
 
@@ -101,7 +106,67 @@ internal static class XlsxConverter
         }
     }
 
-    /// <summary>Reports a chosen chart sheet, which is not converted.</summary>
+    /// <summary>
+    /// Reads a chart sheet: its page setup, headers and footers, and the drawings of its drawing part (its chart, with
+    /// an absolute anchor). A chart sheet without anything to draw is reported and left out (<c>null</c>), as are
+    /// entries that are not chart sheets.
+    /// </summary>
+    private static Sheet? ChartSheet(XlsxPackage package, XlsxWorkbook workbook, XlsxSheetEntry entry, XlsxConverterOptions options, ResourceLimits limits,
+        Dictionary<string, PdfImage?> images, Action? checkpoint, bool bookmark)
+    {
+        var diagnostics = options.Sheet.Diagnostics;
+        if (!entry.IsChartSheet || entry.Path is not { } path)
+        {
+            ReportChartSheet(entry, diagnostics);
+            return null;
+        }
+
+        var sheet = package.Parse(path, reader => XlsxWorksheet.Read(reader, workbook, limits.MaxTableCells, checkpoint), XlsxWorksheet.Empty);
+        sheet.Drawings.AddRange(new XlsxDrawing(package, workbook, limits, sheet.Unsupported, images).Read(path));
+        if (diagnostics is not null)
+        {
+            XlsxContent.Collect(package, path, sheet.Unsupported, checkpoint);
+            sheet.Unsupported.Report(entry.Name, diagnostics);
+        }
+
+        if (sheet.Drawings.Count == 0)
+        {
+            ReportChartSheet(entry, diagnostics);
+            return null;
+        }
+
+        return BuildChartSheet(sheet, entry, workbook.Styles.DefaultFontSize, workbook.Styles.DefaultFontName, options, bookmark, (workbook.MajorFont, workbook.MinorFont));
+    }
+
+    /// <summary>
+    /// Builds a chart sheet to print: its drawings on a page of their own, in landscape orientation unless its page
+    /// setup asks for portrait, with its headers and footers.
+    /// </summary>
+    internal static Sheet BuildChartSheet(XlsxWorksheet sheet, XlsxSheetEntry entry, double defaultFontSize, string? defaultFontName, XlsxConverterOptions options, bool bookmark,
+        (string? Major, string? Minor) themeFonts = default)
+    {
+        var usePageSetup = options.UsePageSetup;
+        return new Sheet([], 0)
+        {
+            Formatting = new SheetFormatting
+            {
+                ChartSheet = true,
+                DefaultFontSize = defaultFontSize,
+                DefaultFontName = defaultFontName,
+                Landscape = usePageSetup && !sheet.Portrait,
+                Heading = options.ShowSheetNames ? entry.Name : null,
+                Bookmark = bookmark ? entry.Name : null,
+                Drawings = sheet.Drawings,
+                MajorFont = themeFonts.Major,
+                MinorFont = themeFonts.Minor,
+                HeaderFooter = usePageSetup && !sheet.HeaderFooter.IsEmpty ? sheet.HeaderFooter : null,
+                PrintContext = (options.PrintDate ?? DateTime.Now, options.Culture ?? CultureInfo.InvariantCulture, null),
+            },
+            Name = entry.Name,
+        };
+    }
+
+    /// <summary>Reports a chosen chart sheet that is left out.</summary>
     internal static void ReportChartSheet(XlsxSheetEntry entry, Action<SheetDiagnostic>? diagnostics)
     {
         if (entry.IsChartSheet)
@@ -124,7 +189,8 @@ internal static class XlsxConverter
 
     /// <summary>
     /// The sheets the options choose, in the workbook's order: those they name or number (hidden ones too), else the
-    /// visible worksheets and chart sheets. Of these, the worksheets are converted and the chart sheets reported.
+    /// visible worksheets and chart sheets. Of these, the worksheets and the chart sheets (of workbooks, not of Excel
+    /// 97-2003 workbooks, whose chart sheets are reported) are converted.
     /// </summary>
     internal static List<XlsxSheetEntry> Choose(IReadOnlyList<XlsxSheetEntry> sheets, XlsxConverterOptions options)
     {

@@ -197,4 +197,10 @@ internal sealed class SheetFormatting
 
     /// <summary>The printed columns (not the first) that start a page, ascending, by page breaks set by hand.</summary>
     public IReadOnlyList<int> ColumnBreaks { get; init; } = [];
+
+    /// <summary>
+    /// Whether the sheet is a chart sheet: no cells, its <see cref="Drawings"/> (absolute anchors) printed on a page of
+    /// their own, stretched over its content area.
+    /// </summary>
+    public bool ChartSheet { get; init; }
 }
