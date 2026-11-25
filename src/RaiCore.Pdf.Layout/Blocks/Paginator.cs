@@ -1526,14 +1526,30 @@ internal sealed partial class Paginator
         }
 
         // The table's spacing and header rows start it, and every page it continues on (also pages that a split row's
-        // cells create).
+        // cells create). A header repeats only where it leaves room for the start of the body: one taller than that (as
+        // spreadsheet print titles can be) would fill every page without the table getting any further (#249). Like
+        // browsers, the table then shows it once, where it starts.
+        var headerHeight = headerEnd > 0 ? layout.Height(0, headerEnd) : 0;
+        var bodyStart = headerEnd < footerStart ? MinimumRowStart(layout, headerEnd) : 0;
+        var repeatHeader = true;
         void StartPage()
         {
             Y += layout.SpacingY;
-            if (headerEnd > 0)
+            if (headerEnd == 0)
             {
-                Place(0, headerEnd);
+                return;
             }
+
+            if (headerPlaced)
+            {
+                repeatHeader &= Y + headerHeight + layout.SpacingY + bodyStart <= ContentBottom + Epsilon;
+                if (!repeatHeader)
+                {
+                    return;
+                }
+            }
+
+            Place(0, headerEnd);
         }
 
         // Footer rows repeat below the body on every page the table continues from: their space is kept free at the

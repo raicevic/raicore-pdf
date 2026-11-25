@@ -24,6 +24,9 @@ and versions follow [Semantic Versioning](https://semver.org/).
   is centered in the cell, as in e-mail layouts with gutter cells).
 - HTML: `@page` margin boxes inherit the fonts, line height and color set on `@page` (also named, `:first`, `:left`
   and `:right` page rules), as in CSS Paged Media; before, they started from the root element's style (#178).
+- Tables: header rows that leave no room for a body row below them (spreadsheet print titles, a `<thead>` taller
+  than a page) are shown once where the table starts instead of being repeated on every page until
+  `ResourceLimits.MaxPages`, or pushing the body off the pages (#249).
 
 ## [1.3.0] - 2026-11-25
 
