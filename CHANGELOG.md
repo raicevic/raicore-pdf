@@ -28,6 +28,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
   metrics (14 px for 9 pt Liberation Sans, not 13.8 px) and its baseline sits on a whole pixel; border widths snap to
   whole pixels (rounded down, at least 1 px: `0.5pt` and `1pt` are 1 px); and a collapsed table's box holds half of its
   outer grid lines instead of letting them reach into its margin (#152).
+- Tables: a collapsed-border table that shrinks to fit is measured with half of the grid lines around each cell, as
+  it is laid out, instead of the cells' whole borders (it came out a border width too wide) (#152).
 - HTML: the logical borders (`border-inline-start`, `border-block`, their `-width`, `-style` and `-color` longhands,
   ...) are no longer reported as unsupported properties; they follow each element's direction (#154).
 - HTML: a style sheet wrapped in comment markers (`<style><!-- ... --></style>`, still common in e-mails) no longer

@@ -211,13 +211,18 @@ internal static class TableLayouter
     /// <summary>The table's content-box min-content and max-content widths.</summary>
     public static (double Min, double Max) MeasureIntrinsic(TableBlock table)
     {
-        var (_, cells, columns) = BuildGrid(table);
+        var (slots, cells, columns) = BuildGrid(table);
         if (columns == 0)
         {
             return (0, 0);
         }
 
-        var (min, max, _, _) = ColumnIntrinsics(table, cells, columns, null);
+        // Collapsed cells take half of the grid lines around them, as when the table is laid out.
+        var rows = table.Rows.Count;
+        var collapsed = table.BorderCollapse == BorderCollapse.Collapse
+            ? (CollapseHorizontal(table, slots, rows, columns), CollapseVertical(table, slots, rows, columns))
+            : ((GridLine[,], GridLine[,])?)null;
+        var (min, max, _, _) = ColumnIntrinsics(table, cells, columns, collapsed);
         var spacing = table.BorderCollapse == BorderCollapse.Separate ? table.HorizontalSpacing * (columns + 1) : 0;
         return (min.Sum() + spacing, Math.Max(min.Sum(), max.Sum()) + spacing);
     }
