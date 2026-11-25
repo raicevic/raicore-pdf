@@ -355,6 +355,7 @@ public class SheetFormattingTests
     [InlineData("UPPER(LEFT(A2,2))&LOWER(RIGHT(A2))=\"TEt\"", true)]
     [InlineData("TRIM(\"  a  b \")=\"a b\"", true)]
     [InlineData("ISERROR(FIND(\"t\",\"T\"))", true)]
+    [InlineData("UPPER()&LEFT(,1)=\"\"", true)] // Missing arguments are empty texts.
     public void Formulas_compute_conditions(string formula, bool expected) => Assert.Equal(FormulaValue.Of(expected), Compute(formula));
 
     [Theory]
@@ -363,6 +364,7 @@ public class SheetFormattingTests
     [InlineData("A2*2", "#VALUE!")]
     [InlineData("C3+1", "#N/A")]
     [InlineData("SEARCH(\"q\",A2)", "#VALUE!")]
+    [InlineData("SEARCH(\"q\")", "#VALUE!")] // Not in an empty text (fuzzing found it failing).
     [InlineData("#REF!", "#REF!")]
     [InlineData("$A$1:$B$2+1", "#VALUE!")]
     public void Formulas_compute_errors(string formula, string error) => Assert.Equal(FormulaValue.Error(error), Compute(formula));
