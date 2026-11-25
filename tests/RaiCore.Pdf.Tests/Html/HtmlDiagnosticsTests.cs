@@ -278,6 +278,12 @@ public class HtmlDiagnosticsTests
     }
 
     [Fact]
+    public async Task Comment_markers_around_a_style_sheet_are_not_reported()
+    {
+        Assert.Empty(await Diagnose("<style><!-- p.a { color: red } p.b { color: blue } --></style><p class='a'>a</p><p class='b'>b</p>"));
+    }
+
+    [Fact]
     public async Task Invalid_values_and_values_laid_out_differently_are_reported()
     {
         var found = await Diagnose("""

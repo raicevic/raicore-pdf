@@ -186,6 +186,8 @@ public class HtmlConversionTests
     [InlineData("@page { size: letter; margin: 0.5in 1in }", 612, 792, 36)]
     [InlineData("@page { size: 100mm 50mm }", 283.46, 141.73, 56.69)]
     [InlineData("@page { size: A6 }", 297.64, 419.53, 56.69)]
+    [InlineData("<!-- @page { size: A6 } -->", 297.64, 419.53, 56.69)] // Old pages and e-mails wrap style sheets in comment markers.
+    [InlineData("<!--@page { size: A6 }-->", 297.64, 419.53, 56.69)]
     [InlineData("@page { size: a6 landscape }", 419.53, 297.64, 56.69)]
     [InlineData("@page { size: A0 }", 2383.94, 3370.39, 56.69)]
     [InlineData("@page { size: B6 }", 354.33, 498.9, 56.69)]

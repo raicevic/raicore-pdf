@@ -12,6 +12,9 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ### Fixed
 - HTML: the logical borders (`border-inline-start`, `border-block`, their `-width`, `-style` and `-color` longhands,
   ...) are no longer reported as unsupported properties; they follow each element's direction (#154).
+- HTML: a style sheet wrapped in comment markers (`<style><!-- ... --></style>`, still common in e-mails) no longer
+  loses its first rule when that is an `@page` rule, a `string-set` or an `@font-face`, and its first rule is no
+  longer reported as an unsupported selector (#307).
 
 ## [1.3.0] - 2026-11-25
 
