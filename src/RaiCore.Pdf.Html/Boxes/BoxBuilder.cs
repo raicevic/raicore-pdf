@@ -209,6 +209,8 @@ internal sealed partial class BoxBuilder
                 style = style with { DirectionAuto = true };
             }
 
+            style = AttributeAlignment(element, style);
+
             // HTML gives bdo unicode-bidi: isolate-override, a value AngleSharp does not keep.
             if (element.LocalName == "bdo" && style.UnicodeBidi == CssUnicodeBidi.BidiOverride)
             {
@@ -219,6 +221,45 @@ internal sealed partial class BoxBuilder
         }
 
         return style;
+    }
+
+    /// <summary>
+    /// An <c>align</c> attribute (<c>&lt;td align="center"&gt;</c>, <c>&lt;div align&gt;</c>) and <c>&lt;center&gt;</c>
+    /// align text with Blink's <c>-webkit-center</c> (<c>-webkit-left</c>, <c>-webkit-right</c>), which AngleSharp also
+    /// gives them. Unlike <c>text-align: center</c>, it does not reach into tables: a table resets it to the initial
+    /// value, and its contents inherit that. Table-based e-mails rely on it to center their layout tables while the text
+    /// in them stays left-aligned. AngleSharp passes it into tables, so an element that inherits it (one that does not
+    /// set <c>text-align</c> itself) takes its parent's alignment as resolved here.
+    /// </summary>
+    private ComputedStyle AttributeAlignment(IElement element, ComputedStyle style)
+    {
+        if (!style.TextAlignFromAttribute)
+        {
+            return style;
+        }
+
+        if (element.ParentElement is { } parent && !SetsTextAlign(element))
+        {
+            var inherited = Style(parent);
+            style = style with { TextAlign = inherited.TextAlign, TextAlignFromAttribute = inherited.TextAlignFromAttribute };
+        }
+
+        return style.TextAlignFromAttribute && element.LocalName == "table"
+            ? style with { TextAlign = TextAlignment.Start, TextAlignFromAttribute = false }
+            : style;
+    }
+
+    private bool SetsTextAlign(IElement element)
+    {
+        _styleCollection ??= _window.GetStyleCollection(Document.Context.GetService<AngleSharp.Css.IRenderDevice>() ?? new AngleSharp.Css.DefaultRenderDevice());
+        try
+        {
+            return _styleCollection.ComputeExplicitStyle(element).GetPropertyValue("text-align") is { Length: > 0 };
+        }
+        catch (NullReferenceException)
+        {
+            return false; // See ComputedStyleOf.
+        }
     }
 
     /// <summary>The computed declarations of an element or one of its pseudo-elements (<c>::before</c>), as the window's <c>GetComputedStyle</c> gives them.</summary>
