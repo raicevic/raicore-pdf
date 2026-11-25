@@ -5,6 +5,21 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-25
+
+Closing format gaps: the newer chart types, chart sheets, comments in Word documents, every pivot table style, and
+more of the print formatting of spreadsheets.
+
+### Highlights
+- **Newer chart types:** waterfall, histogram, pareto, box and whisker, funnel, treemap and sunburst charts, drawn as
+  vector graphics in workbooks, Word documents and presentations.
+- **Spreadsheets:** chart sheets on pages of their own, every built-in pivot table style and the workbook's own,
+  comments as displayed on the sheet, data bar borders and axes, exact colors of `.xls` conditional formatting, and
+  large sheets rendered in linear time.
+- **Comments in Word documents** (DOCX, DOC, RTF, ODT), listed at the end or as PDF notes
+  (`DocumentConverterOptions.Comments`).
+- **Outlook messages:** attachments kept as OLE objects become the files inside them.
+
 ### Added
 - **Embedded OLE objects in Outlook messages** (#293): attachments that Outlook keeps as OLE objects become the file
   inside them: a packaged file under its own name, an Office 2007+ document, a file kept whole (such as a PDF), or an
@@ -29,14 +44,12 @@ and versions follow [Semantic Versioning](https://semver.org/).
   or as PDF notes where the text they are about starts (`DocumentComments.Annotations`); the commented text is
   highlighted. The default (`None`) leaves them out as before, now reported to `Diagnostics` for DOCX and ODT too.
   Layout: `FlowDocument.AnchorPlaced` reports where paragraph anchors are drawn.
-
 - **Sheets: comments as displayed, data bar borders and axes, exact .xls colors** (#286): comments shown on a sheet
   whose page setup prints them "As displayed on sheet" are drawn over it as their boxes (fill, outline, rich text),
   from `.xlsx` (VML notes) and `.xls` (note objects) workbooks. Excel 2010 data bars draw their borders (and the
   negative bars' own), and their axis as a dashed line in its color, also in the middle of the cells or not at all.
   The conditional formatting of `.xls` workbooks takes the exact colors Excel 2007 and later keep after a rule's
   format (RGB and theme colors) instead of the nearest palette colors.
-
 - **Sheets: every pivot table style** (#286): pivot tables get any of Excel's 84 built-in pivot styles (Light, Medium
   and Dark 1-28) or the workbook's own table styles, each element over its part of the table (header rows, row labels,
   subheadings and subtotals of nested fields, blank lines, grand totals, banded rows and columns, page fields), with
@@ -1173,7 +1186,8 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   drawing the first (page counts, `target-counter()`), so their peak memory is the layout's and hardly changes.
   Pages imported from other PDFs keep what they copy until `EndSave`.
 
-[Unreleased]: https://github.com/raicevic/raicore-pdf/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/raicevic/raicore-pdf/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/raicevic/raicore-pdf/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/raicevic/raicore-pdf/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/raicevic/raicore-pdf/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/raicevic/raicore-pdf/releases/tag/v1.0.0

@@ -34,7 +34,7 @@
       the next major version. See "Releasing" in CONTRIBUTING.md.
       CoreVersionPrefix is the core's latest (or upcoming) release; the release workflow checks tags against it.
     -->
-    <CoreVersionPrefix>1.2.0</CoreVersionPrefix>
+    <CoreVersionPrefix>1.3.0</CoreVersionPrefix>
     <IsCorePackage>true</IsCorePackage>
     <VersionPrefix>$(CoreVersionPrefix)</VersionPrefix>
     <!--

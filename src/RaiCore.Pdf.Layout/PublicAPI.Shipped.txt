@@ -386,6 +386,8 @@ RaiCore.Pdf.Layout.FloatSide.None = 0 -> RaiCore.Pdf.Layout.FloatSide
 RaiCore.Pdf.Layout.FloatSide.Right = 2 -> RaiCore.Pdf.Layout.FloatSide
 RaiCore.Pdf.Layout.FlowDocument
 RaiCore.Pdf.Layout.FlowDocument.Add(RaiCore.Pdf.Layout.Block! block) -> RaiCore.Pdf.Layout.FlowDocument!
+RaiCore.Pdf.Layout.FlowDocument.AnchorPlaced.get -> System.Action<string!, RaiCore.Pdf.PdfDestination!>?
+RaiCore.Pdf.Layout.FlowDocument.AnchorPlaced.set -> void
 RaiCore.Pdf.Layout.FlowDocument.Blocks.get -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.Layout.Block!>!
 RaiCore.Pdf.Layout.FlowDocument.CountPages() -> int
 RaiCore.Pdf.Layout.FlowDocument.Diagnostics.get -> System.Action<RaiCore.Pdf.Layout.LayoutDiagnostic!>?
