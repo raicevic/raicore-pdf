@@ -22,6 +22,9 @@ internal static class ListMarkers
         _ => "\u2022",
     };
 
+    /// <summary>Whether a marker is a symbol (<c>disc</c>, <c>circle</c>, <c>square</c>) rather than a number.</summary>
+    public static bool IsSymbol(string marker) => marker is "\u2022" or "\u25E6" or "\u25AA";
+
     /// <summary>A number in a counter style, without the list marker suffix (for <c>counter(name, style)</c>).</summary>
     public static string FormatNumber(string style, int value) => style switch
     {

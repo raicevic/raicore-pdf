@@ -1368,7 +1368,7 @@ internal sealed partial class Paginator
         var widest = 0.0;
         for (var i = first; i < end; i++)
         {
-            widest = Math.Max(widest, layout.Lines[i].X + layout.Lines[i].Width);
+            widest = Math.Max(widest, layout.Lines[i].X + layout.Lines[i].Width - layout.Lines[i].RightOverhang);
         }
 
         var excess = widest - layout.AvailableWidth;
