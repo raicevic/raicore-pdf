@@ -38,20 +38,20 @@
   "cerberus-fluid": {
     "pages": 2,
     "chrome_pages": 2,
-    "pixel": 0.6792,
-    "text_near": 0.0889
+    "pixel": 0.7006,
+    "text_near": 0.5698
   },
   "cerberus-hybrid": {
     "pages": 4,
     "chrome_pages": 3,
-    "pixel": 0.4196,
-    "text_near": 0.2794
+    "pixel": 0.4261,
+    "text_near": 0.4024
   },
   "cerberus-responsive": {
     "pages": 3,
     "chrome_pages": 3,
-    "pixel": 0.7527,
-    "text_near": 0.5633
+    "pixel": 0.761,
+    "text_near": 0.7233
   },
   "invoice": {
     "pages": 1,
@@ -86,14 +86,14 @@
   "postmark-receipt": {
     "pages": 2,
     "chrome_pages": 2,
-    "pixel": 0.9596,
-    "text_near": 0.3113
+    "pixel": 0.9924,
+    "text_near": 0.9788
   },
   "postmark-welcome": {
     "pages": 2,
     "chrome_pages": 2,
-    "pixel": 0.9339,
-    "text_near": 0.0436
+    "pixel": 0.9803,
+    "text_near": 0.8232
   },
   "rtl-multilingual": {
     "pages": 1,
@@ -116,7 +116,7 @@
   "weasyprint-invoice": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.3176,
+    "pixel": 0.3275,
     "text_near": 0.0182
   },
   "weasyprint-letter": {
