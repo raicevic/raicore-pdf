@@ -254,6 +254,30 @@ public class HtmlDiagnosticsTests
     }
 
     [Fact]
+    public async Task Outlook_properties_and_vendor_pseudo_classes_are_information()
+    {
+        var found = await Diagnose("""
+            <style>
+              p { mso-line-height-rule: exactly; MSO-Table-LSpace: 0pt }
+              input:-webkit-autofill, button:-moz-focusring { color: red }
+              p:nonsense { color: red }
+            </style>
+            <p style="mso-hide: all">a</p><input><button>b</button>
+            """);
+
+        Assert.Equal(
+            [
+                ("mso-line-height-rule", HtmlDiagnosticSeverity.Info), ("mso-table-lspace", HtmlDiagnosticSeverity.Info),
+                ("input:-webkit-autofill", HtmlDiagnosticSeverity.Info), ("button:-moz-focusring", HtmlDiagnosticSeverity.Info),
+                ("p:nonsense", HtmlDiagnosticSeverity.Warning), ("mso-hide", HtmlDiagnosticSeverity.Info),
+            ],
+            found.Select(d => (d.Subject, d.Severity)));
+        Assert.Equal("The Outlook-only property mso-line-height-rule is ignored.", found[0].Message);
+        Assert.Equal("The vendor-prefixed pseudo-class :-moz-focusring is not supported: the rule is ignored.", found[3].Message);
+        Assert.Equal("The selector is not supported: the rule is ignored.", found[4].Message);
+    }
+
+    [Fact]
     public async Task Invalid_values_and_values_laid_out_differently_are_reported()
     {
         var found = await Diagnose("""

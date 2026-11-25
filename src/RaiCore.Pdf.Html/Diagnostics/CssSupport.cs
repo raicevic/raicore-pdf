@@ -91,4 +91,7 @@ internal static class CssSupport
 
     /// <summary>Whether a property name is a vendor-prefixed one (<c>-webkit-</c>, <c>-moz-</c>, ...).</summary>
     public static bool IsVendorPrefixed(string property) => property.Length > 1 && property[0] == '-' && property[1] != '-';
+
+    /// <summary>Whether a property is one of Outlook's own (<c>mso-line-height-rule</c>, <c>mso-table-lspace</c>, ...).</summary>
+    public static bool IsOutlookOnly(string property) => property.StartsWith("mso-", StringComparison.Ordinal);
 }

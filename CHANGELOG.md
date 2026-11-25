@@ -5,6 +5,10 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- HTML diagnostics: Outlook's `mso-*` properties and vendor-prefixed pseudo-classes (`:-webkit-autofill`,
+  `:-moz-focusring`) are reported as `Info`, like vendor-prefixed properties, instead of `Warning` (#159).
+
 ### Fixed
 - HTML: the logical borders (`border-inline-start`, `border-block`, their `-width`, `-style` and `-color` longhands,
   ...) are no longer reported as unsupported properties; they follow each element's direction (#154).

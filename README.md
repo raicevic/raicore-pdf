@@ -298,9 +298,9 @@ fonts that did not load (and why: nothing loaded, unreadable, too large, not emb
 not support: properties, invalid values and values laid out differently (`display: grid`), selectors and
 pseudo-elements it cannot match (`::first-letter`), and at-rules it skips (`@import`, `@layer`); and content that
 does not fit: lines and boxes wider than their room, lines taller than a page (cut off), images scaled down to fit
-a page. CSS that has no effect in print anyway (`cursor`, `transition`, vendor prefixes) comes as `Info`. Each issue
-comes once per conversion, with the path of the first element it concerns and how many elements it concerns
-(`FlowDocument.Diagnostics` reports the layout issues for documents built with the layout API):
+a page. CSS that has no effect in print anyway (`cursor`, `transition`, vendor prefixes, Outlook's `mso-*`) comes
+as `Info`. Each issue comes once per conversion, with the path of the first element it concerns and how many elements
+it concerns (`FlowDocument.Diagnostics` reports the layout issues for documents built with the layout API):
 
 ```csharp
 var options = new HtmlConverterOptions

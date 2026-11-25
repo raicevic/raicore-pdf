@@ -21,7 +21,8 @@ RaiCore.Pdf's own engine. Scripts do not run.
 | Links and bookmarks | Links to URLs and to ids in the document, bookmarks from headings (`bookmark-level`, `-label`, `-state`) | |
 | Forms and media | | Form controls as fillable PDF fields, `<video>`, `<audio>`, `<canvas>`, `<iframe>` |
 
-CSS that has no effect in print (`cursor`, `transition`, `animation`, vendor prefixes) is ignored on purpose.
+CSS that has no effect in print (`cursor`, `transition`, `animation`, vendor prefixes, Outlook's `mso-*`) is ignored
+on purpose.
 
 ## Finding out why output differs
 
