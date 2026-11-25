@@ -10,8 +10,9 @@ Page size, margins, headers, footers and page numbers come from CSS Paged Media 
 - **Page sizes:** lengths (`size: 210mm 297mm`), `landscape` and `portrait`, and the names `A0`-`A10`, `B0`-`B10`,
   `JIS-B4`, `JIS-B5`, `letter`, `legal` and `ledger`. Without an `@page` rule, `HtmlConverterOptions.Page` applies
   (A4 with 2 cm margins).
-- **Margin boxes:** `@top-left`, `@top-center`, `@top-right`, the same at the bottom, and the corners, with font,
-  color, alignment and `vertical-align`. They inherit from the root element, so set the document's font on `html`.
+- **Margin boxes:** `@top-left`, `@top-center`, `@top-right`, the same at the bottom, and the corners, with font
+  (also the `font` shorthand), line height, color, alignment and `vertical-align`. They inherit from the root element,
+  so set the document's font on `html`.
 - **Content:** strings, `counter(page)` and `counter(pages)` in any counter style, `string()` (with `first`, `start`,
   `last` or `first-except`) for text the document sets with `string-set`, and `element()` for running elements, which
   can be any HTML: a logo, a table, several lines.

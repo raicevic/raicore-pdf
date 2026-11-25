@@ -584,7 +584,7 @@ internal sealed partial record ComputedStyle
             ? number
             : fallback; // 1e999 parses as infinity, which no layout can use (fuzzing found flex-grow: 1e3082).
 
-    private static LineHeight ParseLineHeight(string value, double fontSize, double rootFontSize, CssViewport viewport)
+    internal static LineHeight ParseLineHeight(string value, double fontSize, double rootFontSize, CssViewport viewport)
     {
         if (string.IsNullOrWhiteSpace(value) || value == "normal")
         {

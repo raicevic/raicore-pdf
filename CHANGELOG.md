@@ -15,6 +15,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
 - HTML: a style sheet wrapped in comment markers (`<style><!-- ... --></style>`, still common in e-mails) no longer
   loses its first rule when that is an `@page` rule, a `string-set` or an `@font-face`, and its first rule is no
   longer reported as an unsupported selector (#307).
+- HTML: `@page` margin boxes take the `font` shorthand (`font: 8pt Arial, sans-serif`), `line-height` and the
+  font-size keywords (`small`, `x-large`, `larger`, ...); before, only the font longhands had an effect (#177).
 
 ## [1.3.0] - 2026-11-25
 
