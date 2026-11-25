@@ -1,4 +1,6 @@
+using System.Text.RegularExpressions;
 using PDFtoImage;
+using RaiCore.Pdf.Extraction;
 using RaiCore.Pdf.Html;
 using RaiCore.Pdf.Layout;
 
@@ -81,6 +83,23 @@ public class HtmlConversionTests
     [InlineData("<p style='text-transform: capitalize'>hello big world</p>", "Hello Big World")]
     public void Processes_white_space_and_line_breaks_like_css(string html, string expected) =>
         Assert.Equal(expected, Text(Assert.Single(Paragraphs(Blocks(html)))));
+
+    [Theory]
+    [InlineData("<p>A</p><p>&nbsp;</p><p>B</p>", new[] { "A", "\u00A0", "B" })] // The spacer paragraph of e-mails and word processors.
+    [InlineData("<p>A</p><p> &nbsp; </p><p>B</p>", new[] { "A", "\u00A0 ", "B" })]
+    [InlineData("<p>A</p><p><span>\u2003</span></p><p>B</p>", new[] { "A", "\u2003", "B" })]
+    [InlineData("<p>A</p><p> \t\n </p><p>B</p>", new[] { "A", "B" })] // Collapsible white space alone has no line box.
+    public void A_no_break_space_is_not_collapsible(string html, string[] expected) =>
+        Assert.Equal(expected, Paragraphs(Blocks(html)).Select(Text));
+
+    [Fact]
+    public void A_paragraph_holding_a_no_break_space_is_a_line_tall()
+    {
+        var pdf = HtmlToPdf.ConvertToBytes("<p style='margin:0'>A</p><p style='margin:0'>&nbsp;</p><p style='margin:0'>B</p><p style='margin:0'>C</p>");
+        var lines = new TextExtractor(PdfReader.Open(pdf)).FindOnPage(0, new Regex("[ABC]")).Select(m => m.Bounds.Y).ToList();
+
+        Assert.Equal(2 * (lines[2] - lines[1]), lines[1] - lines[0], 3);
+    }
 
     [Fact]
     public void Inline_elements_become_styled_spans()

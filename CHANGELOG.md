@@ -17,6 +17,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
   longer reported as an unsupported selector (#307).
 - HTML: `@page` margin boxes take the `font` shorthand (`font: 8pt Arial, sans-serif`), `line-height` and the
   font-size keywords (`small`, `x-large`, `larger`, ...); before, only the font longhands had an effect (#177).
+- HTML: a paragraph holding only a no-break space (`<p>&nbsp;</p>`, the spacer line of e-mails and word processor
+  exports) is one line tall instead of collapsing to nothing (#305).
 
 ## [1.3.0] - 2026-11-25
 
