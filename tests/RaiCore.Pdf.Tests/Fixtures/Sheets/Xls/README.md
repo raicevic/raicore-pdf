@@ -27,6 +27,9 @@ Excel 97-2003 converter (`XlsToPdf`).
 - License: Apache License 2.0, as part of Apache POI. Copyright 2003-2026 The Apache Software Foundation. This product
   includes software developed at The Apache Software Foundation (<https://www.apache.org/>).
 
+`CommentBoxes.xls` is Apache POI's `SimpleWithComments.xls` with its first sheet's SETUP record printing comments as
+displayed (fNotes without fEndNotes), written by `../make-comment-boxes.py`; its comment on B3 is shown on the sheet.
+
 `print-formatting.xls` is not from Apache POI: `make-print.py` writes it with [xlwt](https://pypi.org/project/xlwt/)
 1.3 (rich text in shared strings, rotated and stacked text).
 

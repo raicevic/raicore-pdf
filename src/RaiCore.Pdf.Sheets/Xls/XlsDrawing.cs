@@ -16,8 +16,11 @@ internal sealed class XlsDrawingRecords
 {
     private readonly ArrayBufferWriter<byte> _data = new();
 
-    /// <summary>The OBJ records: the drawing data before each, its object type, whether it prints and is an embedded object.</summary>
-    public List<(long At, int Type, bool Prints, bool Embedded)> Objects { get; } = [];
+    /// <summary>
+    /// The OBJ records: the drawing data before each, its object type, whether it prints and is an embedded object, and
+    /// its id.
+    /// </summary>
+    public List<(long At, int Type, bool Prints, bool Embedded, int Id)> Objects { get; } = [];
 
     /// <summary>The text of the TXO records: the drawing data before each, its text and runs, and its alignment.</summary>
     public List<(long At, XlsText Text)> Texts { get; } = [];
@@ -33,11 +36,11 @@ internal sealed class XlsDrawingRecords
     {
         if (data.Length >= 10 && BiffReader.U16(data, 0) == 0x15)
         {
-            Objects.Add((_data.WrittenCount, BiffReader.U16(data, 4), (BiffReader.U16(data, 8) & 0x10) != 0, embedded));
+            Objects.Add((_data.WrittenCount, BiffReader.U16(data, 4), (BiffReader.U16(data, 8) & 0x10) != 0, embedded, BiffReader.U16(data, 6)));
         }
         else
         {
-            Objects.Add((_data.WrittenCount, -1, false, false));
+            Objects.Add((_data.WrittenCount, -1, false, false, -1));
         }
     }
 
@@ -151,7 +154,7 @@ internal sealed class XlsDrawing
 
         public PdfRectangle? GroupBounds { get; set; }
 
-        public (int Type, bool Prints, bool Embedded)? Object { get; set; }
+        public (int Type, bool Prints, bool Embedded, int Id)? Object { get; set; }
 
         public XlsText? Text { get; set; }
 
@@ -166,8 +169,12 @@ internal sealed class XlsDrawing
             && ((p.Value & (1 << (bit + 16))) != 0 || (p.Value & unchecked((int)0xFFFF0000)) == 0) ? (p.Value & (1 << bit)) != 0 : fallback;
     }
 
-    /// <summary>Reads the drawings of a worksheet's drawing records; what cannot be drawn is counted.</summary>
-    public static List<SheetDrawing> Read(XlsWorkbook workbook, XlsDrawingRecords records, ResourceLimits limits, UnsupportedContent unsupported)
+    /// <summary>
+    /// Reads the drawings of a worksheet's drawing records; what cannot be drawn is counted. The boxes of the comments
+    /// shown on the sheet (whose note objects <paramref name="shownNotes"/> names) go to <paramref name="notes"/>.
+    /// </summary>
+    public static List<SheetDrawing> Read(XlsWorkbook workbook, XlsDrawingRecords records, ResourceLimits limits, UnsupportedContent unsupported,
+        IReadOnlySet<int>? shownNotes = null, List<SheetDrawing>? notes = null)
     {
         var drawing = new XlsDrawing(workbook, records, limits, unsupported);
         var result = new List<SheetDrawing>();
@@ -175,16 +182,32 @@ internal sealed class XlsDrawing
         drawing.Walk(0, drawing._data.Length, shapes, null, 0);
         foreach (var shape in shapes)
         {
-            if (shape.Anchor is not { } anchor || drawing.Item(shape, 0) is not { } item)
+            if (shape.Anchor is not { } anchor)
             {
                 continue;
             }
 
-            result.Add(new SheetDrawing(AnchorKind.TwoCell, new AnchorEdge(anchor.Col1, 0, anchor.Dx1 / 1024.0), new AnchorEdge(anchor.Row1, 0, anchor.Dy1 / 256.0), item)
+            if (shape.Object is { Type: 0x19 } note)
             {
-                Right = new AnchorEdge(anchor.Col2, 0, anchor.Dx2 / 1024.0),
-                Bottom = new AnchorEdge(anchor.Row2, 0, anchor.Dy2 / 256.0),
-            });
+                if (notes is not null && shownNotes is not null && shownNotes.Contains(note.Id))
+                {
+                    notes.Add(Anchored(drawing.NoteItem(shape)));
+                }
+
+                continue;
+            }
+
+            if (drawing.Item(shape, 0) is { } item)
+            {
+                result.Add(Anchored(item));
+            }
+
+            SheetDrawing Anchored(DrawingItem item) =>
+                new(AnchorKind.TwoCell, new AnchorEdge(anchor.Col1, 0, anchor.Dx1 / 1024.0), new AnchorEdge(anchor.Row1, 0, anchor.Dy1 / 256.0), item)
+                {
+                    Right = new AnchorEdge(anchor.Col2, 0, anchor.Dx2 / 1024.0),
+                    Bottom = new AnchorEdge(anchor.Row2, 0, anchor.Dy2 / 256.0),
+                };
         }
 
         // OBJ records no shape claimed (a damaged drawing) are counted by their kind.
@@ -323,7 +346,7 @@ internal sealed class XlsDrawing
     }
 
     /// <summary>The OBJ record that follows the drawing data up to <paramref name="end"/>; OBJ records it skips are counted.</summary>
-    private (int Type, bool Prints, bool Embedded)? NextObject(int end)
+    private (int Type, bool Prints, bool Embedded, int Id)? NextObject(int end)
     {
         var objects = _records.Objects;
         while (_nextObject < objects.Count && objects[_nextObject].At < end)
@@ -336,8 +359,8 @@ internal sealed class XlsDrawing
             return null;
         }
 
-        var (_, type, prints, embedded) = objects[_nextObject++];
-        return (type, prints, embedded);
+        var (_, type, prints, embedded, id) = objects[_nextObject++];
+        return (type, prints, embedded, id);
     }
 
     private XlsText? NextText(int end)
@@ -352,7 +375,7 @@ internal sealed class XlsDrawing
     }
 
     /// <summary>Counts an object that is not drawn by its kind (not comments' shapes, groups, or objects that do not print).</summary>
-    private void CountObject((long At, int Type, bool Prints, bool Embedded) record)
+    private void CountObject((long At, int Type, bool Prints, bool Embedded, int Id) record)
     {
         if (record.Prints && record.Type is not (0x00 or 0x19 or -1))
         {
@@ -401,7 +424,7 @@ internal sealed class XlsDrawing
         {
             if (Picture(shape.Value(0x0104, 0)) is not { } image)
             {
-                CountObject((0, obj.Type, true, false));
+                CountObject((0, obj.Type, true, false, obj.Id));
                 return null;
             }
 
@@ -418,7 +441,7 @@ internal sealed class XlsDrawing
 
         if (!DrawnTypes.Contains(obj.Type) || !Presets.TryGetValue(shape.Type, out var preset) || shape.Properties.ContainsKey(0x0145))
         {
-            CountObject((0, obj.Type, true, obj.Embedded));
+            CountObject((0, obj.Type, true, obj.Embedded, obj.Id));
             return null;
         }
 
@@ -434,6 +457,17 @@ internal sealed class XlsDrawing
             FlipV = flipV,
         };
     }
+
+    /// <summary>
+    /// The box of a comment shown on the sheet (its NOTE record says so, not its shape): a rectangle in its fill (the
+    /// tooltip color unless the shape has its own) and outline, with its text.
+    /// </summary>
+    private ShapeItem NoteItem(Shape shape) => new(Geometry.Rectangle)
+    {
+        Fill = shape.Flag(0x01BF, 4, true) ? Color(shape.Value(0x0181, 0x08000050), CommentBox.Fill) : null,
+        Line = shape.Flag(0x01FF, 3, true) ? Line(shape) : null,
+        Text = Text(shape),
+    };
 
     private ShapeLine Line(Shape shape) =>
         new(Math.Clamp(shape.Value(0x01CB, 9525) / Emu, 0, 1000), Color(shape.Value(0x01C0, 0), PdfColor.Black), shape.Value(0x01CE, 0) switch

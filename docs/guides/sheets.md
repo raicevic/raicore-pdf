@@ -217,7 +217,8 @@ shown smaller until it fits its columns.
 **Conditional formatting** is applied over the stored values (the workbook's formulas are not calculated, but the
 rules' own formulas are): rules comparing values (`cellIs`, with constants or formulas), formula rules
 (`expression`), two- and three-color scales, **data bars** (drawn behind the value; Excel 2010's, from the extension
-list, solid or fading, with negative values left of an axis), **icon sets** (all of Excel's, and custom ones, drawn
+list, solid or fading, with their borders, negative values left of an axis drawn as a dashed line where the values
+change sign or in the middle of the cells, or no axis), **icon sets** (all of Excel's, and custom ones, drawn
 at the start of the cell), top and bottom ranks and percents, above and below average, duplicate and unique values,
 text that contains, begins or ends with a text, blanks, errors, and dates in a period (`timePeriod`, against
 `PrintDate`), in their priority with `stopIfTrue`; their formats set the font's bold, italic, underline,
@@ -231,7 +232,8 @@ texts, `TRUE`/`FALSE`, error values, references to cells and ranges of the same 
 reported. Their work is bounded (length, size and nesting of each formula, and the cells they read per sheet).
 
 **Comments** (notes) print as the sheet's page setup asks: listed after the sheet, on a page of their own, with each
-comment's cell and text, when it says "At end of sheet"; otherwise not. `XlsxConverterOptions.Comments` can list them
+comment's cell and text, when it says "At end of sheet"; the boxes of the comments shown on the sheet drawn over it
+where they are, with their text, fill and outline, when it says "As displayed on sheet"; otherwise not. `XlsxConverterOptions.Comments` can list them
 at the end anyway (`SheetComments.AtEnd`), leave them out (`None`), or make them PDF notes (text annotations, "sticky
 notes") at the top right corner of their cells (`Annotations`), which viewers open to show the text:
 
@@ -286,7 +288,9 @@ calculated values (numbers, the text of the `STRING` record after them, booleans
 formatting runs (of the shared strings and `RSTRING` records); comments come from `NOTE` records and the text of their
 note objects (`TXO`); conditional formatting from `CF` records (Excel 97's rules, their formulas read from their
 parsed tokens), `CF12` records (Excel 2007's: color scales, data bars, icon sets, top and bottom, formula rules made
-from templates) and the priorities of `CFEX` records; their colors are the workbook's palette's. Excel 5.0 and 95
+from templates) and the priorities of `CFEX` records; their colors are the exact ones Excel 2007 and later keep after
+their formats (RGB and theme colors), else the workbook's palette's. Comments shown on the sheet are the note objects
+whose `NOTE` record says so, drawn where their shapes are anchored. Excel 5.0 and 95
 workbooks are read in their code page (`CODEPAGE`). The data is checked, not trusted: every length and offset is
 bounded by its record, records that cannot be read are skipped, sheets whose offsets are wrong are found by reading
 the stream in order, and the workbook stream is read within `MaxDecompressedBytes`. Damaged compound files throw

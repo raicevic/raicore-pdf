@@ -83,11 +83,16 @@ internal static class XlsxConverter
             if (entry.Path is { } part)
             {
                 worksheet.Drawings.AddRange(new XlsxDrawing(package, workbook, limits, worksheet.Unsupported, images).Read(part));
-                // The comments part is read only when its comments are printed.
+                // The comments part is read only when its comments are printed (the boxes of those shown on the sheet
+                // with the legacy drawing when they are printed as displayed).
                 if (options.Comments is SheetComments.AtEnd or SheetComments.Annotations
                     || (options.Comments == SheetComments.AsPageSetup && options.UsePageSetup && worksheet.CommentsAtEnd))
                 {
                     XlsxComments.Read(package, part, worksheet, checkpoint);
+                }
+                else if (PrintsCommentBoxes(worksheet, options))
+                {
+                    XlsxCommentBoxes.Read(package, workbook, part, worksheet, checkpoint);
                 }
 
                 if (diagnostics is not null)
@@ -171,6 +176,12 @@ internal static class XlsxConverter
         double defaultFontSize, string? defaultFontName, XlsxConverterOptions options, long maxCells, bool bookmark, (string? Major, string? Minor) themeFonts = default)
     {
         var usePageSetup = options.UsePageSetup;
+        if (PrintsCommentBoxes(worksheet, options))
+        {
+            // Over the other drawings; the printed range takes them in, as it takes in the other drawings.
+            worksheet.Drawings.AddRange(worksheet.CommentBoxes);
+        }
+
         var (usedRows, usedColumns) = SheetDrawings.UsedRange(worksheet);
         int firstRow = 0, firstColumn = 0, lastRow = usedRows, lastColumn = usedColumns;
         if (usePageSetup && printArea is { } area)
@@ -339,6 +350,13 @@ internal static class XlsxConverter
 
         return merges;
     }
+
+    /// <summary>
+    /// Whether the boxes of the comments shown on a sheet are printed: when its page setup asks for its comments as
+    /// displayed (Excel's "As displayed on sheet"), unless the options print comments otherwise.
+    /// </summary>
+    internal static bool PrintsCommentBoxes(XlsxWorksheet worksheet, XlsxConverterOptions options) =>
+        options.Comments == SheetComments.AsPageSetup && options.UsePageSetup && worksheet.CommentsAsDisplayed;
 
     /// <summary>
     /// The comments of the printed cells, by row and column, and how they are printed: as the options say, or as the

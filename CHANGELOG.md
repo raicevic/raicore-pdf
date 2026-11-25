@@ -12,6 +12,13 @@ and versions follow [Semantic Versioning](https://semver.org/).
   (`.wmf`, `.emf`, `.bmp`). Objects with nothing to take out are reported to `Html.Diagnostics` instead of being
   dropped silently.
 
+- **Sheets: comments as displayed, data bar borders and axes, exact .xls colors** (#286): comments shown on a sheet
+  whose page setup prints them "As displayed on sheet" are drawn over it as their boxes (fill, outline, rich text),
+  from `.xlsx` (VML notes) and `.xls` (note objects) workbooks. Excel 2010 data bars draw their borders (and the
+  negative bars' own), and their axis as a dashed line in its color, also in the middle of the cells or not at all.
+  The conditional formatting of `.xls` workbooks takes the exact colors Excel 2007 and later keep after a rule's
+  format (RGB and theme colors) instead of the nearest palette colors.
+
 ### Fixed
 - **Large tables and spreadsheets render in linear time** (#250): drawing and splitting table rows looked up their
   cells by scanning every cell of the table for each row group placed, so a table's time grew with the square of its

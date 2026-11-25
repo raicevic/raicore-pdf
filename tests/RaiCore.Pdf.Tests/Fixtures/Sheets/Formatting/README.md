@@ -9,5 +9,7 @@ comments and pivot tables of the Excel converter (`XlsxToPdf`).
     `../Xls/NewStyleConditionalFormattings.xls`;
   - `SimpleWithComments.xlsx`: comments;
   - `ExcelPivotTableSample.xlsx`: two pivot tables.
+- Changed: `CommentBoxes.xlsx` is `SimpleWithComments.xlsx` with its first sheet's page setup printing comments as
+  displayed (`cellComments="asDisplayed"`), written by `../make-comment-boxes.py`.
 - License: Apache License 2.0, as part of Apache POI. Copyright 2003-2026 The Apache Software Foundation. This product
   includes software developed at The Apache Software Foundation (<https://www.apache.org/>).
