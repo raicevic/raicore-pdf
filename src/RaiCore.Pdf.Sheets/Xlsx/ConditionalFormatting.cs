@@ -146,6 +146,21 @@ internal sealed record ConditionalRule
     /// <summary>The color of a data bar's negative values, or <c>null</c> for red.</summary>
     public PdfColor? NegativeColor { get; init; }
 
+    /// <summary>
+    /// The border color of a data bar's negative values, or <c>null</c> for its border color (Excel 2010's default:
+    /// <c>negativeBarBorderColorSameAsPositive</c>).
+    /// </summary>
+    public PdfColor? NegativeBorderColor { get; init; }
+
+    /// <summary>
+    /// Where an Excel 2010 data bar's axis is: <c>automatic</c> (where the values change sign, when they do),
+    /// <c>middle</c> (the middle of the cell) or <c>none</c> (negative values have bars as positive ones).
+    /// </summary>
+    public string AxisPosition { get; init; } = "automatic";
+
+    /// <summary>The color of a data bar's axis (a dashed line), black by default.</summary>
+    public PdfColor AxisColor { get; init; } = PdfColor.Black;
+
     /// <summary>The length of a data bar's shortest and longest bars, in percent of the cell's width.</summary>
     public (double Min, double Max) Lengths { get; init; } = (10, 90);
 
@@ -241,6 +256,7 @@ internal sealed record ConditionalRule
             ? colors.Resolve((string?)c.Attribute("rgb"), (string?)c.Attribute("indexed"), (string?)c.Attribute("theme"), (string?)c.Attribute("tint"), (string?)c.Attribute("auto"))
             : null;
         int Length(string name, int fallback) => int.TryParse(Attribute(name), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? Math.Clamp(n, 0, 100) : fallback;
+        bool Flag(string name, bool fallback) => Attribute(name) is { } v ? v is "1" or "true" : fallback;
         var points = bar.Elements().Where(e => e.Name.LocalName == "cfvo").Take(2)
             .Select(e => new ConditionalValue((string?)e.Attribute("type") ?? "num", (string?)e.Attribute("val") ?? e.Elements().FirstOrDefault(f => f.Name.LocalName == "f")?.Value)).ToList();
         return this with
@@ -248,7 +264,10 @@ internal sealed record ConditionalRule
             Extended = true,
             Gradient = Attribute("gradient") is not ("0" or "false"),
             BorderColor = Attribute("border") is "1" or "true" ? Color("borderColor") : null,
-            NegativeColor = Color("negativeFillColor"),
+            NegativeColor = Flag("negativeBarColorSameAsPositive", false) ? (Colors.Count > 0 ? Colors[0] : null) : Color("negativeFillColor"),
+            NegativeBorderColor = Flag("negativeBarBorderColorSameAsPositive", true) ? null : Color("negativeBorderColor") ?? PdfColor.FromRgb(255, 0, 0),
+            AxisPosition = Attribute("axisPosition") is "middle" or "none" ? Attribute("axisPosition")! : "automatic",
+            AxisColor = Color("axisColor") ?? PdfColor.Black,
             Lengths = (Length("minLength", 0), Length("maxLength", 100)),
             Values = points.Count == 2 ? points : Values,
         };
@@ -716,7 +735,14 @@ internal static class ConditionalFormatting
             }
 
             var (shortest, longest) = (rule.Lengths.Min / 100, Math.Max(rule.Lengths.Min, rule.Lengths.Max) / 100);
-            var axis = rule.Extended && low < 0 && high > 0 ? -low / (high - low) : (double?)null;
+
+            // Excel 2010's axis: in the middle of the cells (bars on each side as long as the value's share of the
+            // largest absolute value), or where the values change sign (each bar its value's share of the whole span).
+            var middle = rule.Extended && rule.AxisPosition == "middle";
+            var axis = middle ? 0.5
+                : rule.Extended && rule.AxisPosition == "automatic" && low < 0 && high > 0 ? -low / (high - low)
+                : (double?)null;
+            var span = middle ? 2 * Math.Max(Math.Abs(low), Math.Abs(high)) : high - low;
             foreach (var key in cells)
             {
                 if (!sheet.Numbers.TryGetValue(key, out var n))
@@ -727,11 +753,10 @@ internal static class ConditionalFormatting
                 CellDataBar bar;
                 if (axis is { } a)
                 {
-                    // On both sides of the axis: a bar from it as long as the value's share of the whole span.
-                    var end = a + (Math.Clamp(n, low, high) / (high - low));
+                    var end = span > 0 && double.IsFinite(span) ? a + (Math.Clamp(n, low, high) / span) : a;
                     bar = n < 0
-                        ? new CellDataBar(end, a, rule.NegativeColor ?? PdfColor.FromRgb(255, 0, 0), rule.Gradient, rule.BorderColor is null ? null : rule.NegativeColor ?? PdfColor.FromRgb(255, 0, 0))
-                        : new CellDataBar(a, end, color, rule.Gradient, rule.BorderColor);
+                        ? new CellDataBar(end, a, rule.NegativeColor ?? PdfColor.FromRgb(255, 0, 0), rule.Gradient, rule.BorderColor is null ? null : rule.NegativeBorderColor ?? rule.BorderColor, a, rule.AxisColor)
+                        : new CellDataBar(a, end, color, rule.Gradient, rule.BorderColor, a, rule.AxisColor);
                 }
                 else
                 {

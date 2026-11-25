@@ -516,6 +516,7 @@ internal static partial class SheetRenderer
         private readonly Dictionary<(string?, bool, bool), PdfFont[]> _fonts = [];
         private readonly Dictionary<(string?, double, bool, bool, CellUnderline, bool, PdfColor?), TextStyle> _styles = [];
         private readonly Dictionary<(CellFormat, CellAlignment), BoxStyle> _boxes = new(new FormatComparer());
+        private readonly Dictionary<PdfColor, PdfImage> _axisDashes = [];
         private readonly Dictionary<long, CellMerge> _merges = [];
         private readonly Dictionary<(int Row, double Scale), double> _rotatedHeights = [];
         private Dictionary<long, SheetComment>? _comments;
@@ -829,10 +830,21 @@ internal static partial class SheetRenderer
                 Padding = new Thickness(FormattedPaddingY * size, padX + (indentRight ? indent : 0) + iconRight, FormattedPaddingY * size, padX + (indentRight ? 0 : indent) + iconLeft),
                 Border = new Borders(Side(format.Top), Side(format.Right), Side(format.Bottom), Side(format.Left)),
                 Background = format.Fill,
-                BackgroundLayers = format.DataBar is { } bar ? [DataBarLayer(Format.RightToLeft ? bar with { Start = 1 - bar.End, End = 1 - bar.Start } : bar)] : [],
+                BackgroundLayers = format.DataBar is { } bar ? DataBarLayers(Format.RightToLeft ? bar.Mirrored() : bar, AxisDash) : [],
             };
             _boxes[(format, alignment)] = box;
             return box;
+        }
+
+        /// <summary>The dash of data bars' axis lines of a color, one image for the sheet.</summary>
+        private PdfImage AxisDash(PdfColor color)
+        {
+            if (!_axisDashes.TryGetValue(color, out var dash))
+            {
+                _axisDashes[color] = dash = SheetRenderer.AxisDash(color);
+            }
+
+            return dash;
         }
 
         private BorderSide Side(CellBorder border) => border.IsVisible

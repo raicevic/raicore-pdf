@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using RaiCore.Pdf.Layout;
 using RaiCore.Pdf.Sheets;
 using RaiCore.Pdf.Sheets.Xls;
 using RaiCore.Pdf.Sheets.Xlsx;
@@ -541,18 +542,71 @@ public class SheetFormattingTests
         Assert.Equal([0.5, 1.0], positive.Select(c => Math.Round(c.Format!.DataBar!.End, 9)));
 
         // As a cell background: the bar's share of the width, placed at its start.
-        var layer = SheetRenderer.DataBarLayer(new CellDataBar(0.25, 0.75, PdfColor.Black, false, null));
+        var layer = Assert.Single(SheetRenderer.DataBarLayers(new CellDataBar(0.25, 0.75, PdfColor.Black, false, null), c => throw new InvalidOperationException()));
         Assert.Equal((50.0, 50.0), (layer.Size.Width!.Value.Percent, layer.PositionX.Offset.Percent));
     }
 
+    [Fact]
+    public void Data_bars_have_their_axis_and_borders()
+    {
+        // Excel 2010's default: the axis where the values change sign, in black; negative bars with the positive border.
+        var black = PdfColor.Black;
+        var cells = Cf(Extended(), -5, 0, 10);
+        Assert.All(cells, c => Assert.Equal((0.333333333, black), (Math.Round(c.Format!.DataBar!.Axis!.Value, 9), c.Format.DataBar.AxisColor)));
+        Assert.Equal(black, cells[0].Format!.DataBar!.Border);
+
+        // In the middle: bars on each side as long as their share of the largest absolute value; the negative bars'
+        // own border, of their own color (not the positive one's) and the axis' color.
+        var red = PdfColor.FromRgb(255, 0, 0);
+        var gray = PdfColor.FromRgb(0x80, 0x80, 0x80);
+        cells = Cf(Extended("axisPosition=\"middle\" negativeBarBorderColorSameAsPositive=\"0\" negativeBarColorSameAsPositive=\"1\"",
+            "<x14:negativeBorderColor rgb=\"FFFF0000\"/><x14:axisColor rgb=\"FF808080\"/>"), -5, 0, 10);
+        Assert.Equal((0.25, 0.5, PdfColor.FromRgb(0, 255, 0), false), Bar(cells[0]));
+        Assert.Equal((0.5, 1.0, PdfColor.FromRgb(0, 255, 0), false), Bar(cells[2]));
+        Assert.Equal((red, black), (cells[0].Format!.DataBar!.Border, cells[2].Format!.DataBar!.Border));
+        Assert.All(cells, c => Assert.Equal((0.5, gray), (c.Format!.DataBar!.Axis, c.Format.DataBar.AxisColor)));
+
+        // Without an axis: negative values have bars from the start, as the least values.
+        cells = Cf(Extended("axisPosition=\"none\""), -5, 0, 10);
+        Assert.All(cells, c => Assert.Equal((0.0, (double?)null), (c.Format!.DataBar!.Start, c.Format.DataBar.Axis)));
+
+        // As layers: the axis on top, then the bar inside its border, which is the bar's place and size.
+        var dash = SheetRenderer.AxisDash(gray);
+        var layers = SheetRenderer.DataBarLayers(new CellDataBar(0.2, 0.4, black, false, red, 0.3, gray), c => c == gray ? dash : throw new InvalidOperationException());
+        Assert.Equal(3, layers.Count);
+        Assert.Same(dash, Assert.IsType<ImageBackground>(layers[0].Image).Image);
+        Assert.Equal(red, Assert.IsType<LinearGradient>(layers[2].Image).Stops[0].Color);
+        foreach (var width in new[] { 100.0, 250 })
+        {
+            // Where each layer's left edge is in a cell of this width (as Layout places backgrounds), and its width.
+            (double Left, double Width) Place(BackgroundLayer l)
+            {
+                var w = l.Size.Width!.Value.Resolve(width);
+                return (Math.Round(l.PositionX.Offset.Resolve(width - w), 9), Math.Round(w, 9));
+            }
+
+            var line = SheetRenderer.DataBarLine;
+            Assert.Equal((Math.Round((0.3 * width) - (line / 2), 9), line), Place(layers[0]));
+            Assert.Equal((Math.Round((0.2 * width) + line, 9), Math.Round((0.2 * width) - (2 * line), 9)), Place(layers[1]));
+            Assert.Equal((Math.Round(0.2 * width, 9), Math.Round(0.2 * width, 9)), Place(layers[2]));
+        }
+
+        Assert.Equal(new Length(-2 * SheetRenderer.DataBarLine, 76), layers[1].Size.Height);
+
+        // In right-to-left sheets, from the cell's right.
+        var mirrored = new CellDataBar(0.25, 0.5, black, false, red, 0.25, gray).Mirrored();
+        Assert.Equal((0.5, 0.75, 0.75), (mirrored.Start, mirrored.End, mirrored.Axis));
+        Assert.Null(new CellDataBar(0.25, 0.5, black, false, null).Mirrored().Axis);
+    }
+
     /// <summary>A data bar of A1:A3 with Excel 2010's extension: solid, from autoMin to autoMax, a black border and blue negative bars.</summary>
-    private static string Extended()
+    private static string Extended(string attributes = "", string children = "")
     {
         const string ext = "xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\" xmlns:xm=\"http://schemas.microsoft.com/office/excel/2006/main\"";
         return $"<conditionalFormatting sqref=\"A1:A3\"><cfRule type=\"dataBar\" priority=\"1\"><dataBar><cfvo type=\"min\"/><cfvo type=\"max\"/><color rgb=\"FF00FF00\"/></dataBar>"
             + $"<extLst><ext uri=\"{{B025F937-C7B1-47D3-B67F-A62EFF666E3E}}\" {ext}><x14:id>{{1}}</x14:id></ext></extLst></cfRule></conditionalFormatting>"
             + $"<extLst><ext uri=\"{{78C0D931-6437-407d-A8EE-F0AAD7539E65}}\" {ext}><x14:conditionalFormattings><x14:conditionalFormatting><x14:cfRule type=\"dataBar\" id=\"{{1}}\">"
-            + "<x14:dataBar gradient=\"0\" border=\"1\"><x14:cfvo type=\"autoMin\"/><x14:cfvo type=\"autoMax\"/><x14:borderColor rgb=\"FF000000\"/><x14:negativeFillColor rgb=\"FF0000FF\"/></x14:dataBar>"
+            + $"<x14:dataBar gradient=\"0\" border=\"1\" {attributes}><x14:cfvo type=\"autoMin\"/><x14:cfvo type=\"autoMax\"/><x14:borderColor rgb=\"FF000000\"/><x14:negativeFillColor rgb=\"FF0000FF\"/>{children}</x14:dataBar>"
             + "</x14:cfRule><xm:sqref>A1:A3</xm:sqref></x14:conditionalFormatting></x14:conditionalFormattings></ext></extLst>";
     }
 
