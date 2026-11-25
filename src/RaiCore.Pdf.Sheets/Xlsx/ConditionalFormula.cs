@@ -645,7 +645,7 @@ internal sealed class ConditionalFormula
         {
             FormulaKind.Number => value.Number.ToString("R", CultureInfo.InvariantCulture),
             FormulaKind.Boolean => value.Number != 0 ? "TRUE" : "FALSE",
-            _ => value.Text,
+            _ => value.Text ?? string.Empty, // A blank (a missing argument too) is an empty text.
         };
 
         private static FormulaValue Binary(string op, FormulaValue left, FormulaValue right)

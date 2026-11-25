@@ -17,6 +17,9 @@ and versions follow [Semantic Versioning](https://semver.org/).
   sheets without anything that can be drawn, and those of `.xls` workbooks (BIFF charts), are still reported.
 
 ### Fixed
+- **Conditional formatting formulas with a missing text argument** no longer fail the conversion: `SEARCH("x")`,
+  `UPPER()` and the like take a missing argument as an empty text, as a blank cell, instead of throwing a
+  `NullReferenceException` (found by fuzzing).
 - **Large tables and spreadsheets render in linear time** (#250): drawing and splitting table rows looked up their
   cells by scanning every cell of the table for each row group placed, so a table's time grew with the square of its
   rows. A 16,000-row CSV file took 69 s and now takes about 11 s; 5,000 rows by 108 columns went from 27 s to 17 s.
