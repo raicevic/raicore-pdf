@@ -18,6 +18,7 @@ public class DocumentBenchmarks
     private string _report = "";
     private string _table = "";
     private string _flex = "";
+    private byte[] _csv = [];
     private FontCollection _fonts = null!;
     private PdfFont _serif = null!;
 
@@ -28,6 +29,7 @@ public class DocumentBenchmarks
         _report = Documents.ReportHtml();
         _table = Documents.TableHtml();
         _flex = Documents.FlexHtml();
+        _csv = Documents.Csv();
         _fonts = BundledFonts.CreateCollection();
         _serif = _fonts.Find("Liberation Serif")!;
     }
@@ -47,6 +49,10 @@ public class DocumentBenchmarks
     /// <summary>A 10,000-row table from HTML (205 pages, the header row repeated on each).</summary>
     [Benchmark]
     public void Table10000Rows() => HtmlToPdf.Convert(_table).Save(Stream.Null);
+
+    /// <summary>A CSV file of 10,000 rows and 20 columns as a spreadsheet (the header row repeated on each page).</summary>
+    [Benchmark]
+    public void Sheet10000Rows() => Sheets.CsvToPdf.Convert(_csv).Save(Stream.Null);
 
     /// <summary>240 wrapped flex cards, each a nested flex column with flex rows.</summary>
     [Benchmark]
