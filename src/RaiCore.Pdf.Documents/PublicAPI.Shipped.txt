@@ -5,7 +5,13 @@ override RaiCore.Pdf.Documents.DocumentDiagnostic.ToString() -> string!
 RaiCore.Pdf.Documents.DocConverterOptions
 RaiCore.Pdf.Documents.DocConverterOptions.DocConverterOptions() -> void
 RaiCore.Pdf.Documents.DocToPdf
+RaiCore.Pdf.Documents.DocumentComments
+RaiCore.Pdf.Documents.DocumentComments.Annotations = 2 -> RaiCore.Pdf.Documents.DocumentComments
+RaiCore.Pdf.Documents.DocumentComments.AtEnd = 1 -> RaiCore.Pdf.Documents.DocumentComments
+RaiCore.Pdf.Documents.DocumentComments.None = 0 -> RaiCore.Pdf.Documents.DocumentComments
 RaiCore.Pdf.Documents.DocumentConverterOptions
+RaiCore.Pdf.Documents.DocumentConverterOptions.Comments.get -> RaiCore.Pdf.Documents.DocumentComments
+RaiCore.Pdf.Documents.DocumentConverterOptions.Comments.init -> void
 RaiCore.Pdf.Documents.DocumentConverterOptions.Diagnostics.get -> System.Action<RaiCore.Pdf.Documents.DocumentDiagnostic!>?
 RaiCore.Pdf.Documents.DocumentConverterOptions.Diagnostics.init -> void
 RaiCore.Pdf.Documents.DocumentConverterOptions.FallbackFontFamilies.get -> System.Collections.Generic.IReadOnlyList<string!>!

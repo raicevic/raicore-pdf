@@ -1,3 +1,1 @@
 #nullable enable
-RaiCore.Pdf.Layout.FlowDocument.AnchorPlaced.get -> System.Action<string!, RaiCore.Pdf.PdfDestination!>?
-RaiCore.Pdf.Layout.FlowDocument.AnchorPlaced.set -> void
