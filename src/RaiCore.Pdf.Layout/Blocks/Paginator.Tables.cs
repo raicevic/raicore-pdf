@@ -168,9 +168,17 @@ internal sealed partial class Paginator
             {
                 DrawBox(canvas, pageHeight, style, x + cell.X, top, cell.Width, height, first, last);
             }
-            else if (style.Background is { } background)
+            else
             {
-                canvas.SetFillColor(background).Rectangle(x + cell.X, pageHeight - top - height, cell.Width, height).Fill();
+                if (style.Background is { } background)
+                {
+                    canvas.SetFillColor(background).Rectangle(x + cell.X, pageHeight - top - height, cell.Width, height).Fill();
+                }
+
+                if (style.BackgroundLayers.Count > 0)
+                {
+                    PaintBackgroundLayers(canvas, style, default, x + cell.X, pageHeight - top - height, cell.Width, height, first, last, 0, height);
+                }
             }
         }
 

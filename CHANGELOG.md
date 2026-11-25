@@ -38,6 +38,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
 - HTML: disc, circle and square list markers sit where browsers draw them (from the font's ascent, as in Blink),
   in left-to-right and right-to-left lists; a right-to-left list item no longer reports a false `Overflow` for the
   marker hanging outside it on the right (#153).
+- HTML: a table cell paints its background images and gradients (e-mail "bulletproof" backgrounds), not only its
+  color; a cell split across pages in a collapsed-border table paints them on each page (#157).
 
 ## [1.3.0] - 2026-11-25
 

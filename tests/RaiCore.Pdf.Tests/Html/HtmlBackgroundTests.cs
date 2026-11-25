@@ -185,6 +185,41 @@ public class HtmlBackgroundTests
         Assert.Equal(new SKColor(0, 0, 255), bitmap.GetPixel(500, 80));
     }
 
+    [Theory]
+    [InlineData("separate")]
+    [InlineData("collapse")]
+    public void A_table_cell_paints_its_background_image(string borders)
+    {
+        // The "bulletproof" e-mail background (#157): an image over a color, sized to cover, with !important.
+        var pdf = HtmlToPdf.ConvertToBytes($$"""
+            <style>@page { size: 200pt 200pt; margin: 0 } body { margin: 0 }</style>
+            <table style="width: 100%; border-collapse: {{borders}}; border-spacing: 0"><tr>
+              <td style="background-image: url('{{RedPng}}'); background-color: #0000ff; background-size: cover !important; background-position: center !important"><div style="height: 100pt">x</div></td>
+            </tr></table>
+            """);
+        using var bitmap = Conversion.ToImage(pdf, page: 0, options: new RenderOptions(Dpi: 72));
+
+        Assert.Equal(new SKColor(255, 0, 0), bitmap.GetPixel(150, 80));
+    }
+
+    [Fact]
+    public void A_collapsed_cell_split_across_pages_paints_its_background_image_on_each()
+    {
+        var lines = string.Join("<br>", Enumerable.Range(1, 40).Select(i => $"line {i}"));
+        var pdf = HtmlToPdf.ConvertToBytes($$"""
+            <style>@page { size: 200pt 200pt; margin: 0 } body { margin: 0 }</style>
+            <table style="width: 100%; border-collapse: collapse"><tr>
+              <td style="background: url('{{RedPng}}') 0 0 / 100% 100% #0000ff; padding: 0 0 0 100pt">{{lines}}</td>
+            </tr></table>
+            """);
+
+        foreach (var page in new[] { 0, 1 })
+        {
+            using var bitmap = Conversion.ToImage(pdf, page: page, options: new RenderOptions(Dpi: 72));
+            Assert.Equal(new SKColor(255, 0, 0), bitmap.GetPixel(50, 100));
+        }
+    }
+
     private static BoxStyle Box(string css, string? sheet = null)
     {
         var html = (sheet is null ? string.Empty : $"<style>#b {{ {sheet} }}</style>") + $"<div id=\"b\" style=\"{css}\">x</div>";
