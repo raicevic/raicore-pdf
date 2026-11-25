@@ -584,8 +584,8 @@ internal static partial class ParagraphLayouter
             shifts[p] = align.Shift + align.Kind switch
             {
                 InlineAlignmentKind.Middle => (strutFont.XHeight * strut.FontSize / 2) - ((a - d) / 2),
-                InlineAlignmentKind.TextTop => (strutFont.Ascent * strut.FontSize) - a,
-                InlineAlignmentKind.TextBottom => d + (strutFont.Descent * strut.FontSize),
+                InlineAlignmentKind.TextTop => Metrics(strutFont, strut).Ascent - a,
+                InlineAlignmentKind.TextBottom => d - Metrics(strutFont, strut).Descent,
                 _ => 0,
             };
             if (align.Kind is not (InlineAlignmentKind.Top or InlineAlignmentKind.Bottom))
@@ -657,8 +657,9 @@ internal static partial class ParagraphLayouter
                 var (style, box) = (d.Decoration.Style, d.Decoration.Box);
                 var font = style.Fonts[0];
                 var shift = style.VerticalAlign.Kind == InlineAlignmentKind.Baseline ? style.VerticalAlign.Shift : 0;
-                var above = (font.Ascent * style.FontSize) + box.Padding.Fixed.Top + box.Border.Top.Width + shift;
-                var below = (-font.Descent * style.FontSize) + box.Padding.Fixed.Bottom + box.Border.Bottom.Width - shift;
+                var (ascent, descent, _) = Metrics(font, style);
+                var above = ascent + box.Padding.Fixed.Top + box.Border.Top.Width + shift;
+                var below = descent + box.Padding.Fixed.Bottom + box.Border.Bottom.Width - shift;
                 return new InlineDecorationFragment(d.Decoration, d.X0, d.X1, above, below, d.StartEdge, d.EndEdge);
             })
             .ToList();
@@ -784,11 +785,30 @@ internal static partial class ParagraphLayouter
 
     private static (double Above, double Below) InlineBox(PdfFont font, TextStyle style)
     {
-        var ascent = font.Ascent * style.FontSize;
-        var descent = -font.Descent * style.FontSize;
-        var halfLeading = (style.LineHeight.Resolve(font, style.FontSize) - (ascent + descent)) / 2;
+        var (ascent, descent, lineGap) = Metrics(font, style);
+        var lineHeight = style.LineHeight.Kind == LineHeightKind.Normal ? ascent + descent + lineGap : style.LineHeight.Resolve(font, style.FontSize);
+        var halfLeading = (lineHeight - (ascent + descent)) / 2;
+        if (style.RoundFontMetrics)
+        {
+            // As in Chrome, the leading above the text is whole pixels (rounded down); the rest goes below it.
+            var above = ascent + (Math.Floor((halfLeading / CssPixel) + 1e-9) * CssPixel);
+            return (above, lineHeight - above);
+        }
+
         return (ascent + halfLeading, descent + halfLeading);
     }
+
+    /// <summary>A font's ascent, descent (positive below the baseline) and line gap at the style's size, in whole CSS pixels when <see cref="TextStyle.RoundFontMetrics"/>.</summary>
+    private static (double Ascent, double Descent, double LineGap) Metrics(PdfFont font, TextStyle style)
+    {
+        var (ascent, descent, lineGap) = (font.Ascent * style.FontSize, -font.Descent * style.FontSize, font.LineGap * style.FontSize);
+        return style.RoundFontMetrics ? (Pixels(ascent), Pixels(descent), Pixels(lineGap)) : (ascent, descent, lineGap);
+
+        static double Pixels(double points) => Math.Round(points / CssPixel, MidpointRounding.AwayFromZero) * CssPixel;
+    }
+
+    /// <summary>One CSS pixel in points.</summary>
+    private const double CssPixel = 0.75;
 
     /// <summary>End of the visible content: trailing spaces hang and hard-break characters are not drawn.</summary>
     private static int TrimEnd(string text, int start, int end)

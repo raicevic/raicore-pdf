@@ -2,79 +2,79 @@
   "anvil-invoice": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.9097,
+    "pixel": 0.934,
     "text_near": 0.8587
   },
   "bootstrap-album": {
     "pages": 4,
     "chrome_pages": 3,
-    "pixel": 0.273,
+    "pixel": 0.2725,
     "text_near": 0.0081
   },
   "bootstrap-blog": {
     "pages": 7,
     "chrome_pages": 5,
-    "pixel": 0.1593,
+    "pixel": 0.1575,
     "text_near": 0.0011
   },
   "bootstrap-checkout": {
     "pages": 3,
     "chrome_pages": 2,
-    "pixel": 0.2569,
-    "text_near": 0.0
+    "pixel": 0.2581,
+    "text_near": 0.0154
   },
   "bootstrap-pricing": {
     "pages": 3,
     "chrome_pages": 2,
-    "pixel": 0.2068,
+    "pixel": 0.207,
     "text_near": 0.0
   },
   "budget-report": {
     "pages": 3,
     "chrome_pages": 3,
-    "pixel": 0.6701,
-    "text_near": 0.1923
+    "pixel": 0.9865,
+    "text_near": 0.9694
   },
   "cerberus-fluid": {
     "pages": 2,
     "chrome_pages": 2,
-    "pixel": 0.8716,
+    "pixel": 0.8747,
     "text_near": 0.5698
   },
   "cerberus-hybrid": {
     "pages": 4,
     "chrome_pages": 3,
-    "pixel": 0.4262,
+    "pixel": 0.4275,
     "text_near": 0.4024
   },
   "cerberus-responsive": {
     "pages": 3,
     "chrome_pages": 3,
-    "pixel": 0.9097,
+    "pixel": 0.9119,
     "text_near": 0.7233
   },
   "invoice": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.6318,
-    "text_near": 0.4403
+    "pixel": 0.9616,
+    "text_near": 1.0
   },
   "layout-showcase": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.9616,
+    "pixel": 0.9606,
     "text_near": 0.954
   },
   "leemunroe-email": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.9393,
+    "pixel": 0.937,
     "text_near": 1.0
   },
   "letter": {
     "pages": 2,
     "chrome_pages": 2,
-    "pixel": 0.9165,
+    "pixel": 0.9378,
     "text_near": 0.944
   },
   "postmark-invoice": {
@@ -86,43 +86,43 @@
   "postmark-receipt": {
     "pages": 2,
     "chrome_pages": 2,
-    "pixel": 0.9924,
+    "pixel": 0.9928,
     "text_near": 0.9788
   },
   "postmark-welcome": {
     "pages": 2,
     "chrome_pages": 2,
-    "pixel": 0.9804,
+    "pixel": 0.9874,
     "text_near": 0.8232
   },
   "rtl-multilingual": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.8621,
-    "text_near": 0.658
+    "pixel": 0.8782,
+    "text_near": 0.6593
   },
   "sparksuite-invoice": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 1.0,
+    "pixel": 0.9995,
     "text_near": 1.0
   },
   "startbootstrap-resume": {
     "pages": 4,
     "chrome_pages": 7,
-    "pixel": 0.236,
+    "pixel": 0.2353,
     "text_near": 0.0
   },
   "weasyprint-invoice": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.3275,
+    "pixel": 0.3258,
     "text_near": 0.0182
   },
   "weasyprint-letter": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.6612,
+    "pixel": 0.663,
     "text_near": 0.785
   },
   "weasyprint-report": {

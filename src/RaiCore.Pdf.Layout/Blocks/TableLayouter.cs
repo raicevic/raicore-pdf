@@ -211,13 +211,18 @@ internal static class TableLayouter
     /// <summary>The table's content-box min-content and max-content widths.</summary>
     public static (double Min, double Max) MeasureIntrinsic(TableBlock table)
     {
-        var (_, cells, columns) = BuildGrid(table);
+        var (slots, cells, columns) = BuildGrid(table);
         if (columns == 0)
         {
             return (0, 0);
         }
 
-        var (min, max, _, _) = ColumnIntrinsics(table, cells, columns, null);
+        // Collapsed cells take half of the grid lines around them, as when the table is laid out.
+        var rows = table.Rows.Count;
+        var collapsed = table.BorderCollapse == BorderCollapse.Collapse
+            ? (CollapseHorizontal(table, slots, rows, columns), CollapseVertical(table, slots, rows, columns))
+            : ((GridLine[,], GridLine[,])?)null;
+        var (min, max, _, _) = ColumnIntrinsics(table, cells, columns, collapsed);
         var spacing = table.BorderCollapse == BorderCollapse.Separate ? table.HorizontalSpacing * (columns + 1) : 0;
         return (min.Sum() + spacing, Math.Max(min.Sum(), max.Sum()) + spacing);
     }
@@ -510,6 +515,42 @@ internal static class TableLayouter
         }
 
         return groups;
+    }
+
+    /// <summary>
+    /// Half the width of a collapsed table's outer grid lines, the widest on each side: the part inside its box when it
+    /// holds them (<see cref="TableBlock.OuterLinesInside"/>).
+    /// </summary>
+    public static Thickness OuterHalves(TableBlock table)
+    {
+        if (table.OuterHalves is { } cached)
+        {
+            return cached;
+        }
+
+        var (slots, _, columns) = BuildGrid(table);
+        var rows = table.Rows.Count;
+        var (top, right, bottom, left) = (0.0, 0.0, 0.0, 0.0);
+        if (rows > 0 && columns > 0)
+        {
+            var horizontal = CollapseHorizontal(table, slots, rows, columns);
+            var vertical = CollapseVertical(table, slots, rows, columns);
+            for (var c = 0; c < columns; c++)
+            {
+                top = Math.Max(top, horizontal[0, c].Width);
+                bottom = Math.Max(bottom, horizontal[rows, c].Width);
+            }
+
+            for (var r = 0; r < rows; r++)
+            {
+                left = Math.Max(left, vertical[r, 0].Width);
+                right = Math.Max(right, vertical[r, columns].Width);
+            }
+        }
+
+        var halves = new Thickness(top / 2, right / 2, bottom / 2, left / 2);
+        table.OuterHalves = halves;
+        return halves;
     }
 
     /// <summary>Collapsed horizontal borders: for each line, the winner of the borders that meet there (see <see cref="Resolve"/>).</summary>

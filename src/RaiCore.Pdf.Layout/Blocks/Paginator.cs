@@ -356,7 +356,7 @@ internal sealed partial class Paginator
     {
         using var nesting = ResourceLimits.EnterNesting();
         ResourceLimits.Checkpoint();
-        style ??= block.Style.Intrinsic();
+        style = BoxOf(block, style ?? block.Style.Intrinsic());
         var decoration = style.Border.Widths.Fixed.Horizontal + style.Padding.Fixed.Horizontal;
         var (min, max) = block switch
         {
@@ -438,6 +438,16 @@ internal sealed partial class Paginator
     /// </summary>
     private BoxStyle StyleOf(Block block) =>
         block.Style.HasPercent && _used.TryGetValue(block, out var used) ? used.Style : block.Style;
+
+    /// <summary>
+    /// The style a block's box is sized with: a collapsed table that holds half of its outer grid lines
+    /// (<see cref="TableBlock.OuterLinesInside"/>) has them as its padding and no border of its own (its border takes
+    /// part in the grid lines); other blocks keep their style.
+    /// </summary>
+    private static BoxStyle BoxOf(Block block, BoxStyle style) =>
+        block is TableBlock { BorderCollapse: BorderCollapse.Collapse, OuterLinesInside: true } table
+            ? style with { Border = Borders.None, BorderRadius = CornerRadii.None, Padding = TableLayouter.OuterHalves(table) }
+            : style;
 
     /// <summary>Moves to the next page, creating it unless a side-by-side flex item already did. It keeps the page name.</summary>
     private void NewPage(bool forced = false) => NewPage(forced, _frames.Count > 0 ? _frames[PageIndex].Context.Name : null, blank: false);
@@ -855,7 +865,7 @@ internal sealed partial class Paginator
                 break;
             case TableBlock table:
                 // With collapsed borders, the table's border takes part in the grid lines instead of framing the table.
-                var tableStyle = table.BorderCollapse == BorderCollapse.Collapse ? StyleOf(table) with { Border = Borders.None, BorderRadius = CornerRadii.None } : StyleOf(table);
+                var tableStyle = table.BorderCollapse == BorderCollapse.Collapse ? BoxOf(table, StyleOf(table)) with { Border = Borders.None, BorderRadius = CornerRadii.None } : StyleOf(table);
                 LayoutBox(block, x, width, (contentX, contentWidth) => LayoutTable(table, contentX, contentWidth), sizing, tableStyle);
                 break;
             case FlexBlock flex:
@@ -1886,7 +1896,7 @@ internal sealed partial class Paginator
     {
         using var nesting = ResourceLimits.EnterNesting();
         ResourceLimits.Checkpoint();
-        var style = StyleOf(block);
+        var style = BoxOf(block, StyleOf(block));
         var decoration = style.Border.Widths.Fixed.Vertical + style.Padding.Fixed.Vertical;
         var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Fixed.Horizontal - style.Padding.Fixed.Horizontal);
         switch (block)
@@ -1935,7 +1945,7 @@ internal sealed partial class Paginator
     {
         using var nesting = ResourceLimits.EnterNesting();
         ResourceLimits.Checkpoint();
-        var style = StyleOf(block);
+        var style = BoxOf(block, StyleOf(block));
         if (style.Height is not null && block is not TableBlock)
         {
             return MeasureBox(block, boxWidth); // A fixed-height box is kept on one page when it fits on one.

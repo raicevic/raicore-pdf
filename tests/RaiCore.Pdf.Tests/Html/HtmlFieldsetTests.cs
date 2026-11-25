@@ -122,12 +122,12 @@ public class HtmlFieldsetTests
     public void A_floated_legend_stays_in_the_content()
     {
         using var bitmap = Render($"""
-            <fieldset style="margin: 0; border: 2pt solid #ff0000; padding: 10pt">
+            <fieldset style="margin: 0; border: 1.5pt solid #ff0000; padding: 10pt">
               <legend style="float: left; height: 10pt; width: 40pt; padding: 0; background: #0000ff"></legend>
             </fieldset>
             """);
 
-        Assert.Equal(Red, bitmap.GetPixel(30, 1)); // The border is not cut.
+        Assert.Equal(Red, bitmap.GetPixel(30, 0)); // The border is not cut.
         Assert.Equal(Blue, bitmap.GetPixel(30, 15));
     }
 
@@ -168,17 +168,17 @@ public class HtmlFieldsetTests
     [Fact]
     public void A_legend_shrinks_to_fit_with_the_default_padding_on_its_sides()
     {
-        // At 12 pt, 20 pt content and 1.5 pt (2 px) padding on each side: 12-35 pt.
+        // At 11.5 pt (a 2 px border and 10 pt padding), 20 pt content and 1.5 pt (2 px) padding on each side: 11.5-34.5 pt.
         using var bitmap = Render($"""
-            <fieldset style="margin: 0; border: 2pt solid #ff0000; padding: 0 10pt">
+            <fieldset style="margin: 0; border: 1.5pt solid #ff0000; padding: 0 10pt">
               <legend style="background: #0000ff"><div style="width: 20pt; height: 10pt; background: #00ff00"></div></legend>
             </fieldset>
             """);
 
         Assert.Equal(Blue, bitmap.GetPixel(12, 2));
         Assert.Equal(Lime, bitmap.GetPixel(20, 2));
-        Assert.Equal(Blue, bitmap.GetPixel(34, 2));
-        Assert.Equal(White, bitmap.GetPixel(37, 2));
+        Assert.Equal(Blue, bitmap.GetPixel(33, 2));
+        Assert.Equal(White, bitmap.GetPixel(36, 2));
         Assert.Equal(White, bitmap.GetPixel(60, 2));
     }
 
@@ -186,12 +186,12 @@ public class HtmlFieldsetTests
     public void A_fieldset_contains_its_floats()
     {
         using var bitmap = Render("""
-            <fieldset style="margin: 0; border: 2pt solid #ff0000; padding: 0">
+            <fieldset style="margin: 0; border: 1.5pt solid #ff0000; padding: 0">
               <div style="float: left; width: 20pt; height: 50pt; background: #00ff00"></div>
             </fieldset>
             """);
 
-        Assert.Equal(Red, bitmap.GetPixel(100, 53));
+        Assert.Equal(Red, bitmap.GetPixel(100, 52));
     }
 
     [Fact]

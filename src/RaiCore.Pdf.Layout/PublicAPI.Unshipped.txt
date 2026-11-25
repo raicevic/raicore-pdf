@@ -7,3 +7,5 @@ RaiCore.Pdf.Layout.ContainerBlock.HasLegend.get -> bool
 RaiCore.Pdf.Layout.ContainerBlock.HasLegend.init -> void
 RaiCore.Pdf.Layout.ContainerBlock.LegendAlignment.get -> RaiCore.Pdf.Layout.BlockAlignment
 RaiCore.Pdf.Layout.ContainerBlock.LegendAlignment.init -> void
+RaiCore.Pdf.Layout.TextStyle.RoundFontMetrics.get -> bool
+RaiCore.Pdf.Layout.TextStyle.RoundFontMetrics.init -> void

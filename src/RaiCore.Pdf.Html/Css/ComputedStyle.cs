@@ -301,7 +301,7 @@ internal sealed partial record ComputedStyle
         var color = CssValues.ParseColor(Get("color")) ?? PdfColor.Black;
         string[] sides = ["top", "right", "bottom", "left"];
         var borderWidth = sides.Select(side =>
-            Get($"border-{side}-style") is "" or "none" or "hidden" ? 0 : Math.Max(0, Length($"border-{side}-width").Resolve(0))).ToArray();
+            Get($"border-{side}-style") is "" or "none" or "hidden" ? 0 : SnapBorderWidth(Length($"border-{side}-width").Resolve(0))).ToArray();
         var borderColor = sides.Select(side => CssValues.ParseColor(Get($"border-{side}-color")) ?? color).ToArray();
         var borderStyle = sides.Select(side => ParseBorderStyle(Get($"border-{side}-style"))).ToArray();
 
@@ -532,6 +532,21 @@ internal sealed partial record ComputedStyle
     /// <summary>A counter property's value, with <c>none</c> (and the CSS-wide keywords) as empty.</summary>
     private static string Counters(string value) =>
         value.Trim() is var trimmed && trimmed.ToLowerInvariant() is "none" or "initial" or "unset" or "inherit" ? string.Empty : trimmed;
+
+    /// <summary>
+    /// A border width (in points) snapped as browsers do (CSS Values 4 section 6.1, "snap as a border width"): whole
+    /// CSS pixels, rounded down, but at least one pixel when not zero (0.5pt and 1pt are both 1px, 1.5pt is 2px).
+    /// </summary>
+    internal static double SnapBorderWidth(double points)
+    {
+        if (!(points > 0))
+        {
+            return 0;
+        }
+
+        var pixels = points / CssValues.PointsPerPixel;
+        return Math.Max(1, Math.Floor(pixels + 1e-6)) * CssValues.PointsPerPixel;
+    }
 
     private static BorderStyle ParseBorderStyle(string value) => value switch
     {
