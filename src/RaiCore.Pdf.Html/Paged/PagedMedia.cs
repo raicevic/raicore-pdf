@@ -176,6 +176,7 @@ internal sealed partial class PagedMedia
             pageCounters = NextPageCounters(page.Number == 1 ? null : pageCounters, page.Context);
             var counters = pageCounters;
             var boxes = BoxesFor(page.Context);
+            var contextDeclarations = PageRules.Matching(_pageRules, page.Context).SelectMany(rule => rule.Declarations).ToList();
             foreach (var (name, declarations) in boxes)
             {
                 var content = declarations.LastOrDefault(d => d.Property == "content") is { Property: not null } d ? ContentValue.Parse(d.Value) : null;
@@ -184,7 +185,7 @@ internal sealed partial class PagedMedia
                     continue;
                 }
 
-                var style = BoxStyle(rootStyle, declarations, name);
+                var style = BoxStyle(rootStyle, contextDeclarations, declarations, name);
                 IReadOnlyList<Block>? blocks;
                 if (content.OfType<ElementItem>().FirstOrDefault() is { } element)
                 {
@@ -291,17 +292,31 @@ internal sealed partial class PagedMedia
     }
 
     /// <summary>The style of a margin box: the root element's font and color, overridden by the box's declarations.</summary>
-    private static ComputedStyle BoxStyle(ComputedStyle root, List<CssDeclaration> declarations, string name)
+    /// <summary>
+    /// The style of a margin box. Margin boxes inherit from the page context, which inherits from the root element
+    /// (CSS Paged Media 3, 5.3): the fonts, line height and color of the page rules that apply to the page reach every
+    /// box that does not set its own. Text alignment does not: each box has its own by default.
+    /// </summary>
+    private static ComputedStyle BoxStyle(ComputedStyle root, IEnumerable<CssDeclaration> context, List<CssDeclaration> declarations, string name)
     {
-        var style = root with
+        var page = Cascade(root.FontSize, root, root with { LineHeight = LineHeight.Normal }, context.Where(d => IsInheritedByMarginBoxes(d.Property)));
+        var style = page with
         {
             TextAlign = name.EndsWith("center", StringComparison.OrdinalIgnoreCase) ? TextAlignment.Center
                 : name.EndsWith("right", StringComparison.OrdinalIgnoreCase) || name.Equals("top-left-corner", StringComparison.OrdinalIgnoreCase) || name.Equals("bottom-left-corner", StringComparison.OrdinalIgnoreCase) ? TextAlignment.Right
                 : TextAlignment.Left,
             VerticalAlign = "middle",
-            LineHeight = LineHeight.Normal,
         };
-        var lineHeight = "normal"; // Resolved last: an em or percentage refers to the box's own font size.
+        return Cascade(root.FontSize, page, style, declarations);
+    }
+
+    private static bool IsInheritedByMarginBoxes(string property) =>
+        property is "font" or "font-family" or "font-size" or "font-style" or "font-weight" or "line-height" or "color";
+
+    /// <summary>Applies declarations to a style whose parent (for <c>em</c>, percentages and inheritance) is given.</summary>
+    private static ComputedStyle Cascade(double rootFontSize, ComputedStyle parent, ComputedStyle style, IEnumerable<CssDeclaration> declarations)
+    {
+        string? lineHeight = null; // Resolved last: an em or percentage refers to the element's own font size.
         foreach (var (property, value) in declarations)
         {
             if (property == "font")
@@ -321,18 +336,29 @@ internal sealed partial class PagedMedia
             }
         }
 
-        return style with { LineHeight = ComputedStyle.ParseLineHeight(lineHeight, style.FontSize, root.FontSize, default) };
+        if (lineHeight is null)
+        {
+            return style;
+        }
+
+        // A percentage computes to a length where it is set; numbers and normal are inherited as they are.
+        return style with
+        {
+            LineHeight = lineHeight.EndsWith('%') && CssValues.TryParseLength(lineHeight, style.FontSize, rootFontSize, default) is { Kind: CssLengthKind.Percent } percent
+                ? LineHeight.Points(Math.Max(0, style.FontSize * percent.Value / 100))
+                : ComputedStyle.ParseLineHeight(lineHeight, style.FontSize, rootFontSize, default),
+        };
 
         void Apply(string property, string value)
         {
             var lower = value.Trim().ToLowerInvariant();
             style = property switch
             {
-                "font-size" => FontSizeKeyword(lower, root.FontSize) is { } keyword ? style with { FontSize = keyword } : CssValues.ParseLength(lower, root.FontSize, root.FontSize) switch
+                "font-size" => FontSizeKeyword(lower, parent.FontSize) is { } keyword ? style with { FontSize = keyword } : CssValues.ParseLength(lower, parent.FontSize, rootFontSize) switch
                 {
                     { Kind: CssLengthKind.Points } points => style with { FontSize = points.Value },
-                    { Kind: CssLengthKind.Percent } percent => style with { FontSize = root.FontSize * percent.Value / 100 },
-                    { Kind: CssLengthKind.Calc } calc => style with { FontSize = Math.Max(0, calc.Resolve(root.FontSize)) },
+                    { Kind: CssLengthKind.Percent } percent => style with { FontSize = parent.FontSize * percent.Value / 100 },
+                    { Kind: CssLengthKind.Calc } calc => style with { FontSize = Math.Max(0, calc.Resolve(parent.FontSize)) },
                     _ => style,
                 },
                 "font-family" => style with { FontFamilies = CssValues.ParseFontFamilies(value) },
