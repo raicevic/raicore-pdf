@@ -122,6 +122,28 @@ public class NamedPageLayoutTests
     }
 
     [Fact]
+    public void The_page_background_is_drawn_on_every_page_before_its_content()
+    {
+        var flow = Flow(Para(1), Para(1, new BoxStyle { BreakBefore = PageBreak.Page }));
+        var seen = new List<int>();
+        var order = new List<string>();
+        flow.PageBackground = (canvas, page) =>
+        {
+            seen.Add(page.Number);
+            order.Add("background");
+            canvas.SaveState().SetFillColor(PdfColor.FromRgb(255, 0, 0)).Rectangle(0, 0, page.Setup.Size.Width, page.Setup.Size.Height).Fill().RestoreState();
+        };
+        flow.PageDecorator = (_, _) => order.Add("decorator");
+
+        var pdf = flow.Render().ToArray();
+
+        Assert.Equal([1, 2], seen);
+        Assert.Equal(["background", "decorator", "background", "decorator"], order);
+        var text = new RaiCore.Pdf.Extraction.TextExtractor(PdfReader.Open(pdf)).ExtractPage(0).Text;
+        Assert.Contains("Line 1", text, StringComparison.Ordinal); // The content is drawn over it (text extraction sees it).
+    }
+
+    [Fact]
     public void Break_before_right_inserts_a_blank_page_when_the_next_page_is_a_left_page()
     {
         var heading = Para(1, new BoxStyle { BreakBefore = PageBreak.Right });
