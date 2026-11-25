@@ -233,11 +233,36 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
         var baseStyle = builder.TextStyleFor(blockStyle);
         var indent = blockStyle.TextIndent.Resolve(contentWidth);
 
-        // An outside marker hangs to the left of the text; an inside marker is just the first piece of text.
-        var markerText = _marker is { } marker ? marker + "\u00A0" : null;
-        if (markerText is not null && !blockStyle.ListStyleInside)
+        // An outside marker hangs before the text (left, or right in a right-to-left item); an inside marker is just the
+        // first piece of text. A marker is followed by a space.
+        string? markerText = null;
+        var gapStyle = baseStyle;
+        if (_marker is { } marker)
         {
-            indent -= TextShaper.Shape(markerText, baseStyle.Fonts, baseStyle.Shaping).GetWidth(baseStyle.FontSize);
+            if (!blockStyle.ListStyleInside && ListMarkers.IsSymbol(marker))
+            {
+                // Browsers draw disc, circle and square markers as shapes placed from the font's ascent (Blink's
+                // ListMarker: the marker box starts ascent * 2/3 + 8 px before the text, the shape, (ascent * 2/3 + 1) / 2
+                // px wide, 1 px into it, all in whole pixels). The symbol is centered on that shape, and the space after
+                // it, letter-spaced, fills the rest of the marker's width (between symbol and text in either direction).
+                var px = baseStyle.FontSize / CssValues.PointsPerPixel;
+                var offset = Math.Floor(Math.Round(baseStyle.Fonts[0].Ascent * px) * 2 / 3);
+                var shape = Math.Floor((offset + 1) / 2);
+                var width = TextShaper.Shape(marker, baseStyle.Fonts, baseStyle.Shaping).GetWidth(baseStyle.FontSize);
+                var space = TextShaper.Shape("\u00A0", baseStyle.Fonts, baseStyle.Shaping).GetWidth(baseStyle.FontSize);
+                var hang = Math.Max(((offset + 7 - (shape / 2)) * CssValues.PointsPerPixel) + (width / 2), width + space);
+                markerText = marker + "\u00A0";
+                gapStyle = baseStyle with { LetterSpacing = hang - width - space };
+                indent -= hang;
+            }
+            else
+            {
+                markerText = marker + "\u00A0";
+                if (!blockStyle.ListStyleInside)
+                {
+                    indent -= TextShaper.Shape(markerText, baseStyle.Fonts, baseStyle.Shaping).GetWidth(baseStyle.FontSize);
+                }
+            }
         }
 
         _paragraph = new Paragraph(baseStyle)
@@ -260,7 +285,7 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
 
         if (markerText is not null)
         {
-            _paragraph.BeginTag(BoxBuilder.ListLabel).Add(markerText, baseStyle).EndTag();
+            _paragraph.BeginTag(BoxBuilder.ListLabel).Add(markerText[..^1], baseStyle).Add(markerText[^1..], gapStyle).EndTag();
             _marker = null;
         }
 

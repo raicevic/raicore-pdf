@@ -666,6 +666,7 @@ internal static partial class ParagraphLayouter
         return new LineLayout(start, end, top, above + below, above, shift + indent + offset, x, fragments, images, lineBoxes, decorationFragments)
         {
             Links = linkPieces,
+            RightOverhang = firstLine && rtl ? Math.Max(0, -paragraph.FirstLineIndent) : 0,
         };
     }
 

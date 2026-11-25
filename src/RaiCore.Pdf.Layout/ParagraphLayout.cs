@@ -425,6 +425,12 @@ public sealed class LineLayout
 
     /// <summary>The pieces of links (<see cref="Paragraph.BeginLink"/>) on this line.</summary>
     public IReadOnlyList<InlineLinkFragment> Links { get; internal init; } = [];
+
+    /// <summary>
+    /// How far the line may run past the right edge of the available width: the first line of a right-to-left
+    /// paragraph with a negative indent (a list marker hanging outside on the right) starts there.
+    /// </summary>
+    internal double RightOverhang { get; init; }
 }
 
 /// <summary>The piece of a link (<see cref="Paragraph.BeginLink"/>) on one line: it is clickable over the whole height of the line.</summary>

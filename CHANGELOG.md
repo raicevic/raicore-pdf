@@ -35,6 +35,9 @@ and versions follow [Semantic Versioning](https://semver.org/).
 - Tables: header rows that leave no room for a body row below them (spreadsheet print titles, a `<thead>` taller
   than a page) are shown once where the table starts instead of being repeated on every page until
   `ResourceLimits.MaxPages`, or pushing the body off the pages (#249).
+- HTML: disc, circle and square list markers sit where browsers draw them (from the font's ascent, as in Blink),
+  in left-to-right and right-to-left lists; a right-to-left list item no longer reports a false `Overflow` for the
+  marker hanging outside it on the right (#153).
 
 ## [1.3.0] - 2026-11-25
 
