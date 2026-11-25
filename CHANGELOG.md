@@ -15,6 +15,21 @@ and versions follow [Semantic Versioning](https://semver.org/).
   each on a page of its own with its chart stretched over the content area, in landscape unless its page setup asks
   for portrait, with its headers and footers. `SheetNames`, `SheetIndexes` and the bookmarks include them. Chart
   sheets without anything that can be drawn, and those of `.xls` workbooks (BIFF charts), are still reported.
+- **Charts: waterfall, treemap, sunburst, histogram, box and whisker and funnel charts** (#291): the chart types of
+  Office 2016 (`chartex` parts) are drawn as vector graphics in workbooks, Word documents and presentations by the
+  shared chart engine: waterfalls (running totals, totals, connector lines), histograms (Excel's binning, with
+  underflow and overflow bins) and paretos, box and whisker plots (exclusive or inclusive quartiles, means, outliers),
+  funnels, treemaps and sunbursts, with their titles, legends, data labels and theme colors. Word documents and
+  presentations draw them instead of their stored pictures; workbooks read their data from the cells their hidden
+  names refer to (and charts without cached data from their cells). Region maps are still shown as their stored
+  picture or reported.
+
+- **Sheets: comments as displayed, data bar borders and axes, exact .xls colors** (#286): comments shown on a sheet
+  whose page setup prints them "As displayed on sheet" are drawn over it as their boxes (fill, outline, rich text),
+  from `.xlsx` (VML notes) and `.xls` (note objects) workbooks. Excel 2010 data bars draw their borders (and the
+  negative bars' own), and their axis as a dashed line in its color, also in the middle of the cells or not at all.
+  The conditional formatting of `.xls` workbooks takes the exact colors Excel 2007 and later keep after a rule's
+  format (RGB and theme colors) instead of the nearest palette colors.
 
 - **Sheets: comments as displayed, data bar borders and axes, exact .xls colors** (#286): comments shown on a sheet
   whose page setup prints them "As displayed on sheet" are drawn over it as their boxes (fill, outline, rich text),
@@ -24,6 +39,9 @@ and versions follow [Semantic Versioning](https://semver.org/).
   format (RGB and theme colors) instead of the nearest palette colors.
 
 ### Fixed
+- **Conditional formatting formulas with a missing text argument** no longer fail the conversion: `SEARCH("x")`,
+  `UPPER()` and the like take a missing argument as an empty text, as a blank cell, instead of throwing a
+  `NullReferenceException` (found by fuzzing).
 - **Large tables and spreadsheets render in linear time** (#250): drawing and splitting table rows looked up their
   cells by scanning every cell of the table for each row group placed, so a table's time grew with the square of its
   rows. A 16,000-row CSV file took 69 s and now takes about 11 s; 5,000 rows by 108 columns went from 27 s to 17 s.

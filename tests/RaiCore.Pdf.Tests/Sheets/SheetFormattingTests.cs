@@ -372,6 +372,7 @@ public class SheetFormattingTests
     [InlineData("UPPER(LEFT(A2,2))&LOWER(RIGHT(A2))=\"TEt\"", true)]
     [InlineData("TRIM(\"  a  b \")=\"a b\"", true)]
     [InlineData("ISERROR(FIND(\"t\",\"T\"))", true)]
+    [InlineData("UPPER()&LEFT(,1)=\"\"", true)] // Missing arguments are empty texts.
     public void Formulas_compute_conditions(string formula, bool expected) => Assert.Equal(FormulaValue.Of(expected), Compute(formula));
 
     [Theory]
@@ -380,6 +381,7 @@ public class SheetFormattingTests
     [InlineData("A2*2", "#VALUE!")]
     [InlineData("C3+1", "#N/A")]
     [InlineData("SEARCH(\"q\",A2)", "#VALUE!")]
+    [InlineData("SEARCH(\"q\")", "#VALUE!")] // Not in an empty text (fuzzing found it failing).
     [InlineData("#REF!", "#REF!")]
     [InlineData("$A$1:$B$2+1", "#VALUE!")]
     public void Formulas_compute_errors(string formula, string error) => Assert.Equal(FormulaValue.Error(error), Compute(formula));
@@ -781,6 +783,36 @@ public class SheetFormattingTests
         Assert.Equal(1, new PivotLine("data", 0, 2).Level);
         Assert.True(new PivotLine("countA", 0, 1).IsSubtotal);
         Assert.False(new PivotLine("blank", 0, 1).IsSubtotal);
+    }
+
+    [Fact]
+    public void Xls_rule_formats_take_the_exact_colors_kept_after_them()
+    {
+        // A CF12 rule "equal to 5" on A1 whose format (DXFN) has a red font, a red solid fill and thin black borders from
+        // the palette, and after it (XFExtNoFRT) an RGB text color, a theme fill color (and pattern color, which a solid fill
+        // does not show) and an RGB top border color.
+        byte[] Range() => Join(U16(0), U16(0), U16(0), U16(0));
+        var font = new byte[118];
+        font[88] = 0x82; // Italic and strikethrough not set.
+        font[96] = 1; // Underline not set.
+        font[100] = 1; // Bold not set.
+        font[80] = 0x0A; // Red.
+        byte[] Ext(int type, int colorType, long value) => Join(U16(type), U16(20), U16(colorType), U16(0), U32(value), new byte[8]);
+        var dxf = Join(U32((1L << 26) | (1L << 28) | (1L << 29)), U16(0), font,
+            U32(1 | (1 << 4) | (1 << 8) | (1 << 12) | (8 << 16) | (8 << 23)), U32(8 | (8 << 7)),
+            U16(1 << 10), U16(0x0A | (0x0A << 7)),
+            U16(0), U16(0xFFFF), U16(0), U16(4), Ext(0x0D, 2, 0x563412), Ext(0x05, 3, 4), Ext(0x04, 2, 0x00FF00), Ext(0x07, 2, 0xFF0000));
+        var xls = SingleSheet(s => s
+            .Record(0x0203, Cell(0, 0), F64(5))
+            .Record(0x0879, U16(0x0879), new byte[10], U16(1), U16(2), Range(), U16(1), Range())
+            .Record(0x087A, U16(0x087A), new byte[10], U8(1), U8(3), U16(3), U16(0), U32(dxf.Length), dxf, U8(0x1E), U16(5),
+                U16(0), U8(0), U16(1), U16(0), U8(16), new byte[16]));
+        var format = Assert.Single(ReadXls(xls).ConditionalRules).Format!;
+        var black = PdfColor.FromRgb(0, 0, 0);
+        Assert.Equal(PdfColor.FromRgb(0x12, 0x34, 0x56), format.Color);
+        Assert.Equal(new XlsxColors().Resolve(null, null, "4", null, null), format.Fill); // Accent 1.
+        Assert.Equal((PdfColor.FromRgb(0, 0, 0xFF), black, black, black), (format.Top!.Value.Color, format.Bottom!.Value.Color, format.Left!.Value.Color, format.Right!.Value.Color));
+        Assert.Equal(format.Fill, XlsConverter.Read(xls)[0].Rows[0][0].Format!.Fill);
     }
 
     [Fact]

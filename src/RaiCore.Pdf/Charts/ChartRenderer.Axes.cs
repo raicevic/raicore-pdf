@@ -157,7 +157,7 @@ internal sealed partial class ChartRenderer
             return layout;
         }
 
-        foreach (var group in _chart.PlotArea.Groups.Where(g => g.Kind is not (ChartKind.Pie or ChartKind.Doughnut or ChartKind.Radar)))
+        foreach (var group in _chart.PlotArea.Groups.Where(g => g.Kind is not (ChartKind.Pie or ChartKind.Doughnut or ChartKind.Radar or ChartKind.Treemap or ChartKind.Sunburst)))
         {
             var xy = group.Kind is ChartKind.Scatter or ChartKind.Bubble;
             var categoryHorizontal = !(group.Kind == ChartKind.Bar && group.Horizontal);
@@ -181,7 +181,7 @@ internal sealed partial class ChartRenderer
             if (!xy)
             {
                 // Bars sit between ticks; lines and areas follow the value axis's crossBetween.
-                first.Between = group.Kind == ChartKind.Bar || second.Axis.CrossBetween;
+                first.Between = group.Kind is ChartKind.Bar or ChartKind.BoxWhisker || second.Axis.CrossBetween;
             }
         }
 
@@ -197,7 +197,7 @@ internal sealed partial class ChartRenderer
     private void Categories(AxisLayout axis)
     {
         var series = axis.Groups.SelectMany(g => g.Series).ToList();
-        axis.Count = Math.Max(1, series.Count == 0 ? 1 : series.Max(s => Math.Max(s.Values.Count, s.Categories?.Count ?? 0)));
+        axis.Count = Math.Max(1, series.Count == 0 ? 1 : series.Max(s => s.Boxes is not null ? s.Categories?.Count ?? 1 : Math.Max(s.Values.Count, s.Categories?.Count ?? 0)));
         var source = series.FirstOrDefault(s => s.Categories is { Count: > 0 })?.Categories;
         var format = !axis.Axis.SourceLinked && axis.Axis.FormatCode is { } own ? own : source?.FormatCode ?? axis.Axis.FormatCode;
         var labels = new string[axis.Count];
@@ -286,11 +286,22 @@ internal sealed partial class ChartRenderer
             }
             else
             {
-                foreach (var v in group.Series.SelectMany(s => s.Values.Numbers))
+                foreach (var series in group.Series)
                 {
-                    if (v is { } value)
+                    for (var i = 0; i < series.Values.Count; i++)
                     {
-                        Add(value);
+                        if (series.Values.Number(i) is not { } value)
+                        {
+                            continue;
+                        }
+
+                        // Floating bars reach from their start; box plots from their smallest value to their largest.
+                        var start = series.Starts is { } starts && i < starts.Length ? starts[i] ?? 0 : 0;
+                        Add(start + value);
+                        if (series.Starts is not null)
+                        {
+                            Add(start);
+                        }
                     }
                 }
             }

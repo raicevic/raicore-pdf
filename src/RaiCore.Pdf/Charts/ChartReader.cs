@@ -12,7 +12,7 @@ namespace RaiCore.Pdf.Charts;
 /// resolved through the caller. The element tree comes from the caller's package reader, which parses it without DTDs
 /// and bounds its size; this reader bounds the points of each series and of the whole chart.
 /// </summary>
-internal sealed class ChartReader
+internal sealed partial class ChartReader
 {
     /// <summary>The most points a series may have (the rows of a worksheet).</summary>
     internal const int MaxPointsPerSeries = 1 << 20;
@@ -43,7 +43,10 @@ internal sealed class ChartReader
     /// Reads a chart part. Returns <c>null</c> when the root is not a chart space or the chart has no plot area;
     /// chart groups of types the engine cannot draw are left out and named in <paramref name="unsupported"/>.
     /// </summary>
-    /// <param name="root">The part's root element (<c>c:chartSpace</c>).</param>
+    /// <param name="root">
+    /// The part's root element: <c>c:chartSpace</c>, or <c>cx:chartSpace</c> for the newer chart types (chartex:
+    /// waterfall, histogram, pareto, box and whisker, funnel, treemap and sunburst; region maps are unsupported).
+    /// </param>
     /// <param name="scheme">Resolves scheme colors (<c>accent1</c>, <c>tx1</c>, ...) through the theme and color map, or <c>null</c> for the Office theme.</param>
     /// <param name="limits">The limits: <see cref="ResourceLimits.MaxTableCells"/> bounds the points of the chart.</param>
     /// <param name="unsupported">Receives the chart types that are left out (such as <c>surface</c>).</param>
@@ -72,7 +75,8 @@ internal sealed class ChartReader
             }
         }
 
-        return new ChartReader(scheme, limits, map, references).ReadChart(root, unsupported);
+        var reader = new ChartReader(scheme, limits, map, references);
+        return root.Name.NamespaceName == ChartExNamespace ? reader.ReadChartEx(root, unsupported) : reader.ReadChart(root, unsupported);
     }
 
     private Chart? ReadChart(XElement root, ICollection<string>? unsupported)
@@ -955,4 +959,5 @@ internal sealed class ChartReader
 /// <summary>The values of the cells a chart refers to, from a workbook: numbers (<see cref="double"/>), text or <c>null</c>.</summary>
 /// <param name="Values">The cells' values in order.</param>
 /// <param name="FormatCode">The number format of the first cell, or <c>null</c>.</param>
-internal sealed record ChartReference(IReadOnlyList<object?> Values, string? FormatCode = null);
+/// <param name="Columns">The number of columns of the cells (the values are row by row), for references to several columns or rows.</param>
+internal sealed record ChartReference(IReadOnlyList<object?> Values, string? FormatCode = null, int Columns = 1);

@@ -54,6 +54,10 @@ internal sealed partial class ChartRenderer
                     ClipTo(inner.Deflate(-8, -8, -8, -8));
                     DrawScatter(group, first, second);
                     break;
+                case ChartKind.BoxWhisker:
+                    ClipTo(inner.Deflate(-8, -8, -8, -8));
+                    DrawBoxes(group, first, second);
+                    break;
             }
 
             _canvas.RestoreState();
@@ -70,6 +74,14 @@ internal sealed partial class ChartRenderer
         for (var i = 0; i < count; i++)
         {
             var value = series.Values.Number(i);
+            if (series.Starts is { } starts)
+            {
+                // A floating bar: from its start to its start plus its value.
+                below[i] = i < starts.Length ? starts[i] ?? 0 : 0;
+                top[i] = value is null ? null : below[i] + value;
+                continue;
+            }
+
             if (group.Grouping == ChartGrouping.Standard || group.Kind == ChartKind.Stock)
             {
                 top[i] = value;
@@ -132,6 +144,8 @@ internal sealed partial class ChartRenderer
             var series = group.Series[s];
             var tops = Plotted(group, s, out var bottoms);
             var slot = stacked ? 0 : s;
+            var floating = series.Starts is not null;
+            (double Edge, double Level)? previous = null;
             for (var i = 0; i < tops.Length && i < categories.Count; i++)
             {
                 if (tops[i] is not { } top)
@@ -140,7 +154,7 @@ internal sealed partial class ChartRenderer
                 }
 
                 var start = categories.CategoryFraction(i) - (band / 2) + (gap * bar / 2) + (slot * bar * (1 - overlap));
-                var from = stacked ? values.ValueFraction(bottoms[i] ?? 0) : baseFraction;
+                var from = stacked || floating ? values.ValueFraction(bottoms[i] ?? 0) : baseFraction;
                 var to = values.ValueFraction(top);
                 if (!double.IsFinite(from) || !double.IsFinite(to))
                 {
@@ -169,6 +183,29 @@ internal sealed partial class ChartRenderer
 
                 var negative = categories.Horizontal ? v1 > v0 : v1 < v0;
                 _labelSpots.Add(new LabelSpot(group, series, i, box.CenterX, box.CenterY, box, negative, !categories.Horizontal, value, null));
+                if (group.Connectors && floating)
+                {
+                    // A waterfall's connector: from the end of the bar before, across to this one, at that end's level.
+                    var (near, far) = (Math.Min(c0, c1), Math.Max(c0, c1));
+                    if (previous is { } before)
+                    {
+                        SetStroke(_chart.AxisColor, ThinLine, null);
+                        if (categories.Horizontal)
+                        {
+                            MoveTo(before.Edge, before.Level);
+                            LineTo(near, before.Level);
+                        }
+                        else
+                        {
+                            MoveTo(before.Level, before.Edge);
+                            LineTo(before.Level, near);
+                        }
+
+                        _canvas.Stroke();
+                    }
+
+                    previous = (far, v1);
+                }
             }
         }
     }

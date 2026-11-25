@@ -166,7 +166,9 @@ A sheet's drawings are drawn over its cells where Excel shows them:
   underline, colors, alignment, insets, vertical anchoring, wrapping), the theme's line and fill where a shape has
   none of its own. Connectors are drawn as lines, without arrowheads.
 - **Charts** in a sheet, by the same chart engine that draws the charts of presentations and documents, from the data
-  cached in the workbook.
+  cached in the workbook (or, where a chart caches none, the cells it refers to). The newer chart types (waterfall,
+  histogram, pareto, box and whisker, funnel, treemap, sunburst) are drawn from the cells their hidden names
+  (`_xlchart.v1.0`) refer to; region maps are reported.
 - **Groups** of all of these.
 
 **Chart sheets** are printed in the workbook's sheet order, each on a page of its own: its chart (and whatever else its
@@ -274,7 +276,7 @@ External workbook links, data connections, query tables, web queries and DDE or 
 refreshed: formulas show the values stored with them (see [Untrusted input](untrusted-input.md)).
 
 Not supported in workbooks, and reported through `Diagnostics` ([below](#diagnostics)): chart sheets of `.xls`
-workbooks, the newer chart types (waterfall, treemap, sunburst...), SmartArt, ink, form controls, embedded objects, conditional formatting rules
+workbooks, region maps, SmartArt, ink, form controls, embedded objects, conditional formatting rules
 whose formulas are not supported, sparklines, pivot tables of other styles than those above (their cells are shown),
 and the pivot tables of `.xls` workbooks.
 
@@ -319,7 +321,7 @@ the sheets are converted, while the conversion runs, so a caller can flag the do
 
 | `SheetDiagnosticKind` | What is reported | In `.xlsx` | In `.xls` |
 |---|---|---|---|
-| `Chart` | Charts the chart engine cannot draw: left out. | Newer chart types (`chartex`), chart frames without a chart | Embedded chart objects |
+| `Chart` | Charts the chart engine cannot draw: left out. | Region maps, chart frames without a chart | Embedded chart objects |
 | `ChartSheet` | A chart sheet that would be converted (visible, or named in the options) but has nothing that can be drawn: left out. | Chart sheets without a drawing that can be drawn | Chart sheets (BIFF charts) |
 | `Picture` | Pictures that cannot be drawn (unreadable format such as PICT, damaged, linked, over `MaxImagePixels`): left out. | Pictures in the drawing | Picture objects |
 | `Shape` | SmartArt, ink and form controls: left out. | Other graphic frames, ink; form controls | Free forms, less common shape types, control objects |
