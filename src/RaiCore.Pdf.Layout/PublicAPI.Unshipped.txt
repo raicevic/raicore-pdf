@@ -3,3 +3,7 @@ RaiCore.Pdf.Layout.Paragraph.BreakAnywhere.get -> bool
 RaiCore.Pdf.Layout.Paragraph.BreakAnywhere.init -> void
 RaiCore.Pdf.Layout.FlowDocument.PageBackground.get -> System.Action<RaiCore.Pdf.PdfCanvas!, RaiCore.Pdf.Layout.PageInfo>?
 RaiCore.Pdf.Layout.FlowDocument.PageBackground.set -> void
+RaiCore.Pdf.Layout.ContainerBlock.HasLegend.get -> bool
+RaiCore.Pdf.Layout.ContainerBlock.HasLegend.init -> void
+RaiCore.Pdf.Layout.ContainerBlock.LegendAlignment.get -> RaiCore.Pdf.Layout.BlockAlignment
+RaiCore.Pdf.Layout.ContainerBlock.LegendAlignment.init -> void

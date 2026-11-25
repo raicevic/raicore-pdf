@@ -87,6 +87,17 @@ public sealed class ContainerBlock : Block
     /// <summary>The child blocks, top to bottom.</summary>
     public IReadOnlyList<Block> Children => _children;
 
+    /// <summary>
+    /// Whether the first child is the container's legend, like the <c>legend</c> of an HTML <c>fieldset</c>: it shrinks
+    /// to fit its content, its border box is centered on the top border, which is cut where the legend is, and the other
+    /// children start below it (and its bottom margin). Its top margin is ignored. The border and background of the
+    /// container start where the border is drawn.
+    /// </summary>
+    public bool HasLegend { get; init; }
+
+    /// <summary>Where the legend (<see cref="HasLegend"/>) sits along the top border, between the padding edges.</summary>
+    public BlockAlignment LegendAlignment { get; init; }
+
     /// <summary>Appends a child block.</summary>
     public ContainerBlock Add(Block block)
     {

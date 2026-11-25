@@ -792,7 +792,7 @@ internal sealed partial class Paginator
     /// </summary>
     private double CollapseThroughTop(Block block, double width)
     {
-        if (block is not ContainerBlock { Children.Count: > 0 } container || HasTopEdge(StyleOf(block)) || IsFloatRoot(block, default))
+        if (block is not ContainerBlock { Children.Count: > 0, HasLegend: false } container || HasTopEdge(StyleOf(block)) || IsFloatRoot(block, default))
         {
             return 0;
         }
@@ -865,12 +865,20 @@ internal sealed partial class Paginator
                 // A new formatting context (a flex item, a float, a flow root) keeps its children's margins and floats
                 // inside it.
                 var isolated = IsFloatRoot(block, sizing);
+                var legend = LegendOf(container, x, width);
                 LayoutBox(block, x, width, (contentX, contentWidth) =>
                 {
+                    var children = container.Children;
+                    if (legend is { } placed)
+                    {
+                        LayoutLegend(container.Children[0], placed, Y - placed.Area - StyleOf(block).Padding.Fixed.Top);
+                        children = [.. children.Skip(1)];
+                    }
+
                     void Children()
                     {
                         var pending = default(CollapsedMargin);
-                        LayoutChildren(container.Children, contentX, contentWidth, ref pending, firstTopMarginApplied: !HasTopEdge(StyleOf(block)) && !isolated);
+                        LayoutChildren(children, contentX, contentWidth, ref pending, firstTopMarginApplied: !HasTopEdge(StyleOf(block)) && !isolated && legend is null);
                         if (HasBottomEdge(StyleOf(block)) || isolated)
                         {
                             Y = Math.Min(Y + pending.Value, Math.Max(Y, ContentBottom)); // Stays inside the box.
@@ -889,7 +897,7 @@ internal sealed partial class Paginator
                     {
                         Children();
                     }
-                }, sizing);
+                }, sizing, legend: legend);
                 break;
             default:
                 throw new NotSupportedException($"Unknown block type {block.GetType().Name}.");
@@ -948,7 +956,8 @@ internal sealed partial class Paginator
     /// Lays out a box's content between its top and bottom border and padding, then draws the background and
     /// borders of each page fragment underneath the content.
     /// </summary>
-    private void LayoutBox(Block block, double x, double width, Action<double, double> layoutContent, BoxSizing sizing = default, BoxStyle? styleOverride = null)
+    private void LayoutBox(
+        Block block, double x, double width, Action<double, double> layoutContent, BoxSizing sizing = default, BoxStyle? styleOverride = null, LegendBox? legend = null)
     {
         var style = styleOverride ?? StyleOf(block);
         var border = style.Border.Widths.Fixed;
@@ -973,7 +982,7 @@ internal sealed partial class Paginator
 
         try
         {
-            Y += border.Top + style.Padding.Fixed.Top;
+            Y += (legend?.Area ?? border.Top) + style.Padding.Fixed.Top;
             layoutContent(x + border.Left + style.Padding.Fixed.Left, Math.Max(MinimumContentWidth, width - border.Horizontal - style.Padding.Fixed.Horizontal));
             Y += style.Padding.Fixed.Bottom + border.Bottom;
         }
@@ -1075,6 +1084,7 @@ internal sealed partial class Paginator
                 wholeHeight += (page == endPage ? endY : PageBottom(page)) - (page == startPage ? startY : PageTop(page));
             }
 
+            wholeHeight -= legend?.Shift ?? 0;
             var corners = decorated && !style.BorderRadius.IsSquare ? style.BorderRadius.Resolve(width, wholeHeight) : default;
             var offset = 0.0;
 
@@ -1085,17 +1095,21 @@ internal sealed partial class Paginator
                 var top = first ? startY : PageTop(page);
                 var bottom = last ? endY : PageBottom(page);
                 var fragmentWidth = fluid ? Math.Max(0, width + ContentWidthOf(page) - startWidth) : width;
+
+                // Beside a legend, the border and background start where the border is drawn, centered on the legend.
+                var shift = first && legend is { } cut ? Math.Min(cut.Shift, bottom - top) : 0;
                 if (decorated)
                 {
                     var index = first ? insertAt : 0; // Pages created inside the box: under everything on them.
-                    var fragment = corners.Fragment(first, last, fragmentWidth, bottom - top);
                     var fragmentOffset = offset;
+                    var cutout = first && legend is { } placed ? new LegendCutout(placed.X, placed.Width, top, Math.Max(placed.Height, style.Border.Top.Width)) : (LegendCutout?)null;
+                    var fragment = corners.Fragment(first, last, fragmentWidth, bottom - top - shift);
                     _pages[page].Insert(index, (canvas, pageHeight) => LayoutTagging.Decoration(
-                        canvas, () => DrawBox(canvas, pageHeight, style, x, top, fragmentWidth, bottom - top, first, last, fragment, (fragmentOffset, wholeHeight))));
+                        canvas, () => DrawBox(canvas, pageHeight, style, x, top + shift, fragmentWidth, bottom - top - shift, first, last, fragment, (fragmentOffset, wholeHeight), cutout)));
                     _placements.Add(new Placement(page, block, top, bottom, -1, -1, x, fragmentWidth));
                 }
 
-                offset += bottom - top;
+                offset += bottom - top - shift;
 
                 if (link is not null)
                 {
@@ -1153,7 +1167,7 @@ internal sealed partial class Paginator
     /// </summary>
     private static void DrawBox(
         PdfCanvas canvas, double pageHeight, BoxStyle style, double x, double top, double width, double height, bool first, bool last,
-        RoundedCorners? corners = null, (double Offset, double Height)? whole = null)
+        RoundedCorners? corners = null, (double Offset, double Height)? whole = null, LegendCutout? cutout = null)
     {
         var y = pageHeight - top - height; // PDF y of the bottom edge.
         var rounded = corners ?? (style.BorderRadius.IsSquare ? default : style.BorderRadius.Resolve(width, height).Fragment(first, last, width, height));
@@ -1172,7 +1186,21 @@ internal sealed partial class Paginator
             PaintBackgroundLayers(canvas, style, rounded, x, y, width, height, first, last, offset, wholeHeight);
         }
 
+        if (cutout is { } legend)
+        {
+            // The border is cut where the legend is: everything but the legend's column of the top border band.
+            canvas.SaveState();
+            canvas.Rectangle(x - 1, y - 1, width + 2, height + 2)
+                .Rectangle(legend.X, pageHeight - legend.Top - legend.Height, legend.Width, legend.Height)
+                .Clip(evenOdd: true)
+                .EndPath();
+        }
+
         BorderPainter.PaintBox(canvas, style.Border, x, y, width, height, top: first, bottom: last, corners: rounded);
+        if (cutout is not null)
+        {
+            canvas.RestoreState();
+        }
     }
 
     /// <summary>
@@ -1875,9 +1903,9 @@ internal sealed partial class Paginator
             case FlexBlock flex:
                 return decoration + MeasureFlex(flex, contentWidth);
             case ContainerBlock container:
-                var height = 0.0;
+                var height = LegendExtra(block, boxWidth);
                 var margin = new CollapsedMargin();
-                foreach (var child in container.Children)
+                foreach (var child in container.HasLegend ? container.Children.Skip(1) : container.Children)
                 {
                     var childStyle = ResolveStyle(child, contentWidth);
                     margin.Add(childStyle.Margin.Fixed.Top);
@@ -1913,7 +1941,7 @@ internal sealed partial class Paginator
             return MeasureBox(block, boxWidth); // A fixed-height box is kept on one page when it fits on one.
         }
 
-        var top = style.Border.Top.Width + style.Padding.Fixed.Top;
+        var top = style.Border.Top.Width + style.Padding.Fixed.Top + LegendExtra(block, boxWidth);
         var contentWidth = Math.Max(MinimumContentWidth, boxWidth - style.Border.Widths.Fixed.Horizontal - style.Padding.Fixed.Horizontal);
         switch (block)
         {
@@ -1952,8 +1980,8 @@ internal sealed partial class Paginator
                 }
 
                 return top + tableLayout.SpacingY + tableLayout.Height(0, firstEnd) + footer + (firstEnd == table.Rows.Count ? tableLayout.SpacingY + style.Padding.Fixed.Bottom + style.Border.Bottom.Width : 0);
-            case ContainerBlock container when container.Children.Count > 0:
-                var firstChild = container.Children[0];
+            case ContainerBlock container when container.Children.Count > (container.HasLegend ? 1 : 0):
+                var firstChild = container.Children[container.HasLegend ? 1 : 0];
                 return top + ResolveStyle(firstChild, contentWidth).Margin.Fixed.Top + MinimumStartHeight(firstChild, contentWidth);
             case SpacerBlock:
                 return 0;

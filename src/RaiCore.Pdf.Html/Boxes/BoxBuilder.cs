@@ -409,10 +409,24 @@ internal sealed partial class BoxBuilder
             collector.SetMarker(marker);
         }
 
+        // A fieldset is a formatting context of its own, with its rendered legend first (drawn over its border).
+        var legend = RenderedLegend(element);
+        if (element.LocalName == "fieldset")
+        {
+            box = box with { ContainsFloats = true };
+        }
+
+        var hasLegend = false;
         var outerHeight = EnterBox(box, containingWidth);
         var outerDecorations = EnterDecoration(style, 0);
         WithPageWidthFluid(!flexItem && box is { Width: null, MaxWidth: null }, () =>
         {
+            if (legend is not null && BuildLegend(legend, contentWidth) is { } legendBlock)
+            {
+                children.Add(legendBlock);
+                hasLegend = true;
+            }
+
             AddChildren(element, style, contentWidth, children, collector);
         });
         Flush(collector, children);
@@ -422,12 +436,16 @@ internal sealed partial class BoxBuilder
         // A block whose only content is one anonymous paragraph becomes a paragraph block with the element's box.
         // Elements with string-set carry a marker, so running headers know which page they start on.
         var pageMarker = _paged?.MarkerFor(element, item => CounterText(element, string.Empty, item));
-        if (children is [ParagraphBlock only] && _anonymous.Contains(only))
+        if (children is [ParagraphBlock only] && _anonymous.Contains(only) && !hasLegend)
         {
             return new ParagraphBlock(only.Paragraph, box) { Marker = pageMarker, Bookmark = BookmarkFor(element), Id = IdFor(element), Link = LinkFor(element), Tag = TagFor(element, style) };
         }
 
-        return new ContainerBlock(box, children) { Marker = pageMarker, Bookmark = BookmarkFor(element), Id = IdFor(element), Link = LinkFor(element), Tag = TagFor(element, style) };
+        return new ContainerBlock(box, children)
+        {
+            Marker = pageMarker, Bookmark = BookmarkFor(element), Id = IdFor(element), Link = LinkFor(element), Tag = TagFor(element, style),
+            HasLegend = hasLegend, LegendAlignment = hasLegend ? LegendAlignment(LegendStyle(legend!)) : default,
+        };
     }
 
     /// <summary>
@@ -465,7 +483,7 @@ internal sealed partial class BoxBuilder
                     break;
                 case IElement child:
                     var childStyle = Style(child);
-                    if (childStyle.Display == CssDisplay.None)
+                    if (childStyle.Display == CssDisplay.None || _renderedLegends.Contains(child))
                     {
                         break;
                     }

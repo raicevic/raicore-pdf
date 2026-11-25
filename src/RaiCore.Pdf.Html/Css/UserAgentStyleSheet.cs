@@ -5,7 +5,8 @@ namespace RaiCore.Pdf.Html.Css;
 /// It is added before the document's own styles, and every selector is wrapped in <c>:where()</c>, which has no
 /// specificity: any author rule overrides it, as browsers' own styles are (the HTML standard's <c>a:link</c> would
 /// otherwise beat an author's <c>a</c>). The universal rule keeps the custom properties LogicalSides adds from being
-/// inherited.
+/// inherited. AngleSharp.Css adds its own default sheet before this one (e.g. the fieldset's margins, groove border
+/// and padding); rules here complete or correct it (the fieldset's border is Chrome's ThreeDFace, #efefef).
 /// </summary>
 internal static class UserAgentStyleSheet
 {
@@ -65,5 +66,7 @@ internal static class UserAgentStyleSheet
         :where(q)::before { content: open-quote; }
         :where(q)::after { content: close-quote; }
         :where(hr) { border-style: solid; border-width: 1px 0 0 0; border-color: gray; margin: 0.5em 0; }
+        :where(fieldset) { border-color: #efefef; }
+        :where(legend) { padding-left: 2px; padding-right: 2px; }
         """;
 }
