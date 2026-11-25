@@ -86,6 +86,8 @@ internal static class XlsWorksheet
     private const ushort HorizontalPageBreaks = 0x001B;
     private const ushort VerticalPageBreaks = 0x001A;
     private const ushort SxView = 0x00B0;
+    private const ushort Sxli = 0x00B5;
+    private const ushort SxAddl = 0x0864;
     private const ushort MsoDrawing = 0x00EC;
     private const ushort Txo = 0x01B6;
 
@@ -141,6 +143,9 @@ internal static class XlsWorksheet
                 sheet.Numbers[XlsxWorksheet.Key(row, column)] = value.Number; // For conditional formatting.
             }
         }, limits);
+
+        // The pivot tables' styles over their cells (before conditional formatting, which goes over them).
+        sheet.PivotTables?.Apply(sheet, styles.Colors, maxCells);
         return sheet;
     }
 
@@ -159,6 +164,7 @@ internal static class XlsWorksheet
         var drawing = limits is not null && workbook.Biff == 8 ? new XlsDrawingRecords() : null;
         var conditional = workbook.Biff == 8 ? new XlsConditionalFormatting(workbook.Styles) : null;
         var notes = new XlsNotes(workbook.Biff, workbook.CodePage);
+        var pivots = workbook.Biff == 8 ? new XlsPivotTables() : null;
         var reader = new BiffReader(workbook.Stream, offset);
         if (offset < 0 || !reader.Next() || reader.Id != XlsWorkbook.Bof || BiffReader.U16(reader.Data, 2) != WorksheetType)
         {
@@ -412,6 +418,15 @@ internal static class XlsWorksheet
                 case Txo when drawing is not null:
                     drawing.AddText(data, reader.Breaks);
                     break;
+                case SxView when pivots is not null:
+                    pivots.View(data);
+                    break;
+                case Sxli when pivots is not null:
+                    pivots.Lines(data);
+                    break;
+                case SxAddl when pivots is not null:
+                    pivots.Addition(data);
+                    break;
                 default:
                     CountUnsupported(id, data, workbook.Biff, sheet.Unsupported);
                     break;
@@ -424,6 +439,7 @@ internal static class XlsWorksheet
         }
 
         sheet.Comments.AddRange(notes.Comments);
+        sheet.PivotTables = pivots;
 
         if (drawing is not null && limits is not null)
         {
@@ -472,7 +488,7 @@ internal static class XlsWorksheet
     /// <summary>
     /// Counts a record of content that is not supported: a drawing object (OBJ: chart, picture, embedded object, shape or
     /// control; not those that do not print, nor the shapes of comments and groups), a conditional formatting rule (CF,
-    /// CF12, of BIFF5), and a pivot table (SXVIEW).
+    /// CF12, of BIFF5), and a pivot table of BIFF5 (SXVIEW; those of BIFF8 are read for their style).
     /// </summary>
     private static void CountUnsupported(ushort id, ReadOnlySpan<byte> data, int biff, UnsupportedContent unsupported)
     {

@@ -94,6 +94,9 @@ internal sealed class XlsStyles
     /// <summary>A color of the workbook's palette by index, or <c>null</c>.</summary>
     public PdfColor? PaletteColor(int index) => _colors.PaletteColor(index);
 
+    /// <summary>The workbook's colors: its palette, and the default theme's colors.</summary>
+    public XlsxColors Colors => _colors;
+
     /// <summary>Prepares the palette once every record is read.</summary>
     public void Complete()
     {

@@ -76,7 +76,7 @@ internal static class XlsxConverter
             if (entry.Path is { } pivotPart)
             {
                 // Before conditional formatting, which goes over it.
-                XlsxPivotTables.Apply(package, pivotPart, worksheet, workbook.Styles.Colors, limits.MaxTableCells);
+                XlsxPivotTables.Apply(package, pivotPart, worksheet, workbook.Styles, limits.MaxTableCells);
             }
 
             if (worksheet.ConditionalFormats.Count + worksheet.ExtendedConditionalFormats.Count > 0)

@@ -673,34 +673,114 @@ public class SheetFormattingTests
         string Look(SheetCell cell) => (cell.Format?.Bold ?? false ? "B" : "-") + (cell.Format?.Fill is null ? "-" : "F") + (cell.Format?.Bottom.IsVisible ?? false ? "_" : "-")
             + (cell.Format?.Top.IsVisible ?? false ? "^" : "-");
         Assert.Equal(["BF--", "BF_-", "----", "----", "BF-^"], sheets[0].Rows.Skip(2).Take(5).Select(r => Look(r[0])));
-        Assert.Equal(["BF--", "BF_-", "B---", "B---", "BF-^"], sheets[0].Rows.Skip(2).Take(5).Select(r => Look(r[3]))); // The grand total column.
+        Assert.Equal(["BF--", "BF_-", "----", "----", "BF-^"], sheets[0].Rows.Skip(2).Take(5).Select(r => Look(r[3]))); // The grand total column (Light16 has no lastColumn).
         Assert.Equal(["BF_-", "----", "----", "BF-^"], sheets[1].Rows.Skip(2).Take(4).Select(r => Look(r[1])));
         Assert.Equal(light, sheets[1].Rows[5][0].Format!.Fill);
         Assert.Null(sheets[0].Rows[1][0].Format?.Fill); // Above the table.
     }
 
+    /// <summary>A workbook's styles part (<c>styleSheet</c>) of these sections, read.</summary>
+    private static XlsxStyles Styles(string sections = "") =>
+        XlsxStyles.Read(System.Xml.XmlReader.Create(new StringReader($"<styleSheet xmlns=\"{Main}\">{sections}</styleSheet>")),
+            new FormatSettings(CultureInfo.InvariantCulture, false), null);
+
     [Theory]
     [InlineData("<pivotTableStyleInfo name=\"PivotStyleLight16\"/>", true, false)]
+    [InlineData("<pivotTableStyleInfo name=\"PivotStyleMedium9\"/>", true, false)]
+    [InlineData("<pivotTableStyleInfo name=\"PivotStyleDark28\"/>", true, false)]
     [InlineData("<pivotTableStyleInfo name=\"PivotStyleLight21\" showColHeaders=\"0\"/>", false, false)]
     [InlineData("", false, false)]
-    [InlineData("<pivotTableStyleInfo name=\"PivotStyleMedium9\"/>", false, true)]
-    [InlineData("<pivotTableStyleInfo name=\"PivotStyleLight22\"/>", false, true)]
+    [InlineData("<pivotTableStyleInfo name=\"PivotStyleLight29\"/>", false, true)]
+    [InlineData("<pivotTableStyleInfo name=\"TableStyleMedium2\"/>", false, true)]
     [InlineData("<pivotTableStyleInfo name=\"MyStyle\"/>", false, true)]
-    public void Pivot_styles_that_are_not_supported_are_reported(string styleInfo, bool styled, bool reported)
+    public void Pivot_styles_that_are_not_known_are_reported(string styleInfo, bool styled, bool reported)
     {
         var definition = System.Xml.Linq.XElement.Parse($"<pivotTableDefinition xmlns=\"{Main}\"><location ref=\"A1:B3\" firstHeaderRow=\"0\" firstDataRow=\"1\" firstDataCol=\"1\"/>"
             + $"<rowItems><i/><i t=\"grand\"/></rowItems>{styleInfo}</pivotTableDefinition>");
         var sheet = new XlsxWorksheet();
         sheet.Add(0, 0, new SheetCell("Row Labels", CellKind.Text), 100);
-        var colors = new XlsxColors();
-        Assert.Equal(!reported, XlsxPivotTables.Apply(definition, sheet, colors, 100));
-        if (styled)
+        Assert.Equal(!reported, XlsxPivotTables.Apply(definition, sheet, Styles(), 100));
+        Assert.Equal(styled, sheet.Cells[XlsxWorksheet.Key(0, 0)].Format?.Bold ?? false); // Every pivot style's header row is bold.
+        Assert.False(XlsxPivotTables.Apply(System.Xml.Linq.XElement.Parse($"<pivotTableDefinition xmlns=\"{Main}\"/>"), sheet, Styles(), 100));
+    }
+
+    [Fact]
+    public void Every_built_in_pivot_style_is_known()
+    {
+        var names = PivotStyles.BuiltInNames.ToHashSet();
+        foreach (var kind in new[] { "Light", "Medium", "Dark" })
         {
-            Assert.Equal(colors.Resolve(null, null, "4", null, null), sheet.Cells[XlsxWorksheet.Key(0, 0)].Format!.Bottom.Color); // Accent 1.
+            for (var n = 1; n <= 28; n++)
+            {
+                Assert.Contains($"PivotStyle{kind}{n}", names);
+                var style = PivotStyles.ReadBuiltIn($"PivotStyle{kind}{n}", new XlsxColors());
+                Assert.NotNull(style);
+                Assert.Contains("headerRow", style.Keys);
+                Assert.Contains("totalRow", style.Keys);
+            }
         }
 
-        Assert.Equal(styled, sheet.Cells[XlsxWorksheet.Key(0, 0)].Format?.Bold ?? false);
-        Assert.False(XlsxPivotTables.Apply(System.Xml.Linq.XElement.Parse($"<pivotTableDefinition xmlns=\"{Main}\"/>"), sheet, new XlsxColors(), 100));
+        Assert.Equal(84, names.Count);
+        Assert.Null(PivotStyles.ReadBuiltIn("PivotStyleLight29", new XlsxColors()));
+    }
+
+    [Fact]
+    public void Pivot_styles_of_the_workbook_are_used_before_the_built_in_ones()
+    {
+        // A custom style named as a built-in one: a red header row with a double bottom border, horizontal lines in the body.
+        var styles = Styles("<dxfs count=\"2\"><dxf><font><i/></font><fill><patternFill patternType=\"solid\"><bgColor rgb=\"FFFF0000\"/></patternFill></fill>"
+            + "<border><bottom style=\"double\"><color rgb=\"FF000000\"/></bottom></border></dxf>"
+            + "<dxf><border><horizontal style=\"thin\"><color rgb=\"FF00FF00\"/></horizontal></border></dxf></dxfs>"
+            + "<tableStyles count=\"2\"><tableStyle name=\"Mine\" table=\"0\" count=\"2\"><tableStyleElement type=\"headerRow\" dxfId=\"0\"/>"
+            + "<tableStyleElement type=\"wholeTable\" dxfId=\"1\"/></tableStyle><tableStyle name=\"OnlyForTables\" pivot=\"0\"/></tableStyles>");
+        var definition = System.Xml.Linq.XElement.Parse($"<pivotTableDefinition xmlns=\"{Main}\"><location ref=\"A1:B4\" firstHeaderRow=\"0\" firstDataRow=\"1\" firstDataCol=\"1\"/>"
+            + "<rowItems><i/><i/><i t=\"grand\"/></rowItems><pivotTableStyleInfo name=\"Mine\"/></pivotTableDefinition>");
+        var sheet = new XlsxWorksheet();
+        Assert.True(XlsxPivotTables.Apply(definition, sheet, styles, 100));
+        var header = sheet.Cells[XlsxWorksheet.Key(0, 1)].Format!;
+        Assert.Equal((true, PdfColor.FromRgb(255, 0, 0), BorderStyle.Double), (header.Italic, header.Fill, header.Bottom.Style));
+        var green = PdfColor.FromRgb(0, 255, 0);
+
+        // The whole table's inner horizontal lines between its rows, not on its outer edges (and under the header's own).
+        Assert.Equal((green, green), (sheet.Cells[XlsxWorksheet.Key(1, 0)].Format!.Top.Color, sheet.Cells[XlsxWorksheet.Key(1, 0)].Format!.Bottom.Color));
+        Assert.False(sheet.Cells[XlsxWorksheet.Key(3, 0)].Format!.Bottom.IsVisible);
+        Assert.False(header.Top.IsVisible);
+        Assert.Null(XlsxPivotTables.Style("OnlyForTables", styles));
+    }
+
+    [Fact]
+    public void Pivot_style_elements_cover_their_regions()
+    {
+        // A table at B3:F12 (rows 2-11, columns 1-5): two header rows, row labels in one column, two row fields (an outer
+        // item, its inner items, a subtotal, a blank line), column items with a subtotal and the grand total column, the
+        // grand total row; one page field above, stripes on.
+        var layout = new PivotLayout(new CellRange(2, 1, 11, 5), 1, 2, 1)
+        {
+            RowFields = 2,
+            ColumnFields = 2,
+            PageFields = 1,
+            Rows = [new("data", 0, 1), new("data", 1, 1), new("data", 1, 1), new("default", 0, 1), new("blank", 0, 1), new("data", 0, 2), new("data", 1, 1),
+                new("grand", 0, 1)],
+            Columns = [new("data", 0, 2), new("data", 1, 1), new("sum", 0, 1), new("grand", 0, 1)],
+            ShowRowStripes = true,
+            ShowColumnStripes = true,
+        };
+        var regions = PivotStyler.Regions(layout).Select(r => $"{r.Element} {r.Row1},{r.Column1}-{r.Row2},{r.Column2}").ToList();
+        Assert.Equal(
+        [
+            "wholeTable 2,1-11,5", "pageFieldLabels 0,1-0,1", "pageFieldValues 0,2-0,2", "headerRow 2,1-3,5", "firstHeaderCell 2,1-2,1",
+            "firstColumn 4,1-11,1",
+            "firstRowStripe 4,1-4,5", "firstRowSubheading 4,1-4,5", "secondRowStripe 5,1-5,5", "firstRowStripe 6,1-6,5",
+            "secondRowStripe 7,1-7,5", "firstSubtotalRow 7,1-7,5", "blankRow 8,1-8,5", "firstRowStripe 9,1-9,5", "secondRowStripe 10,1-10,5",
+            "totalRow 11,1-11,5",
+            "firstColumnStripe 4,2-11,2", "secondColumnStripe 4,3-11,3", "firstColumnStripe 4,4-11,4", "firstSubtotalColumn 3,4-11,4",
+            "lastColumn 3,5-11,5", "firstColumnSubheading 3,2-3,5",
+        ], regions);
+
+        // The second data line has its outer item at level 0 (r = 0, two items): a subheading of the second level is not.
+        Assert.Equal(1, new PivotLine("data", 0, 2).Level);
+        Assert.True(new PivotLine("countA", 0, 1).IsSubtotal);
+        Assert.False(new PivotLine("blank", 0, 1).IsSubtotal);
     }
 
     [Fact]

@@ -79,6 +79,9 @@ internal sealed class XlsxWorksheet
     /// <summary>Whether the page setup asks for the comments to be printed as displayed on the sheet (their boxes).</summary>
     public bool CommentsAsDisplayed { get; set; }
 
+    /// <summary>The pivot tables of an .xls worksheet, read for their style.</summary>
+    public Xls.XlsPivotTables? PivotTables { get; set; }
+
     /// <summary>The boxes of the comments shown on the sheet, drawn when they are printed as displayed.</summary>
     public List<Drawings.SheetDrawing> CommentBoxes { get; } = [];
 
