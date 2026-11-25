@@ -24,7 +24,7 @@ internal static class CssSupport
         "hyphenate-character", "hyphenate-limit-chars", "hyphens", "inset", "justify-content", "left", "letter-spacing",
         "line-height", "list-style", "list-style-position", "list-style-type", "margin", "margin-block", "margin-block-end",
         "margin-block-start", "margin-bottom", "margin-inline", "margin-inline-end", "margin-inline-start", "margin-left",
-        "margin-right", "margin-top", "max-height", "max-width", "min-height", "min-width", "opacity", "order", "orphans",
+        "margin-right", "margin-top", "max-height", "max-width", "min-height", "min-width", "opacity", "order", "orphans", "overflow-wrap",
         "overflow", "overflow-x", "overflow-y", "padding", "padding-block", "padding-block-end", "padding-block-start",
         "padding-bottom", "padding-inline", "padding-inline-end", "padding-inline-start", "padding-left", "padding-right",
         "padding-top", "page", "page-break-after", "page-break-before", "page-break-inside", "place-content", "position",
@@ -42,7 +42,7 @@ internal static class CssSupport
         "border-inline-style", "border-inline-width",
 
         // Aliases the converter rewrites to the standard names.
-        "-webkit-hyphens", "-webkit-hyphenate-character",
+        "-webkit-hyphens", "-webkit-hyphenate-character", "word-wrap",
     };
 
     /// <summary>

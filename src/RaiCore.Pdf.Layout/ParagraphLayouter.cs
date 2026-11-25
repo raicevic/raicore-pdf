@@ -65,6 +65,20 @@ internal static partial class ParagraphLayouter
             }
         }
 
+        // overflow-wrap: anywhere: every grapheme boundary is a break opportunity for min-content (inline boxes and
+        // images stay whole).
+        if (paragraph.BreakAnywhere)
+        {
+            min = 0;
+            var graphemes = StringInfo.ParseCombiningCharacters(text);
+            for (var g = 0; g < graphemes.Length; g++)
+            {
+                var start = graphemes[g];
+                var end = g + 1 < graphemes.Length ? graphemes[g + 1] : text.Length;
+                min = Math.Max(min, minPrefix[TrimEnd(text, start, end)] - minPrefix[start] + (start == 0 ? Math.Max(0, indent) : 0));
+            }
+        }
+
         return (min, Math.Max(min, max));
     }
 
@@ -289,7 +303,7 @@ internal static partial class ParagraphLayouter
                 {
                     chosen = (fit.Position, false, fit.Hyphen);
                 }
-                else if (paragraph.BreakLongWords)
+                else if (paragraph.BreakLongWords || paragraph.BreakAnywhere)
                 {
                     // A word wider than the line: split it at the last grapheme boundary that fits (at least one grapheme).
                     graphemes ??= StringInfo.ParseCombiningCharacters(text);

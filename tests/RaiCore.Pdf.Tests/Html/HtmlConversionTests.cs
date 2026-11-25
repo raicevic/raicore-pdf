@@ -121,6 +121,38 @@ public class HtmlConversionTests
         Assert.Equal((100, 299), (red[0], red[^1]));
     }
 
+    [Theory]
+    [InlineData("overflow-wrap: break-word", true, false)]
+    [InlineData("word-wrap: break-word", true, false)] // The legacy name.
+    [InlineData("overflow-wrap: anywhere", false, true)]
+    [InlineData("WORD-WRAP: anywhere", false, true)]
+    [InlineData("overflow-wrap: anywhere; word-wrap: normal", false, false)] // The later of the two wins.
+    [InlineData("word-wrap: break-word; overflow-wrap: normal", false, false)]
+    [InlineData("", false, false)]
+    public void Overflow_wrap_lets_long_words_break(string css, bool breakWord, bool anywhere)
+    {
+        var paragraph = Assert.Single(Paragraphs(Blocks($"<div style='{css}'><p>long_token</p></div>"))).Paragraph; // Inherited.
+
+        Assert.Equal((breakWord, anywhere), (paragraph.BreakLongWords, paragraph.BreakAnywhere));
+    }
+
+    [Fact]
+    public void Overflow_wrap_keeps_a_long_token_in_its_box()
+    {
+        // The case from #306: a 60 pt box and a token far wider.
+        var diagnostics = new List<HtmlDiagnostic>();
+        var pdf = HtmlToPdf.ConvertToBytes(
+            "<style>.word-wrap:after { content: '!' }</style><div class='word-wrap' style='width: 60pt; overflow-wrap: break-word'>Supercalifragilisticexpialidocious_long_token_here</div>",
+            new HtmlConverterOptions { Diagnostics = diagnostics.Add });
+
+        Assert.DoesNotContain(diagnostics, d => d.Kind is HtmlDiagnosticKind.Overflow or HtmlDiagnosticKind.UnsupportedProperty);
+        var words = new TextExtractor(PdfReader.Open(pdf)).FindOnPage(0, new Regex(@"\S+")).ToList();
+        Assert.True(words.Count > 3, $"{words.Count} lines");
+        var left = words.Min(w => w.Bounds.X);
+        Assert.All(words, w => Assert.True(w.Bounds.X + w.Bounds.Width <= left + 60 + 0.5, $"{w.Text} ends at {w.Bounds.X + w.Bounds.Width - left}"));
+        Assert.EndsWith("!", words[^1].Text, StringComparison.Ordinal); // The selector .word-wrap:after is not rewritten.
+    }
+
     [Fact]
     public void Inline_elements_become_styled_spans()
     {

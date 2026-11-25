@@ -247,7 +247,8 @@ internal sealed class InlineCollector(BoxBuilder builder, ComputedStyle blockSty
                 : blockStyle.Rtl ? ParagraphDirection.RightToLeft
                 : ParagraphDirection.LeftToRight,
             FirstLineIndent = indent,
-            BreakLongWords = false,
+            BreakLongWords = blockStyle.OverflowWrap == CssOverflowWrap.BreakWord,
+            BreakAnywhere = blockStyle.OverflowWrap == CssOverflowWrap.Anywhere,
             Ellipsis = blockStyle.TextOverflowEllipsis && blockStyle.ClipOverflow,
         };
 

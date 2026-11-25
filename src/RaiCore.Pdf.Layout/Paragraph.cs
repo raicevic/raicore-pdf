@@ -184,6 +184,7 @@ public sealed class Paragraph
     private ParagraphDirection _direction;
     private double _firstLineIndent;
     private bool _breakLongWords;
+    private bool _breakAnywhere;
     private bool _ellipsis;
 
     /// <summary>Creates a paragraph. <paramref name="style"/> is the default for spans and sets the minimum line height (the CSS "strut").</summary>
@@ -229,6 +230,17 @@ public sealed class Paragraph
     {
         get => _breakLongWords;
         init => _breakLongWords = Changed(value);
+    }
+
+    /// <summary>
+    /// Like <see cref="BreakLongWords"/>, and those breaks inside words also count for the paragraph's min-content
+    /// width, so a table column or a shrink-to-fit box holding it can be as narrow as its widest character
+    /// (CSS <c>overflow-wrap: anywhere</c>). Off by default.
+    /// </summary>
+    public bool BreakAnywhere
+    {
+        get => _breakAnywhere;
+        init => _breakAnywhere = Changed(value);
     }
 
     /// <summary>

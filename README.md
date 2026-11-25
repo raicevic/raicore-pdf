@@ -354,7 +354,8 @@ applies other limits (and a time limit) to the work in its scope. The default `R
 
 Not yet: grid layout (rendered as blocks), `@page :nth()` and document counters in margin
 boxes (use `string-set`). `overflow` other than `visible` clips to the padding box (rounded corners included), and
-`text-overflow: ellipsis` ends a line that does not fit with "…". The size of an image in text (`max-width: 100%` on an
+`text-overflow: ellipsis` ends a line that does not fit with "…"; `overflow-wrap` (or `word-wrap`) `break-word` and
+`anywhere` break a word too long for its line. The size of an image in text (`max-width: 100%` on an
 inline `<img>`) and `min()`/`max()`/`clamp()` of a percentage are resolved against the width the containing block is
 expected to have, so they do not follow a flex item that shrinks; give the image `display: block` to make its
 `max-width` follow.

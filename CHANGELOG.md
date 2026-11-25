@@ -5,6 +5,11 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- HTML: `overflow-wrap` and its legacy name `word-wrap`: `break-word` and `anywhere` break a word too long for its line
+  (URLs, ids, paths) instead of letting it run past its box; `anywhere` also lets table columns and shrink-to-fit
+  boxes become narrower than the word. Layout: `Paragraph.BreakAnywhere` (#306).
+
 ### Changed
 - HTML diagnostics: Outlook's `mso-*` properties and vendor-prefixed pseudo-classes (`:-webkit-autofill`,
   `:-moz-focusring`) are reported as `Info`, like vendor-prefixed properties, instead of `Warning` (#159).
