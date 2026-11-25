@@ -33,6 +33,14 @@ internal static class CssSupport
         "text-transform", "text-underline-offset", "top", "unicode-bidi", "vertical-align", "visibility", "white-space",
         "widows", "width", "word-spacing", "z-index",
 
+        // Logical borders: AngleSharp maps them to physical sides by the element's direction.
+        "border-block", "border-block-color", "border-block-end", "border-block-end-color", "border-block-end-style",
+        "border-block-end-width", "border-block-start", "border-block-start-color", "border-block-start-style",
+        "border-block-start-width", "border-block-style", "border-block-width", "border-inline", "border-inline-color",
+        "border-inline-end", "border-inline-end-color", "border-inline-end-style", "border-inline-end-width",
+        "border-inline-start", "border-inline-start-color", "border-inline-start-style", "border-inline-start-width",
+        "border-inline-style", "border-inline-width",
+
         // Aliases the converter rewrites to the standard names.
         "-webkit-hyphens", "-webkit-hyphenate-character",
     };
