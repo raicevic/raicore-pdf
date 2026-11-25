@@ -11,6 +11,10 @@ and versions follow [Semantic Versioning](https://semver.org/).
 - HTML: `overflow-wrap` and its legacy name `word-wrap`: `break-word` and `anywhere` break a word too long for its line
   (URLs, ids, paths) instead of letting it run past its box; `anywhere` also lets table columns and shrink-to-fit
   boxes become narrower than the word. Layout: `Paragraph.BreakAnywhere` (#306).
+- HTML: `fieldset` and `legend` render like browsers: the fieldset's first `legend` straddles the top border, which
+  is cut behind it, and the content starts below it; the legend shrinks to fit and is placed by its auto margins, its
+  `text-align` or its `align` attribute. A fieldset contains its floats, and its default border is Chrome's light
+  gray. Layout: `ContainerBlock.HasLegend` and `ContainerBlock.LegendAlignment` (#158).
 
 ### Changed
 - HTML diagnostics: Outlook's `mso-*` properties and vendor-prefixed pseudo-classes (`:-webkit-autofill`,
