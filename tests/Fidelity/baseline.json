@@ -38,19 +38,19 @@
   "cerberus-fluid": {
     "pages": 2,
     "chrome_pages": 2,
-    "pixel": 0.7006,
+    "pixel": 0.8716,
     "text_near": 0.5698
   },
   "cerberus-hybrid": {
     "pages": 4,
     "chrome_pages": 3,
-    "pixel": 0.4261,
+    "pixel": 0.4262,
     "text_near": 0.4024
   },
   "cerberus-responsive": {
     "pages": 3,
     "chrome_pages": 3,
-    "pixel": 0.761,
+    "pixel": 0.9097,
     "text_near": 0.7233
   },
   "invoice": {
@@ -62,7 +62,7 @@
   "layout-showcase": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.9605,
+    "pixel": 0.9616,
     "text_near": 0.954
   },
   "leemunroe-email": {
@@ -80,7 +80,7 @@
   "postmark-invoice": {
     "pages": 2,
     "chrome_pages": 3,
-    "pixel": 0.6179,
+    "pixel": 0.6396,
     "text_near": 0.0239
   },
   "postmark-receipt": {
@@ -92,13 +92,13 @@
   "postmark-welcome": {
     "pages": 2,
     "chrome_pages": 2,
-    "pixel": 0.9803,
+    "pixel": 0.9804,
     "text_near": 0.8232
   },
   "rtl-multilingual": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.8615,
+    "pixel": 0.8621,
     "text_near": 0.658
   },
   "sparksuite-invoice": {
