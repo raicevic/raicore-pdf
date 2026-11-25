@@ -347,6 +347,10 @@ internal static class TableLayouter
             {
                 percent[c] = Math.Max(percent[c] ?? 0, p.Percent);
             }
+            else if (cell.Cell.Width is not null)
+            {
+                isFixed[c] = true; // A cell with a fixed width fixes its column, as in browsers: extra width goes to the others.
+            }
         }
 
         // Spanning cells: share any extra width over the spanned columns, in proportion to their max-content widths.

@@ -102,6 +102,26 @@ public class HtmlConversionTests
     }
 
     [Fact]
+    public void A_centered_box_in_a_fixed_width_cell_is_centered_in_the_cell()
+    {
+        // The e-mail layout from the fidelity corpus (leemunroe-email): the box's auto margins resolve against the cell.
+        var pdf = HtmlToPdf.ConvertToBytes("""
+            <style>@page { size: 400pt 400pt; margin: 0 }</style>
+            <body style="margin: 0">
+              <table style="width: 100%; border-spacing: 0"><tr>
+                <td style="padding: 0">&nbsp;</td>
+                <td style="width: 200pt; padding: 0"><div style="max-width: 200pt; margin: 0 auto; background: #ff0000">Box</div></td>
+                <td style="padding: 0">&nbsp;</td>
+              </tr></table>
+            </body>
+            """);
+        using var bitmap = Conversion.ToImage(pdf, page: 0, options: new RenderOptions(Dpi: 72));
+
+        var red = Enumerable.Range(0, bitmap.Width).Where(x => bitmap.GetPixel(x, 5) is { Red: > 200, Green: < 80 }).ToList();
+        Assert.Equal((100, 299), (red[0], red[^1]));
+    }
+
+    [Fact]
     public void Inline_elements_become_styled_spans()
     {
         var paragraph = Assert.Single(Paragraphs(Blocks("<p>plain <b>bold</b> <i>italic</i> <span style='color: #00ff00'>green</span></p>"))).Paragraph;

@@ -47,6 +47,19 @@ public class TableLayoutTests
     }
 
     [Fact]
+    public void A_cell_with_a_fixed_width_keeps_it_and_the_other_columns_take_the_extra_width()
+    {
+        // The layout of e-mails: gutter cells holding a no-break space beside a fixed-width content cell (#305).
+        var table = StyledTable(new BoxStyle { Width = 260 }, new TableRow(Cell("\u00A0"), new TableCell(Para("content")) { Width = 100 }, Cell("\u00A0")));
+
+        var layout = Paginated(table);
+
+        Assert.Equal(100, Width(layout, 1), 3);
+        Assert.Equal(80, Width(layout, 0), 3);
+        Assert.Equal(80, Width(layout, 2), 3);
+    }
+
+    [Fact]
     public void Columns_shrink_toward_their_minimum_and_overflow_below_it()
     {
         var table = Table(new TableRow(Cell("Supercalifragilistic expialidocious words"), Cell("x")));

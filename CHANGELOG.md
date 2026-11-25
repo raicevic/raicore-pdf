@@ -19,6 +19,9 @@ and versions follow [Semantic Versioning](https://semver.org/).
   font-size keywords (`small`, `x-large`, `larger`, ...); before, only the font longhands had an effect (#177).
 - HTML: a paragraph holding only a no-break space (`<p>&nbsp;</p>`, the spacer line of e-mails and word processor
   exports) is one line tall instead of collapsing to nothing (#305).
+- Tables: a cell with a fixed width keeps it when the table is wider than its columns need, and the other columns
+  take the extra width, as in browsers; in HTML its content is laid out for that width (a `margin: 0 auto` box in it
+  is centered in the cell, as in e-mail layouts with gutter cells).
 
 ## [1.3.0] - 2026-11-25
 
