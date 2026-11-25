@@ -204,7 +204,13 @@ internal sealed partial class ChartRenderer
         }
 
         var round = plot.Groups.All(g => g.Kind is ChartKind.Pie or ChartKind.Doughnut);
-        if (round)
+        if (plot.Groups.FirstOrDefault(g => g.Kind is ChartKind.Treemap or ChartKind.Sunburst) is { } hierarchy)
+        {
+            var box = inner ?? outer;
+            Paint(plot.Shape, null, null, ThinLine, () => Rect(box));
+            DrawHierarchy(hierarchy, box);
+        }
+        else if (round)
         {
             var box = inner ?? outer;
             Paint(plot.Shape, null, null, ThinLine, () => Rect(box));

@@ -270,6 +270,15 @@ internal enum ChartKind
 
     /// <summary>A stock chart (high-low-close lines).</summary>
     Stock,
+
+    /// <summary>Box and whisker plots (chartex <c>boxWhisker</c>): the statistics of each series' values by category.</summary>
+    BoxWhisker,
+
+    /// <summary>A treemap (chartex): nested rectangles, their areas in proportion to the values of their leaves.</summary>
+    Treemap,
+
+    /// <summary>A sunburst (chartex): rings of a hierarchy, their angles in proportion to the values of their leaves.</summary>
+    Sunburst,
 }
 
 /// <summary>How the series of a group are combined.</summary>
@@ -353,6 +362,65 @@ internal sealed class ChartGroup
 
     /// <summary>The data labels of all series, or <c>null</c>.</summary>
     public ChartDataLabels? Labels { get; set; }
+
+    /// <summary>Whether lines join the ends of floating bars (a waterfall's connector lines).</summary>
+    public bool Connectors { get; set; }
+
+    /// <summary>What box and whisker plots show besides the boxes and whiskers.</summary>
+    public BoxOptions Box { get; set; } = new();
+
+    /// <summary>Where a treemap puts the names of the nodes that have children.</summary>
+    public ParentLabels ParentLabels { get; set; } = ParentLabels.Overlapping;
+}
+
+/// <summary>What box and whisker plots show besides the boxes and whiskers (chartex <c>cx:visibility</c>).</summary>
+/// <param name="MeanLine">A line through the means of a series' boxes.</param>
+/// <param name="MeanMarker">A marker at each mean.</param>
+/// <param name="InnerPoints">The points between the whiskers.</param>
+/// <param name="Outliers">The points beyond the whiskers.</param>
+internal sealed record BoxOptions(bool MeanLine = false, bool MeanMarker = true, bool InnerPoints = false, bool Outliers = true);
+
+/// <summary>Where a treemap puts the names of the nodes that have children (chartex <c>parentLabelLayout</c>).</summary>
+internal enum ParentLabels
+{
+    /// <summary>Over the top-left corner of their children.</summary>
+    Overlapping,
+
+    /// <summary>In a strip above their children.</summary>
+    Banner,
+
+    /// <summary>Not shown.</summary>
+    None,
+}
+
+/// <summary>
+/// The statistics of a box and whisker plot of one series in one category: quartiles (by the file's quartile method),
+/// median, mean, whiskers (the furthest values within 1.5 times the interquartile range of the box) and the values.
+/// </summary>
+/// <param name="Category">The category's index on the category axis.</param>
+/// <param name="Q1">The first quartile.</param>
+/// <param name="Median">The median.</param>
+/// <param name="Q3">The third quartile.</param>
+/// <param name="Mean">The mean.</param>
+/// <param name="WhiskerLow">The end of the lower whisker.</param>
+/// <param name="WhiskerHigh">The end of the upper whisker.</param>
+/// <param name="Values">The values, ascending.</param>
+internal sealed record BoxStatistics(int Category, double Q1, double Median, double Q3, double Mean, double WhiskerLow, double WhiskerHigh, double[] Values);
+
+/// <summary>A node of a treemap's or sunburst's hierarchy: its name, value (the sum of its leaves) and children.</summary>
+internal sealed class ChartNode(string name)
+{
+    /// <summary>The name (a category).</summary>
+    public string Name { get; } = name;
+
+    /// <summary>The value: a leaf's own, or the sum of its children's.</summary>
+    public double Value { get; set; }
+
+    /// <summary>The index of a leaf's point (for its format and label), or -1 for a node with children.</summary>
+    public int Point { get; set; } = -1;
+
+    /// <summary>The children, in order.</summary>
+    public List<ChartNode> Children { get; } = [];
 }
 
 /// <summary>A series: its name, categories (or X values), values and format.</summary>
@@ -402,6 +470,21 @@ internal sealed class ChartSeries
 
     /// <summary>The data labels, or <c>null</c> for the group's.</summary>
     public ChartDataLabels? Labels { get; set; }
+
+    /// <summary>
+    /// Where floating bars start (waterfalls, funnels), by point, or <c>null</c> for bars from the axis: a point's bar
+    /// runs from its start to its start plus its value.
+    /// </summary>
+    public double?[]? Starts { get; set; }
+
+    /// <summary>The legend's entries for the series (a waterfall's increase, decrease and total), or <c>null</c> for its name.</summary>
+    public List<(string Text, PdfColor Color)>? LegendKeys { get; set; }
+
+    /// <summary>The box and whisker statistics of the series by category, or <c>null</c>.</summary>
+    public List<BoxStatistics>? Boxes { get; set; }
+
+    /// <summary>The root of a treemap's or sunburst's hierarchy (its children are the top level), or <c>null</c>.</summary>
+    public ChartNode? Hierarchy { get; set; }
 }
 
 /// <summary>The cached data of a series' categories, values or sizes.</summary>

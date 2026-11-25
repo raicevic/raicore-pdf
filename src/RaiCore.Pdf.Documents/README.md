@@ -54,7 +54,8 @@ DocToPdf.Convert("minutes.doc").Save("minutes.pdf");
   tracked changes and field codes.
 
 Charts in Word documents are drawn as vector graphics by the same chart engine as presentations' (columns, bars,
-lines, pies, areas, scatter, bubble, radar and stock charts); the newer chart types show the picture stored with them.
+lines, pies, areas, scatter, bubble, radar and stock charts, and the newer waterfall, histogram, pareto, box and
+whisker, funnel, treemap and sunburst charts); region maps show the picture stored with them.
 
 Not supported: text boxes and shapes as floating frames (their text follows their paragraph), surface charts, charts
 in `.doc`, RTF and OpenDocument files beyond their stored pictures, SmartArt, embedded objects (their preview image is

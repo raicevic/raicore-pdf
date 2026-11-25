@@ -541,7 +541,8 @@ public static class FuzzTargets
     });
 
     /// <summary>
-    /// A chart part (<c>c:chartSpace</c> XML, as in XLSX, DOCX and PPTX packages): parsed as the packages parse parts
+    /// A chart part (<c>c:chartSpace</c> or, for the newer chart types, <c>cx:chartSpace</c> XML, as in XLSX, DOCX and
+    /// PPTX packages): parsed as the packages parse parts
     /// (no DTDs, elements bounded), read by the chart engine (every other input with a theme and cell values for
     /// references without caches), drawn on a page and as an image (every third input in a tagged document, with the
     /// bundled fonts for even lengths) and written.
@@ -573,7 +574,7 @@ public static class FuzzTargets
 
         var odd = input.Length % 2 == 1;
         var chart = RaiCore.Pdf.Charts.ChartReader.Read(root, odd ? name => name == "accent1" ? PdfColor.FromRgb(200, 30, 30) : null : null, Limits, [],
-            odd ? formula => new RaiCore.Pdf.Charts.ChartReference([1.0, "two", 3.0, null, -5.0], formula.Length % 2 == 0 ? "0.0%" : null) : null);
+            odd ? formula => new RaiCore.Pdf.Charts.ChartReference([1.0, "two", 3.0, null, -5.0, "two", 7.5], formula.Length % 2 == 0 ? "0.0%" : null, 1 + (formula.Length % 3)) : null);
         if (chart is null)
         {
             return;
