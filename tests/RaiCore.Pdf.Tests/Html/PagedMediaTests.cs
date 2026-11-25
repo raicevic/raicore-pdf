@@ -1,9 +1,9 @@
 using PDFtoImage;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html;
-using RaiCore.Pdf.Tests.Extraction;
 using RaiCore.Pdf.Html.Css;
 using RaiCore.Pdf.Layout;
+using RaiCore.Pdf.Tests.Extraction;
 
 namespace RaiCore.Pdf.Tests.Html;
 
@@ -179,6 +179,70 @@ public class PagedMediaTests
         {
             Assert.InRange(gap, 10, 13); // Normal: about 1.15 em.
         }
+    }
+
+    [Theory]
+    [InlineData("font-family: Arial, sans-serif; font-size: 10pt", "", "LiberationSans", 10)] // The case from the samples (#178).
+    [InlineData("font-size: 10pt", "font-size: 2em", "LiberationSerif", 20)] // em and % refer to the page context.
+    [InlineData("font-size: 10pt", "font-size: 150%", "LiberationSerif", 15)]
+    [InlineData("font-size: 10pt", "font-size: larger", "LiberationSerif", 12)]
+    [InlineData("font-size: 10pt", "font-size: 1.5rem", "LiberationSerif", 18)] // rem still refers to the root.
+    [InlineData("font: italic bold 9pt sans-serif", "", "LiberationSans-BoldItalic", 9)]
+    [InlineData("font-weight: bold", "", "LiberationSerif-Bold", 12)]
+    [InlineData("font-style: italic", "", "LiberationSerif-Italic", 12)]
+    [InlineData("font-weight: bold", "font: 9pt serif", "LiberationSerif", 9)] // The box's shorthand resets what it inherits.
+    [InlineData("font-family: sans-serif", "font-family: monospace", "LiberationMono", 12)]
+    public void Margin_boxes_inherit_fonts_from_the_page_context(string page, string box, string font, double size)
+    {
+        var html = Document($"{page}; @top-center {{ content: \"MARK\"; {box} }}", "<p>body</p>", "body { font-family: serif }");
+        var glyph = Interpret.Page(HtmlToPdf.ConvertToBytes(html)).Glyphs.First(g => g.Text == "M");
+
+        Assert.Equal((font, size), (glyph.Font.Name, Math.Round(glyph.FontSize, 2)));
+    }
+
+    [Fact]
+    public void Margin_boxes_inherit_from_the_page_rules_of_each_page()
+    {
+        var html = Document("@bottom-center { content: \"MARK\" }", Chapters(3), """
+            @page :first { font-size: 20pt }
+            @page :left { font-weight: bold }
+            @page chapter { font-family: monospace }
+            h1:nth-of-type(3) { page: chapter }
+            """);
+        var pdf = HtmlToPdf.ConvertToBytes(html);
+
+        var fonts = Enumerable.Range(0, PdfReader.Open(pdf).Pages.Count)
+            .Select(page => Interpret.Page(pdf, page).Glyphs.LastOrDefault(g => g.Text == "M") is { } m ? $"{m.Font.Name} {Math.Round(m.FontSize, 2)}" : null)
+            .Where(f => f is not null)
+            .ToList();
+        // Page 4 is a left page where the third chapter's text runs on, outside the named page.
+        Assert.Equal(["LiberationSerif 20", "LiberationSerif-Bold 12", "LiberationMono 12", "LiberationSerif-Bold 12"], fonts);
+    }
+
+    [Theory]
+    [InlineData("color: #0000ff", "", true)]
+    [InlineData("color: #0000ff", "color: #ff0000", false)]
+    [InlineData("", "", false)]
+    public void Margin_boxes_inherit_the_color_of_the_page_context(string page, string box, bool blue)
+    {
+        var html = Document($"{page}; @top-center {{ content: \"MARKED\"; font-size: 20pt; {box} }}", "<p>body</p>");
+        using var bitmap = Conversion.ToImage(HtmlToPdf.ConvertToBytes(html), page: 0, options: new RenderOptions(Dpi: 72));
+
+        var found = Enumerable.Range(0, 56).Any(y => Enumerable.Range(0, bitmap.Width).Any(x => bitmap.GetPixel(x, y) is { Blue: > 200, Red: < 80, Green: < 80 }));
+        Assert.Equal(blue, found);
+    }
+
+    [Theory]
+    [InlineData("line-height: 30pt", "", 30)]
+    [InlineData("line-height: 2", "font-size: 15pt", 30)] // A number is inherited as it is.
+    [InlineData("font-size: 10pt; line-height: 200%", "font-size: 15pt", 20)] // A percentage computes to a length on the page.
+    [InlineData("line-height: 30pt", "line-height: 18pt", 18)]
+    public void Margin_boxes_inherit_the_line_height_of_the_page_context(string page, string box, double gap)
+    {
+        var glyphs = Interpret.Page(HtmlToPdf.ConvertToBytes(Document($"{page}; @top-left {{ content: \"A\\A B\"; {box} }}", "<p>body</p>")))
+            .Glyphs.Where(g => g.Text is "A" or "B").ToList();
+
+        Assert.Equal(gap, glyphs[1].Origin.Y - glyphs[0].Origin.Y, 1);
     }
 
     [Fact]

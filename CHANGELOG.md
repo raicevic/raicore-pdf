@@ -22,6 +22,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
 - Tables: a cell with a fixed width keeps it when the table is wider than its columns need, and the other columns
   take the extra width, as in browsers; in HTML its content is laid out for that width (a `margin: 0 auto` box in it
   is centered in the cell, as in e-mail layouts with gutter cells).
+- HTML: `@page` margin boxes inherit the fonts, line height and color set on `@page` (also named, `:first`, `:left`
+  and `:right` page rules), as in CSS Paged Media; before, they started from the root element's style (#178).
 
 ## [1.3.0] - 2026-11-25
 
