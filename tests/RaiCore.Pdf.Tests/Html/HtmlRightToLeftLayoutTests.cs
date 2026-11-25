@@ -105,6 +105,30 @@ public class HtmlRightToLeftLayoutTests
     }
 
     [Theory]
+    [InlineData("rtl", "border-inline-start: 6px solid red; border-inline-end: 2px solid blue", 2, 6)]
+    [InlineData("ltr", "border-inline-start: 6px solid red; border-inline-end: 2px solid blue", 6, 2)]
+    [InlineData("rtl", "border-inline-width: 6px 2px; border-inline-style: solid", 2, 6)]
+    [InlineData("rtl", "border-inline-start-width: 6px; border-inline-start-style: solid", 0, 6)]
+    [InlineData("rtl", "border-inline: 3px solid red", 3, 3)]
+    public void Logical_borders_follow_the_direction(string dir, string css, double leftPx, double rightPx)
+    {
+        var box = Blocks($"<body style=\"margin: 0\"><div dir=\"{dir}\" id=\"b\" style=\"{css}\">x</div></body>").Single(b => b.Id == "b");
+
+        Assert.Equal(leftPx * Px, box.Style.Border.Left.Width, 3);
+        Assert.Equal(rightPx * Px, box.Style.Border.Right.Width, 3);
+    }
+
+    [Fact]
+    public void Logical_block_borders_are_the_top_and_bottom()
+    {
+        var box = Blocks("<div id=\"b\" style=\"border-block-start: 4px solid red; border-block-end-width: 2px; border-block-end-style: solid; border-block-end-color: blue\">x</div>")
+            .Single(b => b.Id == "b");
+
+        Assert.Equal((4 * Px, PdfColor.FromRgb(255, 0, 0)), (Math.Round(box.Style.Border.Top.Width, 3), box.Style.Border.Top.Color));
+        Assert.Equal((2 * Px, PdfColor.FromRgb(0, 0, 255)), (Math.Round(box.Style.Border.Bottom.Width, 3), box.Style.Border.Bottom.Color));
+    }
+
+    [Theory]
     [InlineData("p { margin: 0 }", "p { margin: 0; --raicore-rtl-margin-right: 0; --raicore-rtl-margin-left: 0 }")]
     [InlineData("p{padding-left:1px}", "p{padding-left:1px; --raicore-rtl-padding-left: 1px}")]
     [InlineData("p { margin-inline-start: 2em !important; color: red }", "p { margin-inline-start: 2em !important; --raicore-rtl-margin-right: 2em !important; color: red }")]

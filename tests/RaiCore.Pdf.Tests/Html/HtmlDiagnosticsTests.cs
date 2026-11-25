@@ -235,6 +235,25 @@ public class HtmlDiagnosticsTests
     }
 
     [Fact]
+    public async Task Logical_borders_are_supported_but_their_values_are_checked()
+    {
+        var declarations = new[] { "block", "inline" }
+            .SelectMany(axis => new[] { $"border-{axis}", $"border-{axis}-start", $"border-{axis}-end" })
+            .SelectMany(side => new[] { $"{side}: 1px solid red", $"{side}-width: 2px", $"{side}-style: dotted", $"{side}-color: blue" });
+        var found = await Diagnose($$"""
+            <style>
+              .a { {{string.Join("; ", declarations)}} }
+              .b { border-inline-start: 4pt bogus; border-start-start-radius: 4px }
+            </style>
+            <p class="a" dir="rtl">a</p><p class="b">b</p>
+            """);
+
+        // Logical corner radii are not supported (yet).
+        Assert.Equal([(HtmlDiagnosticKind.UnsupportedValue, "border-inline-start: 4pt bogus"), (HtmlDiagnosticKind.UnsupportedProperty, "border-start-start-radius")],
+            found.Select(d => (d.Kind, d.Subject)));
+    }
+
+    [Fact]
     public async Task Invalid_values_and_values_laid_out_differently_are_reported()
     {
         var found = await Diagnose("""

@@ -153,8 +153,8 @@ own engine. Supported today:
   `auto`), `<bdi>` and `<bdo>`; right-to-left paragraphs start on the right, and `text-align: start`/`end` follow the
   direction. Right-to-left tables put their first column on the right, flex rows and the cross axis of flex columns
   start on the right, lists and `<dd>` are indented on the right with the markers there, and a box narrower than its
-  containing block goes to the containing block's start side. The logical margins and padding (`margin-inline-start`,
-  `padding-inline`, ...) follow each element's direction.
+  containing block goes to the containing block's start side. The logical margins, padding and borders
+  (`margin-inline-start`, `padding-inline`, `border-inline-start`, ...) follow each element's direction.
 - Generated content: `::before` and `::after` (also `:before`/`:after`) with their own styles, inline, `inline-block`
   or block-level, in any element, list item, table cell or flex container. `content` takes strings with CSS escapes
   (`"\201C"`, `"\A"` with `white-space: pre`), `attr()`, `open-quote`/`close-quote` (following `quotes`, nested

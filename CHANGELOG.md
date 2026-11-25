@@ -5,6 +5,10 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- HTML: the logical borders (`border-inline-start`, `border-block`, their `-width`, `-style` and `-color` longhands,
+  ...) are no longer reported as unsupported properties; they follow each element's direction (#154).
+
 ## [1.3.0] - 2026-11-25
 
 Closing format gaps: the newer chart types, chart sheets, comments in Word documents, every pivot table style, and
