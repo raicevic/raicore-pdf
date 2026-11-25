@@ -6,6 +6,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- Layout: `FlowDocument.PageBackground`, called for every page before its content is drawn (a background artifact
+  in tagged documents) (#156).
 - HTML: `overflow-wrap` and its legacy name `word-wrap`: `break-word` and `anywhere` break a word too long for its line
   (URLs, ids, paths) instead of letting it run past its box; `anywhere` also lets table columns and shrink-to-fit
   boxes become narrower than the word. Layout: `Paragraph.BreakAnywhere` (#306).
@@ -38,6 +40,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
 - HTML: disc, circle and square list markers sit where browsers draw them (from the font's ascent, as in Blink),
   in left-to-right and right-to-left lists; a right-to-left list item no longer reports a false `Overflow` for the
   marker hanging outside it on the right (#153).
+- HTML: the root element's background color (the body's when the root has none) fills the page area of every page,
+  as in browsers, instead of only the body's box (#156).
 
 ## [1.3.0] - 2026-11-25
 

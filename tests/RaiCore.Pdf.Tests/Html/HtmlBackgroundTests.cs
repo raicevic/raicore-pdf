@@ -185,6 +185,44 @@ public class HtmlBackgroundTests
         Assert.Equal(new SKColor(0, 0, 255), bitmap.GetPixel(500, 80));
     }
 
+    [Theory]
+    [InlineData("body { background: #0000ff }", 0x0000ff)] // The body's background paints the canvas (#156).
+    [InlineData("html { background: #0000ff }", 0x0000ff)]
+    [InlineData("html { background: transparent } body { background: #0000ff }", 0x0000ff)]
+    [InlineData("html { background: #ff0000 } body { background: #0000ff }", 0xff0000)] // The root's wins; the body keeps its own.
+    [InlineData("", 0xffffff)]
+    public void The_root_background_paints_the_page_area_of_every_page(string css, int canvas)
+    {
+        var pdf = HtmlToPdf.ConvertToBytes($$"""
+            <style>@page { size: 200pt 200pt; margin: 20pt } body { margin: 0 } {{css}}</style>
+            <p style="margin: 0">one</p><p style="margin: 0; break-before: page">two</p>
+            """);
+
+        // Page 1 below the body (which ends after "two"); page 0 in the margin.
+        using var last = Conversion.ToImage(pdf, page: 1, options: new RenderOptions(Dpi: 72));
+        using var first = Conversion.ToImage(pdf, page: 0, options: new RenderOptions(Dpi: 72));
+        Assert.Equal(new SKColor((uint)(0xff000000 | canvas)), last.GetPixel(100, 150));
+        Assert.Equal(SKColors.White, first.GetPixel(10, 10)); // The page margin stays blank, as in Chrome.
+    }
+
+    [Fact]
+    public void A_root_background_with_an_image_stays_on_its_box()
+    {
+        var flow = HtmlToPdf.CreateFlowDocument($"<body style='background: url({RedPng}) #0000ff'><p>x</p></body>");
+
+        Assert.Null(flow.PageBackground);
+        Assert.Equal(PdfColor.FromRgb(0, 0, 255), Flatten(flow.Blocks).First(b => b.Style.BackgroundLayers.Count > 0).Style.Background);
+    }
+
+    [Fact]
+    public void A_propagated_background_leaves_its_box()
+    {
+        var flow = HtmlToPdf.CreateFlowDocument("<body style='background: #0000ff'><p>x</p></body>");
+
+        Assert.NotNull(flow.PageBackground);
+        Assert.DoesNotContain(Flatten(flow.Blocks), b => b.Style.Background is not null);
+    }
+
     private static BoxStyle Box(string css, string? sheet = null)
     {
         var html = (sheet is null ? string.Empty : $"<style>#b {{ {sheet} }}</style>") + $"<div id=\"b\" style=\"{css}\">x</div>";

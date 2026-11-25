@@ -128,6 +128,12 @@ public sealed class FlowDocument
     public Action<PdfCanvas, PageInfo>? PageDecorator { get; set; }
 
     /// <summary>
+    /// Called for every page before its content is drawn, to paint behind it, e.g. a page color (the HTML converter
+    /// paints the root element's background there). In a tagged document it is a background artifact.
+    /// </summary>
+    public Action<PdfCanvas, PageInfo>? PageBackground { get; set; }
+
+    /// <summary>
     /// Receives the content that did not fit where it was laid out (<see cref="LayoutDiagnostic"/>): lines and tables
     /// wider than their boxes, content taller than a page, images scaled down to fit one. Called when the document is
     /// rendered (<see cref="Render"/>, <see cref="RenderTo"/>), once per kind and block, in layout order. <c>null</c>
@@ -232,6 +238,14 @@ public sealed class FlowDocument
             var (context, setup) = result.Frames[i];
             var page = document.AddPage(setup.Size);
             rendered.Add(page);
+            var markers = result.Markers.Where(m => m.Page == i).Select(m => m.Marker).ToList();
+            var info = new PageInfo(context, pages.Count, setup, markers);
+            if (PageBackground is not null)
+            {
+                LayoutTagging.BeginArtifact(page.Canvas, PdfArtifactKind.Background);
+                PageBackground(page.Canvas, info);
+                LayoutTagging.End(page.Canvas);
+            }
 
             // Content is laid out from the left margin of the document's setup; pages with another left margin shift it.
             var shift = setup.UsedMargins.Left - Setup.UsedMargins.Left;
@@ -251,9 +265,8 @@ public sealed class FlowDocument
             }
 
             // Headers, footers and page numbers repeat on every page: artifacts in a tagged document.
-            var markers = result.Markers.Where(m => m.Page == i).Select(m => m.Marker).ToList();
             LayoutTagging.BeginArtifact(page.Canvas, PdfArtifactKind.Pagination);
-            PageDecorator?.Invoke(page.Canvas, new PageInfo(context, pages.Count, setup, markers));
+            PageDecorator?.Invoke(page.Canvas, info);
             LayoutTagging.End(page.Canvas);
             if (placed is not null)
             {

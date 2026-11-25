@@ -332,6 +332,8 @@ public static partial class HtmlToPdf
             Diagnostics = diagnostics,
             PageContentWidth = pageRules.VariesPerPage ? name => pageRules.Resolve(new PageContext(3, name, PageSide.Right, IsBlank: false)).ContentWidth : null,
         };
+        // The root's background (the body's when the root has none) paints the page area of every page, not a box.
+        var canvas = builder.TakeCanvasBackground();
         var flow = Build(builder, setup, pageRules);
 
         // Cross-references to pages (target-counter(..., page)) are only known after pagination: lay out again with
@@ -345,6 +347,17 @@ public static partial class HtmlToPdf
             }
 
             flow = Build(builder, setup, pageRules);
+        }
+
+        if (canvas is { } color)
+        {
+            flow.PageBackground = (pdf, page) =>
+            {
+                var margins = page.Setup.UsedMargins;
+                pdf.SaveState().SetFillColor(color)
+                    .Rectangle(margins.Left, margins.Bottom, page.Setup.ContentWidth, page.Setup.ContentHeight).Fill()
+                    .RestoreState();
+            };
         }
 
         if (paged.HasMarginBoxes && document.DocumentElement is { } root)
