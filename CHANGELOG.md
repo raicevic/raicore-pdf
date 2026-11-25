@@ -22,6 +22,9 @@ and versions follow [Semantic Versioning](https://semver.org/).
 - Tables: a cell with a fixed width keeps it when the table is wider than its columns need, and the other columns
   take the extra width, as in browsers; in HTML its content is laid out for that width (a `margin: 0 auto` box in it
   is centered in the cell, as in e-mail layouts with gutter cells).
+- Tables: header rows that leave no room for a body row below them (spreadsheet print titles, a `<thead>` taller
+  than a page) are shown once where the table starts instead of being repeated on every page until
+  `ResourceLimits.MaxPages`, or pushing the body off the pages (#249).
 
 ## [1.3.0] - 2026-11-25
 
