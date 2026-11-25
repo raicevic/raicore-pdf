@@ -1,6 +1,7 @@
 using PDFtoImage;
 using RaiCore.Pdf.Fonts;
 using RaiCore.Pdf.Html;
+using RaiCore.Pdf.Tests.Extraction;
 using RaiCore.Pdf.Html.Css;
 using RaiCore.Pdf.Layout;
 
@@ -137,6 +138,47 @@ public class PagedMediaTests
         // Margin boxes center their content vertically by default: the text's middle is near the margin's (28 pt).
         var middle = (red.Min(p => p.y) + red.Max(p => p.y)) / 2.0;
         Assert.InRange(middle, 24, 32);
+    }
+
+    [Theory]
+    [InlineData("font: 8pt Arial, sans-serif", "LiberationSans", 8)] // The case from the samples (#177).
+    [InlineData("font: italic bold 14pt serif", "LiberationSerif-BoldItalic", 14)]
+    [InlineData("font: italic bold 14pt serif; font-weight: normal", "LiberationSerif-Italic", 14)] // Later longhands win.
+    [InlineData("font-weight: bold; font: 9pt serif", "LiberationSerif", 9)] // The shorthand resets what it leaves out.
+    [InlineData("font-size: 20pt; font: bogus", "LiberationSans", 20)] // An invalid shorthand is ignored.
+    [InlineData("font: 8pt var(--f)", "LiberationSans", 12)]
+    [InlineData("font: caption", "LiberationSans", 12)] // System fonts are not supported.
+    [InlineData("font: small monospace", "LiberationMono", 9.75)]
+    [InlineData("font: larger serif", "LiberationSerif", 14.4)]
+    [InlineData("font-size: smaller", "LiberationSans", 10)]
+    [InlineData("font-size: x-large", "LiberationSans", 18)]
+    public void Margin_boxes_take_the_font_shorthand_and_keywords(string css, string font, double size)
+    {
+        var html = Document($"@top-center {{ content: \"MARK\"; {css} }}", "<p>body</p>", "html { font-family: sans-serif }");
+        var glyphs = Interpret.Page(HtmlToPdf.ConvertToBytes(html)).Glyphs.Where(g => g.Text == "M").ToList();
+
+        Assert.Equal((font, size), (glyphs[0].Font.Name, Math.Round(glyphs[0].FontSize, 2)));
+    }
+
+    [Theory]
+    [InlineData("font: 10pt/3 serif", 30)]
+    [InlineData("font: 10pt/24pt serif", 24)]
+    [InlineData("line-height: 2em; font-size: 10pt", 20)] // An em refers to the box's own font size, wherever it is set.
+    [InlineData("font: 10pt/3 serif; font: 10pt serif", 0)] // The shorthand resets line-height to normal.
+    public void Margin_boxes_take_the_line_height(string css, double lineHeight)
+    {
+        var two = Interpret.Page(HtmlToPdf.ConvertToBytes(Document($"@top-left {{ content: \"A\\A B\"; white-space: pre; {css} }}", "<p>body</p>")))
+            .Glyphs.Where(g => g.Text is "A" or "B").ToList();
+
+        var gap = two[1].Origin.Y - two[0].Origin.Y;
+        if (lineHeight > 0)
+        {
+            Assert.Equal(lineHeight, gap, 1);
+        }
+        else
+        {
+            Assert.InRange(gap, 10, 13); // Normal: about 1.15 em.
+        }
     }
 
     [Fact]

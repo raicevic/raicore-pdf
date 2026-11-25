@@ -301,12 +301,34 @@ internal sealed partial class PagedMedia
             VerticalAlign = "middle",
             LineHeight = LineHeight.Normal,
         };
+        var lineHeight = "normal"; // Resolved last: an em or percentage refers to the box's own font size.
         foreach (var (property, value) in declarations)
+        {
+            if (property == "font")
+            {
+                // The shorthand sets every font longhand; those it leaves out go back to their initial values.
+                if (FontLonghands(value) is { } longhands)
+                {
+                    foreach (var (longhand, longhandValue) in longhands)
+                    {
+                        Apply(longhand, longhandValue);
+                    }
+                }
+            }
+            else
+            {
+                Apply(property, value);
+            }
+        }
+
+        return style with { LineHeight = ComputedStyle.ParseLineHeight(lineHeight, style.FontSize, root.FontSize, default) };
+
+        void Apply(string property, string value)
         {
             var lower = value.Trim().ToLowerInvariant();
             style = property switch
             {
-                "font-size" => CssValues.ParseLength(lower, root.FontSize, root.FontSize) switch
+                "font-size" => FontSizeKeyword(lower, root.FontSize) is { } keyword ? style with { FontSize = keyword } : CssValues.ParseLength(lower, root.FontSize, root.FontSize) switch
                 {
                     { Kind: CssLengthKind.Points } points => style with { FontSize = points.Value },
                     { Kind: CssLengthKind.Percent } percent => style with { FontSize = root.FontSize * percent.Value / 100 },
@@ -321,10 +343,64 @@ internal sealed partial class PagedMedia
                 "vertical-align" => style with { VerticalAlign = lower },
                 _ => style,
             };
+            if (property == "line-height")
+            {
+                lineHeight = lower;
+            }
         }
-
-        return style;
     }
+
+    /// <summary>
+    /// The longhands of a <c>font</c> shorthand, with initial values for those it leaves out, or <c>null</c> when the
+    /// value is invalid, a system font (<c>caption</c>, ...) or holds variables.
+    /// </summary>
+    internal static List<(string Property, string Value)>? FontLonghands(string value)
+    {
+        var trimmed = value.Trim();
+        try
+        {
+            var declaration = new AngleSharp.Css.Parser.CssParser().ParseDeclaration($"font: {trimmed}");
+            if (declaration is null)
+            {
+                return null;
+            }
+
+            var size = declaration.GetPropertyValue("font-size");
+            var family = declaration.GetPropertyValue("font-family");
+            if (string.IsNullOrEmpty(size) || string.IsNullOrEmpty(family))
+            {
+                // AngleSharp reads a system font (caption, menu, ...) as a family name without a size.
+                return null;
+            }
+
+            string Or(string longhand, string initial) => declaration.GetPropertyValue(longhand) is { Length: > 0 } v ? v : initial;
+            return
+            [
+                ("font-style", Or("font-style", "normal")), ("font-weight", Or("font-weight", "normal")), ("font-size", size),
+                ("line-height", Or("line-height", "normal")), ("font-family", family),
+            ];
+        }
+        catch (NullReferenceException)
+        {
+            return null; // AngleSharp throws on some invalid values (see CssDiagnostics.IsAccepted).
+        }
+    }
+
+    /// <summary>The size of a font-size keyword in points (<c>small</c>, <c>larger</c>, ...), like Chrome's, or <c>null</c>.</summary>
+    internal static double? FontSizeKeyword(string keyword, double parentSize) => keyword switch
+    {
+        "xx-small" => 6.75,
+        "x-small" => 7.5,
+        "small" => 9.75,
+        "medium" => 12,
+        "large" => 13.5,
+        "x-large" => 18,
+        "xx-large" => 24,
+        "xxx-large" => 36,
+        "larger" => parentSize * 1.2,
+        "smaller" => parentSize / 1.2,
+        _ => null,
+    };
 
     private void AddStringSet(IElement element, string value)
     {

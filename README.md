@@ -216,8 +216,8 @@ h1 { string-set: chapter content(); }
 
 - Page sizes: lengths (`size: 210mm 297mm`), `landscape`/`portrait`, and the keywords `A0`-`A10`, `B0`-`B10`,
   `JIS-B4`, `JIS-B5`, `letter`, `legal` and `ledger` (in any case).
-- Margin boxes: `top-`/`bottom-` `left`, `center`, `right` and corners, with font, color, alignment and
-  vertical-align.
+- Margin boxes: `top-`/`bottom-` `left`, `center`, `right` and corners, with font (also the `font` shorthand), line
+  height, color, alignment and vertical-align.
 - Page selectors: `:first`, `:left`, `:right`, `:blank` and page names, combined (`@page chapter:first`) and in
   lists, cascaded by specificity. Each page gets its own `size` and margins from them, e.g. mirrored margins on left
   and right pages, and margin boxes are placed in each page's own margins.
