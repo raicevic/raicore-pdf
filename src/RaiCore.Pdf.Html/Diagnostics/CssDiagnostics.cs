@@ -133,11 +133,15 @@ internal static partial class CssDiagnostics
             }
             catch (DomException)
             {
+                // A browser's own pseudo-class (:-webkit-autofill, :-moz-focusring) is mostly for forms and focus on screen.
+                var vendor = VendorPseudoClassRegex().Match(selector);
                 diagnostics.Report(
                     HtmlDiagnosticKind.UnsupportedSelector,
-                    HtmlDiagnosticSeverity.Warning,
+                    vendor.Success ? HtmlDiagnosticSeverity.Info : HtmlDiagnosticSeverity.Warning,
                     Shorten(selector.Trim()),
-                    "The selector is not supported: the rule is ignored.");
+                    vendor.Success
+                        ? $"The vendor-prefixed pseudo-class {vendor.Value} is not supported: the rule is ignored."
+                        : "The selector is not supported: the rule is ignored.");
             }
         }
 
@@ -154,6 +158,12 @@ internal static partial class CssDiagnostics
             }
 
             var value = ImportantRegex().Replace(rawValue, string.Empty).Trim();
+            if (CssSupport.IsOutlookOnly(property))
+            {
+                Report(HtmlDiagnosticKind.UnsupportedProperty, HtmlDiagnosticSeverity.Info, property, $"The Outlook-only property {property} is ignored.");
+                continue;
+            }
+
             if (CssSupport.NoEffectInPrint.Contains(property) || (CssSupport.IsVendorPrefixed(property) && !CssSupport.Supported.Contains(property)))
             {
                 var vendor = CssSupport.IsVendorPrefixed(property) && !CssSupport.NoEffectInPrint.Contains(property);
@@ -264,6 +274,9 @@ internal static partial class CssDiagnostics
 
     [GeneratedRegex(@"(?<colons>::?)(?<name>-?[a-zA-Z][a-zA-Z0-9-]*)")]
     private static partial Regex PseudoElementRegex();
+
+    [GeneratedRegex(@"(?<!:):-[a-zA-Z]+-[a-zA-Z0-9-]*")]
+    private static partial Regex VendorPseudoClassRegex();
 
     [GeneratedRegex(@"\s*!\s*important\s*$", RegexOptions.IgnoreCase)]
     private static partial Regex ImportantRegex();
