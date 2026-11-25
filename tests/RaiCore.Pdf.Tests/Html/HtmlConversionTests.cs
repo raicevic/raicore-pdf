@@ -173,6 +173,29 @@ public class HtmlConversionTests
         Assert.Equal(Enum.Parse<TextAlignment>(expected), Paragraph(Blocks(html), "text").Paragraph.Alignment);
     }
 
+    [Theory]
+    [InlineData("<a href='#' class='btn btn-primary'>link</a>", 255, 255, 255)] // Bootstrap's buttons (#151).
+    [InlineData("<a href='#' class='btn btn-nested'>link</a>", 255, 255, 255)] // A variable holding a variable.
+    [InlineData("<a href='#' class='undefined'>link</a>", 51, 51, 51)] // Invalid at computed-value time: inherited.
+    [InlineData("<span class='scope'><a href='#'>link</a></span>", 0, 128, 0)] // A variable set on an ancestor.
+    [InlineData("<a href='#'>link</a>", 0, 0, 238)] // The user agent's link color.
+    public void Colors_set_through_custom_properties_beat_the_link_color(string link, byte r, byte g, byte b)
+    {
+        var blocks = Blocks($$"""
+            <style>
+              :root { --bs-white: #fff }
+              .btn { color: var(--bs-btn-color) }
+              .btn-primary { --bs-btn-color: #fff }
+              .btn-nested { --bs-btn-color: var(--bs-white) }
+              .undefined { color: var(--not-defined) }
+              .scope { --c: green } .scope a { color: var(--c) }
+            </style>
+            <p style="color: #333">{{link}}</p>
+            """);
+
+        Assert.Equal(PdfColor.FromRgb(r, g, b), Color(blocks, "link"));
+    }
+
     [Fact]
     public void Inline_elements_become_styled_spans()
     {
