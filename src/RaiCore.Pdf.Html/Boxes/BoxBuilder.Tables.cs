@@ -185,7 +185,11 @@ internal sealed partial class BoxBuilder
         return new TableCell(content)
         {
             Tag = CellTag(td, headerGroup),
-            Style = new BoxStyle { Padding = box.Padding, Border = box.Border, Background = box.Background, BackgroundClip = box.BackgroundClip, BorderRadius = box.BorderRadius },
+            Style = new BoxStyle
+            {
+                Padding = box.Padding, Border = box.Border, Background = box.Background, BackgroundClip = box.BackgroundClip, BackgroundLayers = box.BackgroundLayers,
+                BorderRadius = box.BorderRadius,
+            },
             ColumnSpan = Math.Clamp(Integer(td.GetAttribute("colspan")) ?? 1, 1, MaxColumnSpan),
             RowSpan = Math.Clamp(Integer(td.GetAttribute("rowspan")) ?? 1, 1, MaxRowSpan),
             VerticalAlignment = valign switch

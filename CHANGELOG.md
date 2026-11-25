@@ -42,6 +42,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
   marker hanging outside it on the right (#153).
 - HTML: the root element's background color (the body's when the root has none) fills the page area of every page,
   as in browsers, instead of only the body's box (#156).
+- HTML: a table cell paints its background images and gradients (e-mail "bulletproof" backgrounds), not only its
+  color; a cell split across pages in a collapsed-border table paints them on each page (#157).
 
 ## [1.3.0] - 2026-11-25
 
