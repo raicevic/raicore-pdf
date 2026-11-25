@@ -122,7 +122,7 @@
   "weasyprint-letter": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.6569,
+    "pixel": 0.6612,
     "text_near": 0.785
   },
   "weasyprint-report": {
