@@ -27,6 +27,9 @@ and versions follow [Semantic Versioning](https://semver.org/).
 - Tables: a cell with a fixed width keeps it when the table is wider than its columns need, and the other columns
   take the extra width, as in browsers; in HTML its content is laid out for that width (a `margin: 0 auto` box in it
   is centered in the cell, as in e-mail layouts with gutter cells).
+- HTML: the alignment an `align` attribute gives (`<td align="center">`, `<div align="center">`) and that of
+  `<center>` no longer reach into tables, as in browsers: table-based e-mails center their layout without centering
+  the text in it (#150).
 - HTML: `@page` margin boxes inherit the fonts, line height and color set on `@page` (also named, `:first`, `:left`
   and `:right` page rules), as in CSS Paged Media; before, they started from the root element's style (#178).
 - Tables: header rows that leave no room for a body row below them (spreadsheet print titles, a `<thead>` taller

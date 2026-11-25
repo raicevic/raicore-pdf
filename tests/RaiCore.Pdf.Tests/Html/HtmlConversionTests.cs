@@ -153,6 +153,26 @@ public class HtmlConversionTests
         Assert.EndsWith("!", words[^1].Text, StringComparison.Ordinal); // The selector .word-wrap:after is not rewritten.
     }
 
+    [Theory]
+    [InlineData("<td align='center'>{0}</td>", "Center")]
+    [InlineData("<td align='center'><table><tr><td>{0}</td></tr></table></td>", "Start")] // Not into tables (#150).
+    [InlineData("<td align='center'><div><table><tr><td><p>{0}</p></td></tr></table></div></td>", "Start")]
+    [InlineData("<td align='right'><table><tr><td>{0}</td></tr></table></td>", "Start")]
+    [InlineData("<td align='center'><table><tr><td align='center'>{0}</td></tr></table></td>", "Center")]
+    [InlineData("<td align='center'><table><tr><td style='text-align: center'>{0}</td></tr></table></td>", "Center")]
+    [InlineData("<td align='center'><p style='text-align: right'>{0}</p></td>", "Right")]
+    [InlineData("<td style='text-align: center'><table><tr><td>{0}</td></tr></table></td>", "Center")] // CSS inherits into tables.
+    [InlineData("<td><center><table><tr><td>{0}</td></tr></table></center></td>", "Start")]
+    [InlineData("<td><center><p>{0}</p></center></td>", "Center")]
+    [InlineData("<td><div align='center'><table><tr><td>{0}</td></tr></table></div></td>", "Start")]
+    public void Alignment_from_an_align_attribute_does_not_reach_into_tables(string cell, string expected)
+    {
+        // Standards mode: in quirks mode every table resets text-align anyway.
+        var html = $"<!DOCTYPE html><table><tr>{string.Format(System.Globalization.CultureInfo.InvariantCulture, cell, "text")}</tr></table>";
+
+        Assert.Equal(Enum.Parse<TextAlignment>(expected), Paragraph(Blocks(html), "text").Paragraph.Alignment);
+    }
+
     [Fact]
     public void Inline_elements_become_styled_spans()
     {
@@ -458,7 +478,12 @@ public class HtmlConversionTests
         HtmlToPdf.CreateFlowDocument(html, new HtmlConverterOptions { Page = page ?? new HtmlConverterOptions().Page, BaseUri = baseUri }).Blocks;
 
     private static IEnumerable<Block> Flatten(IEnumerable<Block> blocks) =>
-        blocks.SelectMany(b => b is ContainerBlock c ? Flatten(c.Children).Prepend(b) : [b]);
+        blocks.SelectMany(b => b switch
+        {
+            ContainerBlock c => Flatten(c.Children).Prepend(b),
+            TableBlock t => Flatten(t.Rows.SelectMany(r => r.Cells).SelectMany(cell => cell.Content)).Prepend(b),
+            _ => [b],
+        });
 
     private static IEnumerable<ParagraphBlock> Paragraphs(IEnumerable<Block> blocks) => Flatten(blocks).OfType<ParagraphBlock>();
 

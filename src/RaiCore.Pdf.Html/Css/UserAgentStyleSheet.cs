@@ -59,7 +59,7 @@ internal static class UserAgentStyleSheet
         :where(sub, sup) { font-size: smaller; }
         :where(sub) { vertical-align: sub; }
         :where(sup) { vertical-align: super; }
-        :where(center) { text-align: center; }
+        :where(center) { text-align: -webkit-center; }
         :where(a:link, a:visited, a) { color: #0000EE; }
         :where(mark) { color: black; }
         :where(q)::before { content: open-quote; }

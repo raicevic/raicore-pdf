@@ -73,6 +73,12 @@ internal sealed partial record ComputedStyle
 
     public TextAlignment TextAlign { get; init; } = TextAlignment.Start;
 
+    /// <summary>
+    /// The text alignment comes from an <c>align</c> attribute (or <c>&lt;center&gt;</c>), on this element or inherited:
+    /// browsers do not let it into tables (Blink's <c>-webkit-center</c>, reset at <c>&lt;table&gt;</c>).
+    /// </summary>
+    public bool TextAlignFromAttribute { get; init; }
+
     public CssLength TextIndent { get; init; } = CssLength.Zero;
 
     public CssWhiteSpace WhiteSpace { get; init; }
@@ -372,6 +378,7 @@ internal sealed partial record ComputedStyle
                 "justify" => TextAlignment.Justify,
                 _ => TextAlignment.Start, // The initial value: follows the direction.
             },
+            TextAlignFromAttribute = Get("text-align").StartsWith("-webkit-", StringComparison.Ordinal),
             Rtl = rtl,
             UnicodeBidi = Get("unicode-bidi") switch
             {
