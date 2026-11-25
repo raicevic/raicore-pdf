@@ -182,16 +182,32 @@ public class SheetFormattingTests
 
             var other = xls.TryGetValue((row, column), out var c) ? c.Format ?? CellFormat.Default : CellFormat.Default;
             var format = cell.Format ?? CellFormat.Default;
-            // .xls rules have their colors from the palette (Excel 2007 keeps the exact ones in an extension): only whether
-            // there is a fill. The data bar of the .xlsx workbook is Excel 2010's, from 0 (autoMin), the .xls one's from the least value.
-            Assert.Equal((row, column, format.Bold, format.Fill is null, format.Icon, format.DataBar is null), (row, column, other.Bold, other.Fill is null, other.Icon, other.DataBar is null));
+            // .xls rules have the exact colors Excel 2007 keeps after their palette colors. The data bar of the .xlsx
+            // workbook is Excel 2010's, from 0 (autoMin), the .xls one's from the least value.
+            Assert.Equal((row, column, format.Bold, format.Fill, format.Color, format.Icon, format.DataBar is null), (row, column, other.Bold, other.Fill, other.Color, other.Icon, other.DataBar is null));
             compared += format.Icon is not null || format.DataBar is not null || format.Fill is not null ? 1 : 0;
         }
 
         Assert.True(compared > 200, $"{compared} cells compared");
 
-        // The .xls rule's solid fill is its background color (of the palette).
-        Assert.Equal(PdfColor.FromRgb(0xCC, 0xFF, 0xCC), xls[(1, 2)].Format!.Fill);
+        // The .xls rule's solid fill is its background color: Excel's "Green Fill with Dark Green Text" from the extension, not
+        // the palette's nearest color (CCFFCC, 008000).
+        Assert.Equal((PdfColor.FromRgb(0xC6, 0xEF, 0xCE), PdfColor.FromRgb(0x00, 0x61, 0x00)), (xls[(1, 2)].Format!.Fill, xls[(1, 2)].Format!.Color));
+    }
+
+    [Fact]
+    public void Xls_conditional_formats_take_their_theme_colors_from_the_extension()
+    {
+        // Apache POI's WithConditionalFormatting: Excel 2007 kept RGB colors and a theme color with a tint after the rules'
+        // formats, in place of the nearest palette colors (008000 for the green).
+        var cells = Cells(XlsConverter.Read(Fixtures.Read("Sheets/Xls/WithConditionalFormatting.xls"), new XlsxConverterOptions())[0]);
+        var green = PdfColor.FromRgb(0x00, 0xB0, 0x50);
+        Assert.Equal((null, green), (cells[(2, 0)].Format!.Fill, cells[(2, 0)].Format!.Color));
+        Assert.Equal(PdfColor.FromRgb(0xFF, 0x00, 0x00), cells[(3, 0)].Format!.Color);
+        Assert.Equal(green, cells[(7, 0)].Format!.Color);
+
+        // Accent 1 lighter by 80% (theme color 4, tint 0.8), with red text.
+        Assert.Equal((PdfColor.FromRgb(0xDA, 0xE3, 0xF3), PdfColor.FromRgb(0xFF, 0x00, 0x00)), (cells[(8, 1)].Format!.Fill, cells[(8, 1)].Format!.Color));
     }
 
     // ---- Comments ----
@@ -631,6 +647,36 @@ public class SheetFormattingTests
 
         Assert.Equal(styled, sheet.Cells[XlsxWorksheet.Key(0, 0)].Format?.Bold ?? false);
         Assert.False(XlsxPivotTables.Apply(System.Xml.Linq.XElement.Parse($"<pivotTableDefinition xmlns=\"{Main}\"/>"), sheet, new XlsxColors(), 100));
+    }
+
+    [Fact]
+    public void Xls_rule_formats_take_the_exact_colors_kept_after_them()
+    {
+        // A CF12 rule "equal to 5" on A1 whose format (DXFN) has a red font, a red solid fill and thin black borders from
+        // the palette, and after it (XFExtNoFRT) an RGB text color, a theme fill color (and pattern color, which a solid fill
+        // does not show) and an RGB top border color.
+        byte[] Range() => Join(U16(0), U16(0), U16(0), U16(0));
+        var font = new byte[118];
+        font[88] = 0x82; // Italic and strikethrough not set.
+        font[96] = 1; // Underline not set.
+        font[100] = 1; // Bold not set.
+        font[80] = 0x0A; // Red.
+        byte[] Ext(int type, int colorType, long value) => Join(U16(type), U16(20), U16(colorType), U16(0), U32(value), new byte[8]);
+        var dxf = Join(U32((1L << 26) | (1L << 28) | (1L << 29)), U16(0), font,
+            U32(1 | (1 << 4) | (1 << 8) | (1 << 12) | (8 << 16) | (8 << 23)), U32(8 | (8 << 7)),
+            U16(1 << 10), U16(0x0A | (0x0A << 7)),
+            U16(0), U16(0xFFFF), U16(0), U16(4), Ext(0x0D, 2, 0x563412), Ext(0x05, 3, 4), Ext(0x04, 2, 0x00FF00), Ext(0x07, 2, 0xFF0000));
+        var xls = SingleSheet(s => s
+            .Record(0x0203, Cell(0, 0), F64(5))
+            .Record(0x0879, U16(0x0879), new byte[10], U16(1), U16(2), Range(), U16(1), Range())
+            .Record(0x087A, U16(0x087A), new byte[10], U8(1), U8(3), U16(3), U16(0), U32(dxf.Length), dxf, U8(0x1E), U16(5),
+                U16(0), U8(0), U16(1), U16(0), U8(16), new byte[16]));
+        var format = Assert.Single(ReadXls(xls).ConditionalRules).Format!;
+        var black = PdfColor.FromRgb(0, 0, 0);
+        Assert.Equal(PdfColor.FromRgb(0x12, 0x34, 0x56), format.Color);
+        Assert.Equal(new XlsxColors().Resolve(null, null, "4", null, null), format.Fill); // Accent 1.
+        Assert.Equal((PdfColor.FromRgb(0, 0, 0xFF), black, black, black), (format.Top!.Value.Color, format.Bottom!.Value.Color, format.Left!.Value.Color, format.Right!.Value.Color));
+        Assert.Equal(format.Fill, XlsConverter.Read(xls)[0].Rows[0][0].Format!.Fill);
     }
 
     [Fact]
