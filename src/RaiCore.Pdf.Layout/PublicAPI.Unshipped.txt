@@ -1,1 +1,3 @@
 #nullable enable
+RaiCore.Pdf.Layout.Paragraph.BreakAnywhere.get -> bool
+RaiCore.Pdf.Layout.Paragraph.BreakAnywhere.init -> void

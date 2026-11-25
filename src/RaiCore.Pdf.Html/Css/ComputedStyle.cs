@@ -34,6 +34,14 @@ internal enum CssUnicodeBidi
     Plaintext,
 }
 
+/// <summary>CSS <c>overflow-wrap</c> (and its legacy name <c>word-wrap</c>).</summary>
+internal enum CssOverflowWrap
+{
+    Normal,
+    BreakWord,
+    Anywhere,
+}
+
 internal enum CssWhiteSpace
 {
     Normal,
@@ -68,6 +76,9 @@ internal sealed partial record ComputedStyle
     public CssLength TextIndent { get; init; } = CssLength.Zero;
 
     public CssWhiteSpace WhiteSpace { get; init; }
+
+    /// <summary>CSS <c>overflow-wrap</c> (inherited).</summary>
+    public CssOverflowWrap OverflowWrap { get; init; }
 
     /// <summary>CSS <c>direction: rtl</c> (inherited).</summary>
     public bool Rtl { get; init; }
@@ -384,6 +395,12 @@ internal sealed partial record ComputedStyle
                 "pre-wrap" or "break-spaces" => CssWhiteSpace.PreWrap,
                 "pre-line" => CssWhiteSpace.PreLine,
                 _ => CssWhiteSpace.Normal,
+            },
+            OverflowWrap = Get("overflow-wrap") switch
+            {
+                "break-word" => CssOverflowWrap.BreakWord,
+                "anywhere" => CssOverflowWrap.Anywhere,
+                _ => CssOverflowWrap.Normal,
             },
             TextTransform = Get("text-transform") is { Length: > 0 } transform ? transform : "none",
             CounterReset = Counters(Get("counter-reset")),

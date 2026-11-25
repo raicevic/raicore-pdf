@@ -173,6 +173,36 @@ public class ParagraphLayoutTests
     }
 
     [Fact]
+    public void Breaking_anywhere_breaks_long_words_and_counts_for_min_content()
+    {
+        const string word = "Donaudampfschifffahrtsgesellschaftskapit\u00E4n";
+        var widest = word.Select(c => Sans.MeasureText(c.ToString(), 12)).Max();
+
+        var broken = new Paragraph(Body) { BreakAnywhere = true }.Add(word).Layout(100);
+        Assert.True(broken.Lines.Count > 1);
+        Assert.All(broken.Lines, l => Assert.True(l.Width <= 100 + 1e-6));
+        AssertLinesCoverText(broken, word.Length);
+
+        // overflow-wrap: anywhere makes the widest character the min-content width; break-word leaves it the word's.
+        var plain = new Paragraph(Body).Add(word + " ab").MeasureIntrinsicWidths();
+        var (anywhere, max) = new Paragraph(Body) { BreakAnywhere = true }.Add(word + " ab").MeasureIntrinsicWidths();
+        var breakWord = new Paragraph(Body) { BreakLongWords = true }.Add(word + " ab").MeasureIntrinsicWidths();
+        Assert.Equal(widest, anywhere, 3);
+        Assert.Equal(plain, breakWord);
+        Assert.Equal(plain.Max, max, 3);
+    }
+
+    [Fact]
+    public void Breaking_anywhere_counts_the_first_line_indent_in_min_content()
+    {
+        var indented = new Paragraph(Body) { BreakAnywhere = true, FirstLineIndent = 30 }.Add("ab");
+        Assert.Equal(30 + Sans.MeasureText("a", 12), indented.MeasureIntrinsicWidths().Min, 3);
+
+        // Spaces at a break hang, as without breaking anywhere.
+        Assert.Equal(0, new Paragraph(Body) { BreakAnywhere = true }.Add("   ").MeasureIntrinsicWidths().Min);
+    }
+
+    [Fact]
     public void Soft_hyphens_become_visible_only_at_a_break()
     {
         const string text = "extra\u00ADordinary";
