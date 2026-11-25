@@ -1,3 +1,5 @@
 #nullable enable
 RaiCore.Pdf.Layout.Paragraph.BreakAnywhere.get -> bool
 RaiCore.Pdf.Layout.Paragraph.BreakAnywhere.init -> void
+RaiCore.Pdf.Layout.FlowDocument.PageBackground.get -> System.Action<RaiCore.Pdf.PdfCanvas!, RaiCore.Pdf.Layout.PageInfo>?
+RaiCore.Pdf.Layout.FlowDocument.PageBackground.set -> void

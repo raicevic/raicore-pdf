@@ -262,6 +262,30 @@ internal sealed partial class BoxBuilder
         }
     }
 
+    /// <summary>
+    /// Takes the background that paints the canvas off its element's box and returns its color (CSS Backgrounds 3,
+    /// 2.11.2): the root element's, or the body's when the root has none. On paged media the canvas is the page area of
+    /// every page, as in Chrome. A background with images or gradients stays on its box (not propagated yet).
+    /// </summary>
+    public PdfColor? TakeCanvasBackground()
+    {
+        if (Document.DocumentElement is not { } root)
+        {
+            return null;
+        }
+
+        var element = HasBackground(Style(root)) ? root : Document.Body is { } body && body.ParentElement == root ? body : null;
+        if (element is null || Style(element) is not { Background: { } color, BackgroundLayers.Count: 0, Display: not CssDisplay.None } style || color.Alpha < 1)
+        {
+            return null;
+        }
+
+        _styles[element] = style with { Background = null };
+        return color;
+
+        static bool HasBackground(ComputedStyle style) => style.Background is not null || style.BackgroundLayers.Count > 0;
+    }
+
     /// <summary>The computed declarations of an element or one of its pseudo-elements (<c>::before</c>), as the window's <c>GetComputedStyle</c> gives them.</summary>
     private ICssStyleDeclaration ComputeStyle(IElement element, string? pseudo = null)
     {
