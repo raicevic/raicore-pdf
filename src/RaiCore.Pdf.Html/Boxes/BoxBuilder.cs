@@ -357,6 +357,7 @@ internal sealed partial class BoxBuilder
         {
             Color = style.Color,
             LineHeight = style.LineHeight,
+            RoundFontMetrics = true, // Line boxes in whole pixels of the font's metrics, as in browsers.
             LetterSpacing = style.LetterSpacing,
             WordSpacing = style.WordSpacing,
             Shaping = new ShapingOptions { Features = ParseFeatures(style.FontFeatures), Language = style.Language },

@@ -135,6 +135,14 @@ public sealed record TextStyle
     /// <summary>Line height.</summary>
     public LineHeight LineHeight { get; init; } = LineHeight.Normal;
 
+    /// <summary>
+    /// Whether the font's ascent, descent and line gap are rounded to whole CSS pixels (0.75 pt) for the line box, as
+    /// browsers do: a <see cref="LineHeight.Normal"/> line is then their rounded sum (e.g. 14 px for 12 px Arial instead
+    /// of 13.8 px), and the baseline sits at the rounded ascent plus the half-leading rounded down to whole pixels.
+    /// Off by default.
+    /// </summary>
+    public bool RoundFontMetrics { get; init; }
+
     /// <summary>OpenType features and language for shaping.</summary>
     public ShapingOptions Shaping { get; init; } = ShapingOptions.Default;
 

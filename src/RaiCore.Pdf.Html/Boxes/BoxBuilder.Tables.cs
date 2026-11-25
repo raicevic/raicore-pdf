@@ -56,6 +56,7 @@ internal sealed partial class BoxBuilder
             ColumnWidths = columnWidths,
             Id = IdFor(element),
             BorderCollapse = style.BorderCollapse ? BorderCollapse.Collapse : BorderCollapse.Separate,
+            OuterLinesInside = true, // With collapsed borders, half the outer lines are inside the table, as in browsers.
             HorizontalSpacing = spacingAttribute ?? style.BorderSpacingX,
             VerticalSpacing = spacingAttribute ?? style.BorderSpacingY,
             LayoutMode = style.TableLayoutFixed ? TableLayoutMode.Fixed : TableLayoutMode.Auto,

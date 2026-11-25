@@ -512,6 +512,42 @@ internal static class TableLayouter
         return groups;
     }
 
+    /// <summary>
+    /// Half the width of a collapsed table's outer grid lines, the widest on each side: the part inside its box when it
+    /// holds them (<see cref="TableBlock.OuterLinesInside"/>).
+    /// </summary>
+    public static Thickness OuterHalves(TableBlock table)
+    {
+        if (table.OuterHalves is { } cached)
+        {
+            return cached;
+        }
+
+        var (slots, _, columns) = BuildGrid(table);
+        var rows = table.Rows.Count;
+        var (top, right, bottom, left) = (0.0, 0.0, 0.0, 0.0);
+        if (rows > 0 && columns > 0)
+        {
+            var horizontal = CollapseHorizontal(table, slots, rows, columns);
+            var vertical = CollapseVertical(table, slots, rows, columns);
+            for (var c = 0; c < columns; c++)
+            {
+                top = Math.Max(top, horizontal[0, c].Width);
+                bottom = Math.Max(bottom, horizontal[rows, c].Width);
+            }
+
+            for (var r = 0; r < rows; r++)
+            {
+                left = Math.Max(left, vertical[r, 0].Width);
+                right = Math.Max(right, vertical[r, columns].Width);
+            }
+        }
+
+        var halves = new Thickness(top / 2, right / 2, bottom / 2, left / 2);
+        table.OuterHalves = halves;
+        return halves;
+    }
+
     /// <summary>Collapsed horizontal borders: for each line, the winner of the borders that meet there (see <see cref="Resolve"/>).</summary>
     private static GridLine[,] CollapseHorizontal(TableBlock table, GridCell?[,] slots, int rows, int columns)
     {

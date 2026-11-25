@@ -90,13 +90,23 @@ public sealed class TableBlock : Block
     /// </summary>
     internal Func<TablePlacement, IEnumerable<(int Page, Action<PdfCanvas, double> Draw)>>? Overlay { get; init; }
 
+    /// <summary>
+    /// Whether, with collapsed borders, the table's box holds half of its outer grid lines (CSS 2.1 section 17.6.2), as
+    /// in browsers: its rows start half the top line below its top edge. Otherwise those halves reach outside the box.
+    /// </summary>
+    internal bool OuterLinesInside { get; init; }
+
     /// <summary>Appends a row.</summary>
     public TableBlock Add(TableRow row)
     {
         ArgumentNullException.ThrowIfNull(row);
         _rows.Add(row);
+        OuterHalves = null;
         return this;
     }
+
+    /// <summary>The cached <see cref="TableLayouter.OuterHalves"/>, until a row is added.</summary>
+    internal Thickness? OuterHalves { get; set; }
 }
 
 /// <summary>A piece of a table row placed on a page.</summary>

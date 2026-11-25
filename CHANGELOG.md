@@ -15,12 +15,19 @@ and versions follow [Semantic Versioning](https://semver.org/).
   is cut behind it, and the content starts below it; the legend shrinks to fit and is placed by its auto margins, its
   `text-align` or its `align` attribute. A fieldset contains its floats, and its default border is Chrome's light
   gray. Layout: `ContainerBlock.HasLegend` and `ContainerBlock.LegendAlignment` (#158).
+- Layout: `TextStyle.RoundFontMetrics` rounds the font's ascent, descent and line gap to whole CSS pixels for the line
+  box, with the leading above the text rounded down, as browsers do. HTML turns it on (#152).
 
 ### Changed
 - HTML diagnostics: Outlook's `mso-*` properties and vendor-prefixed pseudo-classes (`:-webkit-autofill`,
   `:-moz-focusring`) are reported as `Info`, like vendor-prefixed properties, instead of `Warning` (#159).
 
 ### Fixed
+- HTML: lines, borders and collapsed tables are laid out in whole CSS pixels where Chrome uses them, so long tables
+  no longer drift up the page (about 0.5 pt per row): a `line-height: normal` line is the sum of the font's rounded
+  metrics (14 px for 9 pt Liberation Sans, not 13.8 px) and its baseline sits on a whole pixel; border widths snap to
+  whole pixels (rounded down, at least 1 px: `0.5pt` and `1pt` are 1 px); and a collapsed table's box holds half of its
+  outer grid lines instead of letting them reach into its margin (#152).
 - HTML: the logical borders (`border-inline-start`, `border-block`, their `-width`, `-style` and `-color` longhands,
   ...) are no longer reported as unsupported properties; they follow each element's direction (#154).
 - HTML: a style sheet wrapped in comment markers (`<style><!-- ... --></style>`, still common in e-mails) no longer

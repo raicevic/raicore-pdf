@@ -226,7 +226,7 @@ public class HtmlFragmentTests
         Assert.Equal(["Plain", "Cell", "with", "bold:", "\u2022", "alpha", "\u2022", "beta"], words.Select(w => w.Text));
         var left = Page.Margins.Left.Points + 100;
         Assert.All(words.Skip(1), w => Assert.InRange(w.X, left, left + 150));
-        Assert.Equal(words[0].Y, words[1].Y, 3); // Both cells start at the top.
+        Assert.Equal(words[0].Y, words[1].Y, 0.5); // Both cells start at the top (HTML text has whole-pixel font metrics).
         Assert.True(words[5].Y < words[1].Y - 10);
     }
 
