@@ -6,13 +6,23 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-
+- **Embedded OLE objects in Outlook messages** (#293): attachments that Outlook keeps as OLE objects become the file
+  inside them: a packaged file under its own name, an Office 2007+ document, a file kept whole (such as a PDF), or an
+  Office 97-2003 document written out as its `.doc`, `.xls` or `.ppt` file. Else they become the object's picture
+  (`.wmf`, `.emf`, `.bmp`). Objects with nothing to take out are reported to `Html.Diagnostics` instead of being
+  dropped silently.
 - **Documents: comments at the end or as notes** (#292): the new `DocumentConverterOptions.Comments` prints the
   comments of DOCX, DOC, RTF and ODT documents, listed after the document (`DocumentComments.AtEnd`: each with its
   author, date, the text it is about and its replies, the anchors marked with numbered superscripts linking to them)
   or as PDF notes where the text they are about starts (`DocumentComments.Annotations`); the commented text is
   highlighted. The default (`None`) leaves them out as before, now reported to `Diagnostics` for DOCX and ODT too.
   Layout: `FlowDocument.AnchorPlaced` reports where paragraph anchors are drawn.
+
+### Fixed
+- **Large tables and spreadsheets render in linear time** (#250): drawing and splitting table rows looked up their
+  cells by scanning every cell of the table for each row group placed, so a table's time grew with the square of its
+  rows. A 16,000-row CSV file took 69 s and now takes about 11 s; 5,000 rows by 108 columns went from 27 s to 17 s.
+  This helps CSV, XLSX and XLS sheets and long HTML tables alike. A new `Sheet10000Rows` benchmark tracks it.
 
 ## [1.2.0] - 2026-11-24
 

@@ -15,7 +15,8 @@ pdf.Save("message.pdf");
   HTML body (or the plain text one, with its line breaks, `format=flowed` paragraphs and links), and inline images in
   place, from `cid:` references or `Content-Location`.
 - **Attachments:** embedded as PDF file attachments, listed in the header block, and optionally appended: images and
-  text files on pages of their own, PDF files with their pages, HTML files and attached messages converted.
+  text files on pages of their own, PDF files with their pages, HTML files and attached messages converted. Files that
+  Outlook attached as embedded OLE objects come out as the files inside them.
 - **The original kept:** `EmbedOriginal` embeds the message itself, byte for byte, as the PDF's source file
   (`/AFRelationship /Source`), so a PDF/A-3 archive copy still holds the `.eml` or `.mht` it was made from.
 - **MIME done properly:** multipart/alternative, related and mixed; quoted-printable and base64; charsets from UTF-8

@@ -55,6 +55,61 @@ internal sealed class TableLayout
 
     private CellLayout[]? _anchoredCells;
 
+    /// <summary>The cells that start in a row (their first row is <paramref name="row"/>), in the order of <see cref="Cells"/>.</summary>
+    /// <remarks>
+    /// Drawing and splitting rows look cells up by row for every row group they place, so a scan of all cells there
+    /// made large tables quadratic (#250); the cells are indexed by their first and last row on first use instead.
+    /// </remarks>
+    public IReadOnlyList<CellLayout> CellsStartingIn(int row) => Index().Starting is var starting && (uint)row < (uint)starting.Length ? starting[row] : [];
+
+    /// <summary>The cells that start in rows [start, end), in the order of <see cref="Cells"/>.</summary>
+    public IEnumerable<CellLayout> CellsStartingIn(int start, int end)
+    {
+        for (var row = Math.Max(start, 0); row < end && row < RowHeights.Length; row++)
+        {
+            foreach (var cell in CellsStartingIn(row))
+            {
+                yield return cell;
+            }
+        }
+    }
+
+    /// <summary>The cells that end in a row (their last row is <paramref name="row"/>), in the order of <see cref="Cells"/>.</summary>
+    public IReadOnlyList<CellLayout> CellsEndingIn(int row) => Index().Ending is var ending && (uint)row < (uint)ending.Length ? ending[row] : [];
+
+    private (CellLayout[][] Starting, CellLayout[][] Ending) Index()
+    {
+        if (_rowIndex is { } index)
+        {
+            return index;
+        }
+
+        // Cells are laid out row by row, so listing each row's cells in their order keeps the order of Cells for a range.
+        var rows = RowHeights.Length;
+        var starting = new List<CellLayout>?[rows];
+        var ending = new List<CellLayout>?[rows];
+        foreach (var cell in Cells)
+        {
+            var first = cell.Grid.Row;
+            var last = cell.Grid.Row + cell.Grid.RowSpan - 1;
+            if ((uint)first < (uint)rows)
+            {
+                (starting[first] ??= []).Add(cell);
+            }
+
+            if ((uint)last < (uint)rows)
+            {
+                (ending[last] ??= []).Add(cell);
+            }
+        }
+
+        var built = (starting.Select(l => l?.ToArray() ?? []).ToArray(), ending.Select(l => l?.ToArray() ?? []).ToArray());
+        _rowIndex = built;
+        return built;
+    }
+
+    private (CellLayout[][] Starting, CellLayout[][] Ending)? _rowIndex;
+
     /// <summary>Height of rows [start, end), including the spacing between them (not around them).</summary>
     public double Height(int start, int end)
     {

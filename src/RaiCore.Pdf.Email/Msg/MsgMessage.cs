@@ -98,6 +98,9 @@ internal sealed class MsgMessage
 
     public List<MsgAttachment> Attachments { get; } = [];
 
+    /// <summary>What was left out of the message and its attached messages, by attachment: (file name, why).</summary>
+    public List<(string FileName, string Message)> Problems { get; } = [];
+
     /// <summary>Reads the message of an Outlook <c>.msg</c> file.</summary>
     /// <exception cref="MessageFormatException">It is not an Outlook message, or its compound file is damaged.</exception>
     /// <exception cref="ResourceLimitExceededException">It nests attached messages too deep, or has too many parts (see <see cref="CompoundFile"/>).</exception>
@@ -159,15 +162,38 @@ internal sealed class MsgMessage
                 var attachment = new MsgMessage();
                 attachment.ReadProperties(file, child, 8);
                 MsgMessage? embedded = null;
-                if (attachment.Int(AttachMethod) == 5 && child[$"__substg1.0_{AttachDataObject:X4}{Object:X4}"] is { Kind: CfbEntryKind.Storage } inner)
+                var fileName = attachment.String(AttachLongFilename, codePage) ?? attachment.String(AttachFilename, codePage)
+                    ?? attachment.String(DisplayNameAttachment, codePage) ?? string.Empty;
+                var objectStorage = child[$"__substg1.0_{AttachDataObject:X4}{Object:X4}"] is { Kind: CfbEntryKind.Storage } inner ? inner : null;
+                if (attachment.Int(AttachMethod) == 5 && objectStorage is not null)
                 {
-                    embedded = Read(file, inner, 24, limits);
+                    embedded = Read(file, objectStorage, 24, limits);
+                    message.Problems.AddRange(embedded.Problems);
+                }
+                else if (attachment.Int(AttachMethod) == 6 && objectStorage is not null)
+                {
+                    // An embedded OLE object: the file inside it, else its picture, else reported and left out.
+                    if (OleObject.Extract(file, objectStorage, fileName, limits, out var problem) is { } extracted)
+                    {
+                        message.Attachments.Add(new MsgAttachment
+                        {
+                            FileName = extracted.FileName,
+                            MimeType = extracted.MimeType,
+                            Data = extracted.Data,
+                            IsHidden = attachment.Int(AttachmentHidden) is { } hiddenObject && hiddenObject != 0,
+                        });
+                    }
+                    else
+                    {
+                        message.Problems.Add((fileName.Length > 0 ? fileName : "embedded object", problem!));
+                    }
+
+                    continue;
                 }
 
                 message.Attachments.Add(new MsgAttachment
                 {
-                    FileName = attachment.String(AttachLongFilename, codePage) ?? attachment.String(AttachFilename, codePage)
-                        ?? attachment.String(DisplayNameAttachment, codePage) ?? string.Empty,
+                    FileName = fileName,
                     MimeType = attachment.String(AttachMimeTag, codePage),
                     ContentId = attachment.String(AttachContentId, codePage),
                     ContentLocation = attachment.String(AttachContentLocation, codePage),

@@ -1702,7 +1702,7 @@ internal sealed partial class Paginator
         }
 
         LayoutTagging.End(canvas);
-        foreach (var cell in layout.Cells.Where(c => c.Grid.Row >= start && c.Grid.Row < end))
+        foreach (var cell in layout.CellsStartingIn(start, end))
         {
             LayoutTagging.BeginArtifact(canvas);
             var cellTop = TopOf(cell.Grid.Row);

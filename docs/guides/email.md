@@ -125,6 +125,17 @@ gets no header block, unless `HeaderFields` names fields.
   images stay out unless you supply a loader that fetches them. `ResourceLoaders.None` makes that explicit; see
   [Untrusted input](untrusted-input.md).
 
+**Embedded objects in `.msg` files.** Outlook can attach a file as an OLE object instead of as a file. Such an
+attachment becomes the file inside it:
+- a packaged file, under its own name;
+- an Office 2007+ document (`.docx`, `.xlsx`, `.pptx`);
+- a file kept whole, such as a PDF;
+- an Office 97-2003 document, written out as its `.doc`, `.xls` or `.ppt` file.
+
+An object with none of these gives its picture as Outlook shows it (`.wmf`, `.emf` or `.bmp`). One with nothing to
+take out (an equation, for example) is left out and reported to `Html.Diagnostics` (`ResourceNotLoaded`), with its
+attachment name.
+
 Not supported: TNEF (`winmail.dat`) attachments (embedded as they are), Outlook items other than messages (contacts,
-appointments: their message properties are shown), OLE objects attached to `.msg` files, S/MIME and PGP
-encrypted messages (their parts are attachments), and uuencoded content.
+appointments: their message properties are shown), S/MIME and PGP encrypted messages (their parts are attachments),
+and uuencoded content.
