@@ -20,7 +20,7 @@ internal sealed partial class Paginator
     private double MinimumRowStart(TableLayout layout, int row)
     {
         var needed = 0.0;
-        foreach (var cell in layout.Cells.Where(c => c.Grid.Row == row))
+        foreach (var cell in layout.CellsStartingIn(row))
         {
             var content = cell.Grid.Cell.Content;
             var start = content.Count == 0 ? 0 : ResolveStyle(content[0], cell.InnerWidth).Margin.Fixed.Top + MinimumStartHeight(content[0], cell.InnerWidth);
@@ -63,7 +63,7 @@ internal sealed partial class Paginator
             var top = (Page: PageIndex, Y);
             var truncate = TruncateMargins;
             tops[i] = top;
-            foreach (var cell in layout.Cells.Where(c => c.Grid.Row == row))
+            foreach (var cell in layout.CellsStartingIn(row))
             {
                 SetPage(top.Page);
                 Y = top.Y + cell.InsetTop;
@@ -78,7 +78,7 @@ internal sealed partial class Paginator
 
             // The row ends with the last cell ending in it, and is at least as tall as its unbroken height.
             var rowEnd = top;
-            foreach (var cell in layout.Cells.Where(c => c.Grid.Row + c.Grid.RowSpan - 1 == row))
+            foreach (var cell in layout.CellsEndingIn(row))
             {
                 rowEnd = Later(rowEnd, cellEnds[cell]);
             }
@@ -110,7 +110,7 @@ internal sealed partial class Paginator
             // A spanning cell's piece ends with the rows it covers on this page: when the break falls between rows,
             // that is above the page's bottom.
             var spanning = new List<CellFragment>();
-            foreach (var cell in layout.Cells.Where(c => c.Grid.Row >= start && c.Grid.Row < end && c.Grid.RowSpan > 1))
+            foreach (var cell in layout.CellsStartingIn(start, end).Where(c => c.Grid.RowSpan > 1))
             {
                 if (Fragment(tops[cell.Grid.Row - start], ends[cell.Grid.Row + cell.Grid.RowSpan - 1 - start], page) is { } piece)
                 {
@@ -176,7 +176,7 @@ internal sealed partial class Paginator
 
         foreach (var row in rows)
         {
-            foreach (var cell in layout.Cells.Where(c => c.Grid.Row == row.Row && c.Grid.RowSpan == 1))
+            foreach (var cell in layout.CellsStartingIn(row.Row).Where(c => c.Grid.RowSpan == 1))
             {
                 Cell(cell, row.Top, row.Height, row.First, row.Last);
             }

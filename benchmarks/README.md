@@ -10,6 +10,7 @@ to the bytes of the PDF file. The documents are generated deterministically
 | `Report100PagesHtml` | A 98-page HTML report: 25 chapters of headings and justified, hyphenated paragraphs, page counters. |
 | `Report100PagesFlow` | The same kind of report (102 pages) built with `FlowDocument`, with bookmarks and a page decorator. |
 | `Table10000Rows` | An HTML table of 10,000 rows and 4 columns (205 pages), the header row repeated on each page. |
+| `Sheet10000Rows` | A CSV file of 10,000 rows and 20 columns (text and numbers) converted with `CsvToPdf`, the header row repeated on each page. |
 | `FlexDashboard` | 240 wrapped flex cards (8 pages), each a flex column with nested flex rows. |
 | `Canvas1000Pages` | 1,000 pages of 60 lines of text drawn with the canvas (no layout), then saved. |
 | `WritingBenchmarks.*` | The canvas pages and the flow report written page by page (`BeginSave`). |
@@ -26,7 +27,7 @@ The same program has three helpers (after a Release build, from `benchmarks/RaiC
 
 - `dotnet RaiCore.Pdf.Benchmarks.dll write <dir>` saves the documents as PDF files, with page counts and times.
 - `dotnet RaiCore.Pdf.Benchmarks.dll run <scenario> [times]` renders one in-process (`invoice`, `report-html`,
-  `report-flow`, `table`, `table-<rows>`, `flex`), e.g. under `dotnet-trace collect -- dotnet ...`.
+  `report-flow`, `table`, `table-<rows>`, `flex`, `sheet`, `sheet-<rows>`), e.g. under `dotnet-trace collect -- dotnet ...`.
 - `dotnet RaiCore.Pdf.Benchmarks.dll memory <scenario>` measures the peak live managed heap of writing a document to a
   file at once (`*-save`) or page by page (`*-stream`): `pages-*` (the canvas pages), `report-flow-*`,
   `report-html-*` and `table-*`.

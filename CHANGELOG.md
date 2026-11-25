@@ -6,6 +6,11 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Embedded OLE objects in Outlook messages** (#293): attachments that Outlook keeps as OLE objects become the file
+  inside them: a packaged file under its own name, an Office 2007+ document, a file kept whole (such as a PDF), or an
+  Office 97-2003 document written out as its `.doc`, `.xls` or `.ppt` file. Else they become the object's picture
+  (`.wmf`, `.emf`, `.bmp`). Objects with nothing to take out are reported to `Html.Diagnostics` instead of being
+  dropped silently.
 - **Sheets: chart sheets** (#290): the chart sheets of `.xlsx` workbooks are printed in the workbook's sheet order,
   each on a page of its own with its chart stretched over the content area, in landscape unless its page setup asks
   for portrait, with its headers and footers. `SheetNames`, `SheetIndexes` and the bookmarks include them. Chart
@@ -18,6 +23,12 @@ and versions follow [Semantic Versioning](https://semver.org/).
   presentations draw them instead of their stored pictures; workbooks read their data from the cells their hidden
   names refer to (and charts without cached data from their cells). Region maps are still shown as their stored
   picture or reported.
+
+### Fixed
+- **Large tables and spreadsheets render in linear time** (#250): drawing and splitting table rows looked up their
+  cells by scanning every cell of the table for each row group placed, so a table's time grew with the square of its
+  rows. A 16,000-row CSV file took 69 s and now takes about 11 s; 5,000 rows by 108 columns went from 27 s to 17 s.
+  This helps CSV, XLSX and XLS sheets and long HTML tables alike. A new `Sheet10000Rows` benchmark tracks it.
 
 ## [1.2.0] - 2026-11-24
 

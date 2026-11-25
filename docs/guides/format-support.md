@@ -137,7 +137,7 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | TNEF (`winmail.dat`) | ◐ embedded as it is | - | - |
 | S/MIME and PGP encrypted messages | ◐ their parts as attachments | ◐ their parts as attachments | - |
 | Calendar items, contacts | ◐ invitations as attachments | ◐ their message properties | - |
-| OLE objects attached to messages | - | ✗ | - |
+| OLE objects attached to messages | - | ◐ the file inside (packaged files, Office documents, PDF), else the object's picture; others R | - |
 | Tagged PDF, PDF/A (`Html` options) | ✓ | ✓ | ✓ |
 
 ## XFA forms

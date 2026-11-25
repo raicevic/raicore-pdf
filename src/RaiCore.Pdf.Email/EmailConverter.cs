@@ -37,13 +37,29 @@ internal sealed class EmailConverter
         cancellationToken.ThrowIfCancellationRequested();
         var clock = Stopwatch.StartNew();
         MimeEntity root;
+        IReadOnlyList<(string FileName, string Message)> leftOut = [];
         using (limits.Enforce(cancellationToken))
         {
             // An Outlook message is written as the MIME message it stands for, and read like one.
-            root = MimeParser.Parse(CompoundFile.IsCompoundFile(data) ? Msg.MsgToMime.Write(Msg.MsgMessage.Read(data, limits)) : data, limits);
+            if (CompoundFile.IsCompoundFile(data))
+            {
+                var message = Msg.MsgMessage.Read(data, limits);
+                leftOut = message.Problems;
+                root = MimeParser.Parse(Msg.MsgToMime.Write(message), limits);
+            }
+            else
+            {
+                root = MimeParser.Parse(data, limits);
+            }
         }
 
-        return new EmailConverter(options, clock, cancellationToken, data).ConvertAsync(root);
+        var converter = new EmailConverter(options, clock, cancellationToken, data);
+        foreach (var (fileName, problem) in leftOut)
+        {
+            converter.Report(HtmlDiagnosticKind.ResourceNotLoaded, HtmlDiagnosticSeverity.Warning, fileName, problem);
+        }
+
+        return converter.ConvertAsync(root);
     }
 
     /// <summary>The options of a conversion, from the user's HTML options: the message's loader, styles, base and metadata.</summary>
