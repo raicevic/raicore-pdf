@@ -37,6 +37,12 @@ and versions follow [Semantic Versioning](https://semver.org/).
   The conditional formatting of `.xls` workbooks takes the exact colors Excel 2007 and later keep after a rule's
   format (RGB and theme colors) instead of the nearest palette colors.
 
+- **Sheets: every pivot table style** (#286): pivot tables get any of Excel's 84 built-in pivot styles (Light, Medium
+  and Dark 1-28) or the workbook's own table styles, each element over its part of the table (header rows, row labels,
+  subheadings and subtotals of nested fields, blank lines, grand totals, banded rows and columns, page fields), with
+  inner and outer borders. Pivot tables of `.xls` workbooks get their Excel 2007 table style too. The style
+  definitions come from Apache POI's copy of ECMA-376's predefined table styles.
+
 ### Fixed
 - **Conditional formatting formulas with a missing text argument** no longer fail the conversion: `SEARCH("x")`,
   `UPPER()` and the like take a missing argument as an empty text, as a blank cell, instead of throwing a

@@ -61,12 +61,13 @@ Excel prints them.
 
 Headers and footers, page breaks set by hand, rich text, rotated, stacked and shrunk text, conditional formatting over
 the stored values (color scales, data bars, icon sets and formula rules too), comments (at the end of the sheet, their
-boxes as displayed on it, or as PDF notes with `XlsxConverterOptions.Comments`) and the default pivot table styles are printed too.
+boxes as displayed on it, or as PDF notes with `XlsxConverterOptions.Comments`) and pivot table styles (every built-in
+one and the workbook's own) are printed too.
 
 Chart sheets are printed in the sheet order, each chart on a page of its own.
 
 Not supported in conversion to PDF: chart sheets of `.xls` workbooks, SmartArt, form controls, conditional formatting with formulas of
-other sheets or uncommon functions, other pivot table styles, formula calculation, `.xlsb`, Excel 2.x-4.0 and
+other sheets or uncommon functions, formula calculation, `.xlsb`, Excel 2.x-4.0 and
 password-protected files. Content a conversion
 leaves out is reported through `SheetOptions.Diagnostics`, one diagnostic per kind and sheet with its count, so that
 nothing is dropped silently.

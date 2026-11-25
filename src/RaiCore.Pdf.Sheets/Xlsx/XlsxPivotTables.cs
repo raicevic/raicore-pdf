@@ -6,10 +6,9 @@ namespace RaiCore.Pdf.Sheets.Xlsx;
 
 /// <summary>
 /// Applies the style of a worksheet's pivot tables to the cells they are stored in (Excel keeps a pivot table's cells
-/// in the sheet; its part says where it is and how it looks): the built-in styles <c>PivotStyleLight15</c> to
-/// <c>PivotStyleLight21</c> (<c>PivotStyleLight16</c> is Excel's default; the others are its pattern in the other theme
-/// colors): header rows bold on a light fill with a line under them, subtotal rows and the grand total column bold, and
-/// the grand total row bold on the light fill with a line over it. Pivot tables with other styles are reported.
+/// in the sheet; its part says where it is, how it is laid out and how it looks): Excel's built-in pivot styles and the
+/// workbook's own (<see cref="PivotStyles"/>), each element over its region (<see cref="PivotStyler"/>). Pivot tables
+/// with a style that is neither are reported.
 /// </summary>
 internal static class XlsxPivotTables
 {
@@ -17,7 +16,7 @@ internal static class XlsxPivotTables
     private const int MaxTables = 1000;
 
     /// <summary>Applies the style of the pivot tables a worksheet refers to; a part that is damaged is left out (and reported).</summary>
-    public static void Apply(XlsxPackage package, string sheetPath, XlsxWorksheet sheet, XlsxColors colors, long maxCells)
+    public static void Apply(XlsxPackage package, string sheetPath, XlsxWorksheet sheet, XlsxStyles styles, long maxCells)
     {
         List<(string Id, string Type, string Target)> relationships;
         try
@@ -41,19 +40,34 @@ internal static class XlsxPivotTables
                 definition = null;
             }
 
-            if (definition is null || !Apply(definition, sheet, colors, maxCells))
+            if (definition is null || !Apply(definition, sheet, styles, maxCells))
             {
                 sheet.Unsupported.Add(SheetDiagnosticKind.PivotTable);
             }
         }
     }
 
+    /// <summary>
+    /// A pivot table style by name: the workbook's own (a <c>tableStyle</c> that is not only for tables), else Excel's
+    /// built-in one; <c>null</c> for neither.
+    /// </summary>
+    internal static Dictionary<string, PivotStyleFormat>? Style(string name, XlsxStyles styles)
+    {
+        if (styles.TableStyles.FirstOrDefault(s => (string?)s.Attribute("name") == name && (string?)s.Attribute("pivot") is not ("0" or "false")) is { } own)
+        {
+            return PivotStyles.Read(own, styles.DifferentialFormatElements, styles.Colors);
+        }
+
+        return PivotStyles.ReadBuiltIn(name, styles.Colors);
+    }
+
     /// <summary>Applies a pivot table's style to its range; <c>false</c> for a style that is not supported.</summary>
-    internal static bool Apply(XElement definition, XlsxWorksheet sheet, XlsxColors colors, long maxCells)
+    internal static bool Apply(XElement definition, XlsxWorksheet sheet, XlsxStyles styles, long maxCells)
     {
         XElement? Child(XElement? e, string name) => e?.Elements().FirstOrDefault(c => c.Name.LocalName == name);
         int Number(XElement? e, string name, int fallback) =>
             int.TryParse((string?)e?.Attribute(name), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : fallback;
+        bool Flag(XElement? e, string name, bool fallback) => (string?)e?.Attribute(name) is { } v ? v is "1" or "true" : fallback;
         var location = Child(definition, "location");
         var info = Child(definition, "pivotTableStyleInfo");
         if (location is null || XlsxWorkbook.ParseRange((string?)location.Attribute("ref") ?? string.Empty) is not { Row1: >= 0, Column1: >= 0 } range)
@@ -61,68 +75,33 @@ internal static class XlsxPivotTables
             return false;
         }
 
-        var name = (string?)info?.Attribute("name");
-        if (name is null)
+        if ((string?)info?.Attribute("name") is not { } name)
         {
             return true; // No style: plain cells, as Excel shows them.
         }
 
-        if (!name.StartsWith("PivotStyleLight", StringComparison.Ordinal)
-            || !int.TryParse(name.AsSpan("PivotStyleLight".Length), NumberStyles.None, CultureInfo.InvariantCulture, out var number) || number is < 15 or > 21)
+        if (Style(name, styles) is not { } style)
         {
             return false;
         }
 
-        // The theme color of the style: Text 1 for Light15, then the accents 1 to 6.
-        var theme = number == 15 ? "1" : (number - 12).ToString(CultureInfo.InvariantCulture);
-        var accent = colors.Resolve(null, null, theme, null, null) ?? PdfColor.Black;
-        var light = colors.Resolve(null, null, theme, "0.79998168889431442", null) ?? PdfColor.FromRgb(0xD9, 0xE1, 0xF2);
-        var line = new CellBorder(0.5, accent);
-
-        // The header rows, then a row for each row item (subtotals and the grand total marked by their type).
-        var headers = Math.Clamp(Number(location, "firstDataRow", 1), 1, range.Row2 - range.Row1 + 1);
-        var items = Child(definition, "rowItems")?.Elements().Where(e => e.Name.LocalName == "i").Take(range.Row2 - range.Row1 + 1)
-            .Select(i => (string?)i.Attribute("t")).ToList() ?? [];
-        var grandColumn = Child(definition, "colItems")?.Elements().LastOrDefault(e => e.Name.LocalName == "i") is { } last
-            && (string?)last.Attribute("t") == "grand" && Child(definition, "colFields") is not null && info!.Attribute("showLastColumn") is not { Value: "0" };
-        var showHeaders = (string?)info!.Attribute("showColHeaders") is not "0";
-        if ((long)(range.Row2 - range.Row1 + 1) * (range.Column2 - range.Column1 + 1) > maxCells)
+        int Count(string fields) => Child(definition, fields)?.Elements().Count(e => e.Name.LocalName == "field") ?? 0;
+        List<PivotLine> Lines(string items) => Child(definition, items)?.Elements().Where(e => e.Name.LocalName == "i").Take(1_048_576)
+            .Select(i => new PivotLine((string?)i.Attribute("t") ?? "data", Math.Clamp(Number(i, "r", 0), 0, 1000), i.Elements().Count(x => x.Name.LocalName == "x")))
+            .ToList() ?? [];
+        var layout = new PivotLayout(range, Number(location, "firstHeaderRow", 1), Number(location, "firstDataRow", 1), Number(location, "firstDataCol", 1))
         {
-            return false;
-        }
-
-        for (var row = range.Row1; row <= range.Row2; row++)
-        {
-            var offset = row - range.Row1;
-            var item = offset - headers;
-            var kind = item >= 0 && item < items.Count ? items[item] : null;
-            for (var column = range.Column1; column <= range.Column2; column++)
-            {
-                var key = XlsxWorksheet.Key(row, column);
-                var cell = sheet.Cells.TryGetValue(key, out var found) ? found : SheetCell.Empty;
-                var format = cell.Format ?? CellFormat.Default;
-                if (offset < headers && showHeaders)
-                {
-                    format = format with { Bold = true, Fill = light, Bottom = offset == headers - 1 ? line : format.Bottom };
-                }
-                else if (kind == "grand")
-                {
-                    format = format with { Bold = true, Fill = light, Top = line };
-                }
-                else if (kind is not null || (grandColumn && column == range.Column2 && offset >= headers))
-                {
-                    format = kind is "default" or "sum" or "countA" or "avg" or "max" or "min" or "product" or "count" or "stdDev" or "stdDevP" or "var" or "varP"
-                        || (grandColumn && column == range.Column2) ? format with { Bold = true } : format;
-                }
-                else
-                {
-                    continue;
-                }
-
-                sheet.Add(row, column, cell with { Format = format }, maxCells);
-            }
-        }
-
-        return true;
+            RowFields = Count("rowFields"),
+            ColumnFields = Count("colFields"),
+            PageFields = Child(definition, "pageFields")?.Elements().Count(e => e.Name.LocalName == "pageField") ?? 0,
+            Rows = Lines("rowItems"),
+            Columns = Lines("colItems"),
+            ShowRowHeaders = Flag(info, "showRowHeaders", true),
+            ShowColumnHeaders = Flag(info, "showColHeaders", true),
+            ShowRowStripes = Flag(info, "showRowStripes", false),
+            ShowColumnStripes = Flag(info, "showColStripes", false),
+            ShowLastColumn = Flag(info, "showLastColumn", true),
+        };
+        return PivotStyler.Apply(layout, style, sheet, maxCells);
     }
 }
