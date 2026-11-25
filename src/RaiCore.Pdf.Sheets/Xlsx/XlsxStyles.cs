@@ -38,6 +38,13 @@ internal sealed class XlsxStyles
 
     private System.Xml.Linq.XElement? _dxfs;
 
+    /// <summary>The workbook's own table styles (<c>tableStyle</c> elements), whose elements name formats of <see cref="DifferentialFormatElements"/>.</summary>
+    public IReadOnlyList<System.Xml.Linq.XElement> TableStyles { get; private set; } = [];
+
+    /// <summary>The differential formats (<c>dxf</c> elements) as they are in the styles part, by index.</summary>
+    public IReadOnlyList<System.Xml.Linq.XElement> DifferentialFormatElements =>
+        _dxfs?.Elements().Where(e => e.Name.LocalName == "dxf").Take(100_000).ToList() ?? [];
+
     /// <summary>The formats conditional formatting rules apply (<c>dxf</c>), by index.</summary>
     public IReadOnlyList<DifferentialFormat> ConditionalFormats { get; private set; } = [];
 
@@ -72,6 +79,12 @@ internal sealed class XlsxStyles
                     // The formats of conditional formatting: read whole, resolved with the colors at the end.
                     using var subtree = reader.ReadSubtree();
                     styles._dxfs = System.Xml.Linq.XElement.Load(subtree);
+                }
+                else if (section == "tableStyles" && !reader.IsEmptyElement)
+                {
+                    // The workbook's own table and pivot table styles, whose elements name formats of the dxfs.
+                    using var subtree = reader.ReadSubtree();
+                    styles.TableStyles = [.. System.Xml.Linq.XElement.Load(subtree).Elements().Where(e => e.Name.LocalName == "tableStyle").Take(1000)];
                 }
 
                 continue;

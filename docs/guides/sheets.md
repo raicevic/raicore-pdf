@@ -249,9 +249,13 @@ notes") at the top right corner of their cells (`Annotations`), which viewers op
 
 [!code-csharp[](../snippets/Sheets.cs#comments)]
 
-**Pivot tables** show the cells Excel stored for them with their style: `PivotStyleLight16` (Excel's default) and
-its siblings `PivotStyleLight15` to `PivotStyleLight21` give the header rows and the grand total row a light fill in
-the theme color, bold text and a line under or over them, and subtotals and the grand total column bold text.
+**Pivot tables** show the cells Excel stored for them with their style: any of Excel's built-in pivot styles
+(`PivotStyleLight1` to `28`, `PivotStyleMedium1` to `28`, `PivotStyleDark1` to `28`; `PivotStyleLight16` is the
+default) or the workbook's own, in its theme colors. Each part of the style goes over its part of the table: the
+whole table, the header rows and first header cell, the row labels, the row and column subheadings of nested fields,
+subtotal rows and columns, blank lines, the grand total row and column, banded rows and columns (when the table shows
+them), and the page fields above the table. Pivot tables of `.xls` workbooks get their style the same way (Excel
+2007 and later keep it with them; Excel 97's AutoFormats are in their cells already).
 
 | `XlsxConverterOptions` | What it does |
 |---|---|
@@ -277,8 +281,8 @@ refreshed: formulas show the values stored with them (see [Untrusted input](untr
 
 Not supported in workbooks, and reported through `Diagnostics` ([below](#diagnostics)): chart sheets of `.xls`
 workbooks, region maps, SmartArt, ink, form controls, embedded objects, conditional formatting rules
-whose formulas are not supported, sparklines, pivot tables of other styles than those above (their cells are shown),
-and the pivot tables of `.xls` workbooks.
+whose formulas are not supported, sparklines, and pivot tables whose style is neither built in nor the workbook's
+(their cells are shown).
 
 ### Excel 97-2003 workbooks
 
@@ -329,7 +333,7 @@ the sheets are converted, while the conversion runs, so a caller can flag the do
 | `Comment` | No longer reported: comments print as the page setup or `Comments` says. | | |
 | `ConditionalFormatting` | Conditional formatting rules that are not applied (formulas that are not supported, damaged rules). | Those `cfRule`s, also of the extension list | `CF`, `CF12` records |
 | `Sparkline` | Sparklines: left out. | Sparklines of the extension list | |
-| `PivotTable` | Pivot tables of styles other than `PivotStyleLight15` to `21`: their cells are shown as stored, without the pivot table style. | Pivot table parts | `SXVIEW` records |
+| `PivotTable` | Pivot tables whose style is neither built in nor the workbook's: their cells are shown as stored, without the pivot table style. | Pivot table parts | `SXVIEW` records with a table style (`SXAddl`), or of Excel 5.0/95 |
 | `RichText` | No longer reported: rich text is shown. | | |
 | `RotatedText` | No longer reported: rotated text is shown. | | |
 | `Layout` | Content that does not fit the page: drawn past its edge, or cut off, with the page numbers. | | |
