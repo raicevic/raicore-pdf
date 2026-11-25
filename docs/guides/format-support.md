@@ -73,7 +73,7 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | Right-to-left sheets | ✓ | ✓ | ◐ text aligned by its direction |
 | Print area, print titles, orientation, scale, fit to width | ✓ | ✓ | - |
 | Header row repeated on every page | ✓ print titles | ✓ print titles | ✓ `HasHeaderRow` |
-| Pivot tables | ✓ their cells, `PivotStyleLight15`-`21`; other styles R | ◐ their cells, R | - |
+| Pivot tables | ✓ their cells, every built-in pivot style and the workbook's own | ✓ their cells, built-in pivot styles | - |
 | Charts in a sheet | ✓ newer types too; region maps R | R | - |
 | Chart sheets | ✓ on a page of their own | R | - |
 | Pictures: PNG, JPEG, GIF, BMP, TIFF, EMF, WMF | ✓ cropped, turned | ✓ bitmaps, metafiles | - |

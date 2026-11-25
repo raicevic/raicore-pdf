@@ -330,7 +330,8 @@ public class SheetDiagnosticsTests
             .Record(0x089C, new byte[28], U16(3), U16(0), U16(5), U16(0), U16(2), Encoding.ASCII.GetBytes("FirstEvenX")) // HEADERFOOTER: even footer, first footer
             .Record(0x001B, U16(2), new byte[12]) // HORIZONTALPAGEBREAKS
             .Record(0x001A, U16(1), new byte[6]) // VERTICALPAGEBREAKS
-            .Record(0x00B0, new byte[44])); // SXVIEW
+            .Record(0x00B0, new byte[44]) // SXVIEW
+            .Record(0x0864, U16(0x0864), U16(0), U8(0), U8(0x1E), new byte[6], U16(0x30), U16(7), Encoding.Unicode.GetBytes("Unknown"))); // its table style, not known
         Assert.Equal(
         [
             ("Sheet1", SheetDiagnosticKind.Chart, 1),

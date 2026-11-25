@@ -27,6 +27,12 @@ Excel 97-2003 converter (`XlsToPdf`).
 - License: Apache License 2.0, as part of Apache POI. Copyright 2003-2026 The Apache Software Foundation. This product
   includes software developed at The Apache Software Foundation (<https://www.apache.org/>).
 
+`pivot_row_header.xls` is from the test data of [LibreOffice](https://www.libreoffice.org/), unchanged, at commit
+[86090b9bfc1b](https://github.com/LibreOffice/core/tree/86090b9bfc1b38bb09f9110b8acad27abdf373f0/sc/qa/unit/data/xls):
+two pivot tables, one with the table style `PivotStyleLight16` (Excel 2007's SXAddl record) and one without. License:
+Mozilla Public License 2.0 (<https://www.mozilla.org/MPL/2.0/>); the file is the LibreOffice project's, distributed
+here unmodified. Its workbook stream is the fuzz seed `../../Fuzz/Seeds/xls/pivot-tables.biff`.
+
 `CommentBoxes.xls` is Apache POI's `SimpleWithComments.xls` with its first sheet's SETUP record printing comments as
 displayed (fNotes without fEndNotes), written by `../make-comment-boxes.py`; its comment on B3 is shown on the sheet.
 

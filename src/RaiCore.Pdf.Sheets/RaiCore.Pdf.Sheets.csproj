@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Xlsx\PivotStyles.xml.gz" LogicalName="RaiCore.Pdf.Sheets.PivotStyles.xml.gz" />
+    <None Include="Xlsx\PivotStyles-NOTICE.txt" Pack="true" PackagePath="licenses/apache-poi-NOTICE.txt" />
   </ItemGroup>
 
   <ItemGroup>
