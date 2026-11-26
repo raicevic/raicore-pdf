@@ -537,7 +537,7 @@ public static partial class HtmlToPdf
             var media = style.GetAttribute("media");
             if (media is null or "" || media.Contains("print", StringComparison.OrdinalIgnoreCase) || media.Contains("all", StringComparison.OrdinalIgnoreCase))
             {
-                cssTexts.Add(new(style.TextContent, linkedBases.GetValueOrDefault(style, options.BaseUri)) { Original = text });
+                cssTexts.Add(new(style.TextContent, linkedBases.GetValueOrDefault(style, options.BaseUri)) { Original = CssNesting.Flatten(text) }); // Diagnostics read the author's rules, unnested.
             }
         }
 
@@ -623,8 +623,8 @@ public static partial class HtmlToPdf
         }
     }
 
-    /// <summary>Rewrites CSS that AngleSharp would misread before it is parsed (see LegacyBreaks and LogicalSides).</summary>
-    private static string RewriteCss(string css) => CssTextDecoration.RewriteShorthand(CssBackgrounds.RewriteShorthand(LogicalSides.Rewrite(LegacyBreaks.Rewrite(StripShadows(CssColorGuard.Rewrite(css))))));
+    /// <summary>Rewrites CSS that AngleSharp would misread before it is parsed (see CssNesting, LegacyBreaks and LogicalSides).</summary>
+    private static string RewriteCss(string css) => CssTextDecoration.RewriteShorthand(CssBackgrounds.RewriteShorthand(LogicalSides.Rewrite(LegacyBreaks.Rewrite(StripShadows(CssColorGuard.Rewrite(CssNesting.Flatten(css)))))));
 
     /// <summary>
     /// Removes <c>box-shadow</c> and <c>text-shadow</c>, which are not drawn: AngleSharp throws a

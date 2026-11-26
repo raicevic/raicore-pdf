@@ -116,25 +116,25 @@
   "weasyprint-invoice": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.3258,
-    "text_near": 0.0182
+    "pixel": 0.7218,
+    "text_near": 0.2519
   },
   "weasyprint-letter": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.663,
-    "text_near": 0.785
+    "pixel": 0.9911,
+    "text_near": 1.0
   },
   "weasyprint-report": {
-    "pages": 9,
+    "pages": 8,
     "chrome_pages": 6,
-    "pixel": 0.1136,
+    "pixel": 0.1815,
     "text_near": 0.0
   },
   "weasyprint-ticket": {
     "pages": 1,
     "chrome_pages": 1,
-    "pixel": 0.8466,
+    "pixel": 0.9126,
     "text_near": 0.0
   }
 }

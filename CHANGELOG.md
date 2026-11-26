@@ -6,6 +6,9 @@ and versions follow [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- HTML: CSS nesting: style rules nested in other rules (`aside { address { ... } }`), `&` (`&:hover`, `&#from`,
+  `.parent &`), relative selectors (`> li`) and `@media`/`@supports` nested in a style rule are flattened before the
+  style sheet is parsed, as browsers apply them; nested rules are no longer reported as unsupported properties (#149).
 - Layout: `FlowDocument.PageBackground`, called for every page before its content is drawn (a background artifact
   in tagged documents) (#156).
 - HTML: `overflow-wrap` and its legacy name `word-wrap`: `break-word` and `anywhere` break a word too long for its line
