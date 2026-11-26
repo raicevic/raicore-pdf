@@ -6,28 +6,28 @@
     "text_near": 0.8587
   },
   "bootstrap-album": {
-    "pages": 4,
+    "pages": 3,
     "chrome_pages": 3,
-    "pixel": 0.2879,
-    "text_near": 0.0081
+    "pixel": 0.8376,
+    "text_near": 0.2171
   },
   "bootstrap-blog": {
-    "pages": 7,
+    "pages": 5,
     "chrome_pages": 5,
-    "pixel": 0.1578,
-    "text_near": 0.0011
+    "pixel": 0.3935,
+    "text_near": 0.062
   },
   "bootstrap-checkout": {
-    "pages": 3,
+    "pages": 2,
     "chrome_pages": 2,
-    "pixel": 0.2581,
-    "text_near": 0.0154
+    "pixel": 0.3559,
+    "text_near": 0.0393
   },
   "bootstrap-pricing": {
-    "pages": 3,
+    "pages": 2,
     "chrome_pages": 2,
-    "pixel": 0.2055,
-    "text_near": 0.0
+    "pixel": 0.9483,
+    "text_near": 0.9865
   },
   "budget-report": {
     "pages": 3,
@@ -108,10 +108,10 @@
     "text_near": 1.0
   },
   "startbootstrap-resume": {
-    "pages": 4,
+    "pages": 7,
     "chrome_pages": 7,
-    "pixel": 0.2353,
-    "text_near": 0.0
+    "pixel": 0.564,
+    "text_near": 0.0052
   },
   "weasyprint-invoice": {
     "pages": 1,

@@ -35,6 +35,10 @@ and versions follow [Semantic Versioning](https://semver.org/).
   balanced like browsers, also inside flex items and table cells (#73).
 
 ### Changed
+- HTML: width and height media queries see the paper (`HtmlConverterOptions.Page`, not changed by `@page`), as in
+  Chrome's print layout, instead of the page's content area: on A4, Bootstrap's `min-width: 768px` layouts now apply,
+  as in Chrome (the Bootstrap documents of the fidelity corpus now have Chrome's page counts). Viewport units stay
+  the content area's, now without rounding it to whole pixels (#148).
 - HTML diagnostics: Outlook's `mso-*` properties and vendor-prefixed pseudo-classes (`:-webkit-autofill`,
   `:-moz-focusring`) are reported as `Info`, like vendor-prefixed properties, instead of `Warning` (#159).
 

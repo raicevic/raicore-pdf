@@ -45,7 +45,10 @@ Warning ResourceNotLoaded: missing.png at html > body > img (1x): The image miss
 
 - **No JavaScript.** Content that a script would build is missing; render it on the server (for example with
   [Razor](razor.md)).
-- **The page is the viewport.** Media queries, `vw`/`vh` and percentages see the page's content area (about 643 CSS
-  pixels wide for A4 with 2 cm margins), not a browser window, and nothing is shrunk to fit.
+- **The paper and the page are the viewport.** As in Chrome's print layout, width and height media queries see the
+  paper, `HtmlConverterOptions.Page` (794 CSS pixels wide for A4, whatever size `@page` gives the pages), so a
+  tablet-and-up layout such as Bootstrap's `min-width: 768px` applies; `vw`/`vh` and percentages see the page's
+  content area as `@page` sets it up (about 643 CSS pixels wide for A4 with 2 cm margins), not a browser window.
+  Content wider than the page is not shrunk to fit (Chrome scales it down, by at most a third).
 - **Fonts** are the bundled Liberation fonts and your web fonts unless you add installed ones; see [Fonts](fonts.md).
 - **Network access is off** unless you supply a `ResourceLoader`; see [Images](images.md#loading-resources).

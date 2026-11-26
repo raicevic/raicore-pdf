@@ -293,16 +293,11 @@ public static partial class HtmlToPdf
         var fonts = options.Fonts ?? BundledFonts.CreateCollection();
         var diagnostics = new DiagnosticCollector(options.Diagnostics);
 
-        // A print device; the viewport (needed to compute relative units such as background-position) is the
-        // page's content area, as in browsers' print layout.
-        var device = new DefaultRenderDevice
-        {
-            Category = DeviceCategory.Printer,
-            DeviceWidth = (int)(options.Page.Size.Width / CssValues.PointsPerPixel),
-            DeviceHeight = (int)(options.Page.Size.Height / CssValues.PointsPerPixel),
-            ViewPortWidth = (int)(options.Page.ContentWidth / CssValues.PointsPerPixel),
-            ViewPortHeight = (int)(options.Page.ContentHeight / CssValues.PointsPerPixel),
-        };
+        // A print device, as in Chrome's print layout: width media queries see the paper (the options' page size),
+        // viewport units the page's content area (as @page sets it up, below).
+        var device = PrintDevice.For(options.Page, options.Page.Size.Width, options.Page.Size.Height);
+        device.RenderWidth = options.Page.ContentWidth / CssValues.PointsPerPixel;
+        device.RenderHeight = options.Page.ContentHeight / CssValues.PointsPerPixel;
         var context = BrowsingContext.New(Configuration.Default.WithCss().WithRenderDevice(device));
         using var document = Parse(context, CssColorGuard.Rewrite(html), options.BaseUri, cancellationToken); // AngleSharp parses CSS here.
         CheckStructure(document, options.Limits);
@@ -318,8 +313,8 @@ public static partial class HtmlToPdf
         var setup = pageRules.Setup;
 
         // @page can change the page size and margins; styles are computed lazily, so vw/vh still see the final area.
-        device.ViewPortWidth = (int)(setup.ContentWidth / CssValues.PointsPerPixel);
-        device.ViewPortHeight = (int)(setup.ContentHeight / CssValues.PointsPerPixel);
+        device.RenderWidth = setup.ContentWidth / CssValues.PointsPerPixel;
+        device.RenderHeight = setup.ContentHeight / CssValues.PointsPerPixel;
 
         var paged = Paged.PagedMedia.Load(document, cssTexts);
         var webFonts = WebFonts.Load(styleSheets, options.ResourceLoader, fonts, diagnostics);

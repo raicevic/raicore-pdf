@@ -42,14 +42,7 @@ public static partial class HtmlToPdf
 
         // A print device whose viewport is the width the fragment is placed in (vw), and as tall as the default page's
         // content area (vh): a fragment has no page of its own.
-        var device = new DefaultRenderDevice
-        {
-            Category = DeviceCategory.Printer,
-            DeviceWidth = (int)(options.Page.Size.Width / CssValues.PointsPerPixel),
-            DeviceHeight = (int)(options.Page.Size.Height / CssValues.PointsPerPixel),
-            ViewPortWidth = Math.Max(1, (int)(fragment.Width / CssValues.PointsPerPixel)),
-            ViewPortHeight = (int)(options.Page.ContentHeight / CssValues.PointsPerPixel),
-        };
+        var device = PrintDevice.For(options.Page, fragment.Width, options.Page.ContentHeight);
         var context = BrowsingContext.New(Configuration.Default.WithCss().WithRenderDevice(device));
         using var document = Parse(context, CssColorGuard.Rewrite(html), options.BaseUri, cancellationToken);
         CheckStructure(document, options.Limits);

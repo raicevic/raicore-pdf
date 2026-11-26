@@ -70,7 +70,7 @@ internal sealed partial class BoxBuilder
         _baseUri = baseUri;
         Document = document;
         _viewport = document.Context.GetService<AngleSharp.Css.IRenderDevice>() is { } device
-            ? new CssViewport(device.ViewPortWidth * CssValues.PointsPerPixel, device.ViewPortHeight * CssValues.PointsPerPixel)
+            ? new CssViewport(device.RenderWidth * CssValues.PointsPerPixel, device.RenderHeight * CssValues.PointsPerPixel)
             : default;
         _rootFontSize = 12;
         if (document.DocumentElement is { } root)
