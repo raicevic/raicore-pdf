@@ -166,7 +166,7 @@ public class HtmlCalcTests
     [InlineData("font-size: min(2em, 20px)", 20)]
     [InlineData("font-size: max(2em, 20px)", 32)]
     [InlineData("font-size: clamp(12px, 1vw, 20px)", 12)] // 1vw is about 5px.
-    [InlineData("font-size: clamp(12px, 3vw, 20px)", 15.99)] // 3vw of 533px.
+    [InlineData("font-size: clamp(12px, 3vw, 20px)", 16)] // 3vw of the 533.33px page area (not rounded to whole pixels).
     [InlineData("font-size: clamp(12px, 5vw, 20px)", 20)]
     public void Font_sizes_resolve_against_the_parent_font_size(string css, double pixels)
     {
