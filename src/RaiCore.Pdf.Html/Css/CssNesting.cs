@@ -51,14 +51,8 @@ internal static class CssNesting
                     return;
                 }
 
-                if (css[_position] == '}')
-                {
-                    _position++;
-                    return;
-                }
-
                 var start = _position;
-                var (end, terminator) = ScanItem(_position);
+                var (end, terminator) = ScanItem(_position); // A closing brace ends the block (as an empty statement).
                 var prelude = css[start..end].Trim();
                 _position = Math.Min(end + 1, css.Length);
                 if (terminator != '{')

@@ -24,6 +24,15 @@ public class CssNestingTests
     [InlineData("a { :is(b, c) & { x: 1 } }", ":is(b, c) a { x: 1;}\n")]
     [InlineData("a { b[title=\"{ ; }\"] { x: 1 } }", "a b[title=\"{ ; }\"] { x: 1;}\n")]
     [InlineData("a { /* { */ b { x: 1 } }", "a b { x: 1;}\n")]
+    [InlineData("a { x: 1;; b { y: 2 } }", "a { x: 1;}\na b { y: 2;}\n")]
+    [InlineData("a { x: 1 /* } */; b { y: 2 } }", "a { x: 1 /* } */;}\na b { y: 2;}\n")]
+    [InlineData("a { @media print { b { y: 2 } } }", "@media print {\na b { y: 2;}\n}\n")]
+    [InlineData("a\\,b { c { x: 1 } }", "a\\,b c { x: 1;}\n")]
+    [InlineData("[t=\"],\"] { c { x: 1 } }", "[t=\"],\"] c { x: 1;}\n")]
+    [InlineData("a { @-moz-document url-prefix() { x: 1 } }", "@-moz-document url-prefix() {\na { x: 1;}\n}\n")]
+    [InlineData("a { background: url(data:x;y); b { x: 1 } }", "a { background: url(data:x;y);}\na b { x: 1;}\n")]
+    [InlineData("a { content: \"x\n; b { y: 1 } }", "a { content: \"x;}\na b { y: 1;}\n")]
+    [InlineData("a { b { c { d { e { x: 1 } } } } }", "a b c d e { x: 1;}\n")]
     public void Nested_rules_become_flat_rules(string css, string flat) =>
         Assert.Equal(flat, CssNesting.Flatten(css));
 
@@ -53,6 +62,14 @@ public class CssNestingTests
     [InlineData("a { @unknown { x: 1 } b { y: 2 } }")]
     public void Broken_or_odd_sheets_do_not_throw(string css) =>
         Assert.NotNull(CssNesting.Flatten(css));
+
+    [Fact]
+    public void Deeply_nested_group_rules_are_kept_as_they_are()
+    {
+        var css = string.Concat(Enumerable.Repeat("@media print { ", 100_000)) + "a { b { x: 1 } }" + new string('}', 100_000);
+
+        Assert.NotNull(CssNesting.Flatten(css));
+    }
 
     [Fact]
     public void Deep_nesting_is_cut_off()
