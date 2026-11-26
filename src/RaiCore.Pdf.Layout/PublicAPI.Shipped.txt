@@ -48,9 +48,13 @@ override RaiCore.Pdf.Layout.BackgroundSize.GetHashCode() -> int
 override RaiCore.Pdf.Layout.Borders.GetHashCode() -> int
 override RaiCore.Pdf.Layout.BorderSide.GetHashCode() -> int
 override RaiCore.Pdf.Layout.BoxInsets.GetHashCode() -> int
+override RaiCore.Pdf.Layout.BoxShadow.GetHashCode() -> int
 override RaiCore.Pdf.Layout.BoxStyle.Equals(object? obj) -> bool
 override RaiCore.Pdf.Layout.BoxStyle.GetHashCode() -> int
 override RaiCore.Pdf.Layout.BoxStyle.ToString() -> string!
+override RaiCore.Pdf.Layout.ColumnLayout.Equals(object? obj) -> bool
+override RaiCore.Pdf.Layout.ColumnLayout.GetHashCode() -> int
+override RaiCore.Pdf.Layout.ColumnLayout.ToString() -> string!
 override RaiCore.Pdf.Layout.CornerRadii.GetHashCode() -> int
 override RaiCore.Pdf.Layout.CornerRadius.GetHashCode() -> int
 override RaiCore.Pdf.Layout.FlexBasis.GetHashCode() -> int
@@ -235,6 +239,23 @@ RaiCore.Pdf.Layout.BoxInsets.Right.get -> RaiCore.Pdf.Layout.Length?
 RaiCore.Pdf.Layout.BoxInsets.Right.init -> void
 RaiCore.Pdf.Layout.BoxInsets.Top.get -> RaiCore.Pdf.Layout.Length?
 RaiCore.Pdf.Layout.BoxInsets.Top.init -> void
+RaiCore.Pdf.Layout.BoxShadow
+RaiCore.Pdf.Layout.BoxShadow.Blur.get -> double
+RaiCore.Pdf.Layout.BoxShadow.Blur.init -> void
+RaiCore.Pdf.Layout.BoxShadow.BoxShadow() -> void
+RaiCore.Pdf.Layout.BoxShadow.BoxShadow(double OffsetX, double OffsetY, double Blur, double Spread, RaiCore.Pdf.PdfColor Color) -> void
+RaiCore.Pdf.Layout.BoxShadow.Color.get -> RaiCore.Pdf.PdfColor
+RaiCore.Pdf.Layout.BoxShadow.Color.init -> void
+RaiCore.Pdf.Layout.BoxShadow.Deconstruct(out double OffsetX, out double OffsetY, out double Blur, out double Spread, out RaiCore.Pdf.PdfColor Color) -> void
+RaiCore.Pdf.Layout.BoxShadow.Equals(RaiCore.Pdf.Layout.BoxShadow other) -> bool
+RaiCore.Pdf.Layout.BoxShadow.Inset.get -> bool
+RaiCore.Pdf.Layout.BoxShadow.Inset.init -> void
+RaiCore.Pdf.Layout.BoxShadow.OffsetX.get -> double
+RaiCore.Pdf.Layout.BoxShadow.OffsetX.init -> void
+RaiCore.Pdf.Layout.BoxShadow.OffsetY.get -> double
+RaiCore.Pdf.Layout.BoxShadow.OffsetY.init -> void
+RaiCore.Pdf.Layout.BoxShadow.Spread.get -> double
+RaiCore.Pdf.Layout.BoxShadow.Spread.init -> void
 RaiCore.Pdf.Layout.BoxStyle
 RaiCore.Pdf.Layout.BoxStyle.<Clone>$() -> RaiCore.Pdf.Layout.BoxStyle!
 RaiCore.Pdf.Layout.BoxStyle.Background.get -> RaiCore.Pdf.PdfColor?
@@ -286,6 +307,10 @@ RaiCore.Pdf.Layout.BoxStyle.Padding.get -> RaiCore.Pdf.Layout.Thickness
 RaiCore.Pdf.Layout.BoxStyle.Padding.init -> void
 RaiCore.Pdf.Layout.BoxStyle.Position.get -> RaiCore.Pdf.Layout.Positioning
 RaiCore.Pdf.Layout.BoxStyle.Position.init -> void
+RaiCore.Pdf.Layout.BoxStyle.Shadows.get -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.Layout.BoxShadow>!
+RaiCore.Pdf.Layout.BoxStyle.Shadows.init -> void
+RaiCore.Pdf.Layout.BoxStyle.SpanColumns.get -> bool
+RaiCore.Pdf.Layout.BoxStyle.SpanColumns.init -> void
 RaiCore.Pdf.Layout.BoxStyle.Widows.get -> int
 RaiCore.Pdf.Layout.BoxStyle.Widows.init -> void
 RaiCore.Pdf.Layout.BoxStyle.Width.get -> RaiCore.Pdf.Layout.Length?
@@ -297,11 +322,36 @@ RaiCore.Pdf.Layout.ClearSide.Both = 3 -> RaiCore.Pdf.Layout.ClearSide
 RaiCore.Pdf.Layout.ClearSide.Left = 1 -> RaiCore.Pdf.Layout.ClearSide
 RaiCore.Pdf.Layout.ClearSide.None = 0 -> RaiCore.Pdf.Layout.ClearSide
 RaiCore.Pdf.Layout.ClearSide.Right = 2 -> RaiCore.Pdf.Layout.ClearSide
+RaiCore.Pdf.Layout.ColumnFill
+RaiCore.Pdf.Layout.ColumnFill.Auto = 1 -> RaiCore.Pdf.Layout.ColumnFill
+RaiCore.Pdf.Layout.ColumnFill.Balance = 0 -> RaiCore.Pdf.Layout.ColumnFill
+RaiCore.Pdf.Layout.ColumnLayout
+RaiCore.Pdf.Layout.ColumnLayout.<Clone>$() -> RaiCore.Pdf.Layout.ColumnLayout!
+RaiCore.Pdf.Layout.ColumnLayout.ColumnLayout() -> void
+RaiCore.Pdf.Layout.ColumnLayout.Count.get -> int?
+RaiCore.Pdf.Layout.ColumnLayout.Count.init -> void
+RaiCore.Pdf.Layout.ColumnLayout.Equals(RaiCore.Pdf.Layout.ColumnLayout? other) -> bool
+RaiCore.Pdf.Layout.ColumnLayout.Fill.get -> RaiCore.Pdf.Layout.ColumnFill
+RaiCore.Pdf.Layout.ColumnLayout.Fill.init -> void
+RaiCore.Pdf.Layout.ColumnLayout.Gap.get -> double
+RaiCore.Pdf.Layout.ColumnLayout.Gap.init -> void
+RaiCore.Pdf.Layout.ColumnLayout.Rule.get -> RaiCore.Pdf.Layout.BorderSide
+RaiCore.Pdf.Layout.ColumnLayout.Rule.init -> void
+RaiCore.Pdf.Layout.ColumnLayout.Width.get -> double?
+RaiCore.Pdf.Layout.ColumnLayout.Width.init -> void
+RaiCore.Pdf.Layout.ColumnLayout.Widths.get -> System.Collections.Generic.IReadOnlyList<(double Width, double Gap)>?
+RaiCore.Pdf.Layout.ColumnLayout.Widths.init -> void
 RaiCore.Pdf.Layout.ContainerBlock
 RaiCore.Pdf.Layout.ContainerBlock.Add(RaiCore.Pdf.Layout.Block! block) -> RaiCore.Pdf.Layout.ContainerBlock!
 RaiCore.Pdf.Layout.ContainerBlock.Children.get -> System.Collections.Generic.IReadOnlyList<RaiCore.Pdf.Layout.Block!>!
+RaiCore.Pdf.Layout.ContainerBlock.Columns.get -> RaiCore.Pdf.Layout.ColumnLayout?
+RaiCore.Pdf.Layout.ContainerBlock.Columns.init -> void
 RaiCore.Pdf.Layout.ContainerBlock.ContainerBlock(RaiCore.Pdf.Layout.BoxStyle? style = null) -> void
 RaiCore.Pdf.Layout.ContainerBlock.ContainerBlock(RaiCore.Pdf.Layout.BoxStyle? style, params System.Collections.Generic.IEnumerable<RaiCore.Pdf.Layout.Block!>! children) -> void
+RaiCore.Pdf.Layout.ContainerBlock.HasLegend.get -> bool
+RaiCore.Pdf.Layout.ContainerBlock.HasLegend.init -> void
+RaiCore.Pdf.Layout.ContainerBlock.LegendAlignment.get -> RaiCore.Pdf.Layout.BlockAlignment
+RaiCore.Pdf.Layout.ContainerBlock.LegendAlignment.init -> void
 RaiCore.Pdf.Layout.CornerRadii
 RaiCore.Pdf.Layout.CornerRadii.BottomLeft.get -> RaiCore.Pdf.Layout.CornerRadius
 RaiCore.Pdf.Layout.CornerRadii.BottomLeft.init -> void
@@ -394,6 +444,8 @@ RaiCore.Pdf.Layout.FlowDocument.Diagnostics.get -> System.Action<RaiCore.Pdf.Lay
 RaiCore.Pdf.Layout.FlowDocument.Diagnostics.set -> void
 RaiCore.Pdf.Layout.FlowDocument.FlowDocument(RaiCore.Pdf.Layout.PageSetup! setup) -> void
 RaiCore.Pdf.Layout.FlowDocument.MapPages() -> RaiCore.Pdf.Layout.PageMap!
+RaiCore.Pdf.Layout.FlowDocument.PageBackground.get -> System.Action<RaiCore.Pdf.PdfCanvas!, RaiCore.Pdf.Layout.PageInfo>?
+RaiCore.Pdf.Layout.FlowDocument.PageBackground.set -> void
 RaiCore.Pdf.Layout.FlowDocument.PageDecorator.get -> System.Action<RaiCore.Pdf.PdfCanvas!, RaiCore.Pdf.Layout.PageInfo>?
 RaiCore.Pdf.Layout.FlowDocument.PageDecorator.set -> void
 RaiCore.Pdf.Layout.FlowDocument.PageSetupResolver.get -> System.Func<RaiCore.Pdf.Layout.PageContext, RaiCore.Pdf.Layout.PageSetup!>?
@@ -599,12 +651,14 @@ RaiCore.Pdf.Layout.LinkTarget.Uri.get -> System.Uri?
 RaiCore.Pdf.Layout.PageBreak
 RaiCore.Pdf.Layout.PageBreak.Auto = 0 -> RaiCore.Pdf.Layout.PageBreak
 RaiCore.Pdf.Layout.PageBreak.Avoid = 2 -> RaiCore.Pdf.Layout.PageBreak
+RaiCore.Pdf.Layout.PageBreak.Column = 5 -> RaiCore.Pdf.Layout.PageBreak
 RaiCore.Pdf.Layout.PageBreak.Left = 3 -> RaiCore.Pdf.Layout.PageBreak
 RaiCore.Pdf.Layout.PageBreak.Page = 1 -> RaiCore.Pdf.Layout.PageBreak
 RaiCore.Pdf.Layout.PageBreak.Right = 4 -> RaiCore.Pdf.Layout.PageBreak
 RaiCore.Pdf.Layout.PageBreakInside
 RaiCore.Pdf.Layout.PageBreakInside.Auto = 0 -> RaiCore.Pdf.Layout.PageBreakInside
 RaiCore.Pdf.Layout.PageBreakInside.Avoid = 1 -> RaiCore.Pdf.Layout.PageBreakInside
+RaiCore.Pdf.Layout.PageBreakInside.AvoidColumn = 2 -> RaiCore.Pdf.Layout.PageBreakInside
 RaiCore.Pdf.Layout.PageContext
 RaiCore.Pdf.Layout.PageContext.Deconstruct(out int Number, out string? Name, out RaiCore.Pdf.Layout.PageSide Side, out bool IsBlank) -> void
 RaiCore.Pdf.Layout.PageContext.Equals(RaiCore.Pdf.Layout.PageContext other) -> bool
@@ -670,6 +724,8 @@ RaiCore.Pdf.Layout.Paragraph.Alignment.init -> void
 RaiCore.Pdf.Layout.Paragraph.BeginInline(RaiCore.Pdf.Layout.BoxStyle! box, RaiCore.Pdf.Layout.TextStyle? style = null, bool startEdge = true, RaiCore.Pdf.Layout.TextDirection direction = RaiCore.Pdf.Layout.TextDirection.LeftToRight) -> RaiCore.Pdf.Layout.Paragraph!
 RaiCore.Pdf.Layout.Paragraph.BeginLink(RaiCore.Pdf.Layout.LinkTarget! target) -> RaiCore.Pdf.Layout.Paragraph!
 RaiCore.Pdf.Layout.Paragraph.BeginTag(RaiCore.Pdf.Layout.StructureTag! tag) -> RaiCore.Pdf.Layout.Paragraph!
+RaiCore.Pdf.Layout.Paragraph.BreakAnywhere.get -> bool
+RaiCore.Pdf.Layout.Paragraph.BreakAnywhere.init -> void
 RaiCore.Pdf.Layout.Paragraph.BreakLongWords.get -> bool
 RaiCore.Pdf.Layout.Paragraph.BreakLongWords.init -> void
 RaiCore.Pdf.Layout.Paragraph.Direction.get -> RaiCore.Pdf.Layout.ParagraphDirection
@@ -876,6 +932,8 @@ RaiCore.Pdf.Layout.TextStyle.LineHeight.get -> RaiCore.Pdf.Layout.LineHeight
 RaiCore.Pdf.Layout.TextStyle.LineHeight.init -> void
 RaiCore.Pdf.Layout.TextStyle.NoWrap.get -> bool
 RaiCore.Pdf.Layout.TextStyle.NoWrap.init -> void
+RaiCore.Pdf.Layout.TextStyle.RoundFontMetrics.get -> bool
+RaiCore.Pdf.Layout.TextStyle.RoundFontMetrics.init -> void
 RaiCore.Pdf.Layout.TextStyle.Shaping.get -> RaiCore.Pdf.Layout.Text.ShapingOptions!
 RaiCore.Pdf.Layout.TextStyle.Shaping.init -> void
 RaiCore.Pdf.Layout.TextStyle.TextStyle(RaiCore.Pdf.Fonts.PdfFont! font, double fontSize = 12) -> void
@@ -923,9 +981,13 @@ static RaiCore.Pdf.Layout.BorderSide.operator !=(RaiCore.Pdf.Layout.BorderSide l
 static RaiCore.Pdf.Layout.BorderSide.operator ==(RaiCore.Pdf.Layout.BorderSide left, RaiCore.Pdf.Layout.BorderSide right) -> bool
 static RaiCore.Pdf.Layout.BoxInsets.operator !=(RaiCore.Pdf.Layout.BoxInsets left, RaiCore.Pdf.Layout.BoxInsets right) -> bool
 static RaiCore.Pdf.Layout.BoxInsets.operator ==(RaiCore.Pdf.Layout.BoxInsets left, RaiCore.Pdf.Layout.BoxInsets right) -> bool
+static RaiCore.Pdf.Layout.BoxShadow.operator !=(RaiCore.Pdf.Layout.BoxShadow left, RaiCore.Pdf.Layout.BoxShadow right) -> bool
+static RaiCore.Pdf.Layout.BoxShadow.operator ==(RaiCore.Pdf.Layout.BoxShadow left, RaiCore.Pdf.Layout.BoxShadow right) -> bool
 static RaiCore.Pdf.Layout.BoxStyle.Default.get -> RaiCore.Pdf.Layout.BoxStyle!
 static RaiCore.Pdf.Layout.BoxStyle.operator !=(RaiCore.Pdf.Layout.BoxStyle? left, RaiCore.Pdf.Layout.BoxStyle? right) -> bool
 static RaiCore.Pdf.Layout.BoxStyle.operator ==(RaiCore.Pdf.Layout.BoxStyle? left, RaiCore.Pdf.Layout.BoxStyle? right) -> bool
+static RaiCore.Pdf.Layout.ColumnLayout.operator !=(RaiCore.Pdf.Layout.ColumnLayout? left, RaiCore.Pdf.Layout.ColumnLayout? right) -> bool
+static RaiCore.Pdf.Layout.ColumnLayout.operator ==(RaiCore.Pdf.Layout.ColumnLayout? left, RaiCore.Pdf.Layout.ColumnLayout? right) -> bool
 static RaiCore.Pdf.Layout.CornerRadii.All(double points) -> RaiCore.Pdf.Layout.CornerRadii
 static RaiCore.Pdf.Layout.CornerRadii.All(RaiCore.Pdf.Layout.CornerRadius radius) -> RaiCore.Pdf.Layout.CornerRadii
 static RaiCore.Pdf.Layout.CornerRadii.None.get -> RaiCore.Pdf.Layout.CornerRadii
@@ -1019,6 +1081,8 @@ static RaiCore.Pdf.Layout.Thickness.Zero.get -> RaiCore.Pdf.Layout.Thickness
 ~override RaiCore.Pdf.Layout.BorderSide.ToString() -> string
 ~override RaiCore.Pdf.Layout.BoxInsets.Equals(object obj) -> bool
 ~override RaiCore.Pdf.Layout.BoxInsets.ToString() -> string
+~override RaiCore.Pdf.Layout.BoxShadow.Equals(object obj) -> bool
+~override RaiCore.Pdf.Layout.BoxShadow.ToString() -> string
 ~override RaiCore.Pdf.Layout.CornerRadii.Equals(object obj) -> bool
 ~override RaiCore.Pdf.Layout.CornerRadii.ToString() -> string
 ~override RaiCore.Pdf.Layout.CornerRadius.Equals(object obj) -> bool
