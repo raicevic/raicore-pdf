@@ -1,0 +1,22 @@
+<!doctype html>
+<html><head><style>
+@page { size: A6; margin: 1cm }
+.cols { columns: 3 4em; column-gap: 1em; column-rule: 2px dotted red; column-fill: balance }
+.auto { column-count: 2; column-fill: auto; height: 6em }
+h2 { column-span: all }
+.brk { break-before: column }
+.keep { break-inside: avoid-column }
+.nest { columns: 2 }
+</style></head><body>
+<div class="cols">
+  <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.</p>
+  <h2>Across</h2>
+  <p class="keep">Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+  <p class="brk">Duis aute irure dolor in reprehenderit.</p>
+  <div class="nest"><p>Nested columns of text that flow and balance inside a column.</p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" width="40" height="60"></div>
+  <table><tr><th>A</th><td>1</td></tr><tr><th>B</th><td>2</td></tr></table>
+  <p style="float: left; width: 2em">Float</p><p>Text beside a float in a column.</p>
+</div>
+<div class="auto"><p>Filled one column after the other in a box of a fixed height, overflowing beside it.</p><p>More text.</p></div>
+<div style="display: flex"><dl style="columns: 4; flex: 1"><dt>Flight</dt><dd>DL31</dd><dt>Gate</dt><dd>29</dd></dl></div>
+</body></html>

@@ -9,3 +9,33 @@ RaiCore.Pdf.Layout.ContainerBlock.LegendAlignment.get -> RaiCore.Pdf.Layout.Bloc
 RaiCore.Pdf.Layout.ContainerBlock.LegendAlignment.init -> void
 RaiCore.Pdf.Layout.TextStyle.RoundFontMetrics.get -> bool
 RaiCore.Pdf.Layout.TextStyle.RoundFontMetrics.init -> void
+RaiCore.Pdf.Layout.BoxStyle.SpanColumns.get -> bool
+RaiCore.Pdf.Layout.BoxStyle.SpanColumns.init -> void
+RaiCore.Pdf.Layout.ColumnFill
+RaiCore.Pdf.Layout.ColumnFill.Auto = 1 -> RaiCore.Pdf.Layout.ColumnFill
+RaiCore.Pdf.Layout.ColumnFill.Balance = 0 -> RaiCore.Pdf.Layout.ColumnFill
+RaiCore.Pdf.Layout.ColumnLayout
+RaiCore.Pdf.Layout.ColumnLayout.ColumnLayout() -> void
+RaiCore.Pdf.Layout.ColumnLayout.Count.get -> int?
+RaiCore.Pdf.Layout.ColumnLayout.Count.init -> void
+RaiCore.Pdf.Layout.ColumnLayout.Fill.get -> RaiCore.Pdf.Layout.ColumnFill
+RaiCore.Pdf.Layout.ColumnLayout.Fill.init -> void
+RaiCore.Pdf.Layout.ColumnLayout.Gap.get -> double
+RaiCore.Pdf.Layout.ColumnLayout.Gap.init -> void
+RaiCore.Pdf.Layout.ColumnLayout.Rule.get -> RaiCore.Pdf.Layout.BorderSide
+RaiCore.Pdf.Layout.ColumnLayout.Rule.init -> void
+RaiCore.Pdf.Layout.ColumnLayout.Width.get -> double?
+RaiCore.Pdf.Layout.ColumnLayout.Width.init -> void
+RaiCore.Pdf.Layout.ColumnLayout.Widths.get -> System.Collections.Generic.IReadOnlyList<(double Width, double Gap)>?
+RaiCore.Pdf.Layout.ColumnLayout.Widths.init -> void
+RaiCore.Pdf.Layout.ContainerBlock.Columns.get -> RaiCore.Pdf.Layout.ColumnLayout?
+RaiCore.Pdf.Layout.ContainerBlock.Columns.init -> void
+RaiCore.Pdf.Layout.PageBreak.Column = 5 -> RaiCore.Pdf.Layout.PageBreak
+RaiCore.Pdf.Layout.PageBreakInside.AvoidColumn = 2 -> RaiCore.Pdf.Layout.PageBreakInside
+override RaiCore.Pdf.Layout.ColumnLayout.Equals(object? obj) -> bool
+override RaiCore.Pdf.Layout.ColumnLayout.GetHashCode() -> int
+override RaiCore.Pdf.Layout.ColumnLayout.ToString() -> string!
+RaiCore.Pdf.Layout.ColumnLayout.<Clone>$() -> RaiCore.Pdf.Layout.ColumnLayout!
+RaiCore.Pdf.Layout.ColumnLayout.Equals(RaiCore.Pdf.Layout.ColumnLayout? other) -> bool
+static RaiCore.Pdf.Layout.ColumnLayout.operator !=(RaiCore.Pdf.Layout.ColumnLayout? left, RaiCore.Pdf.Layout.ColumnLayout? right) -> bool
+static RaiCore.Pdf.Layout.ColumnLayout.operator ==(RaiCore.Pdf.Layout.ColumnLayout? left, RaiCore.Pdf.Layout.ColumnLayout? right) -> bool

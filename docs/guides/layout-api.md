@@ -16,7 +16,7 @@ footers on every page.
 | Block | What it is |
 |---|---|
 | `ParagraphBlock` | A `Paragraph`: text runs in `TextStyle`s, inline images and boxes, links and anchors |
-| `ContainerBlock` | Child blocks in a box with margins, borders, padding and a background |
+| `ContainerBlock` | Child blocks in a box with margins, borders, padding and a background; with `Columns`, in columns |
 | `TableBlock` | Rows of cells, with header and footer rows repeated on every page |
 | `FlexBlock` | A flex container (rows or columns, wrapping, gaps) |
 | `ImageBlock` | An image as a block |
@@ -24,7 +24,9 @@ footers on every page.
 
 Every block takes a `BoxStyle`: margins (collapsing like CSS), borders, padding, background layers, rounded corners,
 opacity, widths in points or percentages, floats, positioning and page breaks (`BreakBefore`, `BreakAfter`,
-`BreakInside`). `Block.Bookmark` adds the block to the PDF outline and `Block.Link` makes it clickable.
+`BreakInside`). A `ContainerBlock` with a `ColumnLayout` flows its children through columns, balanced at the end and
+continued on the next pages, with column rules, column breaks (`PageBreak.Column`) and children that span the columns
+(`BoxStyle.SpanColumns`). `Block.Bookmark` adds the block to the PDF outline and `Block.Link` makes it clickable.
 
 ## A paragraph on its own
 

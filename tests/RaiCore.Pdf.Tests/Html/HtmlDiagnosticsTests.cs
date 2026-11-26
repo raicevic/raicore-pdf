@@ -209,17 +209,17 @@ public class HtmlDiagnosticsTests
     {
         var found = await Diagnose("""
             <style>
-              .cols { column-count: 2 }
+              .caps { font-variant: small-caps }
               .unused { grid-area: main }
               .raised { box-shadow: 0 1px 2px gray }
             </style>
-            <p class="cols">One</p><p class="cols">Two</p><p style="text-shadow: 1px 1px red">Three</p><p class="raised">Four</p>
+            <p class="caps">One</p><p class="caps">Two</p><p style="text-shadow: 1px 1px red">Three</p><p class="raised">Four</p>
             """);
 
         // .unused matches nothing: no effect, no report. Shadows are checked as written, though they are removed before layout.
-        Assert.Equal(["column-count", "box-shadow", "text-shadow"], found.Select(d => d.Subject));
+        Assert.Equal(["font-variant", "box-shadow", "text-shadow"], found.Select(d => d.Subject));
         Assert.All(found, d => Assert.Equal((HtmlDiagnosticKind.UnsupportedProperty, HtmlDiagnosticSeverity.Warning), (d.Kind, d.Severity)));
-        Assert.Equal("html > body > p.cols:nth-of-type(1)", found[0].ElementPath);
+        Assert.Equal("html > body > p.caps:nth-of-type(1)", found[0].ElementPath);
         Assert.Equal(2, found[0].Count);
         Assert.Equal("html > body > p:nth-of-type(3)", found[2].ElementPath);
     }
@@ -304,13 +304,13 @@ public class HtmlDiagnosticsTests
             <style>
               p::first-letter { font-size: 2em }
               ::selection { color: red }
-              p::before { content: "> "; column-count: 2 }
+              p::before { content: "> "; font-variant: small-caps }
               p:nonsense-pseudo-class { color: red }
             </style>
             <p>Text</p>
             """);
 
-        Assert.Equal(["::first-letter", "::selection", "column-count", "p:nonsense-pseudo-class"], found.Select(d => d.Subject));
+        Assert.Equal(["::first-letter", "::selection", "font-variant", "p:nonsense-pseudo-class"], found.Select(d => d.Subject));
         Assert.Equal([HtmlDiagnosticSeverity.Warning, HtmlDiagnosticSeverity.Info, HtmlDiagnosticSeverity.Warning, HtmlDiagnosticSeverity.Warning], found.Select(d => d.Severity));
         Assert.Equal("html > body > p", found[2].ElementPath); // A ::before rule's declarations are checked at the element.
     }
@@ -324,13 +324,13 @@ public class HtmlDiagnosticsTests
               @keyframes spin { to { transform: rotate(1turn) } }
               @layer base { p { color: red } }
               @media screen { p { grid-area: a } }
-              @media print { p { column-count: 3 } }
+              @media print { p { font-variant: small-caps } }
               @page { @top-center { content: "Header" } }
             </style>
             <p>Text</p>
             """);
 
-        Assert.Equal(["@import", "@keyframes", "@layer", "column-count"], found.Select(d => d.Subject)); // Screen rules are not checked.
+        Assert.Equal(["@import", "@keyframes", "@layer", "font-variant"], found.Select(d => d.Subject)); // Screen rules are not checked.
         Assert.Equal([HtmlDiagnosticSeverity.Warning, HtmlDiagnosticSeverity.Info, HtmlDiagnosticSeverity.Warning], found.Take(3).Select(d => d.Severity));
         Assert.All(found.Take(3), d => Assert.Null(d.ElementPath));
     }

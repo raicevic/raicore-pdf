@@ -24,14 +24,14 @@ internal sealed partial class Paginator
 
     /// <summary>Whether a block is laid out as the root of a new block formatting context, containing its own floats.</summary>
     private static bool IsFloatRoot(Block block, BoxSizing sizing) =>
-        sizing.Isolated || block.Style.ContainsFloats || block.Style.Float != FloatSide.None;
+        sizing.Isolated || block.Style.ContainsFloats || block.Style.Float != FloatSide.None || block is ContainerBlock { Columns: not null };
 
     /// <summary>
     /// Whether a block in the flow keeps clear of floats as a whole (its border box goes beside or below them) instead of
     /// only its lines avoiding them: tables, flex containers, images and new formatting contexts.
     /// </summary>
     private static bool AvoidsFloats(Block block) =>
-        block is TableBlock or FlexBlock or ImageBlock || block.Style.ContainsFloats;
+        block is TableBlock or FlexBlock or ImageBlock or ContainerBlock { Columns: not null } || block.Style.ContainsFloats;
 
     /// <summary>Whether floats of the current context reach below <paramref name="y"/> on the current page, or later pages.</summary>
     private bool HasFloatsBelow(double y)

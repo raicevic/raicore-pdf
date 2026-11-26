@@ -17,6 +17,15 @@ and versions follow [Semantic Versioning](https://semver.org/).
   gray. Layout: `ContainerBlock.HasLegend` and `ContainerBlock.LegendAlignment` (#158).
 - Layout: `TextStyle.RoundFontMetrics` rounds the font's ascent, descent and line gap to whole CSS pixels for the line
   box, with the leading above the text rounded down, as browsers do. HTML turns it on (#152).
+- Layout: multi-column layout. `ContainerBlock.Columns` takes a `ColumnLayout` (a count, a minimum column width, or
+  columns of their own widths, a gap and a rule between columns with content) and flows the children through the
+  columns: down the first, on into the next, and on to the next page; the last row of columns is balanced
+  (`ColumnFill.Balance`, or filled one after the other with `ColumnFill.Auto`). `PageBreak.Column` starts a new
+  column, `PageBreakInside.AvoidColumn` keeps a block in one column, and `BoxStyle.SpanColumns` puts a child across
+  all columns. Orphans, widows, avoided breaks and repeated table headers work in columns as on pages (#312).
+- HTML: CSS multi-column layout: `columns`, `column-count`, `column-width`, `column-gap`, `column-rule`,
+  `column-fill`, `column-span: all` and `break-before`/`break-after`/`break-inside` with `column` and `avoid-column`,
+  balanced like browsers, also inside flex items and table cells (#73).
 
 ### Changed
 - HTML diagnostics: Outlook's `mso-*` properties and vendor-prefixed pseudo-classes (`:-webkit-autofill`,

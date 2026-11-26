@@ -98,6 +98,12 @@ public sealed class ContainerBlock : Block
     /// <summary>Where the legend (<see cref="HasLegend"/>) sits along the top border, between the padding edges.</summary>
     public BlockAlignment LegendAlignment { get; init; }
 
+    /// <summary>
+    /// The columns the children are laid out in (CSS multi-column layout); <c>null</c> (the default) for one column.
+    /// See <see cref="ColumnLayout"/>.
+    /// </summary>
+    public ColumnLayout? Columns { get; init; }
+
     /// <summary>Appends a child block.</summary>
     public ContainerBlock Add(Block block)
     {

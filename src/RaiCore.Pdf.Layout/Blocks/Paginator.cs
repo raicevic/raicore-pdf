@@ -126,6 +126,9 @@ internal sealed partial class Paginator
     /// its own (CSS <c>width</c> or <c>max-width</c>) and none is a flex item or a table cell.
     /// </summary>
     private bool _fluid = true;
+
+    /// <summary>Whether the parent of the block being laid out follows the page's content width (see <see cref="_fluid"/>).</summary>
+    private bool _parentFluid = true;
     private readonly List<PageOperations> _pages = [];
     private readonly List<Placement> _placements = [];
     private readonly List<(int Page, object Marker)> _markers = [];
@@ -147,12 +150,13 @@ internal sealed partial class Paginator
     /// </summary>
     private readonly Dictionary<Block, (double ContainingWidth, BoxStyle Style)> _used = new(ReferenceEqualityComparer.Instance);
 
-    private Paginator(PageSetup setup, FlowDocument? document = null, bool isStatic = false)
+    private Paginator(PageSetup setup, FlowDocument? document = null, bool isStatic = false, ColumnFlow? columns = null)
     {
         _maxPages = ResourceLimits.Current.MaxPages;
         _setup = setup;
         _document = document;
         _static = isStatic;
+        _columns = columns;
         NewPage(forced: true); // The first page keeps top margins, like the start of a CSS document.
     }
 
@@ -182,6 +186,11 @@ internal sealed partial class Paginator
     /// <summary>The setup of a page with this context.</summary>
     private PageSetup Resolve(PageContext context)
     {
+        if (_columns is { } columns)
+        {
+            return columns.Setup(context.Number - 1);
+        }
+
         if (_document?.PageSetupResolver is null)
         {
             return _setup;
@@ -224,7 +233,7 @@ internal sealed partial class Paginator
         _pageIndex = page;
         if (!_static && _diagnostics is { } sink)
         {
-            sink.Page = page;
+            sink.Page = _columns?.OuterPage(page) ?? page;
         }
     }
 
@@ -275,7 +284,7 @@ internal sealed partial class Paginator
     {
         if (_diagnostics is { } sink)
         {
-            sink.Add(kind, block, _static ? sink.Page : PageIndex, message);
+            sink.Add(kind, block, _static ? sink.Page : _columns?.OuterPage(PageIndex) ?? PageIndex, message);
         }
     }
 
@@ -362,12 +371,16 @@ internal sealed partial class Paginator
         {
             ParagraphBlock paragraph => paragraph.Paragraph.MeasureIntrinsicWidths(),
             ImageBlock image => Compressible(image, image.GetSize(double.MaxValue, double.MaxValue, ImageWidthLimits(style)).Width),
-            ContainerBlock container => container.Children.Where(c => !IsOutOfFlow(c.Style)).Select(MeasureIntrinsic).Aggregate((Min: 0.0, Max: 0.0), (a, b) => (Math.Max(a.Min, b.Min), Math.Max(a.Max, b.Max))),
+            ContainerBlock multicol when InColumns(multicol) => ColumnsIntrinsic(multicol.Columns!, ChildrenIntrinsic(multicol)),
+            ContainerBlock container => ChildrenIntrinsic(container),
             TableBlock table => TableLayouter.MeasureIntrinsic(table),
             FlexBlock flex => FlexIntrinsic(flex),
             _ => (0, 0),
         };
         return (min + decoration, max + decoration);
+
+        static (double Min, double Max) ChildrenIntrinsic(ContainerBlock container) =>
+            container.Children.Where(c => !IsOutOfFlow(c.Style)).Select(MeasureIntrinsic).Aggregate((Min: 0.0, Max: 0.0), (a, b) => (Math.Max(a.Min, b.Min), Math.Max(a.Max, b.Max)));
 
         // An image with a percentage width or max-width has no min-content width of its own: it can shrink with its
         // container (CSS Sizing 3 section 5.2.2, compressible replaced elements).
@@ -458,11 +471,20 @@ internal sealed partial class Paginator
     /// </summary>
     private void NewPage(bool forced, string? name, bool blank)
     {
+        if (_columns is not null && _pageIndex >= 0)
+        {
+            _columns.RecordEnd(_pageIndex, Y); // How far down the column the content reached.
+            if (!forced && _pages[_pageIndex].Count == 0)
+            {
+                _columns.Cramped.Add(_pageIndex); // Left empty: what was to start in it did not fit.
+            }
+        }
+
         SetPage(_pageIndex + 1);
         var created = _pageIndex == _pages.Count;
         if (created)
         {
-            if (!_static && _pages.Count >= _maxPages)
+            if (!_static && (_columns?.OuterPage(_pages.Count) ?? _pages.Count) >= _maxPages)
             {
                 throw new ResourceLimitExceededException(nameof(ResourceLimits.MaxPages), _maxPages, $"The document needs more than the limit of {_maxPages} pages.");
             }
@@ -686,7 +708,8 @@ internal sealed partial class Paginator
             var renamed = _blockFlow && !_static && !string.Equals(startName, _frames[PageIndex].Context.Name, StringComparison.Ordinal);
             var atBreak = i == 0 && _atForcedBreak;
             _atForcedBreak = false;
-            if (!_static && (renamed || (!atBreak && (IsForced(startBreak) || IsForced(previousBreak)))))
+            var columnBreak = _columns is not null && (style.BreakBefore == PageBreak.Column || previousBreak == PageBreak.Column);
+            if (!_static && (renamed || (!atBreak && (IsForced(startBreak) || IsForced(previousBreak) || columnBreak))))
             {
                 var pageBefore = PageIndex;
                 ForcedBreak(startName, SideOf(startBreak) ?? SideOf(previousBreak));
@@ -714,7 +737,7 @@ internal sealed partial class Paginator
             // Move to a new page when the start of the block (and, for break-after: avoid, the start of the
             // next block) would not fit here but would fit at the top of a fresh page.
             var needed = MinimumStartHeight(block, available);
-            if (style.BreakInside == PageBreakInside.Avoid)
+            if (AvoidsBreakInside(style))
             {
                 needed = Math.Max(needed, MeasureHeight(block, available));
             }
@@ -722,6 +745,11 @@ internal sealed partial class Paginator
             if (style.BreakAfter == PageBreak.Avoid && next is not null)
             {
                 needed = Math.Max(needed, MeasureHeight(block, available) + Math.Max(style.Margin.Fixed.Bottom, ResolveStyle(next, available).Margin.Fixed.Top) + MinimumStartHeight(next, available));
+            }
+
+            if (_columns is not null && needed > (AtPageTop ? Remaining : NextPageContentHeight) + Epsilon)
+            {
+                _columns.Cramped.Add(PageIndex); // Does not fit in a whole column: it will be split where it should not.
             }
 
             if (!AtPageTop && needed + pending.Value > Remaining + Epsilon && needed <= NextPageContentHeight + Epsilon)
@@ -826,8 +854,9 @@ internal sealed partial class Paginator
     {
         // The children of a container in the block flow stay in it; those of a container without a width of its own
         // follow the page's content width.
-        var (outerName, outerFlow, outerFluid) = (_pageName, _blockFlow, _fluid);
+        var (outerName, outerFlow, outerFluid, outerParentFluid) = (_pageName, _blockFlow, _fluid, _parentFluid);
         var inFlow = block is ContainerBlock && !sizing.Isolated;
+        _parentFluid = outerFluid;
         _pageName = block.PageName ?? _pageName;
         _blockFlow = outerFlow && inFlow;
         _fluid = outerFluid && inFlow && StyleOf(block) is { Width: null, MaxWidth: null };
@@ -839,7 +868,7 @@ internal sealed partial class Paginator
         }
         finally
         {
-            (_pageName, _blockFlow, _fluid) = (outerName, outerFlow, outerFluid);
+            (_pageName, _blockFlow, _fluid, _parentFluid) = (outerName, outerFlow, outerFluid, outerParentFluid);
         }
     }
 
@@ -887,6 +916,12 @@ internal sealed partial class Paginator
 
                     void Children()
                     {
+                        if (InColumns(container))
+                        {
+                            LayoutColumns(container, children, contentX, contentWidth, sizing);
+                            return;
+                        }
+
                         var pending = default(CollapsedMargin);
                         LayoutChildren(children, contentX, contentWidth, ref pending, firstTopMarginApplied: !HasTopEdge(StyleOf(block)) && !isolated && legend is null);
                         if (HasBottomEdge(StyleOf(block)) || isolated)
@@ -1305,17 +1340,20 @@ internal sealed partial class Paginator
 
     /// <summary>An image is scaled down to fit on one page together with its own border and padding.</summary>
     private double ImageMaxHeight(Block block) =>
-        Math.Max(1, ContentHeight - block.Style.Border.Widths.Fixed.Vertical - StyleOf(block).Padding.Fixed.Vertical);
+        Math.Max(1, (_columns?.FullHeight(PageIndex) ?? ContentHeight) - block.Style.Border.Widths.Fixed.Vertical - StyleOf(block).Padding.Fixed.Vertical);
 
     private void LayoutParagraph(ParagraphBlock block, double x, double width)
     {
         // Lines beside floats get the room the floats leave where the lines are. So after each page break the lines that
         // are left are laid out again from where they now start: the lines already placed keep the room they had (and so
         // stay the same), the others get the room on the new page.
+        // In columns of different widths, the lines in each column get its width (when the paragraph's width follows them).
         var rooms = new List<(double Top, double Offset, double Width)>();
         var from = 0.0; // Where the current page's lines start, from the paragraph's top.
-        ParagraphLayout LayoutFrom(int keep) => rooms.Count > 0 || HasFloatsBelow(Y)
-            ? block.Paragraph.Layout(width, LineRooms(x, width, Y - from, keep, rooms))
+        var (startWidth, reflow) = (ContentWidthOf(PageIndex), _columns is { Uneven: true } && _parentFluid);
+        double Room() => reflow ? Math.Max(MinimumContentWidth, width + ContentWidthOf(PageIndex) - startWidth) : width;
+        ParagraphLayout LayoutFrom(int keep) => reflow || rooms.Count > 0 || HasFloatsBelow(Y)
+            ? block.Paragraph.Layout(width, LineRooms(x, Room(), Y - from, keep, rooms))
             : block.Paragraph.Layout(width);
 
         var layout = LayoutFrom(0);
@@ -1360,6 +1398,7 @@ internal sealed partial class Paginator
 
                 // Even an empty page cannot satisfy the constraints: place what fits (at least one line).
                 take = Math.Max(1, Math.Min(fit, rest));
+                _columns?.Cramped.Add(PageIndex);
                 if (fit == 0)
                 {
                     var tall = lines[i].Height;
@@ -1912,6 +1951,8 @@ internal sealed partial class Paginator
                 return decoration + tableLayout.Height(0, table.Rows.Count) + (2 * tableLayout.SpacingY);
             case FlexBlock flex:
                 return decoration + MeasureFlex(flex, contentWidth);
+            case ContainerBlock multicol when InColumns(multicol):
+                return decoration + LegendExtra(block, boxWidth) + MeasureColumns(multicol, multicol.HasLegend ? [.. multicol.Children.Skip(1)] : multicol.Children, contentWidth);
             case ContainerBlock container:
                 var height = LegendExtra(block, boxWidth);
                 var margin = new CollapsedMargin();
