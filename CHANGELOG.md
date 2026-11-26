@@ -5,6 +5,21 @@ and versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-26
+
+HTML that looks like Chrome's print: CSS nesting, multi-column layout, box shadows, the paper as the media queries'
+viewport, and whole-pixel line and border metrics; and text columns in Word, OpenDocument and RTF documents.
+
+### Highlights
+- **Multi-column layout** in the layout engine (`ContainerBlock.Columns`) and in HTML (`columns`, `column-*`,
+  `column-span`, column breaks), balanced like browsers; Word, OpenDocument and RTF sections with text columns are laid
+  out in them.
+- **CSS nesting** and **`box-shadow`** (outer, inset, blurred, following rounded corners).
+- **Chrome's print widths:** media queries see the paper, so Bootstrap's tablet-and-up layouts apply on A4 as in
+  Chrome; viewport units see the page area.
+- **Closer to Chrome:** whole-pixel line heights and borders (long tables no longer drift), `fieldset`/`legend`,
+  `overflow-wrap`, list markers, e-mail table layouts, margin box fonts, and the page canvas background.
+
 ### Added
 - HTML: CSS nesting: style rules nested in other rules (`aside { address { ... } }`), `&` (`&:hover`, `&#from`,
   `.parent &`), relative selectors (`> li`) and `@media`/`@supports` nested in a style rule are flattened before the
@@ -25,7 +40,8 @@ and versions follow [Semantic Versioning](https://semver.org/).
   columns: down the first, on into the next, and on to the next page; the last row of columns is balanced
   (`ColumnFill.Balance`, or filled one after the other with `ColumnFill.Auto`). `PageBreak.Column` starts a new
   column (a page break the first column of the next page), `PageBreakInside.AvoidColumn` keeps a block in one column,
-  and `BoxStyle.SpanColumns` puts a child across all columns. Orphans, widows, avoided breaks and repeated table headers work in columns as on pages (#312).
+  and `BoxStyle.SpanColumns` puts a child across all columns. Orphans, widows, avoided breaks and repeated table
+  headers work in columns as on pages (#312).
 - Layout: `BoxStyle.Shadows` takes `BoxShadow`s (CSS `box-shadow`): outer shadows outside the box under its
   background, `Inset` ones inside the padding box over it, with an offset, a blur (a Gaussian, drawn as an image with
   a soft mask), a spread and rounded corners. HTML: `box-shadow`, including several shadows, `inset`, `var()` and
@@ -1264,7 +1280,8 @@ The [roadmap issues](https://github.com/raicevic/raicore-pdf/issues) track these
   drawing the first (page counts, `target-counter()`), so their peak memory is the layout's and hardly changes.
   Pages imported from other PDFs keep what they copy until `EndSave`.
 
-[Unreleased]: https://github.com/raicevic/raicore-pdf/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/raicevic/raicore-pdf/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/raicevic/raicore-pdf/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/raicevic/raicore-pdf/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/raicevic/raicore-pdf/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/raicevic/raicore-pdf/compare/v1.0.0...v1.1.0
