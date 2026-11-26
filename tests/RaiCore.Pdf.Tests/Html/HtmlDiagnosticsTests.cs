@@ -211,13 +211,13 @@ public class HtmlDiagnosticsTests
             <style>
               .caps { font-variant: small-caps }
               .unused { grid-area: main }
-              .raised { box-shadow: 0 1px 2px gray }
+              .raised { outline: 1px solid gray }
             </style>
             <p class="caps">One</p><p class="caps">Two</p><p style="text-shadow: 1px 1px red">Three</p><p class="raised">Four</p>
             """);
 
-        // .unused matches nothing: no effect, no report. Shadows are checked as written, though they are removed before layout.
-        Assert.Equal(["font-variant", "box-shadow", "text-shadow"], found.Select(d => d.Subject));
+        // .unused matches nothing: no effect, no report. text-shadow is checked as written, though it is removed before layout.
+        Assert.Equal(["font-variant", "outline", "text-shadow"], found.Select(d => d.Subject));
         Assert.All(found, d => Assert.Equal((HtmlDiagnosticKind.UnsupportedProperty, HtmlDiagnosticSeverity.Warning), (d.Kind, d.Severity)));
         Assert.Equal("html > body > p.caps:nth-of-type(1)", found[0].ElementPath);
         Assert.Equal(2, found[0].Count);

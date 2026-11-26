@@ -138,6 +138,42 @@ internal readonly record struct RoundedCorners(
         canvas.ClosePath();
     }
 
+    /// <summary>
+    /// The corners of the rectangle grown (or, negative, shrunk) by <paramref name="spread"/> on every side, as a
+    /// <c>box-shadow</c>'s spread changes its shape: rounded corners grow by the spread (at least 0), square ones stay
+    /// square.
+    /// </summary>
+    public RoundedCorners Spread(double spread)
+    {
+        static (double X, double Y) Corner((double X, double Y) c, double s) =>
+            c is { X: > 0, Y: > 0 } ? (Math.Max(0, c.X + s), Math.Max(0, c.Y + s)) : (0, 0);
+        var (tl, tr, br, bl) = (Corner(this[0], spread), Corner(this[1], spread), Corner(this[2], spread), Corner(this[3], spread));
+        return Square(new RoundedCorners(tl.X, tl.Y, tr.X, tr.Y, br.X, br.Y, bl.X, bl.Y));
+    }
+
+    /// <summary>
+    /// Whether the point (<paramref name="px"/>, <paramref name="py"/>) is inside the rectangle with its bottom-left
+    /// corner at (<paramref name="x"/>, <paramref name="y"/>) with these corners (fitted to it).
+    /// </summary>
+    public bool Contains(double px, double py, double x, double y, double width, double height)
+    {
+        if (px < x || py < y || px > x + width || py > y + height)
+        {
+            return false;
+        }
+
+        var c = Fit(width, height);
+        var (x1, y1) = (x + width, y + height);
+        return Outside(c.TopLeftX, c.TopLeftY, x + c.TopLeftX - px, py - (y1 - c.TopLeftY))
+            && Outside(c.TopRightX, c.TopRightY, px - (x1 - c.TopRightX), py - (y1 - c.TopRightY))
+            && Outside(c.BottomRightX, c.BottomRightY, px - (x1 - c.BottomRightX), y + c.BottomRightY - py)
+            && Outside(c.BottomLeftX, c.BottomLeftY, x + c.BottomLeftX - px, y + c.BottomLeftY - py);
+
+        // Not cut off by a corner whose curve is (rx, ry) and whose center is (dx, dy) away (positive: towards it).
+        static bool Outside(double rx, double ry, double dx, double dy) =>
+            rx <= 0 || ry <= 0 || dx <= 0 || dy <= 0 || ((dx / rx) * (dx / rx)) + ((dy / ry) * (dy / ry)) <= 1;
+    }
+
     /// <summary>Clips to the rounded rectangle (between <see cref="PdfCanvas.SaveState"/> and <see cref="PdfCanvas.RestoreState"/>).</summary>
     public void Clip(PdfCanvas canvas, double x, double y, double width, double height)
     {
