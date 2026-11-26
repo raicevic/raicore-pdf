@@ -1006,7 +1006,7 @@ internal sealed partial class Paginator
     {
         var style = styleOverride ?? StyleOf(block);
         var border = style.Border.Widths.Fixed;
-        var decorated = style.Background is not null || style.BackgroundLayers.Count > 0 || border.Vertical > 0 || border.Horizontal > 0;
+        var decorated = style.Background is not null || style.BackgroundLayers.Count > 0 || border.Vertical > 0 || border.Horizontal > 0 || style.Shadows.Count > 0;
         var link = block.Link;
 
         var startPage = PageIndex;
@@ -1216,6 +1216,10 @@ internal sealed partial class Paginator
     {
         var y = pageHeight - top - height; // PDF y of the bottom edge.
         var rounded = corners ?? (style.BorderRadius.IsSquare ? default : style.BorderRadius.Resolve(width, height).Fragment(first, last, width, height));
+        if (style.Shadows.Count > 0)
+        {
+            ShadowPainter.PaintOuter(canvas, style.Shadows, x, y, width, height, rounded);
+        }
         if (style.Background is { } background)
         {
             canvas.SetFillColor(background);
@@ -1229,6 +1233,15 @@ internal sealed partial class Paginator
         {
             var (offset, wholeHeight) = whole ?? (0, height);
             PaintBackgroundLayers(canvas, style, rounded, x, y, width, height, first, last, offset, wholeHeight);
+        }
+
+        if (style.Shadows.Count > 0)
+        {
+            // Inset shadows: inside the padding box, over the background.
+            var border = style.Border.Widths.Fixed;
+            var (insetTop, insetBottom) = (first ? border.Top : 0, last ? border.Bottom : 0);
+            ShadowPainter.PaintInset(canvas, style.Shadows, x + border.Left, y + insetBottom, width - border.Horizontal, height - insetTop - insetBottom,
+                rounded.Inset(insetTop, border.Right, insetBottom, border.Left));
         }
 
         if (cutout is { } legend)

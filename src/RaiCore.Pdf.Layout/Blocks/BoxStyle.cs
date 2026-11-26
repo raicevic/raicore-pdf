@@ -311,6 +311,12 @@ public sealed record BoxStyle
     public PageBreakInside BreakInside { get; init; }
 
     /// <summary>
+    /// The shadows the box casts (CSS <c>box-shadow</c>), the first one on top; empty (the default) for none. A box split
+    /// across pages casts them around each of its pieces.
+    /// </summary>
+    public IReadOnlyList<BoxShadow> Shadows { get; init; } = [];
+
+    /// <summary>
     /// Whether a child of a container with <see cref="ContainerBlock.Columns"/> goes across all its columns (CSS
     /// <c>column-span: all</c>): the content before it is balanced in its columns, and the content after it starts new
     /// columns below it. It has no effect on other blocks.

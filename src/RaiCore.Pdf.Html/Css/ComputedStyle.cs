@@ -188,6 +188,9 @@ internal sealed partial record ComputedStyle
     /// <summary>The columns the element lays its content out in (CSS <c>columns</c> and the <c>column-*</c> properties); <c>null</c> for none.</summary>
     public ColumnLayout? Columns { get; init; }
 
+    /// <summary>CSS <c>box-shadow</c> (see <see cref="CssShadows"/>).</summary>
+    public IReadOnlyList<BoxShadow> Shadows { get; init; } = [];
+
     /// <summary>CSS <c>column-span: all</c>.</summary>
     public bool ColumnSpanAll { get; init; }
 
@@ -483,6 +486,7 @@ internal sealed partial record ComputedStyle
             },
             Columns = ParseColumns(),
             ColumnSpanAll = Get("column-span") == "all",
+            Shadows = CssShadows.Parse(Get(CssShadows.Property), Parse, color),
             Orphans = Math.Max(1, CssValues.ParseInteger(Get("orphans"), 2)),
             Widows = Math.Max(1, CssValues.ParseInteger(Get("widows"), 2)),
             ListStyleType = Get("list-style-type") is { Length: > 0 } list ? list : "disc",

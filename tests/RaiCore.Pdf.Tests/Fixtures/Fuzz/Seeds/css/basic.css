@@ -9,3 +9,4 @@ table { border-spacing: 2px 4px; table-layout: fixed; } td:nth-child(2n+1) { tex
 .cols { columns: 2 10em; column-gap: 1em; column-rule: 1px solid; column-fill: auto }
 .cols h2 { column-span: all; break-after: avoid-column }
 .cols p { break-before: column; break-inside: avoid-column }
+.card { box-shadow: 0 0 10px rgba(0,0,0,.15), inset 2px 2px 0 -1px red, 0 0 0 .25rem var(--ring, blue); border-radius: 50% 4px }

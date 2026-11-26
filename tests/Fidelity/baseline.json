@@ -8,13 +8,13 @@
   "bootstrap-album": {
     "pages": 4,
     "chrome_pages": 3,
-    "pixel": 0.2725,
+    "pixel": 0.2879,
     "text_near": 0.0081
   },
   "bootstrap-blog": {
     "pages": 7,
     "chrome_pages": 5,
-    "pixel": 0.1575,
+    "pixel": 0.1578,
     "text_near": 0.0011
   },
   "bootstrap-checkout": {
@@ -26,7 +26,7 @@
   "bootstrap-pricing": {
     "pages": 3,
     "chrome_pages": 2,
-    "pixel": 0.207,
+    "pixel": 0.2055,
     "text_near": 0.0
   },
   "budget-report": {
