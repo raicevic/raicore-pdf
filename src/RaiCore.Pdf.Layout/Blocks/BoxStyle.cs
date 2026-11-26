@@ -148,6 +148,12 @@ public enum PageBreak
 
     /// <summary>Start a new page that is a right page, inserting a blank page if needed (CSS <c>right</c>; <c>recto</c>).</summary>
     Right,
+
+    /// <summary>
+    /// Start a new column, in a container with <see cref="ContainerBlock.Columns"/> (CSS <c>column</c>; a Word column
+    /// break). Elsewhere it has no effect.
+    /// </summary>
+    Column,
 }
 
 /// <summary>Which side a block floats to (CSS <c>float</c>).</summary>
@@ -208,8 +214,11 @@ public enum PageBreakInside
     /// <summary>The block may be split across pages.</summary>
     Auto,
 
-    /// <summary>Keep the block on one page if it fits on one.</summary>
+    /// <summary>Keep the block on one page (and in one column) if it fits on one.</summary>
     Avoid,
+
+    /// <summary>Keep the block in one column if it fits in one, but let it split across pages (CSS <c>avoid-column</c>).</summary>
+    AvoidColumn,
 }
 
 /// <summary>
@@ -300,6 +309,13 @@ public sealed record BoxStyle
 
     /// <summary>Page breaks inside the block.</summary>
     public PageBreakInside BreakInside { get; init; }
+
+    /// <summary>
+    /// Whether a child of a container with <see cref="ContainerBlock.Columns"/> goes across all its columns (CSS
+    /// <c>column-span: all</c>): the content before it is balanced in its columns, and the content after it starts new
+    /// columns below it. It has no effect on other blocks.
+    /// </summary>
+    public bool SpanColumns { get; init; }
 
     /// <summary>Minimum number of a paragraph's lines left at the bottom of a page (CSS <c>orphans</c>).</summary>
     public int Orphans { get; init; } = 2;

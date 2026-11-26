@@ -185,6 +185,12 @@ internal sealed partial record ComputedStyle
 
     public PageBreakInside BreakInside { get; init; }
 
+    /// <summary>The columns the element lays its content out in (CSS <c>columns</c> and the <c>column-*</c> properties); <c>null</c> for none.</summary>
+    public ColumnLayout? Columns { get; init; }
+
+    /// <summary>CSS <c>column-span: all</c>.</summary>
+    public bool ColumnSpanAll { get; init; }
+
     public int Orphans { get; init; } = 2;
 
     public int Widows { get; init; } = 2;
@@ -344,6 +350,35 @@ internal sealed partial record ComputedStyle
         var overflow = $"{Get("overflow")} {Get("overflow-x")} {Get("overflow-y")}".Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var scrolls = overflow.Any(value => value is not ("visible" or "clip"));
 
+        // Multi-column layout: a column count or width (not auto) makes columns. column-gap normal is 1em, a rule without a
+        // width is medium (3px), without a color the text's.
+        ColumnLayout? ParseColumns()
+        {
+            var count = int.TryParse(Get("column-count"), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var c) && c > 0 ? c : (int?)null;
+            var width = Parse(Get("column-width")) is { Kind: CssLengthKind.Points or CssLengthKind.Calc } w && w.Resolve(0) > 0 ? w.Resolve(0) : (double?)null;
+            if (count is null && width is null)
+            {
+                return null;
+            }
+
+            var gap = Get("column-gap") is "" or "normal" ? fontSize : Math.Max(0, Length("column-gap").Resolve(0));
+            var ruleStyle = Get("column-rule-style");
+            var rule = ruleStyle is "" or "none" or "hidden"
+                ? BorderSide.None
+                : new BorderSide(
+                    SnapBorderWidth(Get("column-rule-width") is "" or "medium" ? 3 * CssValues.PointsPerPixel : Length("column-rule-width").Resolve(0)),
+                    CssValues.ParseColor(Get("column-rule-color")) ?? color,
+                    ParseBorderStyle(ruleStyle));
+            return new ColumnLayout
+            {
+                Count = count is { } n ? Math.Min(n, ColumnLimit) : null,
+                Width = width,
+                Gap = gap,
+                Rule = rule.Width > 0 ? rule : BorderSide.None,
+                Fill = Get("column-fill") == "auto" ? ColumnFill.Auto : ColumnFill.Balance,
+            };
+        }
+
         return new ComputedStyle
         {
             Display = display,
@@ -440,7 +475,14 @@ internal sealed partial record ComputedStyle
             // Legacy page-break-* properties are rewritten to break-* before parsing (see LegacyBreaks).
             BreakBefore = ParseBreak(Get("break-before")),
             BreakAfter = ParseBreak(Get("break-after")),
-            BreakInside = Get("break-inside") is "avoid" or "avoid-page" ? PageBreakInside.Avoid : PageBreakInside.Auto,
+            BreakInside = Get("break-inside") switch
+            {
+                "avoid" or "avoid-page" => PageBreakInside.Avoid,
+                "avoid-column" => PageBreakInside.AvoidColumn,
+                _ => PageBreakInside.Auto,
+            },
+            Columns = ParseColumns(),
+            ColumnSpanAll = Get("column-span") == "all",
             Orphans = Math.Max(1, CssValues.ParseInteger(Get("orphans"), 2)),
             Widows = Math.Max(1, CssValues.ParseInteger(Get("widows"), 2)),
             ListStyleType = Get("list-style-type") is { Length: > 0 } list ? list : "disc",
@@ -548,6 +590,9 @@ internal sealed partial record ComputedStyle
         return Math.Max(1, Math.Floor(pixels + 1e-6)) * CssValues.PointsPerPixel;
     }
 
+    /// <summary>More columns than this are not made (Chrome's limit).</summary>
+    private const int ColumnLimit = 1000;
+
     private static BorderStyle ParseBorderStyle(string value) => value switch
     {
         "dashed" => Layout.BorderStyle.Dashed,
@@ -648,9 +693,10 @@ internal sealed partial record ComputedStyle
     private static PageBreak ParseBreak(string value) => value switch
     {
         "page" or "always" => PageBreak.Page,
+        "column" => PageBreak.Column,
         "left" or "verso" => PageBreak.Left, // Left-to-right page progression: verso pages are left pages.
         "right" or "recto" => PageBreak.Right,
-        "avoid" or "avoid-page" => PageBreak.Avoid,
+        "avoid" or "avoid-page" or "avoid-column" => PageBreak.Avoid,
         _ => PageBreak.Auto,
     };
 }

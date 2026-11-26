@@ -199,6 +199,9 @@ own engine. Supported today:
   at the bottom (`margin-top: auto` or `flex: 1` on the content).
   A row too tall for the page is split like browsers do: each item continues on the next page in its own column,
   and stretched items (e.g. a sidebar background) run down to the end of the row.
+- Multi-column layout: `columns`, `column-count`, `column-width`, `column-gap`, `column-rule`, `column-fill`,
+  `column-span: all` and column breaks; content is balanced over the columns like browsers do and continues on the
+  next page.
 
 Headers and footers come from CSS Paged Media:
 
@@ -1013,7 +1016,7 @@ Every input format is mapped to one shared document model and laid out by one en
 9. **Done, 1.3 Format gaps:** chart sheets and the newer chart types (waterfall, histogram, pareto, box and whisker,
    funnel, treemap, sunburst), comments in Word documents, every pivot table style, comments as displayed and data bar
    borders in spreadsheets, Outlook OLE attachments, and large sheets in linear time.
-10. **Next:** XSL-FO, grid layout, multi-column layout, digital signatures.
+10. **Next:** XSL-FO, grid layout, digital signatures.
 
 The 0.x milestones are internal stages, not releases.
 

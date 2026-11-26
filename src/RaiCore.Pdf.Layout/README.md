@@ -33,6 +33,8 @@ flow.Render().Save("report.pdf");
 - Flexbox (`FlexBlock`): rows and columns, wrapping, grow/shrink/basis, justification, alignment including baselines,
   `align-content`, gaps, auto margins and containers with a fixed or minimum height; rows split across pages side by
   side.
+- Columns (`ContainerBlock.Columns`): a count, a width or columns of their own widths, gaps and rules; the content is
+  balanced over the columns and continues on the next pages; column breaks and blocks that span the columns.
 - Bookmarks: `Block.Bookmark` adds a block to the PDF outline, nested by level.
 - Links: in text (`Paragraph.AddLink`, `BeginLink`/`EndLink`) and on whole blocks (`Block.Link`), to URIs or to
   blocks and paragraph anchors by id (`Block.Id`, `Paragraph.AddAnchor`).

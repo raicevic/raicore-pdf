@@ -70,6 +70,21 @@ public class HtmlTaggingTests
     }
 
     [Fact]
+    public void Content_in_columns_is_tagged_in_reading_order()
+    {
+        var root = TaggedPdfInspector.Inspect(Convert("""
+            <div style="columns: 2; column-rule: 1px solid gray">
+              <h2>First</h2><p>One <a href="https://example.com">link</a></p><h2 style="column-span: all">Across</h2><p>Two</p><p>Three</p>
+            </div>
+            """, page: SmallPage));
+
+        Assert.Equal("Document(H2 P(Link) H2 P P)", root.ToString());
+        Assert.Equal(["First", "One link", "Across", "Two", "Three"], root.Children.Select(e => e.Text.Trim()));
+        Assert.Single(root.Descendants().Single(e => e.Type == "Link").Annotations);
+        Assert.All(root.Descendants(), e => Assert.True(e.PaintedPaths == 0, $"{e.Type} \"{e.Text}\" paints {e.PaintedPaths} paths.")); // The rule is an artifact.
+    }
+
+    [Fact]
     public void Links_carry_their_text_as_description()
     {
         var link = TaggedPdfInspector.Inspect(Convert(Sample)).Descendants().Single(e => e.Type == "Link");

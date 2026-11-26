@@ -6,3 +6,6 @@ body { font: 13px/1.4 serif; color: rgb(10 20 30 / 50%); margin: 1em calc(2% + 3
 table { border-spacing: 2px 4px; table-layout: fixed; } td:nth-child(2n+1) { text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media print { h1 { font-size: 2em; font-weight: 900; font-variant: small-caps; } } @page :first { margin-top: 3cm; }
 :root { --x: 4px; } div[style] > div:first-child { margin: var(--x) auto; flex: 2 0 auto; align-self: center; }
+.cols { columns: 2 10em; column-gap: 1em; column-rule: 1px solid; column-fill: auto }
+.cols h2 { column-span: all; break-after: avoid-column }
+.cols p { break-before: column; break-inside: avoid-column }

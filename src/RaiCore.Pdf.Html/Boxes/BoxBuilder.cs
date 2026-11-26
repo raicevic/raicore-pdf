@@ -437,7 +437,7 @@ internal sealed partial class BoxBuilder
         // A block whose only content is one anonymous paragraph becomes a paragraph block with the element's box.
         // Elements with string-set carry a marker, so running headers know which page they start on.
         var pageMarker = _paged?.MarkerFor(element, item => CounterText(element, string.Empty, item));
-        if (children is [ParagraphBlock only] && _anonymous.Contains(only) && !hasLegend)
+        if (children is [ParagraphBlock only] && _anonymous.Contains(only) && !hasLegend && style.Columns is null)
         {
             return new ParagraphBlock(only.Paragraph, box) { Marker = pageMarker, Bookmark = BookmarkFor(element), Id = IdFor(element), Link = LinkFor(element), Tag = TagFor(element, style) };
         }
@@ -446,6 +446,7 @@ internal sealed partial class BoxBuilder
         {
             Marker = pageMarker, Bookmark = BookmarkFor(element), Id = IdFor(element), Link = LinkFor(element), Tag = TagFor(element, style),
             HasLegend = hasLegend, LegendAlignment = hasLegend ? LegendAlignment(LegendStyle(legend!)) : default,
+            Columns = style.Columns,
         };
     }
 
@@ -1085,6 +1086,7 @@ internal sealed partial class BoxBuilder
             BreakBefore = style.BreakBefore,
             BreakAfter = style.BreakAfter,
             BreakInside = style.BreakInside,
+            SpanColumns = style.ColumnSpanAll,
             Orphans = style.Orphans,
             Widows = style.Widows,
             Opacity = style.Opacity,
