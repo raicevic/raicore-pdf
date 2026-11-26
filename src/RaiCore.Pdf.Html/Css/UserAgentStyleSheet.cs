@@ -11,7 +11,7 @@ namespace RaiCore.Pdf.Html.Css;
 internal static class UserAgentStyleSheet
 {
     public const string Css = """
-        :where(*) { --raicore-rtl-margin-left: initial; --raicore-rtl-margin-right: initial; --raicore-rtl-padding-left: initial; --raicore-rtl-padding-right: initial; }
+        :where(*) { --raicore-box-shadow: initial; --raicore-rtl-margin-left: initial; --raicore-rtl-margin-right: initial; --raicore-rtl-padding-left: initial; --raicore-rtl-padding-right: initial; }
         :where(html) { display: block; font-family: serif; font-size: 16px; line-height: normal; color: black; }
         :where(address, blockquote, center, dialog, div, figure, figcaption, footer, form, header, hr, legend, listing,
         main, p, plaintext, pre, search, xmp, article, aside, h1, h2, h3, h4, h5, h6, hgroup, nav, section,

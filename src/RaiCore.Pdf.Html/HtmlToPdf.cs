@@ -618,18 +618,8 @@ public static partial class HtmlToPdf
         }
     }
 
-    /// <summary>Rewrites CSS that AngleSharp would misread before it is parsed (see CssNesting, LegacyBreaks and LogicalSides).</summary>
-    private static string RewriteCss(string css) => CssTextDecoration.RewriteShorthand(CssBackgrounds.RewriteShorthand(LogicalSides.Rewrite(LegacyBreaks.Rewrite(StripShadows(CssColorGuard.Rewrite(CssNesting.Flatten(css)))))));
-
-    /// <summary>
-    /// Removes <c>box-shadow</c> and <c>text-shadow</c>, which are not drawn: AngleSharp throws a
-    /// <see cref="NullReferenceException"/> computing some malformed ones (fuzzing found <c>box-shadow: 1px1px</c>).
-    /// </summary>
-    private static string StripShadows(string css) =>
-        css.Contains("shadow", StringComparison.OrdinalIgnoreCase) ? ShadowRegex().Replace(css, string.Empty) : css;
-
-    [System.Text.RegularExpressions.GeneratedRegex(@"(?<![\w-])(?:box|text)-shadow\s*:[^;}]*;?", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
-    private static partial System.Text.RegularExpressions.Regex ShadowRegex();
+    /// <summary>Rewrites CSS that AngleSharp would misread before it is parsed (see CssNesting, CssShadows, LegacyBreaks and LogicalSides).</summary>
+    private static string RewriteCss(string css) => CssTextDecoration.RewriteShorthand(CssBackgrounds.RewriteShorthand(LogicalSides.Rewrite(LegacyBreaks.Rewrite(CssShadows.Rewrite(CssColorGuard.Rewrite(CssNesting.Flatten(css)))))));
 
     private static Uri? ResolveUri(Uri? baseUri, string reference) =>
         Uri.TryCreate(reference, UriKind.Absolute, out var absolute) ? absolute

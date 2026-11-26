@@ -146,7 +146,7 @@ internal sealed partial class BoxBuilder
                 var css = ComputeStyle(element, "::" + pseudo);
                 if (ContentValue.Parse(scanned ?? css.GetPropertyValue("content") ?? string.Empty) is { } content)
                 {
-                    var style = ComputedStyle.From(css, _rootFontSize, _viewport);
+                    var style = Printable(ComputedStyle.From(css, _rootFontSize, _viewport));
                     if (style.Display != CssDisplay.None)
                     {
                         result = (content, style with { Display = GeneratedDisplay(style.Display) }, Quotes(css.GetPropertyValue("quotes") ?? string.Empty));

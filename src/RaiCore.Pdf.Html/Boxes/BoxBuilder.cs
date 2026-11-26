@@ -302,7 +302,7 @@ internal sealed partial class BoxBuilder
     {
         try
         {
-            return ComputedStyle.From(ComputeStyle(element), _rootFontSize, _viewport);
+            return Printable(ComputedStyle.From(ComputeStyle(element), _rootFontSize, _viewport));
         }
         catch (NullReferenceException)
         {
@@ -318,6 +318,10 @@ internal sealed partial class BoxBuilder
             return (element.ParentElement is { } parent ? Style(parent) : UnstyledRoot()) with { Display = display };
         }
     }
+
+    /// <summary>A computed style without what the output cannot have: PDF/A-1 allows no transparency, so no box shadows.</summary>
+    private ComputedStyle Printable(ComputedStyle style) =>
+        style.Shadows.Count > 0 && _options.PdfAConformance is PdfAConformance.PdfA1A or PdfAConformance.PdfA1B ? style with { Shadows = [] } : style;
 
     /// <summary>The style of a root element without author styles, for when the document's own cannot be computed.</summary>
     private ComputedStyle UnstyledRoot()
@@ -1087,6 +1091,7 @@ internal sealed partial class BoxBuilder
             BreakAfter = style.BreakAfter,
             BreakInside = style.BreakInside,
             SpanColumns = style.ColumnSpanAll,
+            Shadows = style.Shadows,
             Orphans = style.Orphans,
             Widows = style.Widows,
             Opacity = style.Opacity,

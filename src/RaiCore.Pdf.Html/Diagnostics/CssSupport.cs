@@ -17,7 +17,7 @@ internal static class CssSupport
         "border-bottom-width", "border-collapse", "border-color", "border-left", "border-left-color", "border-left-style",
         "border-left-width", "border-radius", "border-right", "border-right-color", "border-right-style", "border-right-width",
         "border-spacing", "border-style", "border-top", "border-top-color", "border-top-left-radius", "border-top-right-radius",
-        "border-top-style", "border-top-width", "border-width", "bottom", "box-sizing", "break-after", "break-before",
+        "border-top-style", "border-top-width", "border-width", "bottom", "box-shadow", "box-sizing", "break-after", "break-before",
         "break-inside", "clear", "color", "column-count", "column-fill", "column-gap", "column-rule", "column-rule-color",
         "column-rule-style", "column-rule-width", "column-span", "column-width", "columns", "content", "counter-increment", "counter-reset", "counter-set",
         "direction", "display", "flex", "flex-basis", "flex-direction", "flex-flow", "flex-grow", "flex-shrink", "flex-wrap",
@@ -52,7 +52,7 @@ internal static class CssSupport
     /// </summary>
     public static readonly HashSet<string> ReadFromText = new(StringComparer.Ordinal)
     {
-        "bookmark-label", "bookmark-level", "bookmark-state", "content", "hyphenate-limit-chars", "page", "position", "string-set",
+        "bookmark-label", "bookmark-level", "bookmark-state", "box-shadow", "content", "hyphenate-limit-chars", "page", "position", "string-set",
         "page-break-after", "page-break-before", "page-break-inside", "break-after", "break-before",
         "margin-block", "margin-block-end", "margin-block-start", "margin-inline", "margin-inline-end", "margin-inline-start",
         "padding-block", "padding-block-end", "padding-block-start", "padding-inline", "padding-inline-end", "padding-inline-start",
