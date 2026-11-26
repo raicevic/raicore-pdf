@@ -44,7 +44,19 @@ internal sealed partial class OdtReader
 
         /// <summary>The page number the section starts at, or <c>null</c> to continue.</summary>
         public int? PageNumber { get; } = pageNumber;
+
+        /// <summary>
+        /// Whether a text section with columns starts or ends here: a section of the document on the same page, with
+        /// <see cref="Columns"/>.
+        /// </summary>
+        public bool TextSection { get; init; }
+
+        /// <summary>The columns after a <see cref="TextSection"/> mark; <c>null</c> for the page style's.</summary>
+        public WordColumns? Columns { get; init; }
     }
+
+    /// <summary>The columns of the text sections being read in the body, innermost last.</summary>
+    private readonly Stack<WordColumns> _sectionColumns = [];
 
     /// <summary>Reads a document.</summary>
     public static WordDocument Read(OdfPackage package, ConversionContext context) => new OdtReader(package, context).ReadDocument();
@@ -70,6 +82,8 @@ internal sealed partial class OdtReader
 
         var master = Odf.Attr(defaultMaster, Odf.Style, "name");
         int? pageNumber = null;
+        WordColumns? columns = null; // The text section's columns, or null for the page style's.
+        var continuous = false;
         var current = new List<WordBlock>();
         foreach (var block in blocks)
         {
@@ -81,16 +95,20 @@ internal sealed partial class OdtReader
 
             if (current.Count > 0 || _document.Sections.Count > 0)
             {
-                AddSection(master, pageNumber, current);
+                AddSection(master, pageNumber, current, columns, continuous);
                 current = [];
                 pageNumber = null;
             }
 
             master = mark.Master ?? master;
             pageNumber = mark.PageNumber ?? pageNumber;
+            (columns, continuous) = mark.TextSection ? (mark.Columns, true) : (null, false);
         }
 
-        AddSection(master, pageNumber, current);
+        if (current.Count > 0 || !continuous || _document.Sections.Count == 0)
+        {
+            AddSection(master, pageNumber, current, columns, continuous);
+        }
         ShareEvenHeaders();
         return _document;
     }
@@ -115,6 +133,13 @@ internal sealed partial class OdtReader
     /// <summary>The width of the text area of a master page's page layout.</summary>
     private double ContentWidth(XElement? master)
     {
+        if (master is null)
+        {
+            // No master page: the section keeps the default page setup.
+            var defaults = new WordSection();
+            return defaults.PageWidth - defaults.MarginLeft - defaults.MarginRight;
+        }
+
         var properties = Odf.Child(_styles.PageLayout(Odf.Attr(master, Odf.Style, "page-layout-name")), Odf.Style, "page-layout-properties");
         var (width, _) = PageSize(properties);
         var (_, right, _, left) = PageMargins(properties);
@@ -141,14 +166,19 @@ internal sealed partial class OdtReader
     }
 
     /// <summary>Adds a section with a master page's page setup, headers and footers.</summary>
-    private void AddSection(string? masterName, int? pageNumber, List<WordBlock> blocks)
+    private void AddSection(string? masterName, int? pageNumber, List<WordBlock> blocks, WordColumns? columns = null, bool continuous = false)
     {
-        var section = new WordSection { PageNumberStart = pageNumber };
+        var section = new WordSection { PageNumberStart = pageNumber, Start = continuous ? SectionStart.Continuous : SectionStart.NextPage };
         section.Blocks.AddRange(blocks);
         var master = _styles.MasterPage(masterName) ?? _styles.MasterPage("Standard") ?? _styles.MasterPages.FirstOrDefault();
         if (master is not null)
         {
             ApplyMaster(section, master);
+        }
+
+        if (columns is not null)
+        {
+            section.Columns = columns; // A text section's own columns, instead of the page style's.
         }
 
         _document.Sections.Add(section);
@@ -166,12 +196,7 @@ internal sealed partial class OdtReader
         (section.PageWidth, section.PageHeight) = PageSize(properties);
         var (top, right, bottom, left) = PageMargins(properties);
         section.PageNumberFormat = Odf.Attr(properties, Odf.Style, "num-format") is { } format ? Odf.NumberFormatOf(format) : NumberFormat.Decimal;
-        var columns = Odf.Int(Odf.Child(properties, Odf.Style, "columns"), Odf.Fo, "column-count") ?? 1;
-        if (columns > 1)
-        {
-            section.Columns = Math.Min(columns, 45);
-            _context.Report(DocumentDiagnosticKind.UnsupportedContent, $"A page style with {section.Columns} text columns is laid out in one column.");
-        }
+        section.Columns = Columns(Odf.Child(properties, Odf.Style, "columns"), section.PageWidth - left - right);
 
         var next = _styles.MasterPage(Odf.Attr(master, Odf.Style, "next-style-name"));
         var pages = next is not null && next != master ? next : master;
@@ -374,7 +399,11 @@ internal sealed partial class OdtReader
         }
     }
 
-    /// <summary>Reads a section: its blocks, unless it is hidden; several text columns are reported.</summary>
+    /// <summary>
+    /// Reads a section: its blocks, unless it is hidden. In the body, a section with several text columns becomes a
+    /// section of the document of its own, on the same page as what comes before and after it (where the columns of
+    /// the section around it, or of the page style, go on).
+    /// </summary>
     private void ReadSection(XElement section, List<WordBlock> output, bool body)
     {
         if (Odf.Attr(section, Odf.Text, "display") == "none")
@@ -383,13 +412,67 @@ internal sealed partial class OdtReader
         }
 
         var properties = _styles.Properties("section", Odf.Attr(section, Odf.Text, "style-name"), _scope, "section-properties");
-        var columns = properties.Select(p => Odf.Int(Odf.Child(p, Odf.Style, "columns"), Odf.Fo, "column-count")).LastOrDefault(c => c is not null) ?? 1;
-        if (columns > 1)
+        var element = properties.Select(p => Odf.Child(p, Odf.Style, "columns")).LastOrDefault(c => c is not null);
+        var columns = Columns(element, _width);
+        if (columns.Count <= 1)
         {
-            _context.Report(DocumentDiagnosticKind.UnsupportedContent, $"A section with {Math.Min(columns, 45)} text columns is laid out in one column.");
+            ReadBlocks(section, output, body);
+            return;
         }
 
-        ReadBlocks(section, output, body);
+        if (!body)
+        {
+            _context.Report(DocumentDiagnosticKind.UnsupportedContent, $"A section with {columns.Count} text columns outside the body text is laid out in one column.");
+            ReadBlocks(section, output, body);
+            return;
+        }
+
+        output.Add(new SectionMark(null, null) { TextSection = true, Columns = columns });
+        _sectionColumns.Push(columns);
+        try
+        {
+            ReadBlocks(section, output, body);
+        }
+        finally
+        {
+            _sectionColumns.Pop();
+        }
+
+        output.Add(new SectionMark(null, null) { TextSection = true, Columns = _sectionColumns.Count > 0 ? _sectionColumns.Peek() : null });
+    }
+
+    /// <summary>
+    /// Text columns (<c>style:columns</c>) in a text area <paramref name="width"/> wide: <c>fo:column-count</c> columns
+    /// <c>fo:column-gap</c> apart, or each <c>style:column</c>'s share of the width (<c>style:rel-width</c>) less its
+    /// indents, which make the gaps; a line between them with a visible <c>style:column-sep</c>.
+    /// </summary>
+    private static WordColumns Columns(XElement? columns, double width)
+    {
+        var count = Odf.Int(columns, Odf.Fo, "column-count") ?? 1;
+        if (columns is null || count <= 1)
+        {
+            return WordColumns.One;
+        }
+
+        var sep = Odf.Child(columns, Odf.Style, "column-sep");
+        var separator = sep is not null && Odf.Attr(sep, Odf.Style, "style") != "none" && (Odf.Length(sep, Odf.Style, "width") ?? 0.5) > 0;
+        var each = Odf.Children(columns, Odf.Style, "column").Take(WordColumns.MaxCount).ToList();
+        if (each.Count == Math.Min(count, WordColumns.MaxCount) && each.Count > 1)
+        {
+            var shares = each.Select(c => Math.Max(0, double.TryParse(Odf.Attr(c, Odf.Style, "rel-width")?.TrimEnd('*'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var share) ? share : 0)).ToList();
+            var total = shares.Sum();
+            if (total > 0)
+            {
+                var starts = each.Select(c => Math.Max(0, Odf.Length(c, Odf.Fo, "start-indent") ?? 0)).ToList();
+                var ends = each.Select(c => Math.Max(0, Odf.Length(c, Odf.Fo, "end-indent") ?? 0)).ToList();
+                var widths = Enumerable.Range(0, each.Count)
+                    .Select(i => (Math.Max(1, (width * shares[i] / total) - starts[i] - ends[i]), i + 1 < each.Count ? ends[i] + starts[i + 1] : 0))
+                    .ToList();
+                return new WordColumns(widths.Count, widths[0].Item2, separator, widths);
+            }
+        }
+
+        return WordColumns.Equal(count, Odf.Length(columns, Odf.Fo, "column-gap") ?? 0, separator);
     }
 
     /// <summary>

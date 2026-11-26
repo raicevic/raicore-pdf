@@ -201,6 +201,11 @@ internal static class Sprms
     public const ushort SBkc = 0x3009;
     public const ushort SFTitlePage = 0x300A;
     public const ushort SCcolumns = 0x500B;
+    public const ushort SFEvenlySpaced = 0x3005;
+    public const ushort SDxaColumns = 0x900C;
+    public const ushort SLBetween = 0x3019;
+    public const ushort SDxaColWidth = 0xF203;
+    public const ushort SDxaColSpacing = 0xF204;
     public const ushort SNfcPgn = 0x300E;
     public const ushort SFPgnRestart = 0x3011;
     public const ushort SDyaHdrTop = 0xB017;

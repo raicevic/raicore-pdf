@@ -35,8 +35,11 @@ internal sealed partial class Paginator
     /// paginator the columns go into that it is on (for diagnostics and the page limit). <paramref name="fullHeight"/> is
     /// the room the column has before balancing makes it shorter, which images are scaled down to fit (as on a page).
     /// </summary>
-    private sealed class ColumnFlow(double x, Func<int, double> width, Func<int, double> height, Func<int, double> fullHeight, Func<int, int> outerPage, bool uneven)
+    private sealed class ColumnFlow(double x, Func<int, double> width, Func<int, double> height, Func<int, double> fullHeight, Func<int, int> outerPage, bool uneven, int perRow)
     {
+        /// <summary>The number of columns on a page when the columns go on over pages (a page break skips to the next page's first); 0 when they do not.</summary>
+        public int PerRow => perRow;
+
         /// <summary>The columns are not all as wide: paragraphs continuing in another column take its width.</summary>
         public bool Uneven => uneven;
 
@@ -372,7 +375,7 @@ internal sealed partial class Paginator
             _columnNesting++;
             try
             {
-                var paginator = new Paginator(new ColumnFlow(x, Width, height, FullHeight, OuterPage, geometry.Any(g => g.Width != geometry[0].Width)));
+                var paginator = new Paginator(new ColumnFlow(x, Width, height, FullHeight, OuterPage, geometry.Any(g => g.Width != geometry[0].Width), fragmenting ? n : 0));
                 var pending = default(CollapsedMargin);
                 paginator.InFloatRoot(() =>
                 {

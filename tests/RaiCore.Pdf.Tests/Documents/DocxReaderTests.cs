@@ -525,7 +525,7 @@ public class DocxReaderTests
         Assert.True(a.TitlePage);
         Assert.Equal(5, a.PageNumberStart);
         Assert.Equal(NumberFormat.LowerRoman, a.PageNumberFormat);
-        Assert.Equal(2, a.Columns);
+        Assert.Equal(2, a.Columns.Count);
         Assert.Equal("Header", Text(Paragraphs(a.Headers[HeaderFooterKind.Default]).Single()));
         Assert.Equal("First", Text(Paragraphs(a.Headers[HeaderFooterKind.First]).Single()));
         Assert.Equal("Footer", Text(Paragraphs(a.Footers[HeaderFooterKind.Even]).Single()));

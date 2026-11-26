@@ -80,6 +80,23 @@ internal enum SectionStart
     OddPage,
 }
 
+/// <summary>
+/// A section's text columns: how many, the space between them, whether a line separates them, and, for columns of
+/// different widths, each one's width and the space after it (in points).
+/// </summary>
+internal sealed record WordColumns(int Count, double Gap, bool Separator = false, IReadOnlyList<(double Width, double Gap)>? Widths = null)
+{
+    /// <summary>The most columns a section has (Word's limit).</summary>
+    public const int MaxCount = 45;
+
+    /// <summary>One column (the default).</summary>
+    public static WordColumns One { get; } = new(1, 36);
+
+    /// <summary>Columns of equal widths, at most <see cref="MaxCount"/>, with a gap that cannot be negative.</summary>
+    public static WordColumns Equal(int count, double gap, bool separator) =>
+        count <= 1 ? One : new(Math.Min(count, MaxCount), Math.Max(0, gap), separator);
+}
+
 /// <summary>Which pages a header or footer is for.</summary>
 internal enum HeaderFooterKind
 {
@@ -132,8 +149,8 @@ internal sealed class WordSection
     /// <summary>How page numbers are written in the section.</summary>
     public NumberFormat PageNumberFormat { get; set; } = NumberFormat.Decimal;
 
-    /// <summary>The number of text columns the section asks for (laid out as one).</summary>
-    public int Columns { get; set; } = 1;
+    /// <summary>The section's text columns.</summary>
+    public WordColumns Columns { get; set; } = WordColumns.One;
 
     /// <summary>The headers by kind; a kind the section lacks is inherited from the section before it.</summary>
     public Dictionary<HeaderFooterKind, List<WordBlock>> Headers { get; } = [];

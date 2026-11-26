@@ -550,11 +550,11 @@ public class DocxToPdfTests
     }
 
     [Fact]
-    public void Several_columns_are_laid_out_in_one_and_reported()
+    public void Several_columns_are_laid_out_without_a_report()
     {
         var (pdf, diagnostics) = Convert(Document(P("text") + "<w:sectPr><w:cols w:num=\"3\"/></w:sectPr>"));
         Assert.Contains("text", AllText(pdf.ToArray()), StringComparison.Ordinal);
-        Assert.Contains(diagnostics, d => d.Message.Contains("3 text columns", StringComparison.Ordinal));
+        Assert.DoesNotContain(diagnostics, d => d.Message.Contains("text columns", StringComparison.Ordinal));
     }
 
     [Fact]

@@ -507,14 +507,14 @@ public class OdtToPdfTests
     }
 
     [Fact]
-    public void Scripts_forms_and_columns_are_reported()
+    public void Scripts_and_forms_are_reported_and_columns_are_laid_out()
     {
         var (_, diagnostics) = Convert(Fixtures.Read(Path.Combine("Tika", "testODTMacro.odt")));
         Assert.Contains(diagnostics, d => d.Message.Contains("scripts", StringComparison.Ordinal));
         var (_, flat) = Convert(Fixtures.Read(Path.Combine("Tika", "testODTMacro.fodt")));
         Assert.Contains(flat, d => d.Message.Contains("scripts", StringComparison.Ordinal));
         var (_, fields) = Convert(Fixture("fields.odt"));
-        Assert.Contains(fields, d => d.Message.Contains("2 text columns", StringComparison.Ordinal));
+        Assert.DoesNotContain(fields, d => d.Message.Contains("text columns", StringComparison.Ordinal)); // A section in two columns.
         var form = Document("<office:forms><form:form xmlns:form=\"urn:oasis:names:tc:opendocument:xmlns:form:1.0\"/></office:forms>" + P("x<draw:control draw:control=\"c1\"/>"));
         var (_, forms) = Convert(form);
         Assert.Contains(forms, d => d.Message == "Forms are left out.");
@@ -523,7 +523,7 @@ public class OdtToPdfTests
             + "<style:columns fo:column-count=\"3\"/></style:page-layout-properties></style:page-layout>";
         var columns = Document(P("Columns"), pageLayouts: layout, masters: "<style:master-page style:name=\"Standard\" style:page-layout-name=\"pm\"/>");
         var (_, page) = Convert(columns);
-        Assert.Contains(page, d => d.Message.Contains("3 text columns", StringComparison.Ordinal));
+        Assert.DoesNotContain(page, d => d.Message.Contains("text columns", StringComparison.Ordinal));
     }
 
     [Fact]

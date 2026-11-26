@@ -81,15 +81,16 @@ internal sealed partial class DocumentRenderer
     }
 
     /// <summary>
-    /// The paragraph's text as layout paragraphs, one per page or column break: the list label, runs, tabs measured to
-    /// their stops, line breaks, inline images, fields, links, bookmarks and note marks.
+    /// The paragraph's text as layout paragraphs, one per page or column break (with the break before it): the list
+    /// label, runs, tabs measured to their stops, line breaks, inline images, fields, links, bookmarks and note marks.
+    /// A column break starts a new column in a section with columns, and a new page in others, as in Word.
     /// </summary>
-    private List<(Paragraph Paragraph, bool AfterBreak)> Segments(WordParagraph paragraph, List<Atom> atoms, double textWidth)
+    private List<(Paragraph Paragraph, PageBreak AfterBreak)> Segments(WordParagraph paragraph, List<Atom> atoms, double textWidth)
     {
         var format = paragraph.Format;
-        var segments = new List<(Paragraph, bool)>();
+        var segments = new List<(Paragraph, PageBreak)>();
         var current = NewParagraph(paragraph, first: true);
-        var afterBreak = false;
+        var afterBreak = PageBreak.Auto;
         var hasContent = false;
         LinkTarget? openLink = null;
         var lineAtoms = new List<Atom>();
@@ -124,7 +125,7 @@ internal sealed partial class DocumentRenderer
         for (var i = 0; i < atoms.Count; i++)
         {
             var atom = atoms[i];
-            if (atom.Inline is BreakInline { Kind: not BreakKind.Line })
+            if (atom.Inline is BreakInline { Kind: not BreakKind.Line } breakInline)
             {
                 CloseLink(current, ref openLink);
                 if (hasContent)
@@ -132,7 +133,8 @@ internal sealed partial class DocumentRenderer
                     segments.Add((current, afterBreak));
                 }
 
-                afterBreak = true;
+                // A page break wins over a column break before the same text.
+                afterBreak = breakInline.Kind == BreakKind.Column && _inColumns && afterBreak != PageBreak.Page ? PageBreak.Column : PageBreak.Page;
                 current = NewParagraph(paragraph, first: false);
                 hasContent = false;
                 lineAtoms.Clear();

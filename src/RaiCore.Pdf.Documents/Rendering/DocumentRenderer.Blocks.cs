@@ -106,7 +106,7 @@ internal sealed partial class DocumentRenderer
                     BorderPadding(borders.Right),
                     joinBelow || !isLast ? 0 : BorderPadding(borders.Bottom),
                     BorderPadding(borders.Left)),
-                BreakBefore = segments[s].AfterBreak || (format.PageBreakBefore && !inTable && output.Count == first) ? PageBreak.Page : PageBreak.Auto,
+                BreakBefore = format.PageBreakBefore && !inTable && output.Count == first ? PageBreak.Page : segments[s].AfterBreak,
                 BreakAfter = isLast && format.KeepWithNext && !inTable ? PageBreak.Avoid : PageBreak.Auto,
                 BreakInside = format.KeepLines ? PageBreakInside.Avoid : PageBreakInside.Auto,
                 Orphans = format.WidowControl ? 2 : 1,

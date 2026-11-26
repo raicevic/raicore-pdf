@@ -210,7 +210,7 @@ public class RtfToPdfTests
         Assert.True(pdf.Pages[4].Width < pdf.Pages[4].Height);
         Assert.Contains("Section page i of 1", pages[4], StringComparison.Ordinal); // Restarted in roman numerals.
         Assert.Contains("A continuous section on the same page.", pages[4], StringComparison.Ordinal);
-        Assert.Contains(diagnostics, d => d.Message.Contains("2 text columns", StringComparison.Ordinal));
+        Assert.DoesNotContain(diagnostics, d => d.Message.Contains("text columns", StringComparison.Ordinal)); // Laid out in columns.
     }
 
     [Fact]
@@ -299,7 +299,7 @@ public class RtfToPdfTests
         var (_, diagnostics) = Convert(Document(@"{\*\do x}{\*\do y}{\pict\macpict 01}{\pict\pmmetafile 01}{\*\annotation c}\sectd\cols2 text\par"));
         Assert.Equal(diagnostics.Count, diagnostics.Distinct().Count());
         Assert.All(diagnostics, d => Assert.Equal(DocumentDiagnosticKind.UnsupportedContent, d.Kind));
-        Assert.Equal(5, diagnostics.Count);
+        Assert.Equal(4, diagnostics.Count); // Not the two columns: they are laid out.
     }
 
     [Fact]

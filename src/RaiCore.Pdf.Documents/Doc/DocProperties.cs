@@ -92,6 +92,21 @@ internal struct DocSep
     public byte Break;
     public bool TitlePage;
     public int Columns;
+
+    /// <summary>The space between columns of equal widths.</summary>
+    public int ColumnSpacing;
+
+    /// <summary>Whether a line is drawn between the columns.</summary>
+    public bool LineBetween;
+
+    /// <summary>Whether the columns have equal widths; otherwise <see cref="ColumnWidths"/> and <see cref="ColumnSpacings"/>.</summary>
+    public bool EvenlySpaced;
+
+    /// <summary>Each column's width (columns of different widths), or <c>null</c>.</summary>
+    public int[]? ColumnWidths;
+
+    /// <summary>The space after each column (columns of different widths), or <c>null</c>.</summary>
+    public int[]? ColumnSpacings;
     public byte PageNumberFormat;
     public bool RestartPageNumbers;
     public int PageNumberStart;
@@ -100,7 +115,7 @@ internal struct DocSep
     public static DocSep Default => new()
     {
         PageWidth = 12240, PageHeight = 15840, Left = 1800, Right = 1800, Top = 1440, Bottom = 1440, HeaderTop = 720,
-        FooterBottom = 720, Break = 2, Columns = 1, PageNumberStart = 1,
+        FooterBottom = 720, Break = 2, Columns = 1, ColumnSpacing = 720, EvenlySpaced = true, PageNumberStart = 1,
     };
 }
 
@@ -539,6 +554,22 @@ internal static class DocProperties
                     break;
                 case Sprms.SCcolumns when op.Length >= 2:
                     sep.Columns = Math.Clamp(unsigned + 1, 1, 45);
+                    break;
+                case Sprms.SDxaColumns when op.Length >= 2:
+                    sep.ColumnSpacing = Math.Clamp((int)word, 0, 31680);
+                    break;
+                case Sprms.SLBetween:
+                    sep.LineBetween = op[0] != 0;
+                    break;
+                case Sprms.SFEvenlySpaced:
+                    sep.EvenlySpaced = op[0] != 0;
+                    break;
+                case Sprms.SDxaColWidth or Sprms.SDxaColSpacing when op.Length >= 3 && op[0] < 45:
+                    // An operand of a column index and a width or spacing (SDxaColWidthOperand, SDxaColSpacingOperand).
+                    var columnValue = Math.Clamp((int)BinaryPrimitives.ReadInt16LittleEndian(op[1..]), 0, 31680);
+                    ref var columnValues = ref reader.Code == Sprms.SDxaColWidth ? ref sep.ColumnWidths : ref sep.ColumnSpacings;
+                    columnValues = columnValues is null ? new int[45] : [.. columnValues];
+                    columnValues[op[0]] = columnValue;
                     break;
                 case Sprms.SNfcPgn:
                     sep.PageNumberFormat = op[0];

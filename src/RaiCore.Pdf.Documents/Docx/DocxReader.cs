@@ -35,6 +35,25 @@ internal sealed partial class DocxReader
     }
 
     /// <summary>A section break while the body is read: the section properties that end the blocks before it.</summary>
+    /// <summary>
+    /// A section's text columns (<c>w:cols</c>): <c>num</c> columns <c>space</c> apart (half an inch by default), a line
+    /// between them with <c>sep</c>, or, without <c>equalWidth</c>, each <c>w:col</c>'s width and space after it.
+    /// </summary>
+    private static WordColumns Columns(XElement? cols)
+    {
+        var count = Ooxml.Int(cols, "num") ?? 1;
+        var gap = Ooxml.Twips(cols, "space") ?? 36;
+        var separator = Ooxml.Attr(cols, "sep") is { } sep && Ooxml.IsOn(sep);
+        var each = Ooxml.Children(cols, "col").Take(WordColumns.MaxCount).ToList();
+        if (Ooxml.Attr(cols, "equalWidth") is { } equal && !Ooxml.IsOn(equal) && each.Count > 1)
+        {
+            var widths = each.Select(c => (Math.Max(1, Ooxml.Twips(c, "w") ?? 0), Math.Max(0, Ooxml.Twips(c, "space") ?? 0))).ToList();
+            return new WordColumns(widths.Count, gap, separator, widths);
+        }
+
+        return WordColumns.Equal(count, gap, separator);
+    }
+
     private sealed class SectionMark(XElement properties) : WordBlock
     {
         public XElement Properties { get; } = properties;
@@ -276,11 +295,7 @@ internal sealed partial class DocxReader
             var pageNumbers = Ooxml.Child(properties, "pgNumType");
             section.PageNumberStart = Ooxml.Int(pageNumbers, "start") is { } start ? Math.Clamp(start, 0, 1_000_000) : null;
             section.PageNumberFormat = Ooxml.NumberFormatOf(Ooxml.Attr(pageNumbers, "fmt"));
-            section.Columns = Math.Clamp(Ooxml.Int(Ooxml.Child(properties, "cols"), "num") ?? 1, 1, 45);
-            if (section.Columns > 1)
-            {
-                _context.Report(DocumentDiagnosticKind.UnsupportedContent, $"A section with {section.Columns} text columns is laid out in one column.");
-            }
+            section.Columns = Columns(Ooxml.Child(properties, "cols"));
 
             ReadHeaderFooterReferences(properties, "headerReference", section.Headers);
             ReadHeaderFooterReferences(properties, "footerReference", section.Footers);

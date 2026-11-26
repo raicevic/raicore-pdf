@@ -155,10 +155,10 @@ public class DocReaderTests
         var diagnostics = new List<DocumentDiagnostic>();
         var document = ReadSample("testWORD_various.doc", diagnostics);
         Assert.Equal(3, document.Sections.Count);
-        Assert.Equal([1, 2, 1], document.Sections.Select(s => s.Columns));
+        Assert.Equal([1, 2, 1], document.Sections.Select(s => s.Columns.Count));
         Assert.Equal(SectionStart.NextPage, document.Sections[0].Start);
         Assert.All(document.Sections.Skip(1), s => Assert.Equal(SectionStart.Continuous, s.Start));
-        Assert.Contains(diagnostics, d => d.Message.Contains("2 text columns", StringComparison.Ordinal));
+        Assert.DoesNotContain(diagnostics, d => d.Message.Contains("text columns", StringComparison.Ordinal)); // Laid out in columns.
         Assert.Contains("Row 1 column 1", Text(document.Sections[1].Blocks), StringComparison.Ordinal);
 
         // A page narrower than its margins (sprmSXaPage 3207 twips, A4 height) is as wide as A4.
