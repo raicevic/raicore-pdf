@@ -4,7 +4,8 @@ namespace RaiCore.Pdf.Layout;
 /// The columns a <see cref="ContainerBlock"/> lays its children out in (CSS multi-column layout, Word section columns):
 /// the content flows down the first column, then the next, and on to the next page. Children with
 /// <see cref="BoxStyle.SpanColumns"/> go across all columns, splitting the content into sets of columns above and below
-/// them. <see cref="PageBreak.Column"/> starts a new column.
+/// them. <see cref="PageBreak.Column"/> starts a new column; a page break starts the first column of the next page (the
+/// next column where there are no pages, as in a table cell).
 /// </summary>
 /// <remarks>
 /// The number of columns and their width follow CSS (multi-column layout section 3.4): with only a <see cref="Count"/>,

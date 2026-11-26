@@ -713,6 +713,15 @@ internal sealed partial class Paginator
             {
                 var pageBefore = PageIndex;
                 ForcedBreak(startName, SideOf(startBreak) ?? SideOf(previousBreak));
+                if (_columns is { PerRow: > 0 } flow && (IsForced(startBreak) || IsForced(previousBreak)))
+                {
+                    // A page break in columns that go on over pages: the first column of the next page.
+                    while (PageIndex % flow.PerRow != 0)
+                    {
+                        NewPage(forced: true);
+                    }
+                }
+
                 if (PageIndex != pageBefore)
                 {
                     pending = default; // The previous block's bottom margin ends with its page; this block keeps its top margin.

@@ -256,7 +256,7 @@ internal sealed partial class DocReader
         return sep;
     }
 
-    private WordSection Section(DocSep sep)
+    private static WordSection Section(DocSep sep)
     {
         static double Points(int twips, double fallback) => twips is > 0 and <= 31680 ? twips / 20.0 : fallback;
 
@@ -271,7 +271,7 @@ internal sealed partial class DocReader
             HeaderDistance = Math.Clamp(sep.HeaderTop, 0, 31680) / 20.0,
             FooterDistance = Math.Clamp(sep.FooterBottom, 0, 31680) / 20.0,
             TitlePage = sep.TitlePage,
-            Columns = sep.Columns,
+            Columns = ColumnsOf(sep),
             Start = sep.Break switch
             {
                 0 => SectionStart.Continuous,
@@ -303,12 +303,21 @@ internal sealed partial class DocReader
             section.MarginTop = section.MarginBottom = 72;
         }
 
-        if (section.Columns > 1)
+        return section;
+    }
+
+    /// <summary>A section's columns: of equal widths, or each with its width and the space after it.</summary>
+    internal static WordColumns ColumnsOf(DocSep sep)
+    {
+        if (!sep.EvenlySpaced && sep.Columns > 1 && sep.ColumnWidths is { } widths)
         {
-            _context.Report(DocumentDiagnosticKind.UnsupportedContent, $"A section with {section.Columns} text columns is laid out in one column.");
+            var columns = Enumerable.Range(0, sep.Columns)
+                .Select(i => (Math.Max(1, widths[i]) / 20.0, (sep.ColumnSpacings?[i] ?? sep.ColumnSpacing) / 20.0))
+                .ToList();
+            return new WordColumns(columns.Count, sep.ColumnSpacing / 20.0, sep.LineBetween, columns);
         }
 
-        return section;
+        return WordColumns.Equal(sep.Columns, sep.ColumnSpacing / 20.0, sep.LineBetween);
     }
 
     /// <summary>The number format of an <c>nfc</c> (page numbers, list levels).</summary>

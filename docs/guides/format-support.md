@@ -52,7 +52,7 @@ in every format, and so do the formats older than Word 97, Excel 5.0 and PowerPo
 | SmartArt | R | ◐ preview picture | ◐ object's result | ◐ replacement picture |
 | Embedded objects | ◐ preview picture, R | ◐ preview picture | ◐ object's result, R | ◐ replacement picture |
 | Equations | ◐ as plain text, R | ◐ preview picture | ◐ saved result | ◐ replacement picture |
-| Several text columns | R | R | R | R |
+| Several text columns | ✓ | ✓ | ✓ | ◐ column breaks start a page |
 | Line numbers, page borders, watermarks, drop caps | ✗ | ✗ | ✗ | ✗ |
 | Forms and form fields | ◐ their text | ◐ their text | ◐ saved result | R |
 | Tagged PDF (`Tagged`): headings, paragraphs, tables, figures | ✓ | ✓ | ✓ | ✓ |

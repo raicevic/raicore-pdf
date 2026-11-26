@@ -23,6 +23,7 @@ internal sealed partial class RtfReader
             Header = 720,
             Footer = 720,
             Columns = 1,
+            ColumnGap = 720,
         };
 
         public int Width;
@@ -41,6 +42,18 @@ internal sealed partial class RtfReader
         public bool Restart;
         public NumberFormat PageFormat;
         public int Columns;
+
+        /// <summary>The space between columns (<c>\colsx</c>).</summary>
+        public int ColumnGap;
+
+        /// <summary>Whether a line separates the columns (<c>\linebetcol</c>).</summary>
+        public bool LineBetween;
+
+        /// <summary>The column <c>\colw</c> and <c>\colsr</c> apply to (<c>\colno</c>, 1-based).</summary>
+        public int ColumnNumber;
+
+        /// <summary>Each column's width and the space after it (columns of different widths), or <c>null</c>.</summary>
+        public (int Width, int Space)[]? ColumnSizes;
     }
 
     private void BeginDocument() => _stories.Add(new Story(StoryKind.Body));
@@ -134,7 +147,7 @@ internal sealed partial class RtfReader
         switch (word)
         {
             case "sectd":
-                _setup = _documentSetup with { Start = SectionStart.NextPage, TitlePage = false, PageStart = 0, Restart = false, PageFormat = NumberFormat.Decimal, Columns = 1 };
+                _setup = _documentSetup with { Start = SectionStart.NextPage, TitlePage = false, PageStart = 0, Restart = false, PageFormat = NumberFormat.Decimal, Columns = 1, ColumnGap = 720, LineBetween = false, ColumnNumber = 0, ColumnSizes = null };
                 break;
             case "pgwsxn":
                 _setup.Width = twips;
@@ -207,7 +220,22 @@ internal sealed partial class RtfReader
                 _setup.PageFormat = NumberFormat.LowerLetter;
                 break;
             case "cols":
-                _setup.Columns = Math.Clamp(parameter, 1, 45);
+                _setup.Columns = Math.Clamp(parameter, 1, WordColumns.MaxCount);
+                break;
+            case "colsx":
+                _setup.ColumnGap = twips;
+                break;
+            case "linebetcol":
+                _setup.LineBetween = !hasParameter || parameter != 0;
+                break;
+            case "colno":
+                _setup.ColumnNumber = Math.Clamp(parameter, 1, WordColumns.MaxCount);
+                break;
+            case "colw" or "colsr" when _setup.ColumnNumber > 0:
+                var sizes = _setup.ColumnSizes is null ? new (int Width, int Space)[WordColumns.MaxCount] : [.. _setup.ColumnSizes];
+                ref var size = ref sizes[_setup.ColumnNumber - 1];
+                size = word == "colw" ? (twips, size.Space) : (size.Width, twips);
+                _setup.ColumnSizes = sizes;
                 break;
             default:
                 return false;
@@ -252,7 +280,7 @@ internal sealed partial class RtfReader
     }
 
     /// <summary>Gives a section its page setup, keeping at least an inch of room for the text both ways.</summary>
-    private void Apply(SectionSetup setup, WordSection section)
+    private static void Apply(SectionSetup setup, WordSection section)
     {
         var width = Math.Clamp(setup.Width / 20.0, 72, 14400);
         var height = Math.Clamp(setup.Height / 20.0, 72, 14400);
@@ -272,11 +300,9 @@ internal sealed partial class RtfReader
         section.TitlePage = setup.TitlePage;
         section.PageNumberStart = setup.Restart ? setup.PageStart : null;
         section.PageNumberFormat = setup.PageFormat;
-        section.Columns = setup.Columns;
-        if (setup.Columns > 1)
-        {
-            _context.Report(DocumentDiagnosticKind.UnsupportedContent, $"A section with {setup.Columns} text columns is laid out in one column.");
-        }
+        section.Columns = setup.ColumnSizes is { } sizes && setup.Columns > 1 && sizes.Take(setup.Columns).All(s => s.Width > 0)
+            ? new WordColumns(setup.Columns, setup.ColumnGap / 20.0, setup.LineBetween, [.. sizes.Take(setup.Columns).Select(s => (s.Width / 20.0, s.Space / 20.0))])
+            : WordColumns.Equal(setup.Columns, setup.ColumnGap / 20.0, setup.LineBetween);
 
         static (double, double) Fit(double a, double b, double extent)
         {

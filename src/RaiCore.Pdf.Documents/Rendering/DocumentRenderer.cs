@@ -30,6 +30,9 @@ internal sealed partial class DocumentRenderer
     private (int Number, NumberFormat Format)? _currentNote;
     private bool _usesComputedPages;
 
+    /// <summary>Whether the blocks being rendered are in a section's columns (a column break starts a column).</summary>
+    private bool _inColumns;
+
     // While a header or footer is built for a page.
     private PageFields? _page;
     private int _depth;
@@ -153,6 +156,7 @@ internal sealed partial class DocumentRenderer
         {
             var section = _document.Sections[i];
             var width = _setups[names[i]].ContentWidth;
+            var balanced = i + 1 < names.Length && _document.Sections[i + 1].Start == SectionStart.Continuous;
             var container = new ContainerBlock(new BoxStyle
             {
                 BreakBefore = section.Start switch
@@ -163,14 +167,18 @@ internal sealed partial class DocumentRenderer
                 },
             })
             { PageName = names[i] };
-            foreach (var block in RenderBlocks(section.Blocks, width, inTable: false))
+            foreach (var block in SectionContent(section, width, balanced))
             {
                 container.Add(block);
             }
 
-            foreach (var block in Footnotes(width))
+            // Footnotes after the sections that share the pages (sections that continue on the same page come first).
+            if (i == names.Length - 1 || names[i + 1] != names[i])
             {
-                container.Add(block);
+                foreach (var block in Footnotes(width))
+                {
+                    container.Add(block);
+                }
             }
 
             if (i == names.Length - 1)
@@ -196,6 +204,41 @@ internal sealed partial class DocumentRenderer
 
         flow.PageDecorator = Decorator(names[0]);
         return flow;
+    }
+
+    /// <summary>
+    /// A section's content: in its columns, when it has several. Word balances the columns of a section that a
+    /// continuous section break ends, and fills the others (the last section's) one column after the other.
+    /// </summary>
+    private List<Block> SectionContent(WordSection section, double width, bool balanced)
+    {
+        var columns = section.Columns;
+        if (columns.Count <= 1)
+        {
+            return RenderBlocks(section.Blocks, width, inTable: false);
+        }
+
+        var layout = new ColumnLayout
+        {
+            Count = columns.Widths is null ? columns.Count : null,
+            Widths = columns.Widths,
+            Gap = columns.Gap,
+            Rule = columns.Separator ? new BorderSide(0.5, PdfColor.Black) : BorderSide.None,
+            Fill = balanced ? ColumnFill.Balance : ColumnFill.Auto,
+        };
+
+        // Tables and images are sized to the narrowest column.
+        var columnWidth = columns.Widths is { Count: > 0 } widths ? widths.Min(w => w.Width) : (width - ((columns.Count - 1) * columns.Gap)) / columns.Count;
+        var outer = _inColumns;
+        _inColumns = true;
+        try
+        {
+            return [new ContainerBlock(null, RenderBlocks(section.Blocks, Math.Max(1, columnWidth), inTable: false)) { Columns = layout }];
+        }
+        finally
+        {
+            _inColumns = outer;
+        }
     }
 
     /// <summary>

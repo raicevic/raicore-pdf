@@ -511,7 +511,7 @@ public class RtfReaderTests
         Assert.Equal("right", Text((WordParagraph)second.Headers[HeaderFooterKind.Default][0]));
         Assert.Equal("left", Text((WordParagraph)second.Headers[HeaderFooterKind.Even][0])); // Inherited.
         Assert.Equal(SectionStart.Continuous, sections[2].Start);
-        Assert.Equal(3, sections[2].Columns);
+        Assert.Equal(3, sections[2].Columns.Count);
         Assert.Equal(SectionStart.EvenPage, sections[3].Start);
         Assert.Equal("evenfoot", Text((WordParagraph)sections[3].Footers[HeaderFooterKind.Even][0]));
         Assert.Equal(SectionStart.Continuous, sections[4].Start); // \sbkcol: a new column, which is the same page here.

@@ -72,6 +72,15 @@ public class ColumnLayoutTests
     }
 
     [Fact]
+    public void A_page_break_in_columns_starts_the_first_column_of_the_next_page()
+    {
+        var second = Para(2, new BoxStyle { BreakBefore = PageBreak.Page });
+        var placement = Flow(Columns(Two, Para(2), second)).Paginate().Placements.Single(p => p.Block == second);
+
+        Assert.Equal((1, 20.0, 20.0), (placement.Page, placement.Left, placement.Top));
+    }
+
+    [Fact]
     public void A_column_break_outside_columns_does_nothing()
     {
         var second = Para(2, new BoxStyle { BreakBefore = PageBreak.Column });

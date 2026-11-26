@@ -63,7 +63,7 @@ whisker, funnel, treemap and sunburst charts); region maps show the picture stor
 
 Not supported: text boxes and shapes as floating frames (their text follows their paragraph), surface charts, charts
 in `.doc`, RTF and OpenDocument files beyond their stored pictures, SmartArt, embedded objects (their preview image is
-shown), forms, several text columns, footnotes at the bottom of the page; in RTF and `.doc` also PICT
+shown), forms, footnotes at the bottom of the page; in RTF and `.doc` also PICT
 pictures and drawing objects. WMF and EMF pictures (also EMF+) are drawn as vector graphics. What is left
 out is reported to the options' `Diagnostics`.
 

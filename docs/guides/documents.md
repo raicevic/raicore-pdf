@@ -44,7 +44,10 @@ The [format support](format-support.md) page compares all formats side by side.
   conditional formats (first and last row and column, banded rows and columns).
 - **Sections:** page size, orientation and margins (the top and bottom margin grow when a header or footer needs the
   room), and how the section starts: on a new page, on the same page (continuous, when the page setup stays the same),
-  or on the next even or odd page.
+  or on the next even or odd page. Text columns: equal or of their own widths, with the space between them and a line
+  between them; column breaks start the next column (a new page in a section of one column), and the columns of a
+  section that a continuous section break ends are balanced, as in Word (the last section's fill one column after the
+  other).
 - **Headers and footers:** for the first page of a section (with a title page), even pages (with different odd and
   even headers) and the other pages, inherited from the section before when a section has none; with page numbers
   (`PAGE`, `NUMPAGES`, `SECTIONPAGES`), restarted and formatted per section (decimal, roman, letters).
@@ -129,7 +132,7 @@ system's fonts, or Carlito, for Word's line breaks.
 
 - `UnsupportedContent`: charts that cannot be drawn (surface charts; region maps, shown as their stored picture; 3-D
   charts, drawn flat), SmartArt, embedded objects (shown as their preview image when it can be drawn),
-  shapes and text boxes (their text is laid out after their paragraph), several text columns (laid out as one),
+  shapes and text boxes (their text is laid out after their paragraph),
   embedded document parts (`altChunk`), equations (shown as text), comments when `Comments` is `None`, and what a
   WMF or EMF picture uses that is approximated or left out (see below).
 - `ImageNotLoaded`: images in formats that cannot be drawn (PICT, StarView metafiles), damaged, missing or linked
@@ -220,8 +223,9 @@ turn converts a `.docx` package given to it.
   other embedded objects are shown as their replacement image (when it can be drawn: LibreOffice often stores it as a
   StarView metafile, which cannot); the text of text boxes and shapes follows their paragraph.
 
-Not supported in OpenDocument text: drawing shapes (their text is kept), several columns of a page style or section,
-forms and their controls, scripts (ignored), line numbering and page backgrounds; each is reported to
+Text columns of a page style or of a section are laid out like Word's (a section with columns in the text is a
+continuous section of its own); a column break before or after a paragraph starts a new page. Not supported in
+OpenDocument text: drawing shapes (their text is kept), forms and their controls, scripts (ignored), line numbering and page backgrounds; each is reported to
 `Diagnostics`. Password-protected (encrypted) documents throw `NotSupportedException`; malformed packages and XML that
 is not well-formed `DocumentFormatException`. Linked images (outside the package) are left out. The `Limits` apply as to
 Word documents, the XML of flat documents included; table rows and cells that repeat others
@@ -270,7 +274,7 @@ What is converted (RTF 1.9.1):
 
 Not supported, and reported to `Diagnostics`: PICT pictures (`ImageNotLoaded` for pictures that cannot be decoded or
 are larger than `MaxResourceBytes`), drawing objects (`\do`), shapes as drawings, embedded objects (their
-result is shown), several text columns. Also not supported: frames and positioned paragraphs
+result is shown). Also not supported: frames and positioned paragraphs
 (laid out in the text), footnotes at the bottom of the page, page borders, right-to-left and vertical text beyond what
 the layout engine does by itself. Revisions are shown as if accepted.
 

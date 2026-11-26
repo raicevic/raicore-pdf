@@ -24,12 +24,17 @@ and versions follow [Semantic Versioning](https://semver.org/).
   columns of their own widths, a gap and a rule between columns with content) and flows the children through the
   columns: down the first, on into the next, and on to the next page; the last row of columns is balanced
   (`ColumnFill.Balance`, or filled one after the other with `ColumnFill.Auto`). `PageBreak.Column` starts a new
-  column, `PageBreakInside.AvoidColumn` keeps a block in one column, and `BoxStyle.SpanColumns` puts a child across
-  all columns. Orphans, widows, avoided breaks and repeated table headers work in columns as on pages (#312).
+  column (a page break the first column of the next page), `PageBreakInside.AvoidColumn` keeps a block in one column,
+  and `BoxStyle.SpanColumns` puts a child across all columns. Orphans, widows, avoided breaks and repeated table headers work in columns as on pages (#312).
 - Layout: `BoxStyle.Shadows` takes `BoxShadow`s (CSS `box-shadow`): outer shadows outside the box under its
   background, `Inset` ones inside the padding box over it, with an offset, a blur (a Gaussian, drawn as an image with
   a soft mask), a spread and rounded corners. HTML: `box-shadow`, including several shadows, `inset`, `var()` and
   `currentColor`; PDF/A-1, which allows no transparency, leaves shadows out (#155).
+- Word (DOCX, DOC), OpenDocument and RTF documents: sections with several text columns are laid out in them (they
+  were laid out in one column): equal or of their own widths, with their spacing and the line between them; column
+  breaks start the next column (a page in a section of one column); a section that a continuous section break ends is
+  balanced, the last one filled one column after the other, as in Word. OpenDocument sections with columns in the
+  text become continuous sections of their own (#312).
 - HTML: CSS multi-column layout: `columns`, `column-count`, `column-width`, `column-gap`, `column-rule`,
   `column-fill`, `column-span: all` and `break-before`/`break-after`/`break-inside` with `column` and `avoid-column`,
   balanced like browsers, also inside flex items and table cells (#73).
